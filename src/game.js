@@ -608,10 +608,18 @@ function showPreview(card, instOrId, opts) {
   document.body.appendChild(big);
   const r = card.getBoundingClientRect();
   const pw = big.offsetWidth, ph = big.offsetHeight;
-  // Napravo od karty; keď sa nezmestí, naľavo. Zvislo pri karte, v okne.
-  let x = r.right + 12;
-  if (x + pw > window.innerWidth - 8) x = r.left - pw - 12;
-  let y = r.top + r.height / 2 - ph / 2;
+  let x, y;
+  if (window.innerWidth < 700) {
+    // Mobil: preview na stred obrazovky, nech nikdy neutečie mimo.
+    x = (window.innerWidth - pw) / 2;
+    y = (window.innerHeight - ph) / 2;
+  } else {
+    // Desktop: napravo od karty; keď sa nezmestí, naľavo. Zvislo pri karte.
+    x = r.right + 12;
+    if (x + pw > window.innerWidth - 8) x = r.left - pw - 12;
+    y = r.top + r.height / 2 - ph / 2;
+  }
+  x = Math.max(8, Math.min(x, window.innerWidth - pw - 8));
   y = Math.max(8, Math.min(y, window.innerHeight - ph - 8));
   big.style.left = x + "px";
   big.style.top = y + "px";

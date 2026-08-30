@@ -357,10 +357,11 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    karty, ruka pod doskou. Sloty: x 169–768 px, medzera 17, pri 941×1672. */
 @media (orientation: portrait) {
   #stage {
-    width: min(98vw, calc(84vh * 941 / 1672));
+    /* 70vh výšky dosky + ~13vh ruka pod ňou = zmestí sa bez scrollovania */
+    width: min(96vw, calc(70vh * 941 / 1672));
     aspect-ratio: 941 / 1672;
     background-image: url("PlayGround-mobile.png");
-    margin-bottom: 15vh;
+    margin-bottom: 13vh;
   }
   .log { width: 98vw; font-size: .8rem; }
   .hero-plate { left: 21%; width: 58%; grid-template-columns: 1fr 12cqw 1fr; font-size: 1.9cqh; }
@@ -398,9 +399,12 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .fight-banner.small { font-size: 2.4cqh; top: 45%; }
 
   #stage .hand {
-    top: 101%; left: 1%; width: 98%; height: auto; min-height: 13vh;
-    display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; align-items: center;
-    background: rgba(255,255,255,.55); border-radius: 12px; padding: 4px;
+    /* širšia než doska, aby sa 5 kariet zmestilo do jedného radu */
+    top: calc(100% + 4px); left: 50%; transform: translateX(-50%);
+    width: 96vw; height: auto; min-height: 12vh;
+    display: flex; flex-wrap: nowrap; gap: 3px; justify-content: center; align-items: center;
+    background: rgba(255,255,255,.55); border-radius: 12px; padding: 3px;
   }
-  #stage .hand .card { height: 12.5vh; font-size: 1.5vh; }
+  #stage .hand .card { height: 11vh; font-size: 1.35vh; flex: 0 0 auto; }
+  .preview-card { width: min(260px, 68vw); font-size: clamp(11px, 3.6vw, 15px); }
 }
