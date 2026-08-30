@@ -1,0 +1,177 @@
+/* Zvieracia aréna – vzhľad. Základ prevzatý zo štýlu hier Pre Deti. */
+* { box-sizing: border-box; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: linear-gradient(180deg, #7ec8ff 0%, #dff3ff 100%);
+  color: #123;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+header {
+  padding: 8px 14px;
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 10px; position: relative;
+}
+h1 { font-size: 1.3rem; margin: 0; }
+button {
+  font-size: 1rem; padding: 8px 14px; border: 0; border-radius: 10px;
+  background: #fff; color: #123; box-shadow: 0 2px 0 #9bc; cursor: pointer;
+  font-family: inherit;
+}
+button:active { transform: translateY(2px); box-shadow: none; }
+button:disabled { opacity: .45; cursor: default; }
+button.primary { background: #2f7cff; color: #fff; box-shadow: 0 2px 0 #1a4fb0; }
+button.danger { background: #ff6b6b; color: #fff; box-shadow: 0 2px 0 #b03a3a; }
+.hidden { display: none !important; }
+
+main { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 8px 10px; width: 100%; }
+footer { text-align: center; padding: 6px; font-size: .8rem; color: #456; }
+
+.langsw { display: flex; gap: 4px; margin-left: auto; }
+.langsw button { font-size: .85rem; font-weight: 700; padding: 5px 9px; border-radius: 8px; background: rgba(255,255,255,.75); color: #456; min-width: 38px; }
+.langsw button.active { background: #2f7cff; color: #fff; }
+
+/* ---------- Výber classy ---------- */
+.pick-box { background: rgba(255,255,255,.7); border-radius: 18px; padding: 18px 22px; text-align: center; max-width: 560px; }
+.pick-box h2 { font-size: 1.1rem; margin: 10px 0; }
+.class-pick, .diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.class-card {
+  width: 140px; padding: 12px 8px; background: #fff; border-radius: 16px;
+  box-shadow: 0 4px 0 #9bc; cursor: pointer; border: 3px solid transparent;
+}
+.class-card .ico { font-size: 2.6rem; }
+.class-card .nm { font-weight: 700; margin-top: 4px; }
+.class-card .hero { font-size: .8rem; color: #567; }
+.class-card.active { border-color: #2f7cff; background: #eaf2ff; }
+.diff-pick button.active { background: #ffd33d; font-weight: 700; }
+.big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }
+
+/* ---------- Hrdinovia ---------- */
+#gameScreen { width: 100%; max-width: 900px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.hero-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: center; }
+.hero-chip {
+  display: flex; align-items: center; gap: 8px; background: #fff; border-radius: 999px;
+  padding: 4px 14px; box-shadow: 0 2px 0 #9bc; font-weight: 600;
+}
+.hero-chip .he { font-size: 1.6rem; }
+.hero-chip .hp { color: #c22; }
+.hero-chip .tier { color: #a70; }
+.counters { font-size: .85rem; color: #456; }
+
+/* ---------- Plochy a ruka ---------- */
+.board, .hand, .shop-row {
+  display: flex; gap: 6px; justify-content: center; flex-wrap: wrap;
+  min-height: 108px; padding: 4px; border-radius: 14px; width: 100%;
+}
+.board { background: rgba(255,255,255,.35); }
+.board.opp { background: rgba(255,120,120,.18); }
+.board.mine { background: rgba(120,220,140,.22); }
+.hand { background: rgba(255,255,255,.55); min-height: 112px; }
+
+/* ---------- Karta ---------- */
+.card {
+  position: relative; width: 88px; min-height: 100px; background: #fff;
+  border-radius: 12px; box-shadow: 0 3px 0 #9bc; padding: 4px 4px 6px;
+  display: flex; flex-direction: column; align-items: center; gap: 1px;
+  cursor: pointer; border: 3px solid #e3ecf5; font-size: .8rem; text-align: center;
+  transition: transform .15s ease-out;
+}
+.card .em { font-size: 1.9rem; line-height: 1.1; }
+.card .nm { font-weight: 700; font-size: .68rem; line-height: 1.05; }
+.card .tx { font-size: .58rem; color: #567; line-height: 1.1; }
+.card .race { font-size: .55rem; color: #88a; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; }
+.card .stats { display: flex; gap: 10px; font-weight: 800; font-size: .85rem; margin-top: auto; }
+.card .atk { color: #b60; }
+.card .hp { color: #c22; }
+.card .tier-tag { position: absolute; top: 2px; left: 4px; font-size: .6rem; color: #a70; font-weight: 700; }
+.card[data-rank="2"] { border-color: #b9c6d6; background: linear-gradient(180deg, #fff, #eef3f9); }
+.card[data-rank="2"] .nm::after { content: " ⭐"; }
+.card[data-rank="3"] { border-color: #ffd33d; background: linear-gradient(180deg, #fff, #fff3c4); }
+.card[data-rank="3"] .nm::after { content: " 🌟"; }
+.card.taunt { border-color: #8888dd; }
+.card.taunt[data-rank="3"] { border-color: #d4a017; }
+.card.selected { outline: 4px solid #2f7cff; transform: translateY(-6px); }
+.card.buyable:hover { transform: translateY(-4px); }
+.card.disabled { opacity: .55; cursor: default; }
+.card .freeze-btn {
+  position: absolute; top: -6px; right: -6px; font-size: .8rem; padding: 2px 5px;
+  border-radius: 999px; box-shadow: 0 1px 0 #9bc;
+}
+.card.frozen { border-color: #4fc3f7; background: linear-gradient(180deg, #e8f7ff, #d0efff); }
+.card .cost { position: absolute; top: 2px; right: 4px; font-size: .65rem; font-weight: 700; color: #a70; }
+
+/* prázdny slot na ploche */
+.slot-empty {
+  width: 88px; min-height: 100px; border-radius: 12px; border: 2px dashed rgba(90,120,150,.4);
+}
+
+/* ---------- Obchod ---------- */
+.shop-panel {
+  width: 100%; background: rgba(255,246,214,.9); border-radius: 16px;
+  padding: 6px 8px; box-shadow: 0 3px 10px rgba(0,0,0,.12);
+}
+.shop-head { display: flex; align-items: center; justify-content: space-between; padding: 0 6px 4px; }
+.banner { font-weight: 700; }
+.banner.enemy { color: #c22; }
+.money { font-weight: 800; font-size: 1.1rem; color: #a70; }
+.shop-row { min-height: 104px; }
+.shop-row.private { background: rgba(200,230,255,.5); border-radius: 10px; }
+.shop-buttons { display: flex; gap: 8px; justify-content: center; padding-top: 4px; flex-wrap: wrap; }
+.shop-buttons button { font-size: .9rem; }
+
+/* ---------- Akčný pruh ---------- */
+.action-bar { display: flex; gap: 8px; justify-content: center; }
+
+/* ---------- Log ---------- */
+.log { font-size: .8rem; color: #345; min-height: 3.6em; text-align: center; width: 100%; }
+.log div { line-height: 1.35; }
+
+/* ---------- Overlay ---------- */
+.overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(20,40,60,.45); z-index: 20; padding: 10px;
+}
+.win-box {
+  background: #fff; padding: 20px 26px; border-radius: 16px; text-align: center;
+  font-size: 1.1rem; box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  animation: pop .35s ease-out; max-width: 92vw;
+}
+.win-box .big { font-size: 1.7rem; margin-bottom: 8px; }
+.win-box .shop-row { justify-content: center; }
+.win-box button { margin-top: 12px; }
+@keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+/* ---------- Boj – animácie ---------- */
+.card.attacking { transform: translateY(var(--lunge, -14px)) scale(1.08); z-index: 3; }
+.card.hit { animation: shake .3s; }
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  75% { transform: translateX(6px); }
+}
+.card.dying { opacity: 0; transform: scale(.4) rotate(20deg); transition: all .35s; }
+.dmg-float {
+  position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
+  font-weight: 900; font-size: 1.1rem; color: #c22; pointer-events: none;
+  animation: rise .7s ease-out forwards; z-index: 5;
+}
+.dmg-float.heal { color: #2f9e44; }
+@keyframes rise { from { opacity: 1; } to { opacity: 0; transform: translate(-50%, -26px); } }
+.card.evolving { animation: evolve .6s; }
+@keyframes evolve {
+  0% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.25); filter: brightness(1.6); }
+  100% { transform: scale(1); filter: brightness(1); }
+}
+
+@media (max-width: 560px) {
+  .card, .slot-empty { width: 64px; min-height: 84px; }
+  .card .em { font-size: 1.4rem; }
+  .card .tx { display: none; }
+  .board, .hand, .shop-row { min-height: 88px; }
+}

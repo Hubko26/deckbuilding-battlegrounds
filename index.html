@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Zvieracia aréna</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1 id="title">⚔️ Zvieracia aréna</h1>
+    <div class="controls">
+      <button id="newGameBtn" class="danger hidden">Nová hra</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Výber classy a obtiažnosti -->
+    <section id="pickScreen">
+      <div class="pick-box">
+        <h2 id="pickTitle">Vyber si svoj tím</h2>
+        <div id="classPick" class="class-pick"></div>
+        <h2 id="diffTitle">Ako silný má byť súper?</h2>
+        <div id="diffPick" class="diff-pick"></div>
+        <button id="startBtn" class="primary big-btn" disabled>Hraj!</button>
+      </div>
+    </section>
+
+    <!-- Herná obrazovka -->
+    <section id="gameScreen" class="hidden">
+      <div class="hero-row" id="oppHeroRow">
+        <div class="hero-chip" id="oppHero"></div>
+        <div class="counters" id="oppCounters"></div>
+      </div>
+      <div class="board opp" id="oppBoard"></div>
+
+      <div class="shop-panel" id="shopPanel">
+        <div class="shop-head">
+          <span id="turnBanner" class="banner"></span>
+          <span class="money" id="moneyEl"></span>
+        </div>
+        <div class="shop-row" id="commonsRow"></div>
+        <div class="shop-row private" id="privRow"></div>
+        <div class="shop-buttons">
+          <button id="refreshBtn">🔄</button>
+          <button id="tierBtn">⬆️</button>
+          <button id="endTurnBtn" class="primary">✅</button>
+        </div>
+      </div>
+
+      <div class="board mine" id="myBoard"></div>
+      <div class="hand" id="handEl"></div>
+
+      <div class="action-bar hidden" id="actionBar">
+        <button id="playBtn" class="primary"></button>
+        <button id="sellBtn"></button>
+        <button id="cancelBtn"></button>
+      </div>
+
+      <div class="hero-row" id="myHeroRow">
+        <div class="hero-chip" id="myHero"></div>
+        <div class="counters" id="myCounters"></div>
+      </div>
+
+      <div class="log" id="logEl"></div>
+    </section>
+
+    <!-- Discover overlay -->
+    <div id="discoverOverlay" class="overlay hidden">
+      <div class="win-box">
+        <div class="big" id="discoverTitle"></div>
+        <div class="shop-row" id="discoverRow"></div>
+      </div>
+    </div>
+
+    <!-- Koniec hry -->
+    <div id="overOverlay" class="overlay hidden">
+      <div class="win-box">
+        <div class="big" id="overTitle"></div>
+        <div id="overMsg"></div>
+        <button id="overAgain" class="primary"></button>
+      </div>
+    </div>
+  </main>
+
+  <footer><span id="footNote"></span></footer>
+
+  <script src="src/i18n.js"></script>
+  <script src="src/cards.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/bot.js"></script>
+  <script src="src/game.js"></script>
+</body>
+</html>
