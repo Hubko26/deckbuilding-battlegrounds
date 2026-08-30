@@ -126,10 +126,14 @@ dátový model je pripravený (pole `race` na karte).
 - **Rasové buffy** sú viazané na rasu: Zvieratá boostujú Zvieratá, Nemŕtvi
   Nemŕtvych… (`buffRace`). Kúzla a niektoré karty (napr. Whifflet – Pri útoku
   +1/+0 všetkým) buffujú naprieč rasami – to je priestor na cross-race combá.
-- **Permanentné aury** (`futureRace`): „Pri vyložení: všetky budúce Zvieratá
-  dostanú +1/+1.“ Platí do konca hry na každú novú inštanciu danej rasy
-  (dotiahnutú, kúpenú do ruky, evolvnutú aj tokeny). Aury sa sčítavajú
-  a hráč ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h).
+- **Permanentné aury** (`futureRace`): „Pri vyložení: VŠETKY tvoje Zvieratá
+  (aj v balíčku, navždy) dostanú +1/+1.“ Platí do konca hry na každú novú
+  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú aj tokeny) – keďže sa
+  balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
+  ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
+  svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
+  Beast B006/B010, Elemental E003/E009, Undead U008/U010 – hra tak
+  prirodzene rastie do vyšších čísel.
 - **Dočasné boosty** – všetko, čo sa udeje v boji (Pri útoku, Pred bojom,
   Pri smrti buffy), platí len do konca boja: po boji idú karty do discard
   pile ako čisté kópie.

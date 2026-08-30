@@ -581,7 +581,11 @@ function cardEl(instOrId, opts) {
   if (!def.spell) {
     const atk = isInst ? instOrId.atk : def.atk;
     const hp = isInst ? instOrId.hp : def.hp;
-    inner += `<span class="atk">${atk}</span><span class="hp">${hp}</span>`;
+    // Buffnuté staty zelenou – vidno rozdiel oproti základu daného stupňa.
+    const baseAtk = def.atk * Cards.STAT_MULT[rank];
+    const baseHp = def.hp * Cards.STAT_MULT[rank];
+    inner += `<span class="atk${atk > baseAtk ? " buffed" : ""}">${atk}</span>` +
+      `<span class="hp${hp > baseHp ? " buffed" : ""}">${hp}</span>`;
   }
   el.innerHTML = inner;
   if (!opts.big) {
