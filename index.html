@@ -28,6 +28,7 @@
 
     <!-- Herná obrazovka: doska (stage) s pozadím PlayGround.png -->
     <section id="gameScreen" class="hidden">
+      <div class="log" id="logEl"></div>
       <div id="stage">
         <div class="hero-plate top" id="oppHero"></div>
         <div class="board opp" id="oppBoard"></div>
@@ -46,18 +47,18 @@
             </span>
             <span class="money" id="moneyEl"></span>
           </div>
-          <div class="shop-row" id="commonsRow"></div>
-          <div class="shop-row private" id="privRow"></div>
+          <div class="shop-rows">
+            <div class="shop-row" id="commonsRow"></div>
+            <div class="shop-row private" id="privRow"></div>
+          </div>
         </div>
 
         <button id="endTurnBtn" class="primary end-turn">✅</button>
         <div id="fightBanner" class="fight-banner hidden">⚔️</div>
-        <div class="log" id="logEl"></div>
         <div class="board mine" id="myBoard"></div>
+        <div class="hand" id="handEl"></div>
         <div class="hero-plate bottom" id="myHero"></div>
       </div>
-
-      <div class="hand" id="handEl"></div>
     </section>
 
     <!-- Discover overlay -->
