@@ -194,9 +194,9 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   pointer-events: none;
 }
 .card .tx {
-  position: absolute; left: 12%; top: 64.5%; width: 76%; height: 21%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: .58em; line-height: 1.25; color: #4a3a20; overflow: hidden;
+  position: absolute; left: 13%; top: 66%; width: 74%; height: 20%;
+  display: block; text-align: center;
+  font-size: .58em; line-height: 1.3; color: #4a3a20; overflow: hidden;
   pointer-events: none;
 }
 .card .atk, .card .hp {
@@ -214,6 +214,12 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   position: absolute; top: 1%; left: 2.5%; font-size: 1.1em; font-weight: 900;
   color: #ffd76a; text-shadow: 0 2px 3px #000, 0 0 6px rgba(0,0,0,.6);
   pointer-events: none;
+}
+/* Karta s kompletným artom: tier číslo v modrom kryštáli vľavo hore. */
+.card.full-art .tier-tag {
+  top: 2.6%; left: 3.5%; width: 13.5%; text-align: center;
+  font-size: 1.2em; color: #fff;
+  text-shadow: 0 1px 2px #013, 0 0 4px #026;
 }
 .card .cost {
   position: absolute; top: 2%; right: 4%; font-size: .55em; font-weight: 800;
@@ -250,7 +256,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 #stage .card { height: 14.4cqh; font-size: 1.35cqh; }
 #stage .card .tx { display: none; }
 #stage .board.mine .card { height: 24.5cqh; font-size: 2.1cqh; }
-#stage .board.mine .card .tx { display: flex; }
+#stage .board.mine .card .tx { display: block; }
 .shop-row .card { height: 15cqh; font-size: 1.4cqh; }
 
 /* ---------- Drag & drop ---------- */
@@ -275,7 +281,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   animation: pop .12s ease-out;
   font-size: 15px;
 }
-.preview-card .tx { display: flex; }
+.preview-card .tx { display: block; }
 
 /* ---------- Overlay ---------- */
 .overlay {
@@ -290,7 +296,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .win-box .big { font-size: 1.7rem; margin-bottom: 8px; }
 .win-box .shop-row { justify-content: center; display: flex; gap: 10px; min-height: 0; }
 .win-box .shop-row .card { height: 240px; font-size: 13px; }
-.win-box .shop-row .card .tx { display: flex; }
+.win-box .shop-row .card .tx { display: block; }
 .win-box button { margin-top: 12px; }
 @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -387,10 +393,10 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 
   .shop-panel { left: 8%; top: 12%; width: 84%; height: 16%; }
   .shop-row { min-height: 10.5cqh; }
-  .shop-head { height: 3cqh; }
-  .banner { font-size: 1.6cqh; }
-  .money { font-size: 1.9cqh; }
-  .head-btns button { font-size: 1.4cqh; }
+  .shop-head { height: auto; flex-wrap: wrap; gap: .4cqh .8cqw; justify-content: center; }
+  .banner { font-size: 1.5cqh; width: 100%; text-align: center; }
+  .money { font-size: 2cqh; }
+  .head-btns button { font-size: 1.35cqh; padding: .4cqh .8cqw; }
 
   #stage .card { height: 10.4cqh; font-size: 1cqh; }
   #stage .board.mine .card { height: 10.4cqh; font-size: 1cqh; }

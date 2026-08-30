@@ -458,9 +458,10 @@ function renderHero(el, p) {
     : mode === "net"
       ? { emoji: "🧑", name: t(L.heroFriend) }
       : { emoji: "🤖", name: t(L.heroBot) };
+  const gold = p.id === MY && state.active === MY ? ` · 🪙 ${p.money}` : "";
   el.innerHTML = `<span class="who">${hero.emoji} ${hero.name}</span>` +
     `<span class="tier-shield">${p.tier}</span>` +
-    `<span class="nums">❤️ ${Math.max(0, p.hp)}</span>`;
+    `<span class="nums">❤️ ${Math.max(0, p.hp)}${gold}</span>`;
 }
 
 function renderBoardList(el, list, mine) {
@@ -566,13 +567,18 @@ function cardEl(instOrId, opts) {
   const plainText = Cards.cardText(def, rank, I18N.lang);
   const name = Cards.nameOf(def, rank, I18N.lang);
   const art = Cards.artOf(def, rank);
-  let inner = `<span class="tier-tag">⭐${def.tier}</span>`;
+  // Príšery majú kompletnú kartu ako obrázok (rám + art); tier číslo sa
+  // kreslí do modrého kryštálu vľavo hore. Kúzla/tokeny majú generický rám.
+  let inner = `<span class="tier-tag">${art ? def.tier : "⭐" + def.tier}</span>`;
   if (opts.shop) inner += `<span class="cost">🪙${Engine.cardCost(defId)}</span>`;
   // Koľko kópií už vlastníš (vrátane balíčka a kôpky) – kúpa tretej evolvne.
   if (opts.owned) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
-  inner += art
-    ? `<img class="art" src="${art}" alt="" draggable="false">`
-    : `<div class="em">${def.emoji}</div>`;
+  if (art) {
+    el.classList.add("full-art");
+    el.style.backgroundImage = `url("${art}")`;
+  } else {
+    inner += `<div class="em">${def.emoji}</div>`;
+  }
   inner += `<div class="nm">${name}</div>`;
   inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
