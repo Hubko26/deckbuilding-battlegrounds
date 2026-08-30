@@ -7,7 +7,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 
 ## Pravidlá v skratke
 
-- 1v1 autobattler + deckbuilding. Hrdina má 25 HP; prehráva, kto klesne na 0.
+- 1v1 autobattler + deckbuilding. Hrdina má 35 HP; prehráva, kto klesne na 0.
 - Kolo = nákupná fáza hráča A → nákupná fáza hráča B → automatický boj.
   V nepárnom kole začína p1, v párnom p2.
 - Peniaze: `min(kolo + 2, 10)` na začiatku kola, neminuté prepadnú.

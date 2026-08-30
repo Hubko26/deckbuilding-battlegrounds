@@ -364,7 +364,11 @@ async function runBattle() {
       case "summon": {
         const def = Cards.byId[ev.defId];
         const row = ev.pid === MY ? $("myBoard") : $("oppBoard");
-        const el = cardEl({ uid: ev.uid, defId: ev.defId, rank: 1, atk: def.atk, hp: def.hp, maxHp: def.hp, taunt: !!def.taunt }, {});
+        const el = cardEl({
+          uid: ev.uid, defId: ev.defId, rank: ev.rank || 1,
+          atk: ev.atk ?? def.atk, hp: ev.hp ?? def.hp, maxHp: ev.hp ?? def.hp,
+          taunt: !!def.taunt,
+        }, {});
         el.style.gridColumn = String((ev.slot ?? 0) + 1);
         el.style.gridRow = "1";
         row.appendChild(el);

@@ -8,11 +8,11 @@ function fresh(seed = 1) {
   return { ctx, state, E: ctx.Engine, C: ctx.Cards };
 }
 
-test("newGame: 10 náhodných kariet tieru 1 v balíčku, 25 HP, tier 1, 2 súkromné", () => {
+test("newGame: 10 náhodných kariet tieru 1 v balíčku, 35 HP, tier 1, 2 súkromné", () => {
   const { state, C } = fresh();
   for (const pid of ["p1", "p2"]) {
     assert.equal(state[pid].deck.length, 10);
-    assert.equal(state[pid].hp, 25);
+    assert.equal(state[pid].hp, 35);
     assert.equal(state[pid].tier, 1);
     assert.equal(state[pid].priv.length, 2);
     for (const c of state[pid].deck) {
@@ -445,8 +445,9 @@ test("battlecry buffRace: buffne len príšerky rovnakej rasy", () => {
   p.board = [beast, elem];
   p.hand = [E.makeInst(state, "E008", 1)];        // battlecry: +1/+1 Živlom
   E.playMinion(state, "p1", 0);
-  assert.equal(elem.atk, 3);
-  assert.equal(beast.atk, 2);
+  const { C } = fresh();
+  assert.equal(elem.atk, C.byId["E001"].atk + 1); // živel buffnutý
+  assert.equal(beast.atk, C.byId["B001"].atk);    // zviera nie
 });
 
 test("boj: prázdna plocha prehráva, damage = súčet stupňov preživších", () => {
@@ -460,7 +461,7 @@ test("boj: prázdna plocha prehráva, damage = súčet stupňov preživších", 
   const dmg = events.find(e => e.type === "heroDmg");
   assert.equal(dmg.pid, "p2");
   assert.equal(dmg.dmg, 3); // bronz 1 + strieborná 2
-  assert.equal(state.p2.hp, 22);
+  assert.equal(state.p2.hp, 32);
 });
 
 test("boj: obranca (taunt) je napadnutý prvý", () => {
@@ -488,6 +489,26 @@ test("boj: deathrattle vyvolá token, padlé karty idú do discard", () => {
   const events = E.doBattle(state);
   assert.ok(events.some(e => e.type === "summon" && e.defId === "kostik"));
   assert.ok(state.p1.discard.some(c => c.defId === "U001"));
+});
+
+test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie viac", () => {
+  const { state, E } = fresh(15);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const hound = E.makeInst(state, "U009", 2); hound.slot = 0; // strieborný: vyvolaj 3× Kostík
+  state.p1.board = [hound];
+  state.p2.board = [Object.assign(E.makeInst(state, "E010", 3), { slot: 0 })]; // 36/32 – zabije ho
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const summons = events.filter(e => e.type === "summon" && e.defId === "kostik");
+  assert.equal(summons.length, 3);        // počet = základ (3), nie 3×2
+  for (const s of summons) {
+    assert.equal(s.rank, 2);              // stupeň rodiča
+    assert.equal(s.atk, 2);               // 1/1 → 2/2
+    assert.equal(s.hp, 2);
+  }
 });
 
 test("po boji ide všetko do discard – plochy sú prázdne, tokeny miznú", () => {

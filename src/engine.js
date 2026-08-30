@@ -2,7 +2,7 @@
 // takže testy sú deterministické. Funkcie vracajú zoznam eventov pre UI animácie.
 
 const Engine = (() => {
-  const HERO_HP = 25;
+  const HERO_HP = 35;
   const BOARD_MAX = 5;
   const HAND_DRAW = 5;
   const HAND_MAX = 8;
@@ -642,15 +642,17 @@ const Engine = (() => {
         }
         break;
       case "summon": {
+        // Evolvnutá karta vyvoláva SILNEJŠIE tokeny (stupeň rodiča: staty
+        // ×2/×4), počet sa so stupňom neškáluje.
         const board = sides[pid];
         const idx = board.indexOf(self);
-        for (let i = 0; i < fx.n * m; i++) {
+        for (let i = 0; i < fx.n; i++) {
           const alive = board.filter(x => x.hp > 0);
           if (alive.length >= BOARD_MAX) break;
-          const tok = makeInst(state, fx.token, 1, state[pid]);
+          const tok = makeInst(state, fx.token, Math.min(m, 3), state[pid]);
           tok.slot = freeSlot(alive, BOARD_MAX);
           board.splice(idx + 1 + i, 0, tok);
-          events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token, slot: tok.slot });
+          events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token, slot: tok.slot, rank: tok.rank, atk: tok.atk, hp: tok.hp });
         }
         break;
       }

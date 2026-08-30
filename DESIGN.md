@@ -13,7 +13,7 @@ Hra sa hrá na kolá. Každé kolo:
 2. **Nákupná fáza hráča B**
 3. **Automatický boj** – príšerky sa bijú samy, hrdina porazeného dostane damage
 
-Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **25 HP**).
+Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 
 ## Ekonomika
 
@@ -66,14 +66,16 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 
 ## Evolve
 
-- **3 rovnaké príšerky (rovnaká karta, rovnaký stupeň) na ploche + v ruke** sa
-  automaticky zlúčia na vyšší stupeň: bronz → **strieborná** → **zlatá**.
-- Kópie v balíčku sa nerátajú, kým sa nedotiahnu. Výnimka: ak kúpená karta
-  dokompletuje trojicu s kópiami v ruke/na ploche, ide **rovno do ruky**
-  (nie do balíčka) a trojica sa spojí okamžite – ako v Battlegrounds.
+- **3 rovnaké príšerky (rovnaká karta, rovnaký stupeň) KDEKOĽVEK** – plocha,
+  ruka, balíček aj kôpka – sa automaticky zlúčia na vyšší stupeň:
+  bronz → **strieborná** → **zlatá**. Kópie sa spotrebujú v poradí
+  plocha → ruka → balíček → kôpka; výsledok ide na plochu (ak tam bola
+  kópia), inak do ruky. Spojenie zo skrytých kópií ohlási popup.
+- Obchod ukazuje na kartách badge **n/3** (koľko kópií už vlastníš).
 - Zlatá je koniec (ďalší stupeň sa dá doplniť neskôr, ale je to very late game).
 - Staty: strieborná = **×2**, zlatá = **×4** základu. Čísla schopností: strieborná ×2,
-  zlatá ×3 (resp. efekt sa triggerne 2×/3× – pri vyvolávaní tokenov).
+  zlatá ×3. Vyvolávané tokeny sa škálujú SILOU, nie počtom: strieborný
+  deathrattle vyvolá tokeny stupňa 2 (2/2), zlatý stupňa 3 (4/4).
 - Buffy z troch zlúčených kusov sa nezachovajú (v prototype; zjednodušenie).
 - Kúzla sa neevolvujú.
 
