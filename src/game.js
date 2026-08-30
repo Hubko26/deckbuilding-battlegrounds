@@ -161,7 +161,11 @@ function startNet() {
         $("overTitle").textContent = t(L.netLeft);
         $("overMsg").textContent = "";
       } else if (!state) {
-        backToPick();
+        // Spojenie zlyhalo ešte pred hrou (beží len statický server bez
+        // WebSocketu) – nechaj overlay otvorený s návodom, nezatváraj ho.
+        $("netOverlay").classList.remove("hidden");
+        $("netMsg").textContent = t(L.netError);
+        $("netUrls").textContent = "";
       }
     },
     onError: () => { $("netMsg").textContent = t(L.netError); },
@@ -575,9 +579,18 @@ function raceLine(def, rank) {
 let previewEl = null;
 
 function attachPreview(card, instOrId, opts) {
-  card.addEventListener("mouseenter", () => showPreview(card, instOrId, opts));
-  card.addEventListener("mouseleave", hidePreview);
-  card.addEventListener("pointerdown", hidePreview);
+  card._previewData = { instOrId, opts }; // pre long-press (mobil)
+  card.addEventListener("mouseenter", () => { if (!press) showPreview(card, instOrId, opts); });
+  card.addEventListener("mouseleave", () => { if (!press) hidePreview(); });
+  // Karty bez drag & dropu (súperov board, vypnutý obchod): podržanie = preview.
+  card.addEventListener("pointerdown", e => {
+    if (card._hasDrag) return; // rieši startDrag/press
+    hidePreview();
+    const timer = setTimeout(() => showPreview(card, instOrId, opts), 420);
+    const up = () => { clearTimeout(timer); hidePreview(); };
+    window.addEventListener("pointerup", up, { once: true });
+    window.addEventListener("pointercancel", up, { once: true });
+  });
 }
 
 function showPreview(card, instOrId, opts) {
@@ -604,13 +617,47 @@ function hidePreview() {
 
 // ---------- Drag & drop ----------
 function attachDrag(card, src) {
+  card._hasDrag = true;
   card.addEventListener("pointerdown", e => startDrag(e, card, src));
 }
 
+// Ťahanie začína až po pohybe > 8 px. Podržanie prsta bez pohybu ukáže
+// zväčšenú kartu (mobilná náhrada za hover preview).
+let press = null; // { card, src, x0, y0, canDrag, longTimer }
+
 function startDrag(e, card, src) {
-  if (busy || !state || state.active !== MY || state.pendingDiscover || drag) return;
+  if (drag || press) return;
   hidePreview();
   e.preventDefault();
+  const canDrag = !busy && state && state.active === MY && !state.pendingDiscover;
+  press = { card, src, x0: e.clientX, y0: e.clientY, canDrag };
+  press.longTimer = setTimeout(() => {
+    if (press && !drag && card._previewData) {
+      showPreview(card, card._previewData.instOrId, card._previewData.opts);
+    }
+  }, 420);
+  window.addEventListener("pointermove", onPressMove);
+  window.addEventListener("pointerup", onPressUp, { once: true });
+}
+
+function onPressMove(e) {
+  if (drag) { moveGhost(e); return; }
+  if (!press) return;
+  if (Math.hypot(e.clientX - press.x0, e.clientY - press.y0) > 8) {
+    clearTimeout(press.longTimer);
+    hidePreview();
+    if (press.canDrag) beginDrag(e, press.card, press.src);
+    press = null;
+  }
+}
+
+function onPressUp(e) {
+  window.removeEventListener("pointermove", onPressMove);
+  if (press) { clearTimeout(press.longTimer); hidePreview(); press = null; }
+  if (drag) endDrag(e);
+}
+
+function beginDrag(e, card, src) {
   const r = card.getBoundingClientRect();
   const ghost = card.cloneNode(true);
   ghost.classList.add("ghost");
@@ -622,8 +669,6 @@ function startDrag(e, card, src) {
   card.classList.add("drag-src");
   markZones(src, true);
   moveGhost(e);
-  window.addEventListener("pointermove", moveGhost);
-  window.addEventListener("pointerup", endDrag, { once: true });
 }
 
 function moveGhost(e) {
@@ -661,7 +706,6 @@ function markZones(src, on) {
 }
 
 function endDrag(e) {
-  window.removeEventListener("pointermove", moveGhost);
   const d = drag;
   drag = null;
   if (!d) return;
@@ -790,6 +834,12 @@ $("overAgain").addEventListener("click", () => {
 $("muteBtn").textContent = Sfx.muted ? "🔇" : "🔊";
 $("muteBtn").addEventListener("click", () => {
   $("muteBtn").textContent = Sfx.toggleMute() ? "🔇" : "🔊";
+});
+
+// Dlhé podržanie na karte nesmie otvoriť natívne menu prehliadača
+// („stiahnuť obrázok“) – long-press ukazuje preview karty.
+document.addEventListener("contextmenu", e => {
+  if (e.target.closest && e.target.closest(".card")) e.preventDefault();
 });
 
 applyI18n();

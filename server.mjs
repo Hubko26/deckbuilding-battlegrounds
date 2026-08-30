@@ -35,7 +35,10 @@ const server = http.createServer((req, res) => {
   if (!file.startsWith(ROOT)) { res.writeHead(403); res.end(); return; }
   fs.readFile(file, (err, data) => {
     if (err) { res.writeHead(404); res.end("not found"); return; }
-    res.writeHead(200, { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" });
+    const headers = { "Content-Type": MIME[path.extname(file)] || "application/octet-stream" };
+    // HTML sa nesmie cachovať (skripty majú ?v=hash, tie cachovať môžu).
+    if (file.endsWith(".html")) headers["Cache-Control"] = "no-cache";
+    res.writeHead(200, headers);
     res.end(data);
   });
 });
