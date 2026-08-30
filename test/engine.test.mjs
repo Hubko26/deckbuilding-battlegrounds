@@ -122,6 +122,39 @@ test("evolve: 3 strieborné dajú zlatú so statmi ×4; zlatá sa už nespája",
   assert.equal(p.hand.length, 3); // zlaté ostávajú
 });
 
+test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "zajac", 1)];
+  p.board = [E.makeInst(state, "zajac", 1)];
+  p.money = 5;
+  state.commons[0] = "zajac";
+  const deckBefore = p.deck.length;
+  const events = E.buyCommon(state, "p1", 0);
+  assert.ok(events.some(e => e.type === "toHand"));
+  assert.ok(events.some(e => e.type === "evolve"));
+  assert.equal(p.deck.length, deckBefore); // nešla do balíčka
+  // trojica sa spojila: jedna strieborná, na ploche (bola tam kópia)
+  assert.equal(p.hand.length, 0);
+  assert.equal(p.board.length, 1);
+  assert.equal(p.board[0].rank, 2);
+});
+
+test("kúpa druhej kópie ide normálne do balíčka", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "zajac", 1)];
+  p.board = [];
+  p.money = 5;
+  state.commons[0] = "zajac";
+  const deckBefore = p.deck.length;
+  E.buyCommon(state, "p1", 0);
+  assert.equal(p.deck.length, deckBefore + 1);
+  assert.equal(p.hand.length, 1);
+});
+
 test("evolve: rôzne stupne sa nemiešajú", () => {
   const { state, E } = fresh();
   const p = state.p1;

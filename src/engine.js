@@ -169,10 +169,11 @@ const Engine = (() => {
     if (p.money < CARD_COST || idx >= state.commons.length) return null;
     const defId = state.commons[idx];
     p.money -= CARD_COST;
-    addToDeck(state, p, defId);
+    const events = [{ type: "buy", pid, defId }];
+    acquireCard(state, p, defId, events);
     p.bought.push(defId);
     state.commons[idx] = rollCard(state, commonTierLimit(state), []);
-    return [{ type: "buy", pid, defId }];
+    return events;
   }
 
   function buyPrivate(state, pid, idx) {
@@ -180,10 +181,29 @@ const Engine = (() => {
     if (p.money < CARD_COST || idx >= p.priv.length) return null;
     const defId = p.priv[idx].defId;
     p.money -= CARD_COST;
-    addToDeck(state, p, defId);
+    const events = [{ type: "buy", pid, defId }];
+    acquireCard(state, p, defId, events);
     p.bought.push(defId);
     p.priv[idx] = { defId: rollCard(state, p.tier, [p.cls]), frozen: false };
-    return [{ type: "buy", pid, defId }];
+    return events;
+  }
+
+  // Kúpená karta ide do balíčka. Výnimka (aby evolve fungoval intuitívne ako
+  // v Battlegrounds): ak dokompletuje trojicu s kópiami v ruke/na ploche,
+  // ide rovno do ruky a trojica sa hneď spojí.
+  function acquireCard(state, p, defId, events) {
+    const def = Cards.byId[defId];
+    const copies = [...p.hand, ...p.board]
+      .filter(x => !x.spell && x.defId === defId && x.rank === 1).length;
+    if (!def.spell && copies >= 2 && p.hand.length < HAND_MAX) {
+      const inst = makeInst(state, defId, 1);
+      inst.slot = freeSlot(p.hand, HAND_MAX);
+      p.hand.push(inst);
+      events.push({ type: "toHand", pid: p.id, defId });
+      checkEvolve(state, p, events);
+    } else {
+      addToDeck(state, p, defId);
+    }
   }
 
   // Kúpená karta sa zamieša do balíčka (na náhodné miesto).

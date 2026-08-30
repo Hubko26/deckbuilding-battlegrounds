@@ -64,7 +64,9 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 
 - **3 rovnaké príšerky (rovnaká karta, rovnaký stupeň) na ploche + v ruke** sa
   automaticky zlúčia na vyšší stupeň: bronz → **strieborná** → **zlatá**.
-- Kópie v balíčku sa nerátajú, kým sa nedotiahnu.
+- Kópie v balíčku sa nerátajú, kým sa nedotiahnu. Výnimka: ak kúpená karta
+  dokompletuje trojicu s kópiami v ruke/na ploche, ide **rovno do ruky**
+  (nie do balíčka) a trojica sa spojí okamžite – ako v Battlegrounds.
 - Zlatá je koniec (ďalší stupeň sa dá doplniť neskôr, ale je to very late game).
 - Staty: strieborná = **×2**, zlatá = **×4** základu. Čísla schopností: strieborná ×2,
   zlatá ×3 (resp. efekt sa triggerne 2×/3× – pri vyvolávaní tokenov).
