@@ -284,6 +284,15 @@ const Engine = (() => {
     return [{ type: "refresh", pid }];
   }
 
+  // Zmraz / odmraz celú súkromnú ponuku (štýl Battlegrounds).
+  function toggleFreezeAll(state, pid) {
+    const p = state[pid];
+    if (!p.priv.length) return null;
+    const freeze = p.priv.some(s => !s.frozen);
+    for (const s of p.priv) s.frozen = freeze;
+    return [{ type: "freezeAll", pid, frozen: freeze }];
+  }
+
   function toggleFreeze(state, pid, idx) {
     const p = state[pid];
     if (idx >= p.priv.length) return null;
@@ -668,7 +677,7 @@ const Engine = (() => {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST,
     TIER_MAX, privateCount, income, seededRng, cardCost,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, refreshShop,
-    toggleFreeze, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
+    toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
   };
 })();

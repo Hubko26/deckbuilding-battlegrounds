@@ -44,6 +44,8 @@ const L = {
   round: { sk: "Kolo", cs: "Kolo", en: "Round" },
   endTurn: { sk: "✅ Koniec ťahu", cs: "✅ Konec tahu", en: "✅ End turn" },
   refresh: { sk: "🔄 Refresh", cs: "🔄 Refresh", en: "🔄 Refresh" },
+  freeze: { sk: "❄️ Freeze", cs: "❄️ Freeze", en: "❄️ Freeze" },
+  unfreeze: { sk: "❄️ Odmraziť", cs: "❄️ Rozmrazit", en: "❄️ Unfreeze" },
   tierUp: { sk: "⬆️ Upgrade", cs: "⬆️ Upgrade", en: "⬆️ Upgrade" },
   discoverTitle: { sk: "📖 Vyber si kartu", cs: "📖 Vyber si kartu", en: "📖 Pick a card" },
   win: { sk: "🏆 Vyhral si!", cs: "🏆 Vyhrál jsi!", en: "🏆 You win!" },
@@ -533,19 +535,15 @@ function renderShop() {
       card.classList.add("buyable");
       attachDrag(card, { type: "priv", idx: i });
     } else card.classList.add("disabled");
-    if (myTurn) {
-      const fb = document.createElement("button");
-      fb.className = "freeze-btn";
-      fb.textContent = "❄️";
-      fb.addEventListener("pointerdown", e => e.stopPropagation());
-      fb.addEventListener("click", e => { e.stopPropagation(); act(doAction("toggleFreeze", i)); });
-      card.appendChild(fb);
-    }
     priv.appendChild(card);
   });
 
   $("refreshBtn").textContent = `${t(L.refresh)} (${Engine.REFRESH_COST}🪙)`;
   $("refreshBtn").disabled = !myTurn || p.money < Engine.REFRESH_COST;
+  const allFrozen = p.priv.length > 0 && p.priv.every(s => s.frozen);
+  $("freezeBtn").textContent = allFrozen ? t(L.unfreeze) : t(L.freeze);
+  $("freezeBtn").classList.toggle("frozen-on", allFrozen);
+  $("freezeBtn").disabled = !myTurn;
   const cost = Engine.upgradeCost(state, MY);
   $("tierBtn").textContent = cost === null ? `⭐ MAX` : `${t(L.tierUp)} (${cost}🪙)`;
   $("tierBtn").disabled = !myTurn || cost === null || p.money < cost;
@@ -869,6 +867,7 @@ $("newGameBtn").addEventListener("click", backToPick);
 $("endTurnBtn").addEventListener("click", onEndTurn);
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
+$("freezeBtn").addEventListener("click", () => act(doAction("toggleFreezeAll")));
 $("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
 $("overAgain").addEventListener("click", () => {
   $("overOverlay").classList.add("hidden");

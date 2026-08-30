@@ -275,6 +275,21 @@ test("sell: +1 peniaz, karta zmizne", () => {
   assert.equal(state.p1.money, money + 1);
 });
 
+test("toggleFreezeAll: zmrazí celú súkromnú ponuku, druhé stlačenie odmrazí", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  E.toggleFreezeAll(state, "p1");
+  assert.ok(p.priv.every(s => s.frozen));
+  const ids = p.priv.map(s => s.defId);
+  state.round = 2; // prežije aj refresh
+  p.money = 5;
+  E.refreshShop(state, "p1");
+  assert.deepEqual(p.priv.map(s => s.defId), ids);
+  E.toggleFreezeAll(state, "p1");
+  assert.ok(p.priv.every(s => !s.frozen));
+});
+
 test("refresh: -1 peniaz, zmrazená súkromná karta ostáva", () => {
   const { state, E } = fresh();
   E.startRound(state);

@@ -128,6 +128,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   font-size: 1.6cqh; padding: .5cqh 1cqw; border-radius: 1.1cqh;
   background: #fff7e6; box-shadow: 0 .3cqh 0 #b99b6b;
 }
+.head-btns button.frozen-on { background: #cdeeff; box-shadow: 0 .3cqh 0 #5aa7cc; }
 
 /* Súperov board: rovnaké miesto ako obchod – vidno ho LEN počas boja. */
 .board {
