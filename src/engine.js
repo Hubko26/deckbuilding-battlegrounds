@@ -46,46 +46,46 @@ const Engine = (() => {
   }
 
   // Náhodná karta z obchodného poolu (bez tokenov), tier <= limit.
-  // classes: zoznam povolených class (null = neutrál je povolený vždy).
-  function rollCard(state, tierLimit, classes) {
-    const pool = Cards.DEFS.filter(d =>
-      d.tier <= tierLimit && (d.cls === null || classes.includes(d.cls)));
+  // Classy nie sú – všetci hráči ťahajú z rovnakého poolu.
+  function rollCard(state, tierLimit) {
+    const pool = Cards.DEFS.filter(d => d.tier <= tierLimit);
     return pick(pool, state.rng).id;
   }
 
   function other(pid) { return pid === "p1" ? "p2" : "p1"; }
 
   // ---------- Založenie hry ----------
-  function newGame(p1Class, p2Class, rng) {
+  // Štartovací balíček: 10 náhodných príšer tieru 1 (duplicity vítané – evolve).
+  function newGame(rng) {
     const state = {
       rng, uidSeq: 0, round: 0, phase: "shop", active: null, first: "p1",
       commons: [], winner: null, pendingDiscover: null,
-      p1: makePlayer("p1", p1Class),
-      p2: makePlayer("p2", p2Class),
+      p1: makePlayer("p1"),
+      p2: makePlayer("p2"),
     };
+    const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell);
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
-      p.deck = Cards.STARTERS[p.cls].map(id => ({ defId: id, rank: 1 }));
-      shuffle(p.deck, rng);
+      for (let i = 0; i < 10; i++) p.deck.push({ defId: pick(basics, rng).id, rank: 1 });
     }
-    for (let i = 0; i < COMMON_COUNT; i++) state.commons.push(rollCard(state, 1, []));
+    for (let i = 0; i < COMMON_COUNT; i++) state.commons.push(rollCard(state, 1));
     fillPrivate(state, "p1");
     fillPrivate(state, "p2");
     return state;
   }
 
-  function makePlayer(id, cls) {
+  function makePlayer(id) {
     return {
-      id, cls, hp: HERO_HP, tier: 1, reachedRound: 1, money: 0,
+      id, hp: HERO_HP, tier: 1, reachedRound: 1, money: 0,
       deck: [], hand: [], board: [], discard: [], priv: [],
-      bought: [], // čo nakúpil v tomto kole – súper to vidí
+      bought: [], // čo nakúpil v tomto kole
     };
   }
 
   function fillPrivate(state, pid) {
     const p = state[pid];
     while (p.priv.length < privateCount(p.tier)) {
-      p.priv.push({ defId: rollCard(state, p.tier, [p.cls]), frozen: false });
+      p.priv.push({ defId: rollCard(state, p.tier), frozen: false });
     }
   }
 
@@ -172,7 +172,7 @@ const Engine = (() => {
     const events = [{ type: "buy", pid, defId }];
     acquireCard(state, p, defId, events);
     p.bought.push(defId);
-    state.commons[idx] = rollCard(state, commonTierLimit(state), []);
+    state.commons[idx] = rollCard(state, commonTierLimit(state));
     return events;
   }
 
@@ -184,7 +184,7 @@ const Engine = (() => {
     const events = [{ type: "buy", pid, defId }];
     acquireCard(state, p, defId, events);
     p.bought.push(defId);
-    p.priv[idx] = { defId: rollCard(state, p.tier, [p.cls]), frozen: false };
+    p.priv[idx] = { defId: rollCard(state, p.tier), frozen: false };
     return events;
   }
 
@@ -217,10 +217,10 @@ const Engine = (() => {
     if (p.money < REFRESH_COST) return null;
     p.money -= REFRESH_COST;
     for (let i = 0; i < state.commons.length; i++) {
-      state.commons[i] = rollCard(state, commonTierLimit(state), []);
+      state.commons[i] = rollCard(state, commonTierLimit(state));
     }
     for (let i = 0; i < p.priv.length; i++) {
-      if (!p.priv[i].frozen) p.priv[i] = { defId: rollCard(state, p.tier, [p.cls]), frozen: false };
+      if (!p.priv[i].frozen) p.priv[i] = { defId: rollCard(state, p.tier), frozen: false };
     }
     return [{ type: "refresh", pid }];
   }
@@ -287,7 +287,7 @@ const Engine = (() => {
       p.hand.splice(handIdx, 1);
       p.discard.push({ defId: inst.defId, rank: 1 });
       const options = [];
-      for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier, [p.cls]));
+      for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier));
       state.pendingDiscover = { pid, options };
       return [{ type: "discoverStart", pid, options }];
     }
@@ -466,26 +466,16 @@ const Engine = (() => {
       events.push({ type: "battleDraw" });
     }
 
-    // Zápis do reálnych plôch: preživší ostávajú (vyliečení), padlí do discard,
-    // padlé tokeny miznú, preživšie tokeny ostávajú na ploche.
+    // Po boji ide VŠETKO (padlé aj preživšie karty) do discard pile a plocha
+    // sa vyprázdni – každé kolo sa bojisko stavia nanovo. Tokeny miznú z hry.
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
-      const survivors = new Set(alive(pid).map(x => x.uid));
-      const newBoard = [];
-      for (const battleInst of sides[pid]) {
-        const real = p.board.find(x => x.uid === battleInst.uid);
-        if (survivors.has(battleInst.uid)) {
-          if (real) { real.hp = real.maxHp; newBoard.push(real); }
-          else if (newBoard.length < BOARD_MAX) {
-            battleInst.hp = battleInst.maxHp;
-            newBoard.push(battleInst); // token, ktorý prežil
-          }
-        } else if (real && !Cards.byId[real.defId].token) {
-          p.discard.push({ defId: real.defId, rank: real.rank });
-          events.push({ type: "toDiscard", pid, defId: real.defId });
-        }
+      for (const inst of p.board) {
+        if (Cards.byId[inst.defId].token) continue;
+        p.discard.push({ defId: inst.defId, rank: inst.rank });
+        events.push({ type: "toDiscard", pid, defId: inst.defId });
       }
-      p.board = newBoard;
+      p.board = [];
     }
 
     if (state.p1.hp <= 0 || state.p2.hp <= 0) {
@@ -520,6 +510,15 @@ const Engine = (() => {
         self.maxHp += fx.h * m;
         self.hp += fx.h * m;
         events.push({ type: "buff", pid, uid: self.uid, a: fx.a * m, h: fx.h * m });
+        break;
+      case "buffAllFriends":
+        for (const f of sides[pid]) {
+          if (f === self || f.hp <= 0) continue;
+          f.atk += fx.a * m;
+          f.maxHp += fx.h * m;
+          f.hp += fx.h * m;
+          events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
+        }
         break;
       case "summon": {
         const board = sides[pid];

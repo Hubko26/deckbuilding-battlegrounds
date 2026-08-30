@@ -1,196 +1,128 @@
-// Dáta kariet. Texty schopností sa generujú zo šablón (pozri Cards.cardText),
-// aby čísla sedeli so stupňom karty (bronz/striebro/zlato).
+// Dáta kariet. Roster = 30 príšer z art sady (assets/cards), 3 rasy × 10,
+// každá príšera má vlastné meno a obrázok pre každý evolučný stupeň
+// (bronz → striebro → zlato). Texty schopností sa generujú zo šablón.
 //
-// Karta (minion): { id, tier, cls, race, emoji, atk, hp, taunt?, power?, art? }
-//   art = cesta k obrázku (napr. "assets/jelen.png"); bez neho sa kreslí emoji.
-// Karta (spell):  { id, tier, cls, emoji, spell: true, fx }
+// Príšera: { id, tier, race, stageNames: [meno1, meno2, meno3], atk, hp,
+//            taunt?, power? }  – art sa odvodí z id: assets/cards/<ID>_<rank>.webp
+// Kúzlo:   { id, tier, emoji, spell: true, fx, name: {sk,cs,en} }
 // power = { kw: "battlecry"|"deathrattle"|"startFight"|"endTurn", fx: {...} }
 // fx = { type, a?, h?, n?, race?, token?, taunt? } – čísla sa násobia stupňom (×1/×2/×3).
 //
-// Rasy (v1 štyri; Undead/Human/Ogre pridáme s väčším poolom kariet):
-//   beast, dragon, elemental, fairy
+// Classy nie sú – každý hráč hrá z rovnakého poolu. Štartovací balíček je
+// 10 náhodných kariet tieru 1 (skladá ho engine).
 
 const Cards = (() => {
   const RACES = {
     beast: { sk: "Zviera", cs: "Zvíře", en: "Beast" },
-    dragon: { sk: "Drak", cs: "Drak", en: "Dragon" },
     elemental: { sk: "Živel", cs: "Živel", en: "Elemental" },
-    fairy: { sk: "Víla", cs: "Víla", en: "Fairy" },
+    undead: { sk: "Nemŕtvy", cs: "Nemrtvý", en: "Undead" },
   };
   const RACES_PL = { // množné číslo do textov schopností
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
-    dragon: { sk: "Drakom", cs: "Drakům", en: "Dragons" },
     elemental: { sk: "Živlom", cs: "Živlům", en: "Elementals" },
-    fairy: { sk: "Vílam", cs: "Vílám", en: "Fairies" },
+    undead: { sk: "Nemŕtvym", cs: "Nemrtvým", en: "Undead" },
   };
 
-  const CLASSES = {
-    les: {
-      name: { sk: "Les", cs: "Les", en: "Forest" },
-      emoji: "🌲",
-      hero: { name: { sk: "Ježko Pichliač", cs: "Ježek Bodlinka", en: "Prickle the Hedgehog" }, emoji: "🦔" },
-    },
-    more: {
-      name: { sk: "More", cs: "Moře", en: "Ocean" },
-      emoji: "🌊",
-      hero: { name: { sk: "Chobotnička Ela", cs: "Chobotnička Ela", en: "Ela the Octopus" }, emoji: "🐙" },
-    },
-    ohen: {
-      name: { sk: "Sopka", cs: "Sopka", en: "Volcano" },
-      emoji: "🔥",
-      hero: { name: { sk: "Dráčik Iskra", cs: "Dráček Jiskra", en: "Spark the Dragon" }, emoji: "🐲" },
-    },
-  };
+  const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
+    ({ id, tier, race, stageNames, atk, hp, ...extra });
 
-  // n(name) skracuje zápis trojjazyčných mien.
   const DEFS = [
-    // ---------- Neutrálne príšerky ----------
-    { id: "myska", tier: 1, cls: null, race: "beast", emoji: "🐭", atk: 1, hp: 2,
-      name: { sk: "Myška", cs: "Myška", en: "Mouse" } },
-    { id: "kohut", tier: 1, cls: null, race: "beast", emoji: "🐔", atk: 2, hp: 1,
-      name: { sk: "Kohútik", cs: "Kohoutek", en: "Rooster" } },
-    { id: "zajac", tier: 1, cls: null, race: "beast", emoji: "🐰", atk: 1, hp: 1,
-      power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } },
-      name: { sk: "Zajko", cs: "Zajíček", en: "Bunny" } },
-    { id: "macka", tier: 2, cls: null, race: "beast", emoji: "🐱", atk: 3, hp: 2,
-      name: { sk: "Mačka", cs: "Kočka", en: "Cat" } },
-    { id: "pes", tier: 2, cls: null, race: "beast", emoji: "🐶", atk: 2, hp: 3, taunt: true,
-      name: { sk: "Psík strážca", cs: "Pejsek hlídač", en: "Guard Dog" } },
-    { id: "ovca", tier: 2, cls: null, race: "beast", emoji: "🐑", atk: 1, hp: 4,
-      power: { kw: "deathrattle", fx: { type: "summon", token: "jahniatko", n: 1 } },
-      name: { sk: "Ovečka", cs: "Ovečka", en: "Sheep" } },
-    { id: "koza", tier: 3, cls: null, race: "beast", emoji: "🐐", atk: 4, hp: 3,
-      power: { kw: "battlecry", fx: { type: "buffFriend", a: 1, h: 1 } },
-      name: { sk: "Koza rohatá", cs: "Koza rohatá", en: "Horned Goat" } },
-    { id: "prasa", tier: 3, cls: null, race: "beast", emoji: "🐷", atk: 3, hp: 5,
-      name: { sk: "Prasiatko", cs: "Prasátko", en: "Piglet" } },
-    { id: "kon", tier: 3, cls: null, race: "beast", emoji: "🐴", atk: 5, hp: 3,
-      name: { sk: "Koník", cs: "Koník", en: "Pony" } },
-    { id: "orol", tier: 4, cls: null, race: "beast", emoji: "🦅", atk: 6, hp: 4,
-      power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 2 } },
-      name: { sk: "Orol bystrý", cs: "Orel bystrý", en: "Sharp Eagle" } },
-    { id: "gorila", tier: 4, cls: null, race: "beast", emoji: "🦍", atk: 5, hp: 6, taunt: true,
-      name: { sk: "Gorila", cs: "Gorila", en: "Gorilla" } },
-    { id: "krava", tier: 4, cls: null, race: "beast", emoji: "🐮", atk: 4, hp: 7,
-      power: { kw: "battlecry", fx: { type: "healHero", n: 3 } },
-      name: { sk: "Kravička", cs: "Kravička", en: "Cow" } },
-    { id: "lev", tier: 5, cls: null, race: "beast", emoji: "🦁", atk: 8, hp: 6,
-      power: { kw: "battlecry", fx: { type: "buffRace", race: "beast", a: 2, h: 2 } },
-      name: { sk: "Lev kráľ", cs: "Lev král", en: "Lion King" } },
-    { id: "slon", tier: 5, cls: null, race: "beast", emoji: "🐘", atk: 6, hp: 9, taunt: true,
-      name: { sk: "Slon", cs: "Slon", en: "Elephant" } },
-    { id: "panda", tier: 5, cls: null, race: "beast", emoji: "🐼", atk: 7, hp: 7,
-      name: { sk: "Panda", cs: "Panda", en: "Panda" } },
-    { id: "dinko", tier: 6, cls: null, race: "beast", emoji: "🦖", atk: 10, hp: 8,
-      name: { sk: "Dinko", cs: "Dinousek", en: "Dino" } },
-    { id: "mamut", tier: 6, cls: null, race: "beast", emoji: "🦣", atk: 8, hp: 12, taunt: true,
-      name: { sk: "Mamut", cs: "Mamut", en: "Mammoth" } },
-    { id: "jednorozec", tier: 6, cls: null, race: "fairy", emoji: "🦄", atk: 9, hp: 9,
-      power: { kw: "endTurn", fx: { type: "buffAllFriends", a: 1, h: 1 } },
-      name: { sk: "Jednorožec", cs: "Jednorožec", en: "Unicorn" } },
+    // ---------- Zvieratá (Beast) ----------
+    M("B001", 1, "beast", ["Bristlebit", "Quilltail", "Ironwood Ravager"], 2, 2),
+    M("B003", 1, "beast", ["Hopple", "Bogbell", "Mirethrone"], 1, 1,
+      { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
+    M("B007", 1, "beast", ["Finwhisk", "Rapidsnout", "Riverking"], 1, 1,
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "bublina", n: 1 } } }),
+    M("B004", 2, "beast", ["Hootnip", "Moongaze", "Nightoracle"], 2, 3,
+      { power: { kw: "battlecry", fx: { type: "draw", n: 1 } } }),
+    M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2),
+    M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5, { taunt: true }),
+    M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
+      { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
+    M("B006", 4, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 4, 7, { taunt: true }),
+    M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 6, 4,
+      { power: { kw: "battlecry", fx: { type: "buffFriend", a: 2, h: 2 } } }),
+    M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10, { taunt: true }),
 
-    // ---------- Neutrálne kúzla ----------
-    { id: "minca", tier: 1, cls: null, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
+    // ---------- Živly (Elemental) ----------
+    M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 2, 1,
+      { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 1 } } }),
+    M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
+    M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 2, 4, { taunt: true }),
+    M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 3, 2,
+      { power: { kw: "startFight", fx: { type: "growSelf", a: 2, h: 0 } } }),
+    M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 4,
+      { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 2 } } }),
+    M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 3,
+      { power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 2 } } }),
+    M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 6,
+      { power: { kw: "endTurn", fx: { type: "buffAllFriends", a: 1, h: 1 } } }),
+    M("E008", 4, "elemental", ["Prismite", "Shardmane", "Auroraclysm"], 5, 5,
+      { power: { kw: "battlecry", fx: { type: "buffRace", race: "elemental", a: 1, h: 1 } } }),
+    M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
+      { power: { kw: "battlecry", fx: { type: "healHero", n: 5 } } }),
+    M("E010", 6, "elemental", ["Duskdrop", "Gloamstalker", "Eclipse Sovereign"], 9, 8,
+      { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 4 } } }),
+
+    // ---------- Nemŕtvi (Undead) ----------
+    M("U001", 1, "undead", ["Rattlewink", "Bonebound", "Ossuary Hound"], 1, 1,
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 1 } } }),
+    M("U002", 1, "undead", ["Candlejaw", "Wickgrin", "Hearthhaunt"], 2, 1,
+      { power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 1 } } }),
+    M("U003", 2, "undead", ["Gravebloom", "Thornwraith", "Mausoleum Hart"], 1, 4,
+      { power: { kw: "deathrattle", fx: { type: "buffAllFriends", a: 1, h: 1 } } }),
+    M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 2, 3,
+      { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 1 } } }),
+    M("U005", 3, "undead", ["Cryptcub", "Sarcoclaw", "Tombsphinx"], 4, 4,
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 2 } } }),
+    M("U006", 3, "undead", ["Bonebell", "Knellhorn", "Cathedral Ram"], 2, 6,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 2 } } }),
+    M("U007", 4, "undead", ["Shroudling", "Veilprank", "Phantom Duke"], 5, 4,
+      { power: { kw: "battlecry", fx: { type: "buffRace", race: "undead", a: 2, h: 2 } } }),
+    M("U008", 4, "undead", ["Tombturtle", "Reliquaryback", "Necropolis Tortoise"], 3, 8, { taunt: true }),
+    M("U009", 5, "undead", ["Hollowhound", "Gravehowl", "Sepulcher Sentinel"], 7, 5,
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 3 } } }),
+    M("U010", 6, "undead", ["Wispwarden", "Lantern Guard", "Soul Bastion"], 8, 10,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "buffAllFriends", a: 2, h: 2 } } }),
+
+    // ---------- Kúzla (spoločné pre všetkých) ----------
+    { id: "minca", tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
       name: { sk: "Zlatá minca", cs: "Zlatá mince", en: "Gold Coin" } },
-    { id: "jablko", tier: 2, cls: null, emoji: "🍎", spell: true, fx: { type: "buffTarget", a: 2, h: 2 },
+    { id: "jablko", tier: 2, emoji: "🍎", spell: true, fx: { type: "buffTarget", a: 2, h: 2 },
       name: { sk: "Zázračné jablko", cs: "Zázračné jablko", en: "Magic Apple" } },
-    { id: "kniha", tier: 3, cls: null, emoji: "📖", spell: true, fx: { type: "discover" },
+    { id: "kniha", tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
       name: { sk: "Kniha prianí", cs: "Kniha přání", en: "Wish Book" } },
-
-    // ---------- Les ----------
-    { id: "jezko-vojak", tier: 1, cls: "les", race: "beast", emoji: "🦔", atk: 2, hp: 2,
-      name: { sk: "Ježko vojak", cs: "Ježek voják", en: "Hedgehog Soldier" } },
-    { id: "vevericka", tier: 1, cls: "les", race: "beast", emoji: "🐿️", atk: 1, hp: 2,
-      power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 0 } },
-      name: { sk: "Veverička", cs: "Veverka", en: "Squirrel" } },
-    { id: "sova", tier: 2, cls: "les", race: "beast", emoji: "🦉", atk: 2, hp: 3,
-      power: { kw: "battlecry", fx: { type: "draw", n: 1 } },
-      name: { sk: "Sova múdra", cs: "Sova moudrá", en: "Wise Owl" } },
-    { id: "medved", tier: 3, cls: "les", race: "beast", emoji: "🐻", atk: 4, hp: 5, taunt: true,
-      name: { sk: "Medveď", cs: "Medvěd", en: "Bear" } },
-    { id: "vlk", tier: 4, cls: "les", race: "beast", emoji: "🐺", atk: 6, hp: 5,
-      power: { kw: "startFight", fx: { type: "growSelf", a: 2, h: 0 } },
-      name: { sk: "Vlk samotár", cs: "Vlk samotář", en: "Lone Wolf" } },
-    { id: "jelen", tier: 5, cls: "les", race: "beast", emoji: "🦌", atk: 7, hp: 7,
-      power: { kw: "battlecry", fx: { type: "buffAllFriends", a: 2, h: 2 } },
-      name: { sk: "Jeleň parohatý", cs: "Jelen parohatý", en: "Antler Stag" } },
-    { id: "dub", tier: 6, cls: "les", race: "fairy", emoji: "🌳", atk: 8, hp: 10, taunt: true,
-      power: { kw: "endTurn", fx: { type: "buffAllFriends", a: 1, h: 1 } },
-      name: { sk: "Starý dub", cs: "Starý dub", en: "Old Oak" } },
-    { id: "med", tier: 2, cls: "les", emoji: "🍯", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
-      name: { sk: "Lesný med", cs: "Lesní med", en: "Forest Honey" } },
-    { id: "koren", tier: 3, cls: "les", emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
+    { id: "koren", tier: 3, emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
       name: { sk: "Pevný koreň", cs: "Pevný kořen", en: "Sturdy Root" } },
-
-    // ---------- More ----------
-    { id: "rybka", tier: 1, cls: "more", race: "beast", emoji: "🐟", atk: 1, hp: 1,
-      power: { kw: "deathrattle", fx: { type: "summon", token: "bublina", n: 1 } },
-      name: { sk: "Rybka", cs: "Rybka", en: "Little Fish" } },
-    { id: "krab", tier: 1, cls: "more", race: "beast", emoji: "🦀", atk: 1, hp: 3, taunt: true,
-      name: { sk: "Krab", cs: "Krab", en: "Crab" } },
-    { id: "meduza", tier: 2, cls: "more", race: "beast", emoji: "🪼", atk: 2, hp: 2,
-      power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 2 } },
-      name: { sk: "Medúza", cs: "Medúza", en: "Jellyfish" } },
-    { id: "korytnacka", tier: 3, cls: "more", race: "beast", emoji: "🐢", atk: 2, hp: 6, taunt: true,
-      name: { sk: "Korytnačka", cs: "Želva", en: "Turtle" } },
-    { id: "delfin", tier: 4, cls: "more", race: "beast", emoji: "🐬", atk: 5, hp: 5,
-      power: { kw: "battlecry", fx: { type: "healHero", n: 4 } },
-      name: { sk: "Delfín", cs: "Delfín", en: "Dolphin" } },
-    { id: "zralok", tier: 5, cls: "more", race: "beast", emoji: "🦈", atk: 8, hp: 5,
-      power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 3 } },
-      name: { sk: "Žralok", cs: "Žralok", en: "Shark" } },
-    { id: "velryba", tier: 6, cls: "more", race: "beast", emoji: "🐋", atk: 7, hp: 12, taunt: true,
-      power: { kw: "deathrattle", fx: { type: "summon", token: "rybka", n: 2 } },
-      name: { sk: "Veľryba", cs: "Velryba", en: "Whale" } },
-    { id: "perla", tier: 2, cls: "more", emoji: "🦪", spell: true, fx: { type: "gold", n: 3 },
-      name: { sk: "Morská perla", cs: "Mořská perla", en: "Sea Pearl" } },
-    { id: "vlna", tier: 3, cls: "more", emoji: "🌊", spell: true, fx: { type: "buffAllFriends", a: 1, h: 1 },
+    { id: "vlna", tier: 3, emoji: "🌊", spell: true, fx: { type: "buffAllFriends", a: 1, h: 1 },
       name: { sk: "Veľká vlna", cs: "Velká vlna", en: "Big Wave" } },
-
-    // ---------- Sopka ----------
-    { id: "salamandra", tier: 1, cls: "ohen", race: "elemental", emoji: "🦎", atk: 2, hp: 1,
-      power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 1 } },
-      name: { sk: "Salamandra", cs: "Salamandr", en: "Salamander" } },
-    { id: "iskricka", tier: 1, cls: "ohen", race: "elemental", emoji: "✨", atk: 1, hp: 1,
-      power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 1 } },
-      name: { sk: "Iskrička", cs: "Jiskřička", en: "Sparkle" } },
-    { id: "fenixik", tier: 2, cls: "ohen", race: "elemental", emoji: "🐣", atk: 2, hp: 2,
-      power: { kw: "deathrattle", fx: { type: "summon", token: "plamienok", n: 1 } },
-      name: { sk: "Fénixík", cs: "Fénixek", en: "Phoenix Chick" } },
-    { id: "dracik", tier: 3, cls: "ohen", race: "dragon", emoji: "🐲", atk: 4, hp: 4,
-      name: { sk: "Dráčik", cs: "Dráček", en: "Little Dragon" } },
-    { id: "fenix", tier: 4, cls: "ohen", race: "elemental", emoji: "🐦‍🔥", atk: 5, hp: 4,
-      power: { kw: "deathrattle", fx: { type: "summon", token: "plamienok", n: 2 } },
-      name: { sk: "Fénix", cs: "Fénix", en: "Phoenix" } },
-    { id: "obor", tier: 5, cls: "ohen", race: "elemental", emoji: "🌋", atk: 7, hp: 8, taunt: true,
-      name: { sk: "Lávový obor", cs: "Lávový obr", en: "Lava Giant" } },
-    { id: "kral-drakov", tier: 6, cls: "ohen", race: "dragon", emoji: "🐉", atk: 9, hp: 9,
-      power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 4 } },
-      name: { sk: "Kráľ drakov", cs: "Král draků", en: "Dragon King" } },
-    { id: "iskra", tier: 2, cls: "ohen", emoji: "⚡", spell: true, fx: { type: "buffTarget", a: 3, h: 0 },
-      name: { sk: "Iskra sily", cs: "Jiskra síly", en: "Power Spark" } },
-    { id: "srdce", tier: 4, cls: "ohen", emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
+    { id: "srdce", tier: 4, emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
       name: { sk: "Ohnivé srdce", cs: "Ohnivé srdce", en: "Fiery Heart" } },
   ];
 
   // Tokeny – vyvolávané príšerky, nie sú v obchode ani v balíčku.
   const TOKENS = [
-    { id: "jahniatko", tier: 1, cls: null, race: "beast", emoji: "🐑", atk: 1, hp: 1, token: true,
-      name: { sk: "Jahniatko", cs: "Jehňátko", en: "Lamb" } },
-    { id: "bublina", tier: 1, cls: null, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
+    { id: "kostik", tier: 1, race: "undead", emoji: "💀", atk: 1, hp: 1, token: true,
+      name: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" } },
+    { id: "bublina", tier: 1, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
       name: { sk: "Bublina", cs: "Bublina", en: "Bubble" } },
-    { id: "plamienok", tier: 1, cls: null, race: "elemental", emoji: "🔥", atk: 1, hp: 1, token: true,
-      name: { sk: "Plamienok", cs: "Plamínek", en: "Small Flame" } },
   ];
-
-  const STARTERS = {
-    les: ["jezko-vojak", "jezko-vojak", "jezko-vojak", "vevericka", "vevericka", "vevericka", "sova", "sova", "medved", "medved"],
-    more: ["rybka", "rybka", "rybka", "krab", "krab", "krab", "meduza", "meduza", "korytnacka", "korytnacka"],
-    ohen: ["salamandra", "salamandra", "salamandra", "iskricka", "iskricka", "iskricka", "fenixik", "fenixik", "dracik", "dracik"],
-  };
 
   const byId = {};
   for (const d of [...DEFS, ...TOKENS]) byId[d.id] = d;
+
+  // Meno karty pre daný stupeň (mená príšer sú vlastné mená, neprekladajú sa).
+  function nameOf(def, rank, lang) {
+    if (def.stageNames) return def.stageNames[Math.min(rank, 3) - 1];
+    const n = def.name;
+    return n[lang] ?? n.sk;
+  }
+
+  // Cesta k obrázku pre daný stupeň; kúzla a tokeny majú emoji.
+  function artOf(def, rank) {
+    if (!def.stageNames) return null;
+    return `assets/cards/${def.id}_${Math.min(rank, 3)}.webp`;
+  }
 
   // ---------- Texty schopností ----------
   const KW_LABEL = {
@@ -277,7 +209,7 @@ const Cards = (() => {
   // Staty pre stupeň: bronz ×1, striebro ×2, zlato ×4.
   const STAT_MULT = [null, 1, 2, 4];
 
-  return { CLASSES, RACES, RACES_PL, DEFS, TOKENS, STARTERS, byId, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL };
+  return { RACES, RACES_PL, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

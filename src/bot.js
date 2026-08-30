@@ -31,7 +31,6 @@ const Bot = (() => {
       if (owned === 2) score += 6;      // dokončí trojicu
       else if (owned === 1) score += 2; // rozbieha trojicu
     }
-    if (def.cls === p.cls) score += 1;
     if (def.spell) score += 0.5;
     // Rasová synergia: preferuj rasu, ktorej má bot na ploche najviac.
     if (def.race) {

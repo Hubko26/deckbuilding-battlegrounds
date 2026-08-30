@@ -25,12 +25,14 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **25 HP**).
 
 ## Obchod (v strede medzi hráčmi)
 
+- Obchod je vykreslený v **hornom rade slotov** dosky. Súperove karty počas
+  nákupu NEVIDNO – jeho board sa ukáže až v boji (na mieste obchodu).
 - **3 spoločné karty** – vidia ich obaja hráči; kúpená je okamžite nahradená novou,
   ktorú môže kúpiť aj súper. Tier spoločných kariet je obmedzený vyšším z tierov oboch
-  hráčov. Spoločné karty sú len neutrálne.
+  hráčov.
 - **Súkromné karty** – každý hráč má vlastné, súper ich nevidí. Počet:
-  `min(tier + 1, 6)` (na tieri 1 sú 2, každý upgrade pridá jednu, strop 6). Miešajú sa
-  v nich karty vlastnej classy a neutrálne, tier obmedzený vlastným tierom.
+  `min(tier + 1, 6)` (na tieri 1 sú 2, každý upgrade pridá jednu, strop 6). Tier
+  obmedzený vlastným tierom.
 - **Freeze** ❄ – len na vlastných súkromných kartách; zmrazená karta prežije refresh
   aj koniec kola.
 - **Refresh** – vymení 3 spoločné a všetky nezmrazené súkromné karty.
@@ -57,8 +59,9 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - Príšerky sa hrajú z ruky na plochu **zadarmo** (peniaze sú len na obchod). Max
   **5 príšeriek** na ploche.
 - Na konci nákupnej fázy idú **nezahrané karty z ruky do discard pile**.
-- Príšerky **ostávajú na ploche medzi kolami** (aj s buffmi). Padlé príšerky idú do
-  discard pile – vrátia sa cyklom balíčka. Preživšie sa po boji vyliečia naplno.
+- Po boji idú **všetky príšerky z plochy do discard pile** – padlé aj preživšie
+  (vrátia sa cyklom balíčka). Plocha sa každé kolo stavia nanovo z ruky.
+  Tokeny vyvolané v boji miznú z hry.
 
 ## Evolve
 
@@ -102,18 +105,19 @@ Nie každá príšerka má schopnosť – niektoré majú len silu a život.
 ## Rasy (tribes)
 
 Každá príšerka má rasu; kúzla rasu nemajú. Rasy poháňajú synergie („+2/+2 všetkým
-Zvieratám“) – dôležitý pilier deckbuilding rozhodnutí. V1 obsahuje **4 rasy**:
+Zvieratám“). Roster tvorí **30 príšer z art sady** (3 rasy × 10), každá príšerka
+má vlastné meno a obrázok pre každý evolučný stupeň (napr. Rattlewink →
+Bonebound → Ossuary Hound). Zdrojová grafika je v ZIP (neverzuje sa),
+optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 
-| Rasa | SK | Príklady |
-|------|----|----------|
-| beast | Zviera | väčšina zvieratiek, ryby, vtáky |
-| dragon | Drak | Dráčik, Kráľ drakov |
-| elemental | Živel | Iskrička, Fénix, Lávový obor, Bublina, Plamienok |
-| fairy | Víla | Jednorožec, Starý dub |
+| Rasa | SK | Téma |
+|------|----|------|
+| beast | Zviera | staty, taunty, rast |
+| elemental | Živel | Pred bojom damage a buffy |
+| undead | Nemŕtvy | Pri smrti – tokeny, buffy, damage |
 
-Undead, Human a Ogre sú v pláne, ale pridajú sa až s väčším poolom kariet –
-pri ~40 príšerkách by 7 rás znamenalo príliš riedke synergie (a priveľa pojmov
-pre 6-ročné deti naraz). Dátový model je pripravený (pole `race` na karte).
+Ďalšie rasy (Dragon, Fairy, Human, Ogre) sa pridajú s ďalšími art sadami –
+dátový model je pripravený (pole `race` na karte).
 
 ## Kúzla
 
@@ -121,22 +125,13 @@ Sú v obchode (neutrálne aj classové). Hrajú sa v nákupnej fáze, potom idú
 pile (vracajú sa cyklom balíčka). Typy: buff príšerky, Discover (vyber 1 z 3 kariet do
 ruky), peniaze navyše.
 
-## Classy (3 na štart)
+## Bez class – superschopnosti (hero powers)
 
-Každá classa = hrdina, štartovací balíček 10 kariet a classové karty v súkromnej časti
-obchodu. Neutrálne karty sú prienik, ktorý chcú kupovať všetci.
-
-| Classa | Hrdina | Téma |
-|--------|--------|------|
-| 🌲 Les | Ježko Pichliač 🦔 | rast a buffy (Po nákupe, buffy kamarátov) |
-| 🌊 More | Chobotnička Ela 🐙 | Obrancovia a Pri smrti (tokeny, bubliny) |
-| 🔥 Sopka | Dráčik Iskra 🐲 | útok a damage (Pred bojom, Pri vyložení) |
-
-Štartovacie balíčky (trojice → skorý evolve):
-
-- **Les:** 3× Ježko vojak, 3× Veverička, 2× Sova, 2× Medveď
-- **More:** 3× Rybka, 3× Krab, 2× Medúza, 2× Korytnačka
-- **Sopka:** 3× Salamandra, 3× Iskrička, 2× Fénixík, 2× Dráčik
+Classy nie sú: **každý hráč hrá z rovnakého poolu kariet**, aby sa nemusel
+riešiť balance counterpickov. Namiesto class si hráč pri spustení hry vyberie
+**superschopnosť** (hero power) – zatiaľ nie je žiadna implementovaná, výber
+príde neskôr. Štartovací balíček = **10 náhodných príšer tieru 1** (duplicity
+vítané, rozbiehajú evolve).
 
 Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 

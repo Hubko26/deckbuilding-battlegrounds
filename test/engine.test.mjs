@@ -2,36 +2,58 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadEngine, seeded } from "./harness.mjs";
 
-function fresh(seed = 1, p1 = "les", p2 = "ohen") {
+function fresh(seed = 1) {
   const ctx = loadEngine();
-  const state = ctx.Engine.newGame(p1, p2, seeded(seed));
+  const state = ctx.Engine.newGame(seeded(seed));
   return { ctx, state, E: ctx.Engine, C: ctx.Cards };
 }
 
-test("newGame: 10 kariet v balíčku, 25 HP, tier 1, 2 súkromné karty", () => {
-  const { state } = fresh();
+test("newGame: 10 náhodných kariet tieru 1 v balíčku, 25 HP, tier 1, 2 súkromné", () => {
+  const { state, C } = fresh();
   for (const pid of ["p1", "p2"]) {
     assert.equal(state[pid].deck.length, 10);
     assert.equal(state[pid].hp, 25);
     assert.equal(state[pid].tier, 1);
     assert.equal(state[pid].priv.length, 2);
+    for (const c of state[pid].deck) {
+      assert.equal(C.byId[c.defId].tier, 1);
+      assert.ok(!C.byId[c.defId].spell);
+    }
   }
   assert.equal(state.commons.length, 3);
 });
 
-test("dáta kariet: každá príšerka má rasu, tokeny existujú, texty sa generujú", () => {
+test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", () => {
   const { C } = fresh();
-  for (const d of [...C.DEFS, ...C.TOKENS]) {
-    if (!d.spell) assert.ok(C.RACES[d.race], `karta ${d.id} nemá platnú rasu`);
-    for (const lang of ["sk", "cs", "en"]) {
-      assert.equal(typeof d.name[lang], "string");
-      C.cardText(d, 1, lang); // nesmie spadnúť
+  let minions = 0;
+  for (const d of C.DEFS) {
+    if (!d.spell) {
+      minions++;
+      assert.ok(C.RACES[d.race], `karta ${d.id} nemá platnú rasu`);
+      assert.equal(d.stageNames.length, 3, `karta ${d.id} nemá 3 mená`);
+      for (const r of [1, 2, 3]) {
+        assert.equal(typeof C.nameOf(d, r, "sk"), "string");
+        assert.match(C.artOf(d, r), /assets\/cards\/.+_\d\.webp/);
+      }
+    } else {
+      for (const lang of ["sk", "cs", "en"]) assert.equal(typeof d.name[lang], "string");
     }
-    if (d.power) assert.ok(["battlecry", "deathrattle", "startFight", "endTurn"].includes(d.power.kw));
+    for (const lang of ["sk", "cs", "en"]) C.cardText(d, 2, lang); // nesmie spadnúť
   }
-  for (const cls of Object.keys(C.CLASSES)) {
-    assert.equal(C.STARTERS[cls].length, 10);
-    for (const id of C.STARTERS[cls]) assert.ok(C.byId[id], `starter ${id} neexistuje`);
+  assert.equal(minions, 30);
+});
+
+test("art súbory existujú pre všetky príšery a stupne", async () => {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const { ROOT } = await import("./harness.mjs");
+  const { C } = fresh();
+  for (const d of C.DEFS) {
+    if (d.spell) continue;
+    for (const r of [1, 2, 3]) {
+      const p = path.join(ROOT, C.artOf(d, r));
+      assert.ok(fs.existsSync(p), `chýba ${C.artOf(d, r)}`);
+    }
   }
 });
 
@@ -57,11 +79,13 @@ test("buyCommon: -3 peniaze, karta v balíčku, obchod hneď doplnený", () => {
   const { state, E } = fresh();
   E.startRound(state);
   state.p1.money = 5;
+  state.p1.hand = []; // nech kúpa nedokompletuje trojicu
   const defId = state.commons[0];
+  const deckBefore = state.p1.deck.length;
   const ev = E.buyCommon(state, "p1", 0);
   assert.equal(ev[0].type, "buy");
   assert.equal(state.p1.money, 2);
-  assert.equal(state.p1.deck.length, 6); // 10 - 5 dotiahnutých + 1 kúpená
+  assert.equal(state.p1.deck.length, deckBefore + 1);
   assert.ok(state.p1.deck.some(c => c.defId === defId));
   assert.equal(state.commons.length, 3);
   assert.equal(state.p1.bought[0], defId);
@@ -74,21 +98,11 @@ test("buyCommon: bez peňazí nejde", () => {
   assert.equal(E.buyCommon(state, "p1", 0), null);
 });
 
-test("spoločné karty sú len neutrálne, súkromné len vlastná classa alebo neutrál", () => {
-  const { state, E, C } = fresh(7);
-  E.startRound(state);
-  state.p1.money = 100;
-  for (let i = 0; i < 30; i++) E.buyCommon(state, "p1", 0);
-  for (const id of state.p1.bought) assert.equal(C.byId[id].cls, null);
-  state.p1.bought = [];
-  for (let i = 0; i < 30; i++) E.buyPrivate(state, "p1", 0);
-  for (const id of state.p1.bought) assert.ok([null, "les"].includes(C.byId[id].cls));
-});
-
 test("obchod rešpektuje tier limit", () => {
   const { state, E, C } = fresh(3);
   E.startRound(state);
-  state.p1.money = 100;
+  state.p1.money = 1000;
+  state.p1.hand = [];
   for (let i = 0; i < 40; i++) E.buyPrivate(state, "p1", 0);
   for (const id of state.p1.bought) assert.ok(C.byId[id].tier <= 1);
 });
@@ -96,8 +110,8 @@ test("obchod rešpektuje tier limit", () => {
 test("evolve: 3 rovnaké bronzové sa spoja na striebornú so statmi ×2", () => {
   const { state, E, C } = fresh();
   const p = state.p1;
-  p.hand = [E.makeInst(state, "jezko-vojak", 1), E.makeInst(state, "jezko-vojak", 1)];
-  p.board = [E.makeInst(state, "jezko-vojak", 1)];
+  p.hand = [E.makeInst(state, "B001", 1), E.makeInst(state, "B001", 1)];
+  p.board = [E.makeInst(state, "B001", 1)];
   const events = [];
   E.checkEvolve(state, p, events);
   assert.equal(events.filter(e => e.type === "evolve").length, 1);
@@ -105,19 +119,19 @@ test("evolve: 3 rovnaké bronzové sa spoja na striebornú so statmi ×2", () =>
   assert.equal(p.board.length, 1);
   const s = p.board[0];
   assert.equal(s.rank, 2);
-  assert.equal(s.atk, C.byId["jezko-vojak"].atk * 2);
-  assert.equal(s.hp, C.byId["jezko-vojak"].hp * 2);
+  assert.equal(s.atk, C.byId["B001"].atk * 2);
+  assert.equal(s.hp, C.byId["B001"].hp * 2);
 });
 
 test("evolve: 3 strieborné dajú zlatú so statmi ×4; zlatá sa už nespája", () => {
   const { state, E, C } = fresh();
   const p = state.p1;
-  p.hand = [1, 2, 3].map(() => E.makeInst(state, "myska", 2));
+  p.hand = [1, 2, 3].map(() => E.makeInst(state, "B005", 2));
   E.checkEvolve(state, p, []);
   assert.equal(p.hand.length, 1);
   assert.equal(p.hand[0].rank, 3);
-  assert.equal(p.hand[0].atk, C.byId["myska"].atk * 4);
-  p.hand = [1, 2, 3].map(() => E.makeInst(state, "myska", 3));
+  assert.equal(p.hand[0].atk, C.byId["B005"].atk * 4);
+  p.hand = [1, 2, 3].map(() => E.makeInst(state, "B005", 3));
   E.checkEvolve(state, p, []);
   assert.equal(p.hand.length, 3); // zlaté ostávajú
 });
@@ -126,16 +140,15 @@ test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () 
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
-  p.hand = [E.makeInst(state, "zajac", 1)];
-  p.board = [E.makeInst(state, "zajac", 1)];
+  p.hand = [E.makeInst(state, "B003", 1)];
+  p.board = [E.makeInst(state, "B003", 1)];
   p.money = 5;
-  state.commons[0] = "zajac";
+  state.commons[0] = "B003";
   const deckBefore = p.deck.length;
   const events = E.buyCommon(state, "p1", 0);
   assert.ok(events.some(e => e.type === "toHand"));
   assert.ok(events.some(e => e.type === "evolve"));
   assert.equal(p.deck.length, deckBefore); // nešla do balíčka
-  // trojica sa spojila: jedna strieborná, na ploche (bola tam kópia)
   assert.equal(p.hand.length, 0);
   assert.equal(p.board.length, 1);
   assert.equal(p.board[0].rank, 2);
@@ -145,10 +158,10 @@ test("kúpa druhej kópie ide normálne do balíčka", () => {
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
-  p.hand = [E.makeInst(state, "zajac", 1)];
+  p.hand = [E.makeInst(state, "B003", 1)];
   p.board = [];
   p.money = 5;
-  state.commons[0] = "zajac";
+  state.commons[0] = "B003";
   const deckBefore = p.deck.length;
   E.buyCommon(state, "p1", 0);
   assert.equal(p.deck.length, deckBefore + 1);
@@ -158,7 +171,7 @@ test("kúpa druhej kópie ide normálne do balíčka", () => {
 test("evolve: rôzne stupne sa nemiešajú", () => {
   const { state, E } = fresh();
   const p = state.p1;
-  p.hand = [E.makeInst(state, "myska", 1), E.makeInst(state, "myska", 1), E.makeInst(state, "myska", 2)];
+  p.hand = [E.makeInst(state, "B001", 1), E.makeInst(state, "B001", 1), E.makeInst(state, "B001", 2)];
   E.checkEvolve(state, p, []);
   assert.equal(p.hand.length, 3);
 });
@@ -203,7 +216,7 @@ test("endShopTurn: Po nákupe efekty, ruka do discard, druhý hráč na ťahu", 
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
-  p.board = [E.makeInst(state, "zajac", 1)]; // Po nákupe: +1/+1
+  p.board = [E.makeInst(state, "B003", 1)]; // Po nákupe: +1/+1
   const handSize = p.hand.length;
   E.endShopTurn(state, "p1");
   assert.equal(p.board[0].atk, 2);
@@ -218,7 +231,7 @@ test("prázdny balíček: discard sa zamieša a doťahuje sa ďalej", () => {
   const { state, E } = fresh();
   const p = state.p1;
   p.deck = [];
-  p.discard = [{ defId: "myska", rank: 1 }, { defId: "macka", rank: 1 }];
+  p.discard = [{ defId: "B001", rank: 1 }, { defId: "B005", rank: 1 }];
   const events = E.beginShopTurn(state, "p1");
   assert.ok(events.some(e => e.type === "reshuffle"));
   assert.equal(p.hand.length, 2);
@@ -239,11 +252,11 @@ test("kúzlo buffTarget: +2/+2 vybranej príšerke", () => {
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
-  const m = E.makeInst(state, "myska", 1);
+  const m = E.makeInst(state, "B001", 1);
   p.board = [m];
   p.hand = [E.makeInst(state, "jablko", 1)];
   E.castSpell(state, "p1", 0, m.uid);
-  assert.equal(m.atk, 3);
+  assert.equal(m.atk, 4);
   assert.equal(m.hp, 4);
 });
 
@@ -264,20 +277,20 @@ test("battlecry buffRace: buffne len príšerky rovnakej rasy", () => {
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
-  const beast = E.makeInst(state, "myska", 1);       // beast
-  const elem = E.makeInst(state, "plamienok", 1);    // elemental
+  const beast = E.makeInst(state, "B001", 1);     // beast
+  const elem = E.makeInst(state, "E001", 1);      // elemental
   p.board = [beast, elem];
-  p.hand = [E.makeInst(state, "lev", 1)];            // battlecry: +2/+2 Zvieratám
+  p.hand = [E.makeInst(state, "E008", 1)];        // battlecry: +1/+1 Živlom
   E.playMinion(state, "p1", 0);
-  assert.equal(beast.atk, 3);
-  assert.equal(elem.atk, 1);
+  assert.equal(elem.atk, 3);
+  assert.equal(beast.atk, 2);
 });
 
 test("boj: prázdna plocha prehráva, damage = súčet stupňov preživších", () => {
   const { state, E } = fresh(11);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  state.p1.board = [E.makeInst(state, "medved", 1), E.makeInst(state, "myska", 2)];
+  state.p1.board = [E.makeInst(state, "B002", 1), E.makeInst(state, "B001", 2)];
   state.p2.board = [];
   state.p1.hand = []; state.p2.hand = [];
   const events = E.doBattle(state);
@@ -291,43 +304,43 @@ test("boj: obranca (taunt) je napadnutý prvý", () => {
   const { state, E } = fresh(5);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  state.p1.board = [E.makeInst(state, "kohut", 1)]; // 2/1 útočník
-  const squishy = E.makeInst(state, "myska", 1);
-  const taunt = E.makeInst(state, "medved", 1); // 4/5 obranca
+  state.p1.board = [E.makeInst(state, "B002", 2)]; // 8/10 útočník – prežije prvý úder
+  const squishy = E.makeInst(state, "B001", 1);
+  const taunt = E.makeInst(state, "B002", 1); // 4/5 obranca
   state.p2.board = [squishy, taunt];
   state.p1.hand = []; state.p2.hand = [];
   const events = E.doBattle(state);
-  const firstAttack = events.find(e => e.type === "attack");
-  // Nech útočí ktokoľvek, cieľom prvého útoku na stranu p2 musí byť obranca.
   const attacksOnP2 = events.filter(e => e.type === "attack" && e.dPid === "p2");
-  if (attacksOnP2.length) assert.equal(attacksOnP2[0].dUid, taunt.uid);
-  assert.ok(firstAttack);
+  assert.ok(attacksOnP2.length > 0);
+  assert.equal(attacksOnP2[0].dUid, taunt.uid);
 });
 
 test("boj: deathrattle vyvolá token, padlé karty idú do discard", () => {
   const { state, E } = fresh(2);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  state.p1.board = [E.makeInst(state, "ovca", 1)];   // 1/4, pri smrti jahniatko
-  state.p2.board = [E.makeInst(state, "dinko", 1)];  // 10/8 – ovcu zabije
+  state.p1.board = [E.makeInst(state, "U001", 1)]; // pri smrti Kostík
+  state.p2.board = [E.makeInst(state, "E010", 1)]; // 9/8 – zabije ho
   state.p1.hand = []; state.p2.hand = [];
   const events = E.doBattle(state);
-  assert.ok(events.some(e => e.type === "summon" && e.defId === "jahniatko"));
-  assert.ok(state.p1.discard.some(c => c.defId === "ovca"));
+  assert.ok(events.some(e => e.type === "summon" && e.defId === "kostik"));
+  assert.ok(state.p1.discard.some(c => c.defId === "U001"));
 });
 
-test("boj: preživší sa vyliečia a ostávajú na ploche", () => {
+test("po boji ide všetko do discard – plochy sú prázdne, tokeny miznú", () => {
   const { state, E } = fresh(4);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const tank = E.makeInst(state, "mamut", 1); // 8/12
+  const tank = E.makeInst(state, "U008", 1); // 3/8 – prežije
   state.p1.board = [tank];
-  state.p2.board = [E.makeInst(state, "myska", 1)]; // 1/2
+  state.p2.board = [E.makeInst(state, "B001", 1)];
   state.p1.hand = []; state.p2.hand = [];
   E.doBattle(state);
-  assert.equal(state.p1.board.length, 1);
-  assert.equal(state.p1.board[0].uid, tank.uid);
-  assert.equal(state.p1.board[0].hp, state.p1.board[0].maxHp);
+  assert.equal(state.p1.board.length, 0);
+  assert.equal(state.p2.board.length, 0);
+  assert.ok(state.p1.discard.some(c => c.defId === "U008")); // aj preživší
+  assert.ok(state.p2.discard.some(c => c.defId === "B001"));
+  assert.ok(!state.p1.discard.some(c => c.defId === "kostik")); // token nejde do discard
 });
 
 test("hra končí, keď hrdina klesne na 0 HP", () => {
@@ -335,7 +348,7 @@ test("hra končí, keď hrdina klesne na 0 HP", () => {
   E.startRound(state);
   E.endShopTurn(state, "p1");
   state.p2.hp = 1;
-  state.p1.board = [E.makeInst(state, "dinko", 1)];
+  state.p1.board = [E.makeInst(state, "E010", 1)];
   state.p2.board = [];
   state.p1.hand = []; state.p2.hand = [];
   const events = E.doBattle(state);

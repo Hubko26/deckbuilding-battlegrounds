@@ -11,8 +11,11 @@
 const L = {
   pageTitle: { sk: "Zvieracia aréna", cs: "Zvířecí aréna", en: "Animal Arena" },
   title: { sk: "⚔️ Zvieracia aréna", cs: "⚔️ Zvířecí aréna", en: "⚔️ Animal Arena" },
-  pickTitle: { sk: "Vyber si svoj tím", cs: "Vyber si svůj tým", en: "Pick your team" },
   diffTitle: { sk: "Ako silný má byť súper?", cs: "Jak silný má být soupeř?", en: "How strong is your opponent?" },
+  heroYou: { sk: "Ty", cs: "Ty", en: "You" },
+  heroBot: { sk: "Robo", cs: "Robo", en: "Robo" },
+  stageWord: { sk: "stupeň", cs: "stupeň", en: "Stage" },
+  spellWord: { sk: "Kúzlo", cs: "Kouzlo", en: "Spell" },
   diffs: {
     easy: { sk: "🙂 Ľahký", cs: "🙂 Lehký", en: "🙂 Easy" },
     normal: { sk: "😎 Normálny", cs: "😎 Normální", en: "😎 Normal" },
@@ -57,7 +60,6 @@ const $ = id => document.getElementById(id);
 
 let state = null;
 let difficulty = localStorage.getItem("arena.diff") || "normal";
-let chosenClass = localStorage.getItem("arena.class") || null;
 let busy = false;         // beží animácia / ťah bota
 let drag = null;          // aktívne ťahanie karty
 
@@ -67,7 +69,6 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 function applyI18n() {
   document.title = t(L.pageTitle);
   $("title").textContent = t(L.title);
-  $("pickTitle").textContent = t(L.pickTitle);
   $("diffTitle").textContent = t(L.diffTitle);
   $("startBtn").textContent = t(L.play);
   $("newGameBtn").textContent = t(L.newGame);
@@ -76,18 +77,8 @@ function applyI18n() {
   $("footNote").textContent = t(L.footNote);
 }
 
-// ---------- Výber classy ----------
+// ---------- Výber obtiažnosti ----------
 function renderPick() {
-  const box = $("classPick");
-  box.innerHTML = "";
-  for (const [id, c] of Object.entries(Cards.CLASSES)) {
-    const el = document.createElement("div");
-    el.className = "class-card" + (chosenClass === id ? " active" : "");
-    el.innerHTML = `<div class="ico">${c.emoji}${c.hero.emoji}</div>` +
-      `<div class="nm">${t(c.name)}</div><div class="hero">${t(c.hero.name)}</div>`;
-    el.addEventListener("click", () => { chosenClass = id; localStorage.setItem("arena.class", id); renderPick(); });
-    box.appendChild(el);
-  }
   const dbox = $("diffPick");
   dbox.innerHTML = "";
   for (const d of ["easy", "normal", "hard"]) {
@@ -97,13 +88,10 @@ function renderPick() {
     b.addEventListener("click", () => { difficulty = d; localStorage.setItem("arena.diff", d); renderPick(); });
     dbox.appendChild(b);
   }
-  $("startBtn").disabled = !chosenClass;
 }
 
 function startGame() {
-  const others = Object.keys(Cards.CLASSES).filter(c => c !== chosenClass);
-  const botClass = others[Math.floor(Math.random() * others.length)];
-  state = Engine.newGame(chosenClass, botClass, Math.random);
+  state = Engine.newGame(Math.random);
   $("pickScreen").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
   $("newGameBtn").classList.remove("hidden");
@@ -138,14 +126,15 @@ async function runBotTurn() {
 
 function botEventMsg(ev) {
   if (ev.pid !== BOT) return null;
-  const name = ev.defId ? t(Cards.byId[ev.defId].name) : "";
-  const emoji = ev.defId ? Cards.byId[ev.defId].emoji : "";
+  const def = ev.defId ? Cards.byId[ev.defId] : null;
+  const name = def ? Cards.nameOf(def, ev.rank || 1, I18N.lang) : "";
+  const emoji = def && def.emoji ? def.emoji + " " : "";
   switch (ev.type) {
-    case "buy": return `${t(L.botBought)} ${emoji} ${name}`;
-    case "play": return `${t(L.botPlayed)} ${emoji} ${name}`;
-    case "spell": return `${t(L.botSpell)} ${emoji} ${name}`;
+    case "buy": return `${t(L.botBought)} ${emoji}${name}`;
+    case "play": return `${t(L.botPlayed)} ${emoji}${name}`;
+    case "spell": return `${t(L.botSpell)} ${emoji}${name}`;
     case "tierUp": return `${t(L.botTier)} ${ev.tier}`;
-    case "evolve": return `${t(L.botEvolve)} ${emoji} ${name}!`;
+    case "evolve": return `${t(L.botEvolve)} ${emoji}${name}!`;
     default: return null;
   }
 }
@@ -202,7 +191,7 @@ async function runBattle() {
         const el = cardById(ev.uid);
         if (el) {
           const hpEl = el.querySelector(".hp");
-          if (hpEl) hpEl.textContent = `❤️${Math.max(0, ev.hp)}`;
+          if (hpEl) hpEl.textContent = String(Math.max(0, ev.hp));
         }
         break;
       }
@@ -293,8 +282,10 @@ function renderCorner(el, icon, label, count) {
 
 // Tier hrdinu je veľké číslo na štíte s labkou uprostred bannera.
 function renderHero(el, p) {
-  const c = Cards.CLASSES[p.cls];
-  el.innerHTML = `<span class="who">${c.hero.emoji} ${t(c.hero.name)}</span>` +
+  const hero = p.id === HUMAN
+    ? { emoji: "🙂", name: t(L.heroYou) }
+    : { emoji: "🤖", name: t(L.heroBot) };
+  el.innerHTML = `<span class="who">${hero.emoji} ${hero.name}</span>` +
     `<span class="tier-shield">${p.tier}</span>` +
     `<span class="nums">❤️ ${Math.max(0, p.hp)}</span>`;
 }
@@ -387,7 +378,8 @@ function renderShop() {
   $("endTurnBtn").disabled = !myTurn || !!state.pendingDiscover;
 }
 
-// inst: inštancia karty ALEBO defId (obchod).
+// inst: inštancia karty ALEBO defId (obchod). Karta = rám blank.png,
+// art v oblúku, meno na páske, rasa · stupeň, text v boxe, staty v kruhoch.
 function cardEl(instOrId, opts) {
   const isInst = typeof instOrId === "object";
   const defId = isInst ? instOrId.defId : instOrId;
@@ -399,28 +391,35 @@ function cardEl(instOrId, opts) {
   if (isInst) el.dataset.uid = instOrId.uid;
   const text = Cards.cardText(def, rank, I18N.lang, true);
   const plainText = Cards.cardText(def, rank, I18N.lang);
+  const name = Cards.nameOf(def, rank, I18N.lang);
+  const art = Cards.artOf(def, rank);
   let inner = `<span class="tier-tag">⭐${def.tier}</span>`;
   if (opts.shop) inner += `<span class="cost">🪙${Engine.CARD_COST}</span>`;
-  // Grafika: obrázok (def.art), fallback emoji.
-  inner += def.art
-    ? `<img class="${opts.big ? "art" : "art-sm"}" src="${def.art}" alt="" draggable="false">`
+  inner += art
+    ? `<img class="art" src="${art}" alt="" draggable="false">`
     : `<div class="em">${def.emoji}</div>`;
-  inner += `<div class="nm">${t(def.name)}</div>`;
-  if (def.race) inner += `<div class="race">${t(Cards.RACES[def.race])}</div>`;
+  inner += `<div class="nm">${name}</div>`;
+  inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
   if (!def.spell) {
     const atk = isInst ? instOrId.atk : def.atk;
     const hp = isInst ? instOrId.hp : def.hp;
-    inner += `<span class="atk">⚔️${atk}</span><span class="hp">❤️${hp}</span>`;
-  } else {
-    inner += `<span class="sp">✨</span>`;
+    inner += `<span class="atk">${atk}</span><span class="hp">${hp}</span>`;
   }
   el.innerHTML = inner;
   if (!opts.big) {
-    el.title = `${t(def.name)}${plainText ? " – " + plainText : ""}`;
+    el.title = `${name}${plainText ? " – " + plainText : ""}`;
     attachPreview(el, instOrId, opts);
   }
   return el;
+}
+
+// Riadok pod menom: "UNDEAD · 1. STUPEŇ" / kúzlo.
+function raceLine(def, rank) {
+  if (def.spell) return t(L.spellWord);
+  const race = t(Cards.RACES[def.race]);
+  const stage = I18N.lang === "en" ? `${t(L.stageWord)} ${rank}` : `${rank}. ${t(L.stageWord)}`;
+  return `${race} · ${stage}`;
 }
 
 // ---------- Hover preview – zväčšená čitateľná karta ----------
@@ -554,7 +553,7 @@ function endDrag(e) {
 function act(events) {
   if (!events) { renderAll(); return; }
   for (const ev of events) {
-    if (ev.type === "evolve" && ev.pid === HUMAN) log(`${t(L.youEvolve)} ${Cards.byId[ev.defId].emoji} ${t(Cards.byId[ev.defId].name)}`);
+    if (ev.type === "evolve" && ev.pid === HUMAN) log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
   }
   renderAll();
   // Evolve animácia po prerenderi.

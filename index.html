@@ -15,14 +15,12 @@
   </header>
 
   <main>
-    <!-- Výber classy a obtiažnosti -->
+    <!-- Výber obtiažnosti (superschopnosti hrdinu prídu neskôr) -->
     <section id="pickScreen">
       <div class="pick-box">
-        <h2 id="pickTitle">Vyber si svoj tím</h2>
-        <div id="classPick" class="class-pick"></div>
         <h2 id="diffTitle">Ako silný má byť súper?</h2>
         <div id="diffPick" class="diff-pick"></div>
-        <button id="startBtn" class="primary big-btn" disabled>Hraj!</button>
+        <button id="startBtn" class="primary big-btn">Hraj!</button>
       </div>
     </section>
 
@@ -39,6 +37,10 @@
         <div class="corner br" id="myDeckBox"></div>
 
         <div class="shop-panel" id="shopPanel">
+          <div class="shop-rows">
+            <div class="shop-row" id="commonsRow"></div>
+            <div class="shop-row private" id="privRow"></div>
+          </div>
           <div class="shop-head">
             <span id="turnBanner" class="banner"></span>
             <span class="head-btns">
@@ -46,10 +48,6 @@
               <button id="tierBtn">⬆️</button>
             </span>
             <span class="money" id="moneyEl"></span>
-          </div>
-          <div class="shop-rows">
-            <div class="shop-row" id="commonsRow"></div>
-            <div class="shop-row private" id="privRow"></div>
           </div>
         </div>
 

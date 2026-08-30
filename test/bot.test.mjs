@@ -6,7 +6,7 @@ import { loadEngine, seeded } from "./harness.mjs";
 for (const diff of ["easy", "normal", "hard"]) {
   test(`bot (${diff}): odohrá ťah bez chýb a neminie viac než má`, () => {
     const ctx = loadEngine();
-    const state = ctx.Engine.newGame("more", "ohen", seeded(42));
+    const state = ctx.Engine.newGame(seeded(42));
     ctx.Engine.startRound(state);
     ctx.Engine.endShopTurn(state, "p1");
     assert.equal(state.active, "p2");
@@ -20,7 +20,7 @@ for (const diff of ["easy", "normal", "hard"]) {
 
 test("celá hra bot vs bot dobehne do konca", () => {
   const ctx = loadEngine();
-  const state = ctx.Engine.newGame("les", "more", seeded(7));
+  const state = ctx.Engine.newGame(seeded(7));
   ctx.Engine.startRound(state);
   let guard = 200;
   while (state.phase !== "over" && guard-- > 0) {
@@ -34,10 +34,10 @@ test("celá hra bot vs bot dobehne do konca", () => {
 
 test("bot skóre: preferuje dokončenie trojice", () => {
   const ctx = loadEngine();
-  const state = ctx.Engine.newGame("les", "ohen", seeded(3));
+  const state = ctx.Engine.newGame(seeded(3));
   const p = state.p2;
-  p.board = [ctx.Engine.makeInst(state, "macka", 1), ctx.Engine.makeInst(state, "macka", 1)];
-  const pairScore = ctx.Bot.cardScore(state, p, "macka");
-  const freshScore = ctx.Bot.cardScore(state, p, "pes");
+  p.board = [ctx.Engine.makeInst(state, "B005", 1), ctx.Engine.makeInst(state, "B005", 1)];
+  const pairScore = ctx.Bot.cardScore(state, p, "B005");
+  const freshScore = ctx.Bot.cardScore(state, p, "B004");
   assert.ok(pairScore > freshScore);
 });
