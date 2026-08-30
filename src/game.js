@@ -162,9 +162,13 @@ async function runBattle() {
   renderAll();
   renderBoardList($("oppBoard"), snap[BOT], false);
   renderBoardList($("myBoard"), snap[HUMAN], false);
-  $("turnBanner").textContent = `${t(L.fight)}`;
-  $("turnBanner").className = "banner enemy";
-  await sleep(500);
+  // Boj: skry obchod, ukáž veľký nápis v strede.
+  $("stage").classList.add("battle");
+  const fb = $("fightBanner");
+  fb.textContent = t(L.fight);
+  fb.classList.remove("hidden");
+  await sleep(900);
+  fb.classList.add("small");
 
   for (const ev of events) {
     switch (ev.type) {
@@ -173,12 +177,25 @@ async function runBattle() {
         break;
       case "attack": {
         const a = cardById(ev.aUid), d = cardById(ev.dUid);
-        if (a) { a.style.setProperty("--lunge", ev.aPid === HUMAN ? "-16px" : "16px"); a.classList.add("attacking"); }
-        await sleep(280);
-        if (d) d.classList.add("hit");
-        await sleep(280);
-        if (a) a.classList.remove("attacking");
-        if (d) d.classList.remove("hit");
+        if (a && d) {
+          // Útočník priletí pred obrancu a zrazia sa.
+          const ra = a.getBoundingClientRect(), rd = d.getBoundingClientRect();
+          const dx = (rd.left + rd.width / 2) - (ra.left + ra.width / 2);
+          const dy = (rd.top + rd.height / 2) - (ra.top + ra.height / 2);
+          a.style.zIndex = "20";
+          a.style.transition = "transform .24s ease-in";
+          a.style.transform = `translate(${dx * 0.88}px, ${dy * 0.88}px) scale(1.08)`;
+          await sleep(250);
+          d.classList.add("hit");
+          floatText(d, `-${ev.aDmg}`);
+          if (ev.dDmg > 0) floatText(a, `-${ev.dDmg}`);
+          a.style.transition = "transform .2s ease-out";
+          a.style.transform = "";
+          await sleep(300);
+          d.classList.remove("hit");
+          a.style.zIndex = "";
+          a.style.transition = "";
+        }
         break;
       }
       case "hp": {
@@ -226,10 +243,19 @@ async function runBattle() {
         await sleep(500);
         break;
       case "gameOver":
+        endBattleUI();
         return; // driveFlow ukáže výsledok
     }
   }
   await sleep(400);
+  endBattleUI();
+}
+
+function endBattleUI() {
+  $("stage").classList.remove("battle");
+  const fb = $("fightBanner");
+  fb.classList.add("hidden");
+  fb.classList.remove("small");
 }
 
 function cardById(uid) {

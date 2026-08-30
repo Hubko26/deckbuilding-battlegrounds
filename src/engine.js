@@ -423,7 +423,7 @@ const Engine = (() => {
       const enemies = alive(other(attacker));
       const taunts = enemies.filter(x => x.taunt);
       const d = pick(taunts.length ? taunts : enemies, state.rng);
-      events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid });
+      events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
       a.hp -= d.atk;
       d.hp -= a.atk;
       events.push({ type: "hp", pid: attacker, uid: a.uid, hp: a.hp });

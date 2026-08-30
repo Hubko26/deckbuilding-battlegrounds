@@ -280,7 +280,22 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
 /* ---------- Boj – animácie ---------- */
-.card.attacking { transform: translateY(var(--lunge, -14px)) scale(1.08); z-index: 3; }
+/* Počas boja je obchod skrytý a v strede svieti nápis. */
+#stage.battle .shop-panel, #stage.battle .end-turn { visibility: hidden; }
+.fight-banner {
+  position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
+  font-size: 9cqh; font-weight: 900; color: #a33;
+  text-shadow: 0 .4cqh .8cqh rgba(0,0,0,.35), 0 0 2cqh #ffd;
+  z-index: 10; pointer-events: none;
+  animation: fightPop .5s ease-out;
+  transition: all .4s;
+}
+.fight-banner.small { font-size: 3.6cqh; top: 39%; opacity: .85; }
+@keyframes fightPop {
+  0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
+  60% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
 .card.hit { animation: shake .3s; }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
