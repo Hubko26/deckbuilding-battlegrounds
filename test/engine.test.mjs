@@ -154,12 +154,51 @@ test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () 
   assert.equal(p.board[0].rank, 2);
 });
 
+test("tvoj scenár: 1 v ruke + 2 dokúpené postupne → evolvne (kópia sa vytiahne z balíčka)", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "B001", 1)];
+  p.board = [];
+  p.deck = p.deck.filter(c => c.defId !== "B001"); // čistý štart bez náhodných kópií
+  p.discard = [];
+  p.money = 10;
+  state.commons[0] = "B001";
+  E.buyCommon(state, "p1", 0);        // 2. kópia → ide do balíčka
+  assert.ok(p.deck.some(c => c.defId === "B001"));
+  assert.equal(p.hand.length, 1);
+  state.commons[0] = "B001";
+  E.buyCommon(state, "p1", 0);        // 3. kópia → trojica sa spojí hneď
+  assert.ok(!p.deck.some(c => c.defId === "B001")); // kópia vytiahnutá z balíčka
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].defId, "B001");
+  assert.equal(p.hand[0].rank, 2);
+});
+
+test("trojica sa spojí aj s kópiou v kôpke (discard)", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "B003", 1)];
+  p.board = [];
+  p.deck = p.deck.filter(c => c.defId !== "B003");
+  p.discard = [{ defId: "B003", rank: 1 }];
+  p.money = 5;
+  state.commons[0] = "B003";
+  E.buyCommon(state, "p1", 0);
+  assert.equal(p.discard.filter(c => c.defId === "B003").length, 0);
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].rank, 2);
+});
+
 test("kúpa druhej kópie ide normálne do balíčka", () => {
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
   p.hand = [E.makeInst(state, "B003", 1)];
   p.board = [];
+  p.deck = p.deck.filter(c => c.defId !== "B003"); // žiadne ďalšie kópie
+  p.discard = [];
   p.money = 5;
   state.commons[0] = "B003";
   const deckBefore = p.deck.length;

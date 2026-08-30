@@ -212,21 +212,37 @@ const Engine = (() => {
   }
 
   // Kúpená karta ide do balíčka. Výnimka (aby evolve fungoval intuitívne ako
-  // v Battlegrounds): ak dokompletuje trojicu s kópiami v ruke/na ploche,
-  // ide rovno do ruky a trojica sa hneď spojí.
+  // v Battlegrounds): ak kúpou vzniká trojica, karta ide rovno do ruky.
+  // Rátajú sa VŠETKY vlastnené kópie – aj v balíčku a kôpke; chýbajúce sa
+  // z nich vytiahnu do ruky, takže trojica sa spojí okamžite.
   function acquireCard(state, p, defId, events) {
     const def = Cards.byId[defId];
-    const copies = [...p.hand, ...p.board]
-      .filter(x => !x.spell && x.defId === defId && x.rank === 1).length;
-    if (!def.spell && copies >= 2 && p.hand.length < HAND_MAX) {
-      const inst = makeInst(state, defId, 1, p);
-      inst.slot = freeSlot(p.hand, HAND_MAX);
-      p.hand.push(inst);
-      events.push({ type: "toHand", pid: p.id, defId });
-      checkEvolve(state, p, events);
-    } else {
-      addToDeck(state, p, defId);
+    if (!def.spell) {
+      const inZones = [...p.hand, ...p.board]
+        .filter(x => !x.spell && x.defId === defId && x.rank === 1).length;
+      const deckIdx = p.deck.map((c, i) => (c.defId === defId && c.rank === 1 ? i : -1)).filter(i => i >= 0);
+      const discIdx = p.discard.map((c, i) => (c.defId === defId && c.rank === 1 ? i : -1)).filter(i => i >= 0);
+      const owned = inZones + deckIdx.length + discIdx.length;
+      const need = Math.max(0, 2 - inZones); // kópie na vytiahnutie z balíčka/kôpky
+      if (owned >= 2 && p.hand.length + need + 1 <= HAND_MAX) {
+        const toHand = () => {
+          const inst = makeInst(state, defId, 1, p);
+          inst.slot = freeSlot(p.hand, HAND_MAX);
+          p.hand.push(inst);
+          events.push({ type: "toHand", pid: p.id, defId });
+        };
+        for (let i = 0; i < need; i++) {
+          if (deckIdx.length) p.deck.splice(deckIdx.pop(), 1);       // pop = najvyšší index
+          else if (discIdx.length) p.discard.splice(discIdx.pop(), 1);
+          else break;
+          toHand();
+        }
+        toHand(); // kúpená kópia
+        checkEvolve(state, p, events);
+        return;
+      }
     }
+    addToDeck(state, p, defId);
   }
 
   // Kúpená karta sa zamieša do balíčka (na náhodné miesto).
