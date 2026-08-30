@@ -94,17 +94,17 @@ const Cards = (() => {
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 1, h: 1 } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
-    { id: "minca", tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
+    { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
       name: { sk: "Zlatá minca", cs: "Zlatá mince", en: "Gold Coin" } },
-    { id: "jablko", tier: 2, emoji: "🍎", spell: true, fx: { type: "buffTarget", a: 2, h: 2 },
+    { id: "jablko", cost: 2, tier: 2, emoji: "🍎", spell: true, fx: { type: "buffTarget", a: 2, h: 2 },
       name: { sk: "Zázračné jablko", cs: "Zázračné jablko", en: "Magic Apple" } },
-    { id: "kniha", tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
+    { id: "kniha", cost: 2, tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
       name: { sk: "Kniha prianí", cs: "Kniha přání", en: "Wish Book" } },
-    { id: "koren", tier: 3, emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
+    { id: "koren", cost: 2, tier: 3, emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
       name: { sk: "Pevný koreň", cs: "Pevný kořen", en: "Sturdy Root" } },
-    { id: "vlna", tier: 3, emoji: "🌊", spell: true, fx: { type: "buffAllFriends", a: 1, h: 1 },
+    { id: "vlna", cost: 2, tier: 3, emoji: "🌊", spell: true, fx: { type: "buffAllFriends", a: 1, h: 1 },
       name: { sk: "Veľká vlna", cs: "Velká vlna", en: "Big Wave" } },
-    { id: "srdce", tier: 4, emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
+    { id: "srdce", cost: 3, tier: 4, emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
       name: { sk: "Ohnivé srdce", cs: "Ohnivé srdce", en: "Fiery Heart" } },
   ];
 

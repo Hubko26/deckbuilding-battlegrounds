@@ -16,6 +16,8 @@ const Engine = (() => {
 
   const privateCount = tier => Math.min(tier + 1, 6);
   const income = round => Math.min(round + 2, 10);
+  // Cena karty: príšery fixne 3, kúzla majú vlastnú cenu (def.cost).
+  const cardCost = defId => Cards.byId[defId].cost ?? CARD_COST;
 
   // ---------- Pomocníci ----------
   // Trvalé pozície: karta si drží slot (v ruke aj na ploche), po minutí
@@ -189,9 +191,10 @@ const Engine = (() => {
   // ---------- Obchod ----------
   function buyCommon(state, pid, idx) {
     const p = state[pid];
-    if (p.money < CARD_COST || idx >= state.commons.length) return null;
+    if (idx >= state.commons.length) return null;
     const defId = state.commons[idx];
-    p.money -= CARD_COST;
+    if (p.money < cardCost(defId)) return null;
+    p.money -= cardCost(defId);
     const events = [{ type: "buy", pid, defId }];
     acquireCard(state, p, defId, events);
     p.bought.push(defId);
@@ -201,9 +204,10 @@ const Engine = (() => {
 
   function buyPrivate(state, pid, idx) {
     const p = state[pid];
-    if (p.money < CARD_COST || idx >= p.priv.length) return null;
+    if (idx >= p.priv.length) return null;
     const defId = p.priv[idx].defId;
-    p.money -= CARD_COST;
+    if (p.money < cardCost(defId)) return null;
+    p.money -= cardCost(defId);
     const events = [{ type: "buy", pid, defId }];
     acquireCard(state, p, defId, events);
     p.bought.push(defId);
@@ -637,7 +641,7 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST,
-    TIER_MAX, privateCount, income, seededRng,
+    TIER_MAX, privateCount, income, seededRng, cardCost,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, refreshShop,
     toggleFreeze, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,

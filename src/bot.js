@@ -63,11 +63,14 @@ const Bot = (() => {
 
     // 3. Nakupuj, kým sú peniaze. Easy kupuje náhodne, inak podľa skóre.
     let guard = 20;
-    while (p.money >= Engine.CARD_COST && guard-- > 0) {
+    while (guard-- > 0) {
       const options = [];
       state.commons.forEach((defId, i) => options.push({ kind: "common", i, defId }));
       p.priv.forEach((s, i) => options.push({ kind: "priv", i, defId: s.defId }));
-      if (!options.length) break;
+      const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
+      if (!affordable.length) break;
+      options.length = 0;
+      options.push(...affordable);
       let choice;
       if (cfg.randomBuy) {
         choice = options[Math.floor(state.rng() * options.length)];

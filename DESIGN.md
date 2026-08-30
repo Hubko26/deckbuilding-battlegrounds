@@ -19,7 +19,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **25 HP**).
 
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
-- Cena karty v obchode: **3** (fixná).
+- Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
+  (Minca 1, Jablko/Kniha/Koreň/Vlna 2, Srdce 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 

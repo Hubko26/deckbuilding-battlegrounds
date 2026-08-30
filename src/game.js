@@ -511,7 +511,7 @@ function renderShop() {
   commons.innerHTML = "";
   state.commons.forEach((defId, i) => {
     const card = cardEl(defId, { shop: true, owned: Bot.ownedCount(p, defId) });
-    if (myTurn && p.money >= Engine.CARD_COST) {
+    if (myTurn && p.money >= Engine.cardCost(defId)) {
       card.classList.add("buyable");
       attachDrag(card, { type: "common", idx: i });
     } else card.classList.add("disabled");
@@ -523,7 +523,7 @@ function renderShop() {
   p.priv.forEach((s, i) => {
     const card = cardEl(s.defId, { shop: true, owned: Bot.ownedCount(p, s.defId) });
     if (s.frozen) card.classList.add("frozen");
-    if (myTurn && p.money >= Engine.CARD_COST) {
+    if (myTurn && p.money >= Engine.cardCost(s.defId)) {
       card.classList.add("buyable");
       attachDrag(card, { type: "priv", idx: i });
     } else card.classList.add("disabled");
@@ -563,7 +563,7 @@ function cardEl(instOrId, opts) {
   const name = Cards.nameOf(def, rank, I18N.lang);
   const art = Cards.artOf(def, rank);
   let inner = `<span class="tier-tag">⭐${def.tier}</span>`;
-  if (opts.shop) inner += `<span class="cost">🪙${Engine.CARD_COST}</span>`;
+  if (opts.shop) inner += `<span class="cost">🪙${Engine.cardCost(defId)}</span>`;
   // Koľko kópií už vlastníš (vrátane balíčka a kôpky) – kúpa tretej evolvne.
   if (opts.owned) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
   inner += art

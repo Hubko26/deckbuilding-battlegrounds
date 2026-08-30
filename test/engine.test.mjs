@@ -332,6 +332,23 @@ test("prázdny balíček: discard sa zamieša a doťahuje sa ďalej", () => {
   assert.equal(p.discard.length, 0);
 });
 
+test("kúzla majú vlastnú cenu (minca 1), príšery fixne 3", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  assert.equal(E.cardCost("minca"), 1);
+  assert.equal(E.cardCost("srdce"), 3);
+  assert.equal(E.cardCost("B001"), 3);
+  const p = state.p1;
+  p.money = 1;
+  p.hand = []; p.board = [];
+  state.commons[0] = "minca";
+  E.buyCommon(state, "p1", 0);
+  assert.equal(p.money, 0); // stála len 1
+  assert.ok(p.deck.some(c => c.defId === "minca"));
+  state.commons[0] = "B001";
+  assert.equal(E.buyCommon(state, "p1", 0), null); // na príšeru nemá
+});
+
 test("kúzlo gold: +2 peniaze a ide do discard", () => {
   const { state, E } = fresh();
   E.startRound(state);
