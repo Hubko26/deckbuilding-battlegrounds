@@ -293,11 +293,12 @@ test("futureRace aura: budúce príšerky rasy dostanú bonus, existujúce nie",
   const p = state.p1;
   const existing = E.makeInst(state, "B001", 1); // 2/2 beast na ploche
   p.board = [existing];
-  p.hand = [E.makeInst(state, "B010", 1)]; // battlecry: budúce Zvieratá +1/+1
+  p.hand = [E.makeInst(state, "B010", 1)]; // battlecry: VŠETKY Zvieratá +1/+1
   E.playMinion(state, "p1", 0);
   assert.equal(p.raceBuffs.beast.a, 1);
   assert.equal(p.raceBuffs.beast.h, 1);
-  assert.equal(existing.atk, 2); // existujúca bez zmeny
+  assert.equal(existing.atk, 3); // aj existujúca na ploche dostane buff hneď
+  assert.equal(existing.hp, 3);
   // nová inštancia zvieraťa dostane bonus
   const fresh1 = E.makeInst(state, "B001", 1, p);
   assert.equal(fresh1.atk, C.byId["B001"].atk + 1);

@@ -447,9 +447,18 @@ const Engine = (() => {
         events.push({ type: "heal", pid: p.id, n: fx.n * m });
         break;
       case "futureRace": {
-        // Permanentná aura: všetky budúce príšerky danej rasy dostanú +a/+h.
+        // Permanentná aura: VŠETKY príšerky danej rasy – aktuálne na ploche
+        // a v ruke hneď, budúce inštancie (balíček, kôpka, tokeny) cez auru
+        // pri vzniku.
         const cur = p.raceBuffs[fx.race] || { a: 0, h: 0 };
         p.raceBuffs[fx.race] = { a: cur.a + fx.a * m, h: cur.h + fx.h * m };
+        for (const zone of ["board", "hand"]) {
+          for (const f of p[zone]) {
+            if (f.spell || Cards.byId[f.defId].race !== fx.race) continue;
+            buff(f, fx.a * m, fx.h * m);
+            events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
+          }
+        }
         events.push({ type: "futureBuff", pid: p.id, race: fx.race, a: fx.a * m, h: fx.h * m });
         break;
       }
