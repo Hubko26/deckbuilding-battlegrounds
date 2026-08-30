@@ -155,6 +155,7 @@ const Engine = (() => {
       if (boardCopy) {
         evolved.slot = boardCopy.inst.slot;
         p.board.push(evolved);
+        sortBoard(p);
       } else {
         evolved.slot = freeSlot(p.hand, HAND_MAX);
         p.hand.push(evolved);
@@ -258,6 +259,7 @@ const Engine = (() => {
     p.hand.splice(handIdx, 1);
     inst.slot = freeSlot(p.board, BOARD_MAX);
     p.board.push(inst);
+    sortBoard(p);
     const events = [{ type: "play", pid, uid: inst.uid, defId: inst.defId }];
     const def = Cards.byId[inst.defId];
     if (def.power && def.power.kw === "battlecry") {
@@ -311,6 +313,25 @@ const Engine = (() => {
     const events = [{ type: "discoverPick", pid, defId }];
     checkEvolve(state, p, events);
     return events;
+  }
+
+  // Poradie útoku = poradie plochy zľava doprava (podľa slotov).
+  function sortBoard(p) {
+    p.board.sort((a, b) => (a.slot ?? 0) - (b.slot ?? 0));
+  }
+
+  // Presun vlastnej príšerky na iný slot; obsadený slot = výmena miest.
+  function moveOnBoard(state, pid, idx, slot) {
+    const p = state[pid];
+    const inst = p.board[idx];
+    if (!inst || slot < 0 || slot >= BOARD_MAX) return null;
+    if (inst.slot === slot) return null;
+    const occupant = p.board.find(x => x !== inst && x.slot === slot);
+    const old = inst.slot;
+    inst.slot = slot;
+    if (occupant) occupant.slot = old;
+    sortBoard(p);
+    return [{ type: "reorder", pid }];
   }
 
   function sellCard(state, pid, zone, idx) {
@@ -555,7 +576,7 @@ const Engine = (() => {
     TIER_MAX, privateCount, income,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, refreshShop,
     toggleFreeze, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
-    sellCard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
+    sellCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
   };
 })();
 

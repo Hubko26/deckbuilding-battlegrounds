@@ -496,7 +496,11 @@ function markZones(src, on) {
     set($("myBoard"), "drop-ok");
     return;
   }
-  if (src.type === "board") { set($("shopPanel"), "drop-sell"); return; }
+  if (src.type === "board") {
+    set($("shopPanel"), "drop-sell");
+    set($("myBoard"), "drop-ok"); // presun na iný slot
+    return;
+  }
   const inst = state[HUMAN].hand[src.idx];
   if (!inst) return;
   set($("shopPanel"), "drop-sell");
@@ -528,7 +532,15 @@ function endDrag(e) {
   }
 
   if (src.type === "board") {
-    if (inRect(e, $("shopPanel"))) act(Engine.sellCard(state, HUMAN, "board", src.idx));
+    if (inRect(e, $("shopPanel"))) { act(Engine.sellCard(state, HUMAN, "board", src.idx)); return; }
+    if (inRect(e, $("myBoard"))) {
+      // Presun na slot podľa miesta dropu (poradie útoku = zľava doprava).
+      const r = $("myBoard").getBoundingClientRect();
+      const cols = getComputedStyle($("myBoard")).gridTemplateColumns.split(" ").length;
+      let slot = Math.floor((e.clientX - r.left) / (r.width / cols));
+      slot = Math.max(0, Math.min(Engine.BOARD_MAX - 1, slot));
+      act(Engine.moveOnBoard(state, HUMAN, src.idx, slot));
+    }
     return;
   }
 

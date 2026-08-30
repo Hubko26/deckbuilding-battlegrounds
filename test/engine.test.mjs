@@ -343,6 +343,27 @@ test("po boji ide všetko do discard – plochy sú prázdne, tokeny miznú", ()
   assert.ok(!state.p1.discard.some(c => c.defId === "kostik")); // token nejde do discard
 });
 
+test("moveOnBoard: presun mení sloty (obsadený = výmena) a poradie útoku", () => {
+  const { state, E } = fresh(8);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const a = E.makeInst(state, "B005", 1); a.slot = 0; // 3/2
+  const b = E.makeInst(state, "B002", 1); b.slot = 1; // 4/5
+  state.p1.board = [a, b];
+  state.p2.board = [E.makeInst(state, "B001", 1)];
+  state.p1.hand = []; state.p2.hand = [];
+  // výmena miest: a -> slot 1
+  E.moveOnBoard(state, "p1", 0, 1);
+  assert.equal(a.slot, 1);
+  assert.equal(b.slot, 0);
+  assert.equal(state.p1.board[0], b); // pole je zoradené podľa slotov
+  // p1 má viac príšer, útočí prvý – a prvý útočník je ten naľavo (b)
+  const events = E.doBattle(state);
+  const first = events.find(e => e.type === "attack");
+  assert.equal(first.aPid, "p1");
+  assert.equal(first.aUid, b.uid);
+});
+
 test("hra končí, keď hrdina klesne na 0 HP", () => {
   const { state, E } = fresh(6);
   E.startRound(state);
