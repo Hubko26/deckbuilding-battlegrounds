@@ -110,6 +110,7 @@ test("obchod rešpektuje tier limit", () => {
 test("evolve: 3 rovnaké bronzové sa spoja na striebornú so statmi ×2", () => {
   const { state, E, C } = fresh();
   const p = state.p1;
+  p.deck = []; p.discard = []; // žiadne náhodné kópie zo štartu
   p.hand = [E.makeInst(state, "B001", 1), E.makeInst(state, "B001", 1)];
   p.board = [E.makeInst(state, "B001", 1)];
   const events = [];
@@ -126,6 +127,7 @@ test("evolve: 3 rovnaké bronzové sa spoja na striebornú so statmi ×2", () =>
 test("evolve: 3 strieborné dajú zlatú so statmi ×4; zlatá sa už nespája", () => {
   const { state, E, C } = fresh();
   const p = state.p1;
+  p.deck = []; p.discard = [];
   p.hand = [1, 2, 3].map(() => E.makeInst(state, "B005", 2));
   E.checkEvolve(state, p, []);
   assert.equal(p.hand.length, 1);
@@ -146,12 +148,46 @@ test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () 
   state.commons[0] = "B003";
   const deckBefore = p.deck.length;
   const events = E.buyCommon(state, "p1", 0);
-  assert.ok(events.some(e => e.type === "toHand"));
   assert.ok(events.some(e => e.type === "evolve"));
-  assert.equal(p.deck.length, deckBefore); // nešla do balíčka
+  assert.equal(p.deck.length, deckBefore); // kúpená prišla a hneď sa spojila
   assert.equal(p.hand.length, 0);
   assert.equal(p.board.length, 1);
   assert.equal(p.board[0].rank, 2);
+});
+
+test("trojica úplne skrytá v balíčku sa spojí sama (výsledok do ruky + hidden)", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = []; p.board = [];
+  p.deck = [{ defId: "B001", rank: 1 }, { defId: "B001", rank: 1 }, { defId: "B001", rank: 1 }, { defId: "B002", rank: 1 }];
+  p.discard = [];
+  const events = [];
+  E.checkEvolve(state, p, events);
+  const ev = events.find(e => e.type === "evolve");
+  assert.ok(ev);
+  assert.equal(ev.hidden, true);
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].rank, 2);
+  assert.equal(p.deck.filter(c => c.defId === "B001").length, 0);
+});
+
+test("skrytá trojica vzniknutá kúpou (0 viditeľných + 2 v balíčku)", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = []; p.board = [];
+  p.deck = [{ defId: "E002", rank: 1 }, { defId: "E002", rank: 1 }];
+  p.discard = [];
+  p.money = 5;
+  state.commons[0] = "E002";
+  const events = E.buyCommon(state, "p1", 0);
+  const ev = events.find(e => e.type === "evolve");
+  assert.ok(ev && ev.hidden);
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].defId, "E002");
+  assert.equal(p.hand[0].rank, 2);
+  assert.equal(p.deck.filter(c => c.defId === "E002").length, 0);
 });
 
 test("tvoj scenár: 1 v ruke + 2 dokúpené postupne → evolvne (kópia sa vytiahne z balíčka)", () => {
@@ -446,11 +482,20 @@ test("po boji ide všetko do discard – plochy sú prázdne, tokeny miznú", ()
   state.p1.board = [tank];
   state.p2.board = [E.makeInst(state, "B001", 1)];
   state.p1.hand = []; state.p2.hand = [];
+  // čisté balíčky, aby globálny evolve po boji nespojil náhodné kópie
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
   E.doBattle(state);
   assert.equal(state.p1.board.length, 0);
   assert.equal(state.p2.board.length, 0);
   assert.ok(state.p1.discard.some(c => c.defId === "U008")); // aj preživší
-  assert.ok(state.p2.discard.some(c => c.defId === "B001"));
+  // B001 sa vrátil do cyklu balíčka (po boji discard, ďalšie kolo ho mohol
+  // aktívny hráč hneď dotiahnuť do ruky)
+  assert.ok(
+    state.p2.discard.some(c => c.defId === "B001") ||
+    state.p2.deck.some(c => c.defId === "B001") ||
+    state.p2.hand.some(x => x.defId === "B001")
+  );
   assert.ok(!state.p1.discard.some(c => c.defId === "kostik")); // token nejde do discard
 });
 

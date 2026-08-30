@@ -68,6 +68,12 @@ const L = {
     cs: "🃏 Kopie z balíčku do ruky",
     en: "🃏 Copy pulled from deck",
   },
+  hiddenEvolve: {
+    sk: "Tri kópie z balíčka sa spojili:",
+    cs: "Tři kopie z balíčku se spojily:",
+    en: "Three copies from your deck merged:",
+  },
+  ok: { sk: "OK", cs: "OK", en: "OK" },
   begins: { sk: "začína", cs: "začíná", en: "begins" },
   battleDraw: { sk: "Boj skončil remízou.", cs: "Boj skončil remízou.", en: "The fight was a draw." },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
@@ -126,7 +132,7 @@ function startGame() {
   MY = "p1"; OPP = "p2";
   state = Engine.newGame(Math.random);
   enterGameScreen();
-  Engine.startRound(state);
+  act(Engine.startRound(state));
   driveFlow();
 }
 
@@ -154,7 +160,7 @@ function startNet() {
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = Engine.newGame(Engine.seededRng(msg.seed));
       enterGameScreen();
-      Engine.startRound(state);
+      act(Engine.startRound(state));
       driveFlow();
     },
     onAction: msg => { remoteQueue = remoteQueue.then(() => applyRemote(msg)); },
@@ -782,10 +788,12 @@ function endDrag(e) {
 // ---------- Interakcie hráča ----------
 function act(events) {
   if (!events) { renderAll(); return; }
+  const hiddenEvolves = [];
   for (const ev of events) {
     if (ev.type === "evolve" && ev.pid === MY) {
       Sfx.evolve();
       log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
+      if (ev.hidden) hiddenEvolves.push(Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang));
     }
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
     if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));
@@ -797,10 +805,15 @@ function act(events) {
   renderAll();
   // Evolve animácia po prerenderi.
   for (const ev of events) {
-    if (ev.type === "evolve") {
+    if (ev.type === "evolve" && ev.uid) {
       const el = cardById(ev.uid);
       if (el) el.classList.add("evolving");
     }
+  }
+  // Trojica zo skrytých kópií (balíček/kôpka) – ohlás popupom.
+  if (hiddenEvolves.length) {
+    $("evolveMsg").textContent = `${t(L.hiddenEvolve)} ${hiddenEvolves.join(", ")}!`;
+    $("evolveOverlay").classList.remove("hidden");
   }
 }
 
@@ -850,6 +863,7 @@ $("netBtn").addEventListener("click", startNet);
 $("netCancel").addEventListener("click", backToPick);
 $("newGameBtn").addEventListener("click", backToPick);
 $("endTurnBtn").addEventListener("click", onEndTurn);
+$("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
 $("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
 $("overAgain").addEventListener("click", () => {

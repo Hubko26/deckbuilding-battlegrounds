@@ -156,35 +156,74 @@ const Engine = (() => {
   }
 
   // ---------- Evolve ----------
-  // 3 rovnaké (karta + stupeň) na ploche + v ruke → automaticky vyšší stupeň.
+  // 3 rovnaké (karta + stupeň) KDEKOĽVEK – plocha, ruka, balíček aj kôpka –
+  // sa automaticky spoja na vyšší stupeň. Kópie sa spotrebujú v poradí
+  // plocha → ruka → balíček → kôpka. Výsledok ide na plochu (ak tam bola
+  // kópia), inak do ruky; pri plnej ruke do balíčka. hidden=true, keď sa
+  // použila aspoň jedna neviditeľná kópia (UI to ohlási hráčovi).
   function checkEvolve(state, p, events) {
     for (;;) {
       const groups = {};
-      for (const zone of ["board", "hand"]) {
-        for (const inst of p[zone]) {
-          if (inst.spell || Cards.byId[inst.defId].token || inst.rank >= 3) continue;
-          (groups[inst.defId + "|" + inst.rank] ||= []).push({ zone, inst });
-        }
+      const g = (defId, rank) =>
+        (groups[defId + "|" + rank] ||= { board: [], hand: [], deck: [], discard: [], total: 0 });
+      const countable = (defId, rank) =>
+        rank < 3 && !Cards.byId[defId].spell && !Cards.byId[defId].token;
+      for (const inst of p.board) {
+        if (!inst.spell && countable(inst.defId, inst.rank)) { const e = g(inst.defId, inst.rank); e.board.push(inst); e.total++; }
       }
-      const trio = Object.values(groups).find(g => g.length >= 3);
-      if (!trio) return;
-      const [a, b, c] = trio;
-      const { defId, rank } = a.inst;
-      const evolved = makeInst(state, defId, rank + 1, p);
-      // Výsledok ide na plochu, ak tam bola aspoň jedna kópia; inak do ruky.
-      const boardCopy = trio.slice(0, 3).find(x => x.zone === "board");
-      for (const x of trio.slice(0, 3)) {
-        p[x.zone].splice(p[x.zone].indexOf(x.inst), 1);
+      for (const inst of p.hand) {
+        if (!inst.spell && countable(inst.defId, inst.rank)) { const e = g(inst.defId, inst.rank); e.hand.push(inst); e.total++; }
       }
-      if (boardCopy) {
-        evolved.slot = boardCopy.inst.slot;
+      p.deck.forEach((c, i) => { if (countable(c.defId, c.rank)) { const e = g(c.defId, c.rank); e.deck.push(i); e.total++; } });
+      p.discard.forEach((c, i) => { if (countable(c.defId, c.rank)) { const e = g(c.defId, c.rank); e.discard.push(i); e.total++; } });
+
+      const entry = Object.entries(groups).find(([, v]) => v.total >= 3);
+      if (!entry) return;
+      const [key, v] = entry;
+      const defId = key.slice(0, key.lastIndexOf("|"));
+      const rank = Number(key.slice(key.lastIndexOf("|") + 1));
+
+      let need = 3, boardSlot = null, hidden = false;
+      while (need > 0 && v.board.length) {
+        const inst = v.board.shift();
+        if (boardSlot === null) boardSlot = inst.slot;
+        p.board.splice(p.board.indexOf(inst), 1);
+        need--;
+      }
+      while (need > 0 && v.hand.length) {
+        const inst = v.hand.shift();
+        p.hand.splice(p.hand.indexOf(inst), 1);
+        need--;
+      }
+      for (const idx of v.deck.reverse()) { // od najvyššieho indexu
+        if (need <= 0) break;
+        p.deck.splice(idx, 1);
+        hidden = true;
+        need--;
+      }
+      for (const idx of v.discard.reverse()) {
+        if (need <= 0) break;
+        p.discard.splice(idx, 1);
+        hidden = true;
+        need--;
+      }
+
+      let uid = null;
+      if (boardSlot !== null) {
+        const evolved = makeInst(state, defId, rank + 1, p);
+        evolved.slot = boardSlot;
         p.board.push(evolved);
         sortBoard(p);
-      } else {
+        uid = evolved.uid;
+      } else if (p.hand.length < HAND_MAX) {
+        const evolved = makeInst(state, defId, rank + 1, p);
         evolved.slot = freeSlot(p.hand, HAND_MAX);
         p.hand.push(evolved);
+        uid = evolved.uid;
+      } else {
+        addToDeckRef(state, p, defId, rank + 1);
       }
-      events.push({ type: "evolve", pid: p.id, defId, rank: rank + 1, uid: evolved.uid });
+      events.push({ type: "evolve", pid: p.id, defId, rank: rank + 1, uid, hidden });
     }
   }
 
@@ -215,44 +254,21 @@ const Engine = (() => {
     return events;
   }
 
-  // Kúpená karta ide do balíčka. Výnimka (aby evolve fungoval intuitívne ako
-  // v Battlegrounds): ak kúpou vzniká trojica, karta ide rovno do ruky.
-  // Rátajú sa VŠETKY vlastnené kópie – aj v balíčku a kôpke; chýbajúce sa
-  // z nich vytiahnu do ruky, takže trojica sa spojí okamžite.
+  // Kúpená karta ide do balíčka; globálny checkEvolve hneď spojí trojicu,
+  // ak kúpou vznikla (aj z kópií schovaných v balíčku/kôpke).
   function acquireCard(state, p, defId, events) {
-    const def = Cards.byId[defId];
-    if (!def.spell) {
-      const inZones = [...p.hand, ...p.board]
-        .filter(x => !x.spell && x.defId === defId && x.rank === 1).length;
-      const deckIdx = p.deck.map((c, i) => (c.defId === defId && c.rank === 1 ? i : -1)).filter(i => i >= 0);
-      const discIdx = p.discard.map((c, i) => (c.defId === defId && c.rank === 1 ? i : -1)).filter(i => i >= 0);
-      const owned = inZones + deckIdx.length + discIdx.length;
-      const need = Math.max(0, 2 - inZones); // kópie na vytiahnutie z balíčka/kôpky
-      if (owned >= 2 && p.hand.length + need + 1 <= HAND_MAX) {
-        const toHand = () => {
-          const inst = makeInst(state, defId, 1, p);
-          inst.slot = freeSlot(p.hand, HAND_MAX);
-          p.hand.push(inst);
-          events.push({ type: "toHand", pid: p.id, defId });
-        };
-        for (let i = 0; i < need; i++) {
-          if (deckIdx.length) p.deck.splice(deckIdx.pop(), 1);       // pop = najvyšší index
-          else if (discIdx.length) p.discard.splice(discIdx.pop(), 1);
-          else break;
-          toHand();
-        }
-        toHand(); // kúpená kópia
-        checkEvolve(state, p, events);
-        return;
-      }
-    }
     addToDeck(state, p, defId);
+    checkEvolve(state, p, events);
   }
 
   // Kúpená karta sa zamieša do balíčka (na náhodné miesto).
   function addToDeck(state, p, defId) {
+    addToDeckRef(state, p, defId, 1);
+  }
+
+  function addToDeckRef(state, p, defId, rank) {
     const i = Math.floor(state.rng() * (p.deck.length + 1));
-    p.deck.splice(i, 0, { defId, rank: 1 });
+    p.deck.splice(i, 0, { defId, rank });
   }
 
   function refreshShop(state, pid) {
