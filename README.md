@@ -9,6 +9,8 @@ Herné pravidlá a rozhodnutia: [DESIGN.md](DESIGN.md).
 
 ## Spustenie
 
+Windows: dvojklik na **start.bat**. Alebo v termináli:
+
 ```bash
 node server.mjs
 ```
