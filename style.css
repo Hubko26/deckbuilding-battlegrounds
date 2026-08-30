@@ -49,6 +49,13 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }
 .net-row { margin-top: 12px; }
 .net-urls { font-weight: 700; color: #2f7cff; margin: 10px 0; font-size: 1rem; user-select: text; }
+.peer-code { font-size: 2.4rem; font-weight: 900; letter-spacing: .2em; color: #2f7cff; margin: 8px 0; user-select: text; }
+.peer-join { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
+.peer-join input {
+  width: 110px; font-size: 1.4rem; text-align: center; letter-spacing: .15em;
+  border: 2px solid #9bc; border-radius: 10px; padding: 6px; font-family: inherit;
+}
+#peerSetup { margin-top: 8px; }
 
 /* ---------- Doska ---------- */
 #gameScreen { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }

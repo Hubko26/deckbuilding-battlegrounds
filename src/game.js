@@ -28,6 +28,33 @@ const L = {
     en: "Server is not running. Start the game with: node server.mjs",
   },
   netLeft: { sk: "📴 Súper sa odpojil", cs: "📴 Soupeř se odpojil", en: "📴 Opponent disconnected" },
+  peerIntro: {
+    sk: "Hraj cez kód miestnosti (cez internet):",
+    cs: "Hraj přes kód místnosti (přes internet):",
+    en: "Play with a room code (over the internet):",
+  },
+  peerHost: { sk: "🎲 Vytvoriť hru", cs: "🎲 Vytvořit hru", en: "🎲 Create a game" },
+  peerJoin: { sk: "Pripojiť sa", cs: "Připojit se", en: "Join" },
+  peerShare: {
+    sk: "Povedz kamarátovi tento kód a nech sa pripojí:",
+    cs: "Řekni kamarádovi tento kód, ať se připojí:",
+    en: "Tell your friend this code so they can join:",
+  },
+  peerNotFound: {
+    sk: "Hra s týmto kódom sa nenašla. Skontroluj kód.",
+    cs: "Hra s tímto kódem nenalezena. Zkontroluj kód.",
+    en: "No game found with that code. Check the code.",
+  },
+  peerCodeTaken: {
+    sk: "Kód je obsadený – skús vytvoriť hru znova.",
+    cs: "Kód je obsazený – zkus vytvořit hru znovu.",
+    en: "Code is taken – try creating the game again.",
+  },
+  peerError: {
+    sk: "Spojenie zlyhalo. Skontroluj internet a skús znova.",
+    cs: "Spojení selhalo. Zkontroluj internet a zkus znovu.",
+    en: "Connection failed. Check the internet and try again.",
+  },
   cancel: { sk: "✖ Zruš", cs: "✖ Zruš", en: "✖ Cancel" },
   stageWord: { sk: "stupeň", cs: "stupeň", en: "Stage" },
   spellWord: { sk: "Kúzlo", cs: "Kouzlo", en: "Spell" },
@@ -110,6 +137,8 @@ function applyI18n() {
   $("startBtn").textContent = t(L.play);
   $("netBtn").textContent = t(L.netBtn);
   $("netCancel").textContent = t(L.cancel);
+  $("peerHostBtn").textContent = t(L.peerHost);
+  $("peerJoinBtn").textContent = t(L.peerJoin);
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);
   $("overAgain").textContent = t(L.again);
@@ -147,15 +176,19 @@ function enterGameScreen() {
   logClear();
 }
 
-// ---------- Hra po lokálnej sieti ----------
-function startNet() {
-  mode = "net";
-  $("netOverlay").classList.remove("hidden");
-  $("netMsg").textContent = t(L.netConnecting);
-  Net.connect({
+// ---------- Hra po sieti ----------
+// Najprv skúsi lokálny WS server (LAN, automatické párovanie). Keď nebeží
+// (napr. GitHub Pages), prepne na PeerJS s kódom miestnosti.
+function netHandlers() {
+  return {
     onWaiting: msg => {
-      $("netMsg").textContent = t(L.netWaiting);
-      $("netUrls").textContent = (msg.urls || []).join("  ·  ");
+      if (msg.code) {
+        $("netMsg").textContent = t(L.peerShare);
+        $("peerCode").textContent = msg.code;
+      } else {
+        $("netMsg").textContent = t(L.netWaiting);
+        $("netUrls").textContent = (msg.urls || []).join("  ·  ");
+      }
     },
     onStart: msg => {
       MY = msg.you;
@@ -168,21 +201,54 @@ function startNet() {
     onAction: msg => { remoteQueue = remoteQueue.then(() => applyRemote(msg)); },
     onPeerLeft: () => {
       if (mode !== "net") return;
-      Net.disconnect();
       if (state && state.phase !== "over") {
+        Net.disconnect();
         $("overOverlay").classList.remove("hidden");
         $("overTitle").textContent = t(L.netLeft);
         $("overMsg").textContent = "";
-      } else if (!state) {
-        // Spojenie zlyhalo ešte pred hrou (beží len statický server bez
-        // WebSocketu) – nechaj overlay otvorený s návodom, nezatváraj ho.
-        $("netOverlay").classList.remove("hidden");
-        $("netMsg").textContent = t(L.netError);
-        $("netUrls").textContent = "";
       }
     },
+    onPeerMode: showPeerSetup,
+    onPeerError: kind => {
+      if (kind === "peer-unavailable") $("netMsg").textContent = t(L.peerNotFound);
+      else if (kind === "unavailable-id") $("netMsg").textContent = t(L.peerCodeTaken);
+      else $("netMsg").textContent = t(L.peerError);
+    },
     onError: () => { $("netMsg").textContent = t(L.netError); },
-  });
+  };
+}
+
+function startNet() {
+  mode = "net";
+  $("netOverlay").classList.remove("hidden");
+  $("peerSetup").classList.add("hidden");
+  $("netUrls").textContent = "";
+  $("peerCode").textContent = "";
+  $("netMsg").textContent = t(L.netConnecting);
+  Net.connect(netHandlers());
+}
+
+// Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
+function showPeerSetup() {
+  if (!Net.peerAvailable()) {
+    $("netMsg").textContent = t(L.netError);
+    return;
+  }
+  $("netMsg").textContent = t(L.peerIntro);
+  $("peerSetup").classList.remove("hidden");
+}
+
+function peerHost() {
+  const code = String(1000 + Math.floor(Math.random() * 9000));
+  $("peerCode").textContent = "…";
+  Net.hostPeer(code, netHandlers());
+}
+
+function peerJoin() {
+  const code = $("peerCodeInput").value.trim();
+  if (!code) return;
+  $("netMsg").textContent = t(L.netConnecting);
+  Net.joinPeer(code, netHandlers());
 }
 
 let remoteQueue = Promise.resolve();
@@ -873,6 +939,9 @@ function logClear() { $("logEl").innerHTML = ""; }
 $("startBtn").addEventListener("click", startGame);
 $("netBtn").addEventListener("click", startNet);
 $("netCancel").addEventListener("click", backToPick);
+$("peerHostBtn").addEventListener("click", peerHost);
+$("peerJoinBtn").addEventListener("click", peerJoin);
+$("peerCodeInput").addEventListener("keydown", e => { if (e.key === "Enter") peerJoin(); });
 $("newGameBtn").addEventListener("click", backToPick);
 $("endTurnBtn").addEventListener("click", onEndTurn);
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));

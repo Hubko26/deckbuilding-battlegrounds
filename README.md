@@ -19,9 +19,13 @@ a otvor `http://localhost:5180`. Server vypíše aj adresu v lokálnej sieti –
 na druhom zariadení ju otvor a klikni **📶 Hraj s kamarátom (sieť)** na oboch:
 hráči sa automaticky spárujú (1v1 po LAN, bez internetu).
 
-Hra proti botovi funguje aj z obyčajného statického servera
-(`python -m http.server`) alebo z GitHub Pages – sieťová hra potrebuje
-`node server.mjs` (čistý Node, žiadne závislosti).
+## GitHub Pages / statický hosting
+
+Hra funguje aj bez Node servera (napr. na GitHub Pages): bot normálne,
+a multiplayer cez **kód miestnosti** – keď lokálny server nebeží, tlačidlo
+„Hraj s kamarátom“ ponúkne „🎲 Vytvoriť hru“ (ukáže 4-miestny kód) a
+„Pripojiť sa“ (kamarát kód zadá). Spojenie je P2P (WebRTC/PeerJS, signaling
+cez verejný PeerJS cloud) – funguje aj cez internet, nielen v jednej sieti.
 
 ## Testy
 
