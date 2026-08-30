@@ -334,7 +334,17 @@ async function runBattle() {
       }
       case "buff": {
         const el = cardById(ev.uid);
-        if (el) { Sfx.buff(); floatText(el, `+${ev.a}/+${ev.h}`, true); await sleep(450); }
+        if (el) {
+          Sfx.buff();
+          floatText(el, `+${ev.a}/+${ev.h}`, true);
+          // Prepíš čísla na karte, nech buff reálne vidno.
+          const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
+          if (atkEl && ev.a) atkEl.textContent = String((parseInt(atkEl.textContent, 10) || 0) + ev.a);
+          if (hpEl && ev.h) hpEl.textContent = String((parseInt(hpEl.textContent, 10) || 0) + ev.h);
+          el.classList.add("evolving");
+          await sleep(500);
+          el.classList.remove("evolving");
+        }
         break;
       }
       case "die": {
