@@ -17,11 +17,17 @@ const Cards = (() => {
     elemental: { sk: "Živel", cs: "Živel", en: "Elemental" },
     undead: { sk: "Nemŕtvy", cs: "Nemrtvý", en: "Undead" },
   };
-  const RACES_PL = { // množné číslo do textov schopností
+  const RACES_PL = { // datív množného čísla („+2/+2 všetkým Zvieratám“)
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
     elemental: { sk: "Živlom", cs: "Živlům", en: "Elementals" },
     undead: { sk: "Nemŕtvym", cs: "Nemrtvým", en: "Undead" },
   };
+  const RACES_NOM = { // nominatív množného čísla („všetky budúce Zvieratá“)
+    beast: { sk: "Zvieratá", cs: "Zvířata", en: "Beasts" },
+    elemental: { sk: "Živly", cs: "Živly", en: "Elementals" },
+    undead: { sk: "Nemŕtvi", cs: "Nemrtví", en: "Undead" },
+  };
+  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀" };
 
   const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
     ({ id, tier, race, stageNames, atk, hp, ...extra });
@@ -35,14 +41,16 @@ const Cards = (() => {
       { power: { kw: "deathrattle", fx: { type: "summon", token: "bublina", n: 1 } } }),
     M("B004", 2, "beast", ["Hootnip", "Moongaze", "Nightoracle"], 2, 3,
       { power: { kw: "battlecry", fx: { type: "draw", n: 1 } } }),
-    M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2),
+    M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2,
+      { power: { kw: "onAttack", fx: { type: "buffRace", race: "beast", a: 1, h: 0 } } }),
     M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5, { taunt: true }),
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
     M("B006", 4, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 4, 7, { taunt: true }),
     M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 6, 4,
-      { power: { kw: "battlecry", fx: { type: "buffFriend", a: 2, h: 2 } } }),
-    M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10, { taunt: true }),
+      { power: { kw: "battlecry", fx: { type: "buffRace", race: "beast", a: 2, h: 2 } } }),
+    M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10,
+      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } } }),
 
     // ---------- Živly (Elemental) ----------
     M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 2, 1,
@@ -50,17 +58,17 @@ const Cards = (() => {
     M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 2, 4, { taunt: true }),
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 3, 2,
-      { power: { kw: "startFight", fx: { type: "growSelf", a: 2, h: 0 } } }),
+      { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 0 } } }),
     M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 4,
       { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 2 } } }),
     M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 3,
       { power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 2 } } }),
     M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 6,
-      { power: { kw: "endTurn", fx: { type: "buffAllFriends", a: 1, h: 1 } } }),
+      { power: { kw: "endTurn", fx: { type: "buffRace", race: "elemental", a: 1, h: 1 } } }),
     M("E008", 4, "elemental", ["Prismite", "Shardmane", "Auroraclysm"], 5, 5,
       { power: { kw: "battlecry", fx: { type: "buffRace", race: "elemental", a: 1, h: 1 } } }),
     M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
-      { power: { kw: "battlecry", fx: { type: "healHero", n: 5 } } }),
+      { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
     M("E010", 6, "elemental", ["Duskdrop", "Gloamstalker", "Eclipse Sovereign"], 9, 8,
       { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 4 } } }),
 
@@ -70,7 +78,7 @@ const Cards = (() => {
     M("U002", 1, "undead", ["Candlejaw", "Wickgrin", "Hearthhaunt"], 2, 1,
       { power: { kw: "deathrattle", fx: { type: "dmgRandomEnemy", n: 1 } } }),
     M("U003", 2, "undead", ["Gravebloom", "Thornwraith", "Mausoleum Hart"], 1, 4,
-      { power: { kw: "deathrattle", fx: { type: "buffAllFriends", a: 1, h: 1 } } }),
+      { power: { kw: "deathrattle", fx: { type: "buffRace", race: "undead", a: 1, h: 1 } } }),
     M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 2, 3,
       { power: { kw: "startFight", fx: { type: "dmgRandomEnemy", n: 1 } } }),
     M("U005", 3, "undead", ["Cryptcub", "Sarcoclaw", "Tombsphinx"], 4, 4,
@@ -83,7 +91,7 @@ const Cards = (() => {
     M("U009", 5, "undead", ["Hollowhound", "Gravehowl", "Sepulcher Sentinel"], 7, 5,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 3 } } }),
     M("U010", 6, "undead", ["Wispwarden", "Lantern Guard", "Soul Bastion"], 8, 10,
-      { taunt: true, power: { kw: "deathrattle", fx: { type: "buffAllFriends", a: 2, h: 2 } } }),
+      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 1, h: 1 } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     { id: "minca", tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
@@ -130,6 +138,7 @@ const Cards = (() => {
     deathrattle: { sk: "Pri smrti", cs: "Při smrti", en: "Deathrattle" },
     startFight: { sk: "Pred bojom", cs: "Před bojem", en: "Start of fight" },
     endTurn: { sk: "Po nákupe", cs: "Po nákupu", en: "End of turn" },
+    onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
   };
   const TAUNT_LABEL = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
 
@@ -144,6 +153,11 @@ const Cards = (() => {
       sk: `+${f.a * m}/+${f.h * m} náhodnému kamarátovi`,
       cs: `+${f.a * m}/+${f.h * m} náhodnému kamarádovi`,
       en: `+${f.a * m}/+${f.h * m} to a random friend`,
+    }),
+    futureRace: (f, m) => ({
+      sk: `všetky budúce ${RACES_NOM[f.race].sk} dostanú +${f.a * m}/+${f.h * m}`,
+      cs: `všechna budoucí ${RACES_NOM[f.race].cs} dostanou +${f.a * m}/+${f.h * m}`,
+      en: `all future ${RACES_NOM[f.race].en} get +${f.a * m}/+${f.h * m}`,
     }),
     buffRace: (f, m) => ({
       sk: `+${f.a * m}/+${f.h * m} všetkým ${RACES_PL[f.race].sk}`,
@@ -209,7 +223,7 @@ const Cards = (() => {
   // Staty pre stupeň: bronz ×1, striebro ×2, zlato ×4.
   const STAT_MULT = [null, 1, 2, 4];
 
-  return { RACES, RACES_PL, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL };
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

@@ -8,7 +8,7 @@ const Engine = (() => {
   const HAND_MAX = 8;
   const CARD_COST = 3;
   const SELL_GAIN = 1;
-  const REFRESH_COST = 2;
+  const REFRESH_COST = 1;
   const COMMON_COUNT = 3;
   const TIER_MAX = 6;
   const TIER_BASE_COST = { 2: 5, 3: 7, 4: 8, 5: 9, 6: 10 };
@@ -34,15 +34,36 @@ const Engine = (() => {
   }
   const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
 
-  function makeInst(state, defId, rank) {
+  // Deterministický generátor náhody (mulberry32) – multiplayer replikuje
+  // akcie a oba klienty musia dostať rovnaké náhodné čísla z rovnakého seedu.
+  function seededRng(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // p (voliteľné): hráč, ktorému inštancia vzniká – aplikujú sa jeho permanentné
+  // rasové aury („všetky budúce X dostanú +a/+h“).
+  function makeInst(state, defId, rank, p) {
     const def = Cards.byId[defId];
     if (def.spell) return { uid: ++state.uidSeq, defId, rank: 1, spell: true };
     const m = Cards.STAT_MULT[rank];
-    return {
+    const inst = {
       uid: ++state.uidSeq, defId, rank,
       atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m,
       taunt: !!def.taunt,
     };
+    const aura = p && def.race && p.raceBuffs && p.raceBuffs[def.race];
+    if (aura) {
+      inst.atk += aura.a;
+      inst.hp += aura.h;
+      inst.maxHp += aura.h;
+    }
+    return inst;
   }
 
   // Náhodná karta z obchodného poolu (bez tokenov), tier <= limit.
@@ -79,6 +100,7 @@ const Engine = (() => {
       id, hp: HERO_HP, tier: 1, reachedRound: 1, money: 0,
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
+      raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
     };
   }
 
@@ -124,7 +146,7 @@ const Engine = (() => {
         events.push({ type: "reshuffle", pid: p.id });
       }
       const c = p.deck.pop();
-      const inst = makeInst(state, c.defId, c.rank);
+      const inst = makeInst(state, c.defId, c.rank, p);
       inst.slot = freeSlot(p.hand, HAND_MAX);
       p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: c.defId });
@@ -146,7 +168,7 @@ const Engine = (() => {
       if (!trio) return;
       const [a, b, c] = trio;
       const { defId, rank } = a.inst;
-      const evolved = makeInst(state, defId, rank + 1);
+      const evolved = makeInst(state, defId, rank + 1, p);
       // Výsledok ide na plochu, ak tam bola aspoň jedna kópia; inak do ruky.
       const boardCopy = trio.slice(0, 3).find(x => x.zone === "board");
       for (const x of trio.slice(0, 3)) {
@@ -197,7 +219,7 @@ const Engine = (() => {
     const copies = [...p.hand, ...p.board]
       .filter(x => !x.spell && x.defId === defId && x.rank === 1).length;
     if (!def.spell && copies >= 2 && p.hand.length < HAND_MAX) {
-      const inst = makeInst(state, defId, 1);
+      const inst = makeInst(state, defId, 1, p);
       inst.slot = freeSlot(p.hand, HAND_MAX);
       p.hand.push(inst);
       events.push({ type: "toHand", pid: p.id, defId });
@@ -307,7 +329,7 @@ const Engine = (() => {
     const defId = pd.options[choiceIdx];
     state.pendingDiscover = null;
     const p = state[pid];
-    const inst = makeInst(state, defId, 1);
+    const inst = makeInst(state, defId, 1, p);
     inst.slot = freeSlot(p.hand, HAND_MAX);
     p.hand.push(inst);
     const events = [{ type: "discoverPick", pid, defId }];
@@ -388,6 +410,13 @@ const Engine = (() => {
         p.hp = Math.min(HERO_HP, p.hp + fx.n * m);
         events.push({ type: "heal", pid: p.id, n: fx.n * m });
         break;
+      case "futureRace": {
+        // Permanentná aura: všetky budúce príšerky danej rasy dostanú +a/+h.
+        const cur = p.raceBuffs[fx.race] || { a: 0, h: 0 };
+        p.raceBuffs[fx.race] = { a: cur.a + fx.a * m, h: cur.h + fx.h * m };
+        events.push({ type: "futureBuff", pid: p.id, race: fx.race, a: fx.a * m, h: fx.h * m });
+        break;
+      }
     }
   }
 
@@ -445,6 +474,7 @@ const Engine = (() => {
         if (inst.hp <= 0) continue;
         const def = Cards.byId[inst.defId];
         if (def.power && def.power.kw === "startFight") {
+          events.push({ type: "proc", pid, uid: inst.uid, kw: "startFight" });
           applyBattleFx(state, sides, pid, inst, def.power.fx, inst.rank, events);
         }
       }
@@ -461,6 +491,12 @@ const Engine = (() => {
         if (cand.hp > 0) { a = cand; ptr[attacker] = (mine.indexOf(cand) + 1) % mine.length; break; }
       }
       if (!a) break;
+      // Pri útoku – dočasný boost (platí len počas tohto boja).
+      const aDef = Cards.byId[a.defId];
+      if (aDef.power && aDef.power.kw === "onAttack") {
+        events.push({ type: "proc", pid: attacker, uid: a.uid, kw: "onAttack" });
+        applyBattleFx(state, sides, attacker, a, aDef.power.fx, a.rank, events);
+      }
       const enemies = alive(other(attacker));
       const taunts = enemies.filter(x => x.taunt);
       const d = pick(taunts.length ? taunts : enemies, state.rng);
@@ -541,13 +577,23 @@ const Engine = (() => {
           events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
         break;
+      case "buffRace":
+        // Rasová synergia v boji – buffne živé príšerky rovnakej rasy.
+        for (const f of sides[pid]) {
+          if (f === self || f.hp <= 0 || Cards.byId[f.defId].race !== fx.race) continue;
+          f.atk += fx.a * m;
+          f.maxHp += fx.h * m;
+          f.hp += fx.h * m;
+          events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
+        }
+        break;
       case "summon": {
         const board = sides[pid];
         const idx = board.indexOf(self);
         for (let i = 0; i < fx.n * m; i++) {
           const alive = board.filter(x => x.hp > 0);
           if (alive.length >= BOARD_MAX) break;
-          const tok = makeInst(state, fx.token, 1);
+          const tok = makeInst(state, fx.token, 1, state[pid]);
           tok.slot = freeSlot(alive, BOARD_MAX);
           board.splice(idx + 1 + i, 0, tok);
           events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token, slot: tok.slot });
@@ -562,18 +608,20 @@ const Engine = (() => {
       for (const inst of [...sides[pid]]) {
         if (inst.hp > 0 || inst.dead) continue;
         inst.dead = true;
-        events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
+        // Poradie pre UI: proc badge + efekt kým je karta ešte vidno, potom smrť.
         const def = Cards.byId[inst.defId];
         if (def.power && def.power.kw === "deathrattle") {
+          events.push({ type: "proc", pid, uid: inst.uid, kw: "deathrattle" });
           applyBattleFx(state, sides, pid, inst, def.power.fx, inst.rank, events);
         }
+        events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
       }
     }
   }
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST,
-    TIER_MAX, privateCount, income,
+    TIER_MAX, privateCount, income, seededRng,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, refreshShop,
     toggleFreeze, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,

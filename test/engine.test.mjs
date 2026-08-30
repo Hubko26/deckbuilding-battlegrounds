@@ -200,16 +200,71 @@ test("sell: +1 peniaz, karta zmizne", () => {
   assert.equal(state.p1.money, money + 1);
 });
 
-test("refresh: -2 peniaze, zmrazená súkromná karta ostáva", () => {
+test("refresh: -1 peniaz, zmrazená súkromná karta ostáva", () => {
   const { state, E } = fresh();
   E.startRound(state);
   state.p1.money = 5;
   E.toggleFreeze(state, "p1", 0);
   const frozen = state.p1.priv[0].defId;
   E.refreshShop(state, "p1");
-  assert.equal(state.p1.money, 3);
+  assert.equal(state.p1.money, 4);
   assert.equal(state.p1.priv[0].defId, frozen);
   assert.equal(state.p1.priv[0].frozen, true);
+});
+
+test("futureRace aura: budúce príšerky rasy dostanú bonus, existujúce nie", () => {
+  const { state, E, C } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  const existing = E.makeInst(state, "B001", 1); // 2/2 beast na ploche
+  p.board = [existing];
+  p.hand = [E.makeInst(state, "B010", 1)]; // battlecry: budúce Zvieratá +1/+1
+  E.playMinion(state, "p1", 0);
+  assert.equal(p.raceBuffs.beast.a, 1);
+  assert.equal(p.raceBuffs.beast.h, 1);
+  assert.equal(existing.atk, 2); // existujúca bez zmeny
+  // nová inštancia zvieraťa dostane bonus
+  const fresh1 = E.makeInst(state, "B001", 1, p);
+  assert.equal(fresh1.atk, C.byId["B001"].atk + 1);
+  assert.equal(fresh1.hp, C.byId["B001"].hp + 1);
+  // iná rasa bonus nedostane
+  const elem = E.makeInst(state, "E001", 1, p);
+  assert.equal(elem.atk, C.byId["E001"].atk);
+  // aury sa sčítavajú
+  p.hand = [E.makeInst(state, "B010", 2)]; // strieborná: +2/+2
+  E.playMinion(state, "p1", 0);
+  assert.equal(p.raceBuffs.beast.a, 3);
+  assert.equal(p.raceBuffs.beast.h, 3);
+});
+
+test("onAttack: dočasný boost pri útoku v boji (len rovnaká rasa)", () => {
+  const { state, E } = fresh(12);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const dasher = E.makeInst(state, "B005", 1); dasher.slot = 0; // onAttack: Zvieratá +1/0
+  const pal = E.makeInst(state, "B002", 1); pal.slot = 1;       // beast 4/5
+  state.p1.board = [dasher, pal];
+  state.p2.board = [E.makeInst(state, "U008", 1)]; // 3/8 taunt – prežije
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  const proc = events.find(e => e.type === "proc" && e.kw === "onAttack");
+  assert.ok(proc);
+  assert.equal(proc.uid, dasher.uid);
+  assert.ok(events.some(e => e.type === "buff" && e.uid === pal.uid && e.a === 1));
+});
+
+test("deathrattle buffRace: buffne živých kamarátov rovnakej rasy v boji", () => {
+  const { state, E } = fresh(13);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const bloom = E.makeInst(state, "U003", 1); bloom.slot = 0;   // pri smrti: Nemŕtvi +1/+1
+  const buddy = E.makeInst(state, "U008", 1); buddy.slot = 1;   // undead 3/8
+  state.p1.board = [bloom, buddy];
+  state.p2.board = [E.makeInst(state, "E010", 1)]; // 9/8 – bloom zomrie
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  assert.ok(events.some(e => e.type === "proc" && e.kw === "deathrattle" && e.uid === bloom.uid));
+  assert.ok(events.some(e => e.type === "buff" && e.uid === buddy.uid));
 });
 
 test("endShopTurn: Po nákupe efekty, ruka do discard, druhý hráč na ťahu", () => {
@@ -376,6 +431,25 @@ test("hra končí, keď hrdina klesne na 0 HP", () => {
   assert.equal(state.phase, "over");
   assert.equal(state.winner, "p1");
   assert.ok(events.some(e => e.type === "gameOver"));
+});
+
+test("determinizmus: rovnaký seed + rovnaké akcie = identický stav (multiplayer)", () => {
+  const play = () => {
+    const ctx = loadEngine();
+    const E = ctx.Engine;
+    const s = E.newGame(E.seededRng(12345));
+    E.startRound(s);
+    E.buyCommon(s, "p1", 0);
+    if (s.p1.hand.some(c => !c.spell)) E.playMinion(s, "p1", s.p1.hand.findIndex(c => !c.spell));
+    E.endShopTurn(s, "p1");
+    E.refreshShop(s, "p2");
+    E.buyPrivate(s, "p2", 0);
+    if (s.p2.hand.some(c => !c.spell)) E.playMinion(s, "p2", s.p2.hand.findIndex(c => !c.spell));
+    E.endShopTurn(s, "p2");
+    E.doBattle(s);
+    return JSON.stringify(s);
+  };
+  assert.equal(play(), play());
 });
 
 test("striedanie: v párnom kole začína p2", () => {

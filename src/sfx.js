@@ -76,6 +76,10 @@ const Sfx = (() => {
       tone(520, 0.1, { type: "sine", vol: 0.1 });
       tone(780, 0.14, { type: "sine", vol: 0.1, delay: 0.06 });
     },
+    // projektil / magický zásah
+    zap() {
+      tone(700, 0.18, { type: "sawtooth", vol: 0.12, slide: 120 });
+    },
     // vyvolanie tokenu
     summon() {
       tone(300, 0.08, { type: "triangle", vol: 0.1, slide: 500 });

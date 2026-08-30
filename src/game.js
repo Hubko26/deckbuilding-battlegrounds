@@ -14,6 +14,21 @@ const L = {
   diffTitle: { sk: "Ako silný má byť súper?", cs: "Jak silný má být soupeř?", en: "How strong is your opponent?" },
   heroYou: { sk: "Ty", cs: "Ty", en: "You" },
   heroBot: { sk: "Robo", cs: "Robo", en: "Robo" },
+  heroFriend: { sk: "Kamarát", cs: "Kamarád", en: "Friend" },
+  netBtn: { sk: "📶 Hraj s kamarátom (sieť)", cs: "📶 Hraj s kamarádem (síť)", en: "📶 Play with a friend (LAN)" },
+  netConnecting: { sk: "Pripájam…", cs: "Připojuji…", en: "Connecting…" },
+  netWaiting: {
+    sk: "Čakám na druhého hráča. Na druhom zariadení otvorte:",
+    cs: "Čekám na druhého hráče. Na druhém zařízení otevřete:",
+    en: "Waiting for the second player. Open this on the other device:",
+  },
+  netError: {
+    sk: "Server nebeží. Spusti hru cez: node server.mjs",
+    cs: "Server neběží. Spusť hru přes: node server.mjs",
+    en: "Server is not running. Start the game with: node server.mjs",
+  },
+  netLeft: { sk: "📴 Súper sa odpojil", cs: "📴 Soupeř se odpojil", en: "📴 Opponent disconnected" },
+  cancel: { sk: "✖ Zruš", cs: "✖ Zruš", en: "✖ Cancel" },
   stageWord: { sk: "stupeň", cs: "stupeň", en: "Stage" },
   spellWord: { sk: "Kúzlo", cs: "Kouzlo", en: "Spell" },
   diffs: {
@@ -55,13 +70,22 @@ const L = {
   opp: { sk: "Súper", cs: "Soupeř", en: "Opponent" },
 };
 
-const HUMAN = "p1", BOT = "p2";
+let MY = "p1", OPP = "p2"; // v sieťovej hre môže byť lokálny hráč p2
 const $ = id => document.getElementById(id);
 
 let state = null;
+let mode = "bot";         // "bot" | "net"
 let difficulty = localStorage.getItem("arena.diff") || "normal";
 let busy = false;         // beží animácia / ťah bota
 let drag = null;          // aktívne ťahanie karty
+
+// Lokálna akcia: vykoná sa v engine a v sieťovej hre sa pošle súperovi,
+// ktorý ju aplikuje na svojej (identickej, rovnako seedovanej) kópii stavu.
+function doAction(name, ...args) {
+  const ev = Engine[name](state, MY, ...args);
+  if (ev && mode === "net") Net.sendAction(name, args);
+  return ev;
+}
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
@@ -71,6 +95,8 @@ function applyI18n() {
   $("title").textContent = t(L.title);
   $("diffTitle").textContent = t(L.diffTitle);
   $("startBtn").textContent = t(L.play);
+  $("netBtn").textContent = t(L.netBtn);
+  $("netCancel").textContent = t(L.cancel);
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);
   $("overAgain").textContent = t(L.again);
@@ -91,14 +117,76 @@ function renderPick() {
 }
 
 function startGame() {
+  mode = "bot";
+  MY = "p1"; OPP = "p2";
   state = Engine.newGame(Math.random);
+  enterGameScreen();
+  Engine.startRound(state);
+  driveFlow();
+}
+
+function enterGameScreen() {
   $("pickScreen").classList.add("hidden");
+  $("netOverlay").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
   $("newGameBtn").classList.remove("hidden");
   $("overOverlay").classList.add("hidden");
   logClear();
-  Engine.startRound(state);
-  driveFlow();
+}
+
+// ---------- Hra po lokálnej sieti ----------
+function startNet() {
+  mode = "net";
+  $("netOverlay").classList.remove("hidden");
+  $("netMsg").textContent = t(L.netConnecting);
+  Net.connect({
+    onWaiting: msg => {
+      $("netMsg").textContent = t(L.netWaiting);
+      $("netUrls").textContent = (msg.urls || []).join("  ·  ");
+    },
+    onStart: msg => {
+      MY = msg.you;
+      OPP = msg.you === "p1" ? "p2" : "p1";
+      state = Engine.newGame(Engine.seededRng(msg.seed));
+      enterGameScreen();
+      Engine.startRound(state);
+      driveFlow();
+    },
+    onAction: msg => { remoteQueue = remoteQueue.then(() => applyRemote(msg)); },
+    onPeerLeft: () => {
+      if (mode !== "net") return;
+      Net.disconnect();
+      if (state && state.phase !== "over") {
+        $("overOverlay").classList.remove("hidden");
+        $("overTitle").textContent = t(L.netLeft);
+        $("overMsg").textContent = "";
+      } else if (!state) {
+        backToPick();
+      }
+    },
+    onError: () => { $("netMsg").textContent = t(L.netError); },
+  });
+}
+
+let remoteQueue = Promise.resolve();
+async function applyRemote(msg) {
+  if (!state || state.phase === "over" || mode !== "net") return;
+  const ev = Engine[msg.name](state, OPP, ...(msg.args || []));
+  if (ev) {
+    for (const e of ev) { const m = oppEventMsg(e); if (m) log(m); }
+    renderAll();
+  }
+  await driveFlow();
+}
+
+function backToPick() {
+  Net.disconnect();
+  state = null;
+  $("gameScreen").classList.add("hidden");
+  $("newGameBtn").classList.add("hidden");
+  $("netOverlay").classList.add("hidden");
+  $("overOverlay").classList.add("hidden");
+  $("pickScreen").classList.remove("hidden");
 }
 
 // ---------- Herný tok ----------
@@ -106,7 +194,12 @@ async function driveFlow() {
   for (;;) {
     if (state.phase === "over") { renderAll(); showOver(); return; }
     if (state.phase === "battle") { await runBattle(); continue; }
-    if (state.active === BOT) { await runBotTurn(); continue; }
+    if (state.active === OPP) {
+      if (mode === "bot") { await runBotTurn(); continue; }
+      busy = false;
+      renderAll();
+      return; // sieťová hra: čakáme na akcie súpera
+    }
     busy = false;
     renderAll();
     return; // čaká sa na hráča
@@ -117,26 +210,29 @@ async function runBotTurn() {
   busy = true;
   renderAll();
   await sleep(600);
-  const events = Bot.botTurn(state, BOT, difficulty);
+  const events = Bot.botTurn(state, OPP, difficulty);
   for (const ev of events) {
-    const msg = botEventMsg(ev);
+    const msg = oppEventMsg(ev);
     if (msg) { log(msg); renderAll(); await sleep(650); }
   }
 }
 
-function botEventMsg(ev) {
-  if (ev.pid !== BOT) return null;
+function oppEventMsg(ev) {
+  if (ev.pid !== OPP) return null;
   const def = ev.defId ? Cards.byId[ev.defId] : null;
   const name = def ? Cards.nameOf(def, ev.rank || 1, I18N.lang) : "";
   const emoji = def && def.emoji ? def.emoji + " " : "";
+  let msg;
   switch (ev.type) {
-    case "buy": return `${t(L.botBought)} ${emoji}${name}`;
-    case "play": return `${t(L.botPlayed)} ${emoji}${name}`;
-    case "spell": return `${t(L.botSpell)} ${emoji}${name}`;
-    case "tierUp": return `${t(L.botTier)} ${ev.tier}`;
-    case "evolve": return `${t(L.botEvolve)} ${emoji}${name}!`;
+    case "buy": msg = `${t(L.botBought)} ${emoji}${name}`; break;
+    case "play": msg = `${t(L.botPlayed)} ${emoji}${name}`; break;
+    case "spell": msg = `${t(L.botSpell)} ${emoji}${name}`; break;
+    case "tierUp": msg = `${t(L.botTier)} ${ev.tier}`; break;
+    case "evolve": msg = `${t(L.botEvolve)} ${emoji}${name}!`; break;
     default: return null;
   }
+  // v sieťovej hre je súper človek, nie robot
+  return mode === "net" ? msg.replace("🤖", "🧑") : msg;
 }
 
 // ---------- Boj ----------
@@ -149,8 +245,8 @@ async function runBattle() {
   };
   const events = Engine.doBattle(state);
   renderAll();
-  renderBoardList($("oppBoard"), snap[BOT], false);
-  renderBoardList($("myBoard"), snap[HUMAN], false);
+  renderBoardList($("oppBoard"), snap[OPP], false);
+  renderBoardList($("myBoard"), snap[MY], false);
   // Boj: skry obchod, ukáž veľký nápis v strede.
   $("stage").classList.add("battle");
   const fb = $("fightBanner");
@@ -162,7 +258,7 @@ async function runBattle() {
   for (const ev of events) {
     switch (ev.type) {
       case "battleStart":
-        log(`${t(L.fight)} ${ev.first === HUMAN ? t(L.you) : t(L.opp)} ${t(L.begins)}.`);
+        log(`${t(L.fight)} ${ev.first === MY ? t(L.you) : t(L.opp)} ${t(L.begins)}.`);
         break;
       case "attack": {
         const a = cardById(ev.aUid), d = cardById(ev.dUid);
@@ -172,19 +268,36 @@ async function runBattle() {
           const dx = (rd.left + rd.width / 2) - (ra.left + ra.width / 2);
           const dy = (rd.top + rd.height / 2) - (ra.top + ra.height / 2);
           a.style.zIndex = "20";
-          a.style.transition = "transform .24s ease-in";
+          a.style.transition = "transform .35s ease-in";
           a.style.transform = `translate(${dx * 0.88}px, ${dy * 0.88}px) scale(1.08)`;
-          await sleep(250);
+          await sleep(370);
           Sfx.hit();
           d.classList.add("hit");
           floatText(d, `-${ev.aDmg}`);
           if (ev.dDmg > 0) floatText(a, `-${ev.dDmg}`);
-          a.style.transition = "transform .2s ease-out";
+          await sleep(480);
+          a.style.transition = "transform .25s ease-out";
           a.style.transform = "";
           await sleep(300);
           d.classList.remove("hit");
           a.style.zIndex = "";
           a.style.transition = "";
+        }
+        break;
+      }
+      case "proc": {
+        // Schopnosť sa spúšťa: zlatý záblesk + label kľúčového slova na karte.
+        const el = cardById(ev.uid);
+        if (el) {
+          el.classList.add("proc");
+          const badge = document.createElement("div");
+          badge.className = "proc-badge";
+          badge.textContent = Cards.KW_LABEL[ev.kw][I18N.lang] + "!";
+          el.appendChild(badge);
+          Sfx.buff();
+          await sleep(750);
+          el.classList.remove("proc");
+          badge.remove();
         }
         break;
       }
@@ -198,36 +311,45 @@ async function runBattle() {
       }
       case "powerDmg": {
         const el = cardById(ev.uid);
-        if (el) { floatText(el, `-${ev.n}`); await sleep(400); }
+        const fromEl = ev.from ? cardById(ev.from) : null;
+        if (el) {
+          // Projektil od zdroja k cieľu, potom zásah.
+          if (fromEl) await shootProjectile(fromEl, el);
+          Sfx.zap();
+          el.classList.add("hit");
+          floatText(el, `-${ev.n}`);
+          await sleep(550);
+          el.classList.remove("hit");
+        }
         break;
       }
       case "buff": {
         const el = cardById(ev.uid);
-        if (el) { Sfx.buff(); floatText(el, `+${ev.a}/+${ev.h}`, true); await sleep(300); }
+        if (el) { Sfx.buff(); floatText(el, `+${ev.a}/+${ev.h}`, true); await sleep(450); }
         break;
       }
       case "die": {
         const el = cardById(ev.uid);
         Sfx.die();
-        if (el) { el.classList.add("dying"); await sleep(380); el.remove(); }
+        if (el) { el.classList.add("dying"); await sleep(500); el.remove(); }
         break;
       }
       case "summon": {
         const def = Cards.byId[ev.defId];
-        const row = ev.pid === HUMAN ? $("myBoard") : $("oppBoard");
+        const row = ev.pid === MY ? $("myBoard") : $("oppBoard");
         const el = cardEl({ uid: ev.uid, defId: ev.defId, rank: 1, atk: def.atk, hp: def.hp, maxHp: def.hp, taunt: !!def.taunt }, {});
         el.style.gridColumn = String((ev.slot ?? 0) + 1);
         el.style.gridRow = "1";
         row.appendChild(el);
         Sfx.summon();
-        await sleep(300);
+        await sleep(450);
         break;
       }
       case "heroDmg": {
-        const chip = ev.pid === HUMAN ? $("myHero") : $("oppHero");
+        const chip = ev.pid === MY ? $("myHero") : $("oppHero");
         Sfx.hero();
         floatText(chip, `-${ev.dmg}`);
-        log(`${ev.pid === HUMAN ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
+        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
         await sleep(700);
         break;
       }
@@ -255,6 +377,24 @@ function cardById(uid) {
   return document.querySelector(`.card[data-uid="${uid}"]`);
 }
 
+// Letiaci projektil zo stredu jednej karty do stredu druhej.
+function shootProjectile(fromEl, toEl) {
+  return new Promise(resolve => {
+    const rf = fromEl.getBoundingClientRect(), rt = toEl.getBoundingClientRect();
+    const p = document.createElement("div");
+    p.className = "projectile";
+    p.style.left = (rf.left + rf.width / 2) + "px";
+    p.style.top = (rf.top + rf.height / 2) + "px";
+    document.body.appendChild(p);
+    // reflow, aby transition zabrala
+    p.getBoundingClientRect();
+    const dx = (rt.left + rt.width / 2) - (rf.left + rf.width / 2);
+    const dy = (rt.top + rt.height / 2) - (rf.top + rf.height / 2);
+    p.style.transform = `translate(${dx}px, ${dy}px)`;
+    setTimeout(() => { p.remove(); resolve(); }, 420);
+  });
+}
+
 function floatText(el, text, heal) {
   const f = document.createElement("div");
   f.className = "dmg-float" + (heal ? " heal" : "");
@@ -267,14 +407,14 @@ function floatText(el, text, heal) {
 function renderAll() {
   if (!state) return;
   hidePreview();
-  renderHero($("oppHero"), state[BOT]);
-  renderHero($("myHero"), state[HUMAN]);
-  renderCorner($("oppDeckBox"), "🂠", t(L.deck), state[BOT].deck.length);
-  renderCorner($("oppDiscardBox"), "🗂", t(L.discardPile), state[BOT].discard.length);
-  renderCorner($("myDiscardBox"), "🗂", t(L.discardPile), state[HUMAN].discard.length);
-  renderCorner($("myDeckBox"), "🂠", t(L.deck), state[HUMAN].deck.length);
-  renderBoardList($("oppBoard"), state[BOT].board, false);
-  renderBoardList($("myBoard"), state[HUMAN].board, true);
+  renderHero($("oppHero"), state[OPP]);
+  renderHero($("myHero"), state[MY]);
+  renderCorner($("oppDeckBox"), "🂠", t(L.deck), state[OPP].deck.length);
+  renderCorner($("oppDiscardBox"), "🗂", t(L.discardPile), state[OPP].discard.length);
+  renderCorner($("myDiscardBox"), "🗂", t(L.discardPile), state[MY].discard.length);
+  renderCorner($("myDeckBox"), "🂠", t(L.deck), state[MY].deck.length);
+  renderBoardList($("oppBoard"), state[OPP].board, false);
+  renderBoardList($("myBoard"), state[MY].board, true);
   renderHand();
   renderShop();
   renderDiscover();
@@ -286,9 +426,11 @@ function renderCorner(el, icon, label, count) {
 
 // Tier hrdinu je veľké číslo na štíte s labkou uprostred bannera.
 function renderHero(el, p) {
-  const hero = p.id === HUMAN
+  const hero = p.id === MY
     ? { emoji: "🙂", name: t(L.heroYou) }
-    : { emoji: "🤖", name: t(L.heroBot) };
+    : mode === "net"
+      ? { emoji: "🧑", name: t(L.heroFriend) }
+      : { emoji: "🤖", name: t(L.heroBot) };
   el.innerHTML = `<span class="who">${hero.emoji} ${hero.name}</span>` +
     `<span class="tier-shield">${p.tier}</span>` +
     `<span class="nums">❤️ ${Math.max(0, p.hp)}</span>`;
@@ -310,7 +452,7 @@ function renderBoardList(el, list, mine) {
 function renderHand() {
   const el = $("handEl");
   el.innerHTML = "";
-  const p = state[HUMAN];
+  const p = state[MY];
   // Pevné pozície: minutá karta nechá medzeru, zvyšok sa nepreskladáva.
   const maxSlot = Math.max(4, ...p.hand.map((c, i) => c.slot ?? i));
   const bySlot = {};
@@ -330,14 +472,18 @@ function renderHand() {
 }
 
 function renderShop() {
-  const p = state[HUMAN];
-  const myTurn = state.active === HUMAN && !busy;
+  const p = state[MY];
+  const myTurn = state.active === MY && !busy;
   $("moneyEl").textContent = `🪙 ${p.money}`;
+  // Aktívne permanentné aury („všetky budúce X…“).
+  $("auraEl").textContent = Object.entries(p.raceBuffs || {})
+    .map(([race, b]) => `${Cards.RACE_ICON[race]}+${b.a}/+${b.h}`)
+    .join(" ");
   const banner = $("turnBanner");
-  if (state.active === HUMAN) {
+  if (state.active === MY) {
     banner.textContent = `${t(L.round)} ${state.round} · ${t(L.yourTurn)}`;
     banner.className = "banner";
-  } else if (state.active === BOT) {
+  } else if (state.active === OPP) {
     banner.textContent = `${t(L.round)} ${state.round} · ${t(L.enemyTurn)}`;
     banner.className = "banner enemy";
   }
@@ -367,7 +513,7 @@ function renderShop() {
       fb.className = "freeze-btn";
       fb.textContent = "❄️";
       fb.addEventListener("pointerdown", e => e.stopPropagation());
-      fb.addEventListener("click", e => { e.stopPropagation(); act(Engine.toggleFreeze(state, HUMAN, i)); });
+      fb.addEventListener("click", e => { e.stopPropagation(); act(doAction("toggleFreeze", i)); });
       card.appendChild(fb);
     }
     priv.appendChild(card);
@@ -375,7 +521,7 @@ function renderShop() {
 
   $("refreshBtn").textContent = `${t(L.refresh)} (${Engine.REFRESH_COST}🪙)`;
   $("refreshBtn").disabled = !myTurn || p.money < Engine.REFRESH_COST;
-  const cost = Engine.upgradeCost(state, HUMAN);
+  const cost = Engine.upgradeCost(state, MY);
   $("tierBtn").textContent = cost === null ? `⭐ MAX` : `${t(L.tierUp)} (${cost}🪙)`;
   $("tierBtn").disabled = !myTurn || cost === null || p.money < cost;
   $("endTurnBtn").textContent = t(L.endTurn);
@@ -418,12 +564,11 @@ function cardEl(instOrId, opts) {
   return el;
 }
 
-// Riadok pod menom: "UNDEAD · 1. STUPEŇ" / kúzlo.
+// Rasa úplne dole medzi útokom a životom. Stupeň sa nepíše –
+// vidno ho podľa farby kryštálu na ráme karty.
 function raceLine(def, rank) {
   if (def.spell) return t(L.spellWord);
-  const race = t(Cards.RACES[def.race]);
-  const stage = I18N.lang === "en" ? `${t(L.stageWord)} ${rank}` : `${rank}. ${t(L.stageWord)}`;
-  return `${race} · ${stage}`;
+  return t(Cards.RACES[def.race]);
 }
 
 // ---------- Hover preview – zväčšená čitateľná karta ----------
@@ -463,7 +608,7 @@ function attachDrag(card, src) {
 }
 
 function startDrag(e, card, src) {
-  if (busy || !state || state.active !== HUMAN || state.pendingDiscover || drag) return;
+  if (busy || !state || state.active !== MY || state.pendingDiscover || drag) return;
   hidePreview();
   e.preventDefault();
   const r = card.getBoundingClientRect();
@@ -505,7 +650,7 @@ function markZones(src, on) {
     set($("myBoard"), "drop-ok"); // presun na iný slot
     return;
   }
-  const inst = state[HUMAN].hand[src.idx];
+  const inst = state[MY].hand[src.idx];
   if (!inst) return;
   set($("shopPanel"), "drop-sell");
   if (inst.spell && Cards.byId[inst.defId].fx.type === "buffTarget") {
@@ -524,26 +669,26 @@ function endDrag(e) {
   d.card.classList.remove("drag-src");
   markZones(d.src, false);
   const src = d.src;
-  const p = state[HUMAN];
+  const p = state[MY];
 
   if (src.type === "common" || src.type === "priv") {
     if (inRect(e, $("handEl")) || inRect(e, $("myBoard"))) {
       act(src.type === "common"
-        ? Engine.buyCommon(state, HUMAN, src.idx)
-        : Engine.buyPrivate(state, HUMAN, src.idx));
+        ? doAction("buyCommon", src.idx)
+        : doAction("buyPrivate", src.idx));
     }
     return;
   }
 
   if (src.type === "board") {
-    if (inRect(e, $("shopPanel"))) { act(Engine.sellCard(state, HUMAN, "board", src.idx)); return; }
+    if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
     if (inRect(e, $("myBoard"))) {
       // Presun na slot podľa miesta dropu (poradie útoku = zľava doprava).
       const r = $("myBoard").getBoundingClientRect();
       const cols = getComputedStyle($("myBoard")).gridTemplateColumns.split(" ").length;
       let slot = Math.floor((e.clientX - r.left) / (r.width / cols));
       slot = Math.max(0, Math.min(Engine.BOARD_MAX - 1, slot));
-      act(Engine.moveOnBoard(state, HUMAN, src.idx, slot));
+      act(doAction("moveOnBoard", src.idx, slot));
     }
     return;
   }
@@ -551,29 +696,33 @@ function endDrag(e) {
   // src.type === "hand"
   const inst = p.hand[src.idx];
   if (!inst) { renderAll(); return; }
-  if (inRect(e, $("shopPanel"))) { act(Engine.sellCard(state, HUMAN, "hand", src.idx)); return; }
+  if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
     if (fx.type === "buffTarget") {
       const targetEl = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
-      if (targetEl) act(Engine.castSpell(state, HUMAN, src.idx, Number(targetEl.dataset.uid)));
+      if (targetEl) act(doAction("castSpell", src.idx, Number(targetEl.dataset.uid)));
       return;
     }
-    if (inRect(e, $("myBoard"))) act(Engine.castSpell(state, HUMAN, src.idx));
+    if (inRect(e, $("myBoard"))) act(doAction("castSpell", src.idx));
     return;
   }
-  if (inRect(e, $("myBoard"))) act(Engine.playMinion(state, HUMAN, src.idx));
+  if (inRect(e, $("myBoard"))) act(doAction("playMinion", src.idx));
 }
 
 // ---------- Interakcie hráča ----------
 function act(events) {
   if (!events) { renderAll(); return; }
   for (const ev of events) {
-    if (ev.type === "evolve" && ev.pid === HUMAN) {
+    if (ev.type === "evolve" && ev.pid === MY) {
       Sfx.evolve();
       log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
     }
-    if ((ev.type === "buy" || ev.type === "sell") && ev.pid === HUMAN) Sfx.coin();
+    if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
+    if (ev.type === "futureBuff" && ev.pid === MY) {
+      Sfx.evolve();
+      log(`${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]} +${ev.a}/+${ev.h}!`);
+    }
   }
   renderAll();
   // Evolve animácia po prerenderi.
@@ -588,21 +737,21 @@ function act(events) {
 function renderDiscover() {
   const ov = $("discoverOverlay");
   const pd = state.pendingDiscover;
-  if (!pd || pd.pid !== HUMAN) { ov.classList.add("hidden"); return; }
+  if (!pd || pd.pid !== MY) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   const row = $("discoverRow");
   row.innerHTML = "";
   pd.options.forEach((defId, i) => {
     const card = cardEl(defId, {});
     card.classList.add("buyable");
-    card.addEventListener("click", () => act(Engine.pickDiscover(state, HUMAN, i)));
+    card.addEventListener("click", () => act(doAction("pickDiscover", i)));
     row.appendChild(card);
   });
 }
 
 async function onEndTurn() {
-  if (busy || state.active !== HUMAN || state.pendingDiscover) return;
-  act(Engine.endShopTurn(state, HUMAN));
+  if (busy || state.active !== MY || state.pendingDiscover) return;
+  act(doAction("endShopTurn"));
   await driveFlow();
 }
 
@@ -610,8 +759,8 @@ function showOver() {
   const ov = $("overOverlay");
   ov.classList.remove("hidden");
   const w = state.winner;
-  if (w === HUMAN) Sfx.win(); else if (w === BOT) Sfx.lose();
-  $("overTitle").textContent = w === "draw" ? t(L.drawGame) : w === HUMAN ? t(L.win) : t(L.lose);
+  if (w === MY) Sfx.win(); else if (w === OPP) Sfx.lose();
+  $("overTitle").textContent = w === "draw" ? t(L.drawGame) : w === MY ? t(L.win) : t(L.lose);
   $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
 }
 
@@ -627,16 +776,17 @@ function logClear() { $("logEl").innerHTML = ""; }
 
 // ---------- Štart ----------
 $("startBtn").addEventListener("click", startGame);
-$("newGameBtn").addEventListener("click", () => {
-  $("gameScreen").classList.add("hidden");
-  $("newGameBtn").classList.add("hidden");
-  $("pickScreen").classList.remove("hidden");
-  state = null;
-});
+$("netBtn").addEventListener("click", startNet);
+$("netCancel").addEventListener("click", backToPick);
+$("newGameBtn").addEventListener("click", backToPick);
 $("endTurnBtn").addEventListener("click", onEndTurn);
-$("refreshBtn").addEventListener("click", () => act(Engine.refreshShop(state, HUMAN)));
-$("tierBtn").addEventListener("click", () => act(Engine.upgradeTier(state, HUMAN)));
-$("overAgain").addEventListener("click", () => { $("overOverlay").classList.add("hidden"); startGame(); });
+$("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
+$("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
+$("overAgain").addEventListener("click", () => {
+  $("overOverlay").classList.add("hidden");
+  if (mode === "net") backToPick();
+  else startGame();
+});
 $("muteBtn").textContent = Sfx.muted ? "🔇" : "🔊";
 $("muteBtn").addEventListener("click", () => {
   $("muteBtn").textContent = Sfx.toggleMute() ? "🔇" : "🔊";

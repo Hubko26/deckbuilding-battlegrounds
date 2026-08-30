@@ -21,7 +21,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **25 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: **3** (fixná).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
-- Refresh obchodu: **2** peniaze.
+- Refresh obchodu: **1** peniaz.
 
 ## Obchod (v strede medzi hráčmi)
 
@@ -99,6 +99,7 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 | Taunt | **Obranca** | súper ju musí napadnúť prvú |
 | Start of fight | **Pred bojom** | na začiatku automatického boja |
 | End of turn | **Po nákupe** | na konci tvojej nákupnej fázy |
+| On attack | **Pri útoku** | keď príšerka útočí (dočasný efekt, len v boji) |
 
 Nie každá príšerka má schopnosť – niektoré majú len silu a život.
 
@@ -118,6 +119,19 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 
 Ďalšie rasy (Dragon, Fairy, Human, Ogre) sa pridajú s ďalšími art sadami –
 dátový model je pripravený (pole `race` na karte).
+
+### Synergie
+
+- **Rasové buffy** sú viazané na rasu: Zvieratá boostujú Zvieratá, Nemŕtvi
+  Nemŕtvych… (`buffRace`). Kúzla a niektoré karty (napr. Whifflet – Pri útoku
+  +1/+0 všetkým) buffujú naprieč rasami – to je priestor na cross-race combá.
+- **Permanentné aury** (`futureRace`): „Pri vyložení: všetky budúce Zvieratá
+  dostanú +1/+1.“ Platí do konca hry na každú novú inštanciu danej rasy
+  (dotiahnutú, kúpenú do ruky, evolvnutú aj tokeny). Aury sa sčítavajú
+  a hráč ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h).
+- **Dočasné boosty** – všetko, čo sa udeje v boji (Pri útoku, Pred bojom,
+  Pri smrti buffy), platí len do konca boja: po boji idú karty do discard
+  pile ako čisté kópie.
 
 ## Kúzla
 
@@ -145,7 +159,10 @@ Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 - `src/game.js` – UI, animácie boja prehrávajú event log z enginu.
 - Grafika: emoji príšerky + farebné rámy podľa stupňa (bronz/striebro/zlato). Neskôr
   vymeniteľné za vlastné obrázky.
-- Multiplayer (later): PeerJS/WebRTC, kód miestnosti, žiadny vlastný server.
+- Multiplayer po LAN: `node server.mjs` servíruje hru + WebSocket relay
+  (bez závislostí). Klienti replikujú akcie: oba behy dostanú rovnaký seed
+  a aplikujú rovnaké Engine volania, stav je deterministicky identický
+  (žiadne posielanie stavu). Server spáruje prvých dvoch čakajúcich hráčov.
 - Bot je vymeniteľný driver – UI volá len `Bot.botTurn(state, pid, difficulty)`.
   Heuristický bot má obtiažnosti easy/normal/hard. Plán: **Claude bot** – malý
   lokálny server, ktorému hra pošle serializovaný stav a ktorý vráti zoznam akcií

@@ -9,13 +9,17 @@ Herné pravidlá a rozhodnutia: [DESIGN.md](DESIGN.md).
 
 ## Spustenie
 
-Čisté HTML/JS bez buildu – stačí statický server:
-
 ```bash
-python -m http.server 8000
+node server.mjs
 ```
 
-a otvor `http://localhost:8000`. Funguje aj priamo na GitHub Pages.
+a otvor `http://localhost:5180`. Server vypíše aj adresu v lokálnej sieti –
+na druhom zariadení ju otvor a klikni **📶 Hraj s kamarátom (sieť)** na oboch:
+hráči sa automaticky spárujú (1v1 po LAN, bez internetu).
+
+Hra proti botovi funguje aj z obyčajného statického servera
+(`python -m http.server`) alebo z GitHub Pages – sieťová hra potrebuje
+`node server.mjs` (čistý Node, žiadne závislosti).
 
 ## Testy
 

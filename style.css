@@ -47,6 +47,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .diff-pick button.active { background: #ffd33d; font-weight: 700; }
 .big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }
+.net-row { margin-top: 12px; }
+.net-urls { font-weight: 700; color: #2f7cff; margin: 10px 0; font-size: 1rem; user-select: text; }
 
 /* ---------- Doska ---------- */
 #gameScreen { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -120,6 +122,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .banner { font-weight: 800; font-size: 2.1cqh; color: #6b4a1b; }
 .banner.enemy { color: #a33; }
 .money { font-weight: 800; font-size: 2.4cqh; color: #a06a00; }
+.aura { font-weight: 800; font-size: 1.8cqh; color: #7a4c8f; }
 .head-btns { display: flex; gap: .8cqw; }
 .head-btns button {
   font-size: 1.6cqh; padding: .5cqh 1cqw; border-radius: 1.1cqh;
@@ -182,10 +185,11 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   text-transform: uppercase; color: #3a2a10; letter-spacing: .02em;
   pointer-events: none;
 }
+/* Rasa: úplne dole medzi útokom (kruh) a životom (srdce). */
 .card .race {
-  position: absolute; left: 10%; right: 10%; top: 60%;
-  font-size: .5em; font-weight: 700; letter-spacing: .08em;
-  text-transform: uppercase; color: #cfe2ff; text-shadow: 0 1px 2px #001;
+  position: absolute; left: 25%; right: 25%; bottom: 4.5%;
+  font-size: .5em; font-weight: 800; letter-spacing: .08em;
+  text-transform: uppercase; color: #5a4426; text-shadow: 0 1px 1px #ffeccb;
   pointer-events: none;
 }
 .card .tx {
@@ -202,9 +206,11 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 }
 .card .atk { left: 14.5%; }
 .card .hp { left: 85.5%; }
+/* Tier obchodu: veľká hviezda vľavo hore, nech ju vidno na prvý pohľad. */
 .card .tier-tag {
-  position: absolute; top: 2%; left: 4%; font-size: .55em; font-weight: 800;
-  color: #ffd76a; text-shadow: 0 1px 2px #000; pointer-events: none;
+  position: absolute; top: 1%; left: 2.5%; font-size: 1.1em; font-weight: 900;
+  color: #ffd76a; text-shadow: 0 2px 3px #000, 0 0 6px rgba(0,0,0,.6);
+  pointer-events: none;
 }
 .card .cost {
   position: absolute; top: 2%; right: 4%; font-size: .55em; font-weight: 800;
@@ -291,6 +297,30 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   100% { transform: translate(-50%, -50%) scale(1); }
 }
 .card.hit { animation: shake .3s; }
+
+/* Spustenie schopnosti: zlatý pulz + label kľúčového slova nad kartou. */
+.card.proc { animation: procPulse .75s ease-out; z-index: 25; }
+@keyframes procPulse {
+  0% { filter: brightness(1); }
+  30% { filter: brightness(1.7) drop-shadow(0 0 1.5cqh #ffd147); }
+  100% { filter: brightness(1); }
+}
+.proc-badge {
+  position: absolute; top: -14%; left: 50%; transform: translateX(-50%);
+  background: #ffd147; color: #4a3000; font-weight: 900; font-size: .7em;
+  padding: .2em .7em; border-radius: 999px; white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0,0,0,.4); z-index: 30;
+  animation: pop .2s ease-out;
+}
+
+/* Letiaci projektil (damage schopnosti). */
+.projectile {
+  position: fixed; width: 16px; height: 16px; margin: -8px 0 0 -8px;
+  border-radius: 50%; z-index: 70; pointer-events: none;
+  background: radial-gradient(circle, #fff 0%, #ffd147 35%, #ff7a1a 70%, rgba(255,60,0,0) 100%);
+  box-shadow: 0 0 12px 4px rgba(255,150,30,.8);
+  transition: transform .4s cubic-bezier(.3,.1,.7,1);
+}
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   25% { transform: translateX(-6px); }
