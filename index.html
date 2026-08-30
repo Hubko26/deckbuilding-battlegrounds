@@ -40,29 +40,23 @@
         <div class="shop-panel" id="shopPanel">
           <div class="shop-head">
             <span id="turnBanner" class="banner"></span>
+            <span class="head-btns">
+              <button id="refreshBtn">🔄</button>
+              <button id="tierBtn">⬆️</button>
+            </span>
             <span class="money" id="moneyEl"></span>
           </div>
           <div class="shop-row" id="commonsRow"></div>
           <div class="shop-row private" id="privRow"></div>
-          <div class="shop-buttons">
-            <button id="refreshBtn">🔄</button>
-            <button id="tierBtn">⬆️</button>
-            <button id="endTurnBtn" class="primary">✅</button>
-          </div>
         </div>
 
+        <button id="endTurnBtn" class="primary end-turn">✅</button>
         <div class="log" id="logEl"></div>
         <div class="board mine" id="myBoard"></div>
         <div class="hero-plate bottom" id="myHero"></div>
       </div>
 
       <div class="hand" id="handEl"></div>
-
-      <div class="action-bar hidden" id="actionBar">
-        <button id="playBtn" class="primary"></button>
-        <button id="sellBtn"></button>
-        <button id="cancelBtn"></button>
-      </div>
     </section>
 
     <!-- Discover overlay -->

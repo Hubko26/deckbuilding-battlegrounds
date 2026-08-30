@@ -1,7 +1,8 @@
 // Dáta kariet. Texty schopností sa generujú zo šablón (pozri Cards.cardText),
 // aby čísla sedeli so stupňom karty (bronz/striebro/zlato).
 //
-// Karta (minion): { id, tier, cls, race, emoji, atk, hp, taunt?, power? }
+// Karta (minion): { id, tier, cls, race, emoji, atk, hp, taunt?, power?, art? }
+//   art = cesta k obrázku (napr. "assets/jelen.png"); bez neho sa kreslí emoji.
 // Karta (spell):  { id, tier, cls, emoji, spell: true, fx }
 // power = { kw: "battlecry"|"deathrattle"|"startFight"|"endTurn", fx: {...} }
 // fx = { type, a?, h?, n?, race?, token?, taunt? } – čísla sa násobia stupňom (×1/×2/×3).
