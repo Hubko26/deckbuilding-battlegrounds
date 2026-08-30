@@ -175,6 +175,7 @@ async function runBattle() {
           a.style.transition = "transform .24s ease-in";
           a.style.transform = `translate(${dx * 0.88}px, ${dy * 0.88}px) scale(1.08)`;
           await sleep(250);
+          Sfx.hit();
           d.classList.add("hit");
           floatText(d, `-${ev.aDmg}`);
           if (ev.dDmg > 0) floatText(a, `-${ev.dDmg}`);
@@ -202,11 +203,12 @@ async function runBattle() {
       }
       case "buff": {
         const el = cardById(ev.uid);
-        if (el) { floatText(el, `+${ev.a}/+${ev.h}`, true); await sleep(300); }
+        if (el) { Sfx.buff(); floatText(el, `+${ev.a}/+${ev.h}`, true); await sleep(300); }
         break;
       }
       case "die": {
         const el = cardById(ev.uid);
+        Sfx.die();
         if (el) { el.classList.add("dying"); await sleep(380); el.remove(); }
         break;
       }
@@ -217,11 +219,13 @@ async function runBattle() {
         el.style.gridColumn = String((ev.slot ?? 0) + 1);
         el.style.gridRow = "1";
         row.appendChild(el);
+        Sfx.summon();
         await sleep(300);
         break;
       }
       case "heroDmg": {
         const chip = ev.pid === HUMAN ? $("myHero") : $("oppHero");
+        Sfx.hero();
         floatText(chip, `-${ev.dmg}`);
         log(`${ev.pid === HUMAN ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
         await sleep(700);
@@ -565,7 +569,11 @@ function endDrag(e) {
 function act(events) {
   if (!events) { renderAll(); return; }
   for (const ev of events) {
-    if (ev.type === "evolve" && ev.pid === HUMAN) log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
+    if (ev.type === "evolve" && ev.pid === HUMAN) {
+      Sfx.evolve();
+      log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
+    }
+    if ((ev.type === "buy" || ev.type === "sell") && ev.pid === HUMAN) Sfx.coin();
   }
   renderAll();
   // Evolve animácia po prerenderi.
@@ -602,6 +610,7 @@ function showOver() {
   const ov = $("overOverlay");
   ov.classList.remove("hidden");
   const w = state.winner;
+  if (w === HUMAN) Sfx.win(); else if (w === BOT) Sfx.lose();
   $("overTitle").textContent = w === "draw" ? t(L.drawGame) : w === HUMAN ? t(L.win) : t(L.lose);
   $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
 }
@@ -628,6 +637,10 @@ $("endTurnBtn").addEventListener("click", onEndTurn);
 $("refreshBtn").addEventListener("click", () => act(Engine.refreshShop(state, HUMAN)));
 $("tierBtn").addEventListener("click", () => act(Engine.upgradeTier(state, HUMAN)));
 $("overAgain").addEventListener("click", () => { $("overOverlay").classList.add("hidden"); startGame(); });
+$("muteBtn").textContent = Sfx.muted ? "🔇" : "🔊";
+$("muteBtn").addEventListener("click", () => {
+  $("muteBtn").textContent = Sfx.toggleMute() ? "🔇" : "🔊";
+});
 
 applyI18n();
 renderPick();
