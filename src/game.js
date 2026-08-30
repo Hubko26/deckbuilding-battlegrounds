@@ -63,6 +63,11 @@ const L = {
   botTier: { sk: "🤖 zvýšil tier na", cs: "🤖 zvýšil tier na", en: "🤖 upgraded tier to" },
   botEvolve: { sk: "🤖 evolvol", cs: "🤖 evolvoval", en: "🤖 evolved" },
   youEvolve: { sk: "✨ Evolve!", cs: "✨ Evolve!", en: "✨ Evolve!" },
+  pulledCopies: {
+    sk: "🃏 Kópia z balíčka do ruky",
+    cs: "🃏 Kopie z balíčku do ruky",
+    en: "🃏 Copy pulled from deck",
+  },
   begins: { sk: "začína", cs: "začíná", en: "begins" },
   battleDraw: { sk: "Boj skončil remízou.", cs: "Boj skončil remízou.", en: "The fight was a draw." },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
@@ -495,7 +500,7 @@ function renderShop() {
   const commons = $("commonsRow");
   commons.innerHTML = "";
   state.commons.forEach((defId, i) => {
-    const card = cardEl(defId, { shop: true });
+    const card = cardEl(defId, { shop: true, owned: Bot.ownedCount(p, defId) });
     if (myTurn && p.money >= Engine.CARD_COST) {
       card.classList.add("buyable");
       attachDrag(card, { type: "common", idx: i });
@@ -506,7 +511,7 @@ function renderShop() {
   const priv = $("privRow");
   priv.innerHTML = "";
   p.priv.forEach((s, i) => {
-    const card = cardEl(s.defId, { shop: true });
+    const card = cardEl(s.defId, { shop: true, owned: Bot.ownedCount(p, s.defId) });
     if (s.frozen) card.classList.add("frozen");
     if (myTurn && p.money >= Engine.CARD_COST) {
       card.classList.add("buyable");
@@ -549,6 +554,8 @@ function cardEl(instOrId, opts) {
   const art = Cards.artOf(def, rank);
   let inner = `<span class="tier-tag">⭐${def.tier}</span>`;
   if (opts.shop) inner += `<span class="cost">🪙${Engine.CARD_COST}</span>`;
+  // Koľko kópií už vlastníš (vrátane balíčka a kôpky) – kúpa tretej evolvne.
+  if (opts.owned) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
   inner += art
     ? `<img class="art" src="${art}" alt="" draggable="false">`
     : `<div class="em">${def.emoji}</div>`;
@@ -763,6 +770,7 @@ function act(events) {
       log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
     }
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
+    if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));
     if (ev.type === "futureBuff" && ev.pid === MY) {
       Sfx.evolve();
       log(`${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]} +${ev.a}/+${ev.h}!`);

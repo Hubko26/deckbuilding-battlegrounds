@@ -216,6 +216,13 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   position: absolute; top: 2%; right: 4%; font-size: .55em; font-weight: 800;
   color: #ffd76a; text-shadow: 0 1px 2px #000; pointer-events: none;
 }
+/* Koľko kópií hráč už vlastní – kúpa tretej hneď evolvne. */
+.card .owned {
+  position: absolute; top: 12%; right: 4%; font-size: .55em; font-weight: 900;
+  color: #d9f0ff; text-shadow: 0 1px 2px #000; pointer-events: none;
+  background: rgba(20,40,70,.65); border-radius: 999px; padding: .1em .45em;
+}
+.card .owned.hot { color: #3a2a00; background: #ffd147; animation: pop .3s ease-out; }
 .card .freeze-btn {
   position: absolute; top: -4%; right: -4%; font-size: .7em; padding: .2em .35em;
   border-radius: 999px; box-shadow: 0 1px 0 #9bc; z-index: 4;
