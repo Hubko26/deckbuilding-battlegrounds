@@ -18,6 +18,13 @@ const Engine = (() => {
   const income = round => Math.min(round + 2, 10);
 
   // ---------- Pomocníci ----------
+  // Trvalé pozície: karta si drží slot (v ruke aj na ploche), po minutí
+  // susednej karty sa nič nepreskladáva. Najmenší voľný slot.
+  function freeSlot(list, max) {
+    for (let s = 0; s < max; s++) if (!list.some(x => x && x.slot === s)) return s;
+    return list.length;
+  }
+
   function shuffle(arr, rng) {
     for (let i = arr.length - 1; i > 0; i--) {
       const j = Math.floor(rng() * (i + 1));
@@ -117,7 +124,9 @@ const Engine = (() => {
         events.push({ type: "reshuffle", pid: p.id });
       }
       const c = p.deck.pop();
-      p.hand.push(makeInst(state, c.defId, c.rank));
+      const inst = makeInst(state, c.defId, c.rank);
+      inst.slot = freeSlot(p.hand, HAND_MAX);
+      p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: c.defId });
     }
   }
@@ -143,8 +152,13 @@ const Engine = (() => {
       for (const x of trio.slice(0, 3)) {
         p[x.zone].splice(p[x.zone].indexOf(x.inst), 1);
       }
-      if (boardCopy) p.board.splice(Math.min(p.board.length, BOARD_MAX), 0, evolved);
-      else p.hand.push(evolved);
+      if (boardCopy) {
+        evolved.slot = boardCopy.inst.slot;
+        p.board.push(evolved);
+      } else {
+        evolved.slot = freeSlot(p.hand, HAND_MAX);
+        p.hand.push(evolved);
+      }
       events.push({ type: "evolve", pid: p.id, defId, rank: rank + 1, uid: evolved.uid });
     }
   }
@@ -222,6 +236,7 @@ const Engine = (() => {
     const inst = p.hand[handIdx];
     if (!inst || inst.spell || p.board.length >= BOARD_MAX) return null;
     p.hand.splice(handIdx, 1);
+    inst.slot = freeSlot(p.board, BOARD_MAX);
     p.board.push(inst);
     const events = [{ type: "play", pid, uid: inst.uid, defId: inst.defId }];
     const def = Cards.byId[inst.defId];
@@ -271,6 +286,7 @@ const Engine = (() => {
     state.pendingDiscover = null;
     const p = state[pid];
     const inst = makeInst(state, defId, 1);
+    inst.slot = freeSlot(p.hand, HAND_MAX);
     p.hand.push(inst);
     const events = [{ type: "discoverPick", pid, defId }];
     checkEvolve(state, p, events);
@@ -489,10 +505,12 @@ const Engine = (() => {
         const board = sides[pid];
         const idx = board.indexOf(self);
         for (let i = 0; i < fx.n * m; i++) {
-          if (board.filter(x => x.hp > 0).length >= BOARD_MAX) break;
+          const alive = board.filter(x => x.hp > 0);
+          if (alive.length >= BOARD_MAX) break;
           const tok = makeInst(state, fx.token, 1);
+          tok.slot = freeSlot(alive, BOARD_MAX);
           board.splice(idx + 1 + i, 0, tok);
-          events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token });
+          events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token, slot: tok.slot });
         }
         break;
       }

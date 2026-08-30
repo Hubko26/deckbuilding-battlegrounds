@@ -260,12 +260,14 @@ const Cards = (() => {
   };
 
   // Popis karty pre daný stupeň (rank 1–3) a jazyk.
-  function cardText(def, rank, lang) {
+  // html=true obalí kľúčové slová (Taunt, Deathrattle…) do <strong>.
+  function cardText(def, rank, lang, html) {
     const m = rank; // efekty ×1/×2/×3
+    const b = s => (html ? `<strong>${s}</strong>` : s);
     const parts = [];
-    if (def.taunt) parts.push(TAUNT_LABEL[lang] + ".");
+    if (def.taunt) parts.push(b(TAUNT_LABEL[lang]) + ".");
     if (def.power) {
-      parts.push(`${KW_LABEL[def.power.kw][lang]}: ${FX_TEXT[def.power.fx.type](def.power.fx, m)[lang]}.`);
+      parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${FX_TEXT[def.power.fx.type](def.power.fx, m)[lang]}.`);
     }
     if (def.spell) parts.push(FX_TEXT[def.fx.type](def.fx, 1)[lang][0].toUpperCase() + FX_TEXT[def.fx.type](def.fx, 1)[lang].slice(1) + ".");
     return parts.join(" ");

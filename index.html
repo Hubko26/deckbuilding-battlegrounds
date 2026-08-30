@@ -26,29 +26,36 @@
       </div>
     </section>
 
-    <!-- Herná obrazovka -->
+    <!-- Herná obrazovka: doska (stage) s pozadím PlayGround.png -->
     <section id="gameScreen" class="hidden">
-      <div class="hero-row" id="oppHeroRow">
-        <div class="hero-chip" id="oppHero"></div>
-        <div class="counters" id="oppCounters"></div>
-      </div>
-      <div class="board opp" id="oppBoard"></div>
+      <div id="stage">
+        <div class="hero-plate top" id="oppHero"></div>
+        <div class="board opp" id="oppBoard"></div>
 
-      <div class="shop-panel" id="shopPanel">
-        <div class="shop-head">
-          <span id="turnBanner" class="banner"></span>
-          <span class="money" id="moneyEl"></span>
+        <div class="corner tl" id="oppDeckBox"></div>
+        <div class="corner bl" id="oppDiscardBox"></div>
+        <div class="corner tr" id="myDiscardBox"></div>
+        <div class="corner br" id="myDeckBox"></div>
+
+        <div class="shop-panel" id="shopPanel">
+          <div class="shop-head">
+            <span id="turnBanner" class="banner"></span>
+            <span class="money" id="moneyEl"></span>
+          </div>
+          <div class="shop-row" id="commonsRow"></div>
+          <div class="shop-row private" id="privRow"></div>
+          <div class="shop-buttons">
+            <button id="refreshBtn">🔄</button>
+            <button id="tierBtn">⬆️</button>
+            <button id="endTurnBtn" class="primary">✅</button>
+          </div>
         </div>
-        <div class="shop-row" id="commonsRow"></div>
-        <div class="shop-row private" id="privRow"></div>
-        <div class="shop-buttons">
-          <button id="refreshBtn">🔄</button>
-          <button id="tierBtn">⬆️</button>
-          <button id="endTurnBtn" class="primary">✅</button>
-        </div>
+
+        <div class="log" id="logEl"></div>
+        <div class="board mine" id="myBoard"></div>
+        <div class="hero-plate bottom" id="myHero"></div>
       </div>
 
-      <div class="board mine" id="myBoard"></div>
       <div class="hand" id="handEl"></div>
 
       <div class="action-bar hidden" id="actionBar">
@@ -56,13 +63,6 @@
         <button id="sellBtn"></button>
         <button id="cancelBtn"></button>
       </div>
-
-      <div class="hero-row" id="myHeroRow">
-        <div class="hero-chip" id="myHero"></div>
-        <div class="counters" id="myCounters"></div>
-      </div>
-
-      <div class="log" id="logEl"></div>
     </section>
 
     <!-- Discover overlay -->

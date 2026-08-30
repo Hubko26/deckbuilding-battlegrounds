@@ -211,6 +211,8 @@ async function runBattle() {
         const def = Cards.byId[ev.defId];
         const row = ev.pid === HUMAN ? $("myBoard") : $("oppBoard");
         const el = cardEl({ uid: ev.uid, defId: ev.defId, rank: 1, atk: def.atk, hp: def.hp, maxHp: def.hp, taunt: !!def.taunt }, {});
+        el.style.gridColumn = String((ev.slot ?? 0) + 1);
+        el.style.gridRow = "1";
         row.appendChild(el);
         await sleep(300);
         break;
@@ -248,10 +250,12 @@ function floatText(el, text, heal) {
 // ---------- Vykresľovanie ----------
 function renderAll() {
   if (!state) return;
-  renderHero($("oppHero"), state[BOT], true);
-  renderHero($("myHero"), state[HUMAN], false);
-  $("oppCounters").textContent = counters(state[BOT]);
-  $("myCounters").textContent = counters(state[HUMAN]);
+  renderHero($("oppHero"), state[BOT]);
+  renderHero($("myHero"), state[HUMAN]);
+  renderCorner($("oppDeckBox"), "🂠", t(L.deck), state[BOT].deck.length);
+  renderCorner($("oppDiscardBox"), "🗂", t(L.discardPile), state[BOT].discard.length);
+  renderCorner($("myDiscardBox"), "🗂", t(L.discardPile), state[HUMAN].discard.length);
+  renderCorner($("myDeckBox"), "🂠", t(L.deck), state[HUMAN].deck.length);
   renderBoard($("oppBoard"), state[BOT], false);
   renderBoard($("myBoard"), state[HUMAN], true);
   renderHand();
@@ -260,16 +264,15 @@ function renderAll() {
   renderDiscover();
 }
 
-function counters(p) {
-  return `🂠 ${t(L.deck)}: ${p.deck.length} · 🗂 ${t(L.discardPile)}: ${p.discard.length}`;
+function renderCorner(el, icon, label, count) {
+  el.innerHTML = `<span class="ic">${icon}</span><span class="lb">${label}</span><span class="ct">${count}</span>`;
 }
 
-function renderHero(el, p, enemy) {
+function renderHero(el, p) {
   const c = Cards.CLASSES[p.cls];
-  el.innerHTML = `<span class="he">${c.hero.emoji}</span>` +
-    `<span>${t(c.hero.name)}</span>` +
-    `<span class="hp">❤️ ${Math.max(0, p.hp)}</span>` +
-    `<span class="tier">⭐ ${p.tier}</span>`;
+  el.innerHTML = `<span class="who">${c.hero.emoji} ${t(c.hero.name)}</span>` +
+    `<span></span>` +
+    `<span class="nums">❤️ ${Math.max(0, p.hp)} · ⭐ ${p.tier}</span>`;
 }
 
 function renderBoardsFrom(snap) {
@@ -286,16 +289,14 @@ function renderBoardList(el, list, mine) {
   for (let i = 0; i < list.length; i++) {
     const inst = list[i];
     const card = cardEl(inst, {});
+    // Karta drží svoj slot v šablóne – po smrti suseda sa nič neposúva.
+    card.style.gridColumn = String((inst.slot ?? i) + 1);
+    card.style.gridRow = "1";
     if (mine) {
       card.addEventListener("click", () => onBoardClick(i, inst));
       if (selected && selected.zone === "board" && selected.idx === i) card.classList.add("selected");
     }
     el.appendChild(card);
-  }
-  for (let i = list.length; i < Engine.BOARD_MAX; i++) {
-    const s = document.createElement("div");
-    s.className = "slot-empty";
-    el.appendChild(s);
   }
 }
 
@@ -303,12 +304,23 @@ function renderHand() {
   const el = $("handEl");
   el.innerHTML = "";
   const p = state[HUMAN];
-  p.hand.forEach((inst, i) => {
+  // Pevné pozície: minutá karta nechá medzeru, zvyšok sa nepreskladáva.
+  const maxSlot = Math.max(4, ...p.hand.map((c, i) => c.slot ?? i));
+  const bySlot = {};
+  p.hand.forEach((inst, i) => { bySlot[inst.slot ?? i] = { inst, i }; });
+  for (let s = 0; s <= maxSlot; s++) {
+    if (!bySlot[s]) {
+      const gap = document.createElement("div");
+      gap.className = "card gap";
+      el.appendChild(gap);
+      continue;
+    }
+    const { inst, i } = bySlot[s];
     const card = cardEl(inst, {});
     card.addEventListener("click", () => onHandClick(i));
     if (selected && selected.zone === "hand" && selected.idx === i) card.classList.add("selected");
     el.appendChild(card);
-  });
+  }
 }
 
 function renderShop() {
@@ -373,7 +385,8 @@ function cardEl(instOrId, opts) {
   el.className = "card" + ((isInst ? instOrId.taunt : def.taunt) ? " taunt" : "");
   el.dataset.rank = rank;
   if (isInst) el.dataset.uid = instOrId.uid;
-  const text = Cards.cardText(def, rank, I18N.lang);
+  const text = Cards.cardText(def, rank, I18N.lang, true);
+  const plainText = Cards.cardText(def, rank, I18N.lang);
   let inner = `<span class="tier-tag">⭐${def.tier}</span>`;
   if (opts.shop) inner += `<span class="cost">🪙${Engine.CARD_COST}</span>`;
   inner += `<div class="em">${def.emoji}</div><div class="nm">${t(def.name)}</div>`;
@@ -382,12 +395,12 @@ function cardEl(instOrId, opts) {
   if (!def.spell) {
     const atk = isInst ? instOrId.atk : def.atk;
     const hp = isInst ? instOrId.hp : def.hp;
-    inner += `<div class="stats"><span class="atk">⚔️${atk}</span><span class="hp">❤️${hp}</span></div>`;
+    inner += `<span class="atk">⚔️${atk}</span><span class="hp">❤️${hp}</span>`;
   } else {
-    inner += `<div class="stats"><span>✨</span></div>`;
+    inner += `<span class="sp">✨</span>`;
   }
   el.innerHTML = inner;
-  el.title = `${t(def.name)}${text ? " – " + text : ""}`;
+  el.title = `${t(def.name)}${plainText ? " – " + plainText : ""}`;
   return el;
 }
 
