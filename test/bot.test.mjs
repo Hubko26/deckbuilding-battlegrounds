@@ -32,6 +32,41 @@ test("celá hra bot vs bot dobehne do konca", () => {
   assert.ok(state.round >= 2);
 });
 
+test("bot hrá battlecry buffer až po obyčajných príšerách (buff zasiahne plochu)", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(21));
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0; // nič nenakupuj
+  p.deck = []; p.discard = [];
+  const plain = E.makeInst(state, "B001", 1); plain.slot = 0;   // beast 2/2
+  const buffer = E.makeInst(state, "B009", 1); buffer.slot = 1; // battlecry: Zvieratám +2/+2
+  p.hand = [buffer, plain];
+  ctx.Bot.botTurn(state, "p2", "normal");
+  const played = p.board.find(x => x.defId === "B001");
+  assert.ok(played);
+  assert.equal(played.atk, 4); // 2+2 – buffer prišiel na plochu až po ňom
+  assert.equal(played.hp, 4);
+});
+
+test("bot skóre: aura vlastnej rasy má vysokú prioritu", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(22));
+  const p = state.p2;
+  p.deck = [
+    { defId: "U001", rank: 1 }, { defId: "U002", rank: 1 },
+    { defId: "U003", rank: 1 }, { defId: "U005", rank: 1 },
+  ];
+  p.discard = []; p.hand = []; p.board = [];
+  // aura undead (U008) musí byť hodnotnejšia než vanilla beast tanku rovnakého tieru
+  const aura = ctx.Bot.cardScore(state, p, "U008");
+  const vanilla = ctx.Bot.cardScore(state, p, "B002");
+  assert.ok(aura > vanilla, `aura ${aura} <= vanilla ${vanilla}`);
+});
+
 test("bot skóre: preferuje dokončenie trojice", () => {
   const ctx = loadEngine();
   const state = ctx.Engine.newGame(seeded(3));

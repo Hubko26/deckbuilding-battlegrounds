@@ -23,6 +23,21 @@ const Bot = (() => {
     return n;
   }
 
+  // Počet vlastnených príšer podľa rasy – vo VŠETKÝCH zónach (plocha je po
+  // boji vždy prázdna, takže rátať len ju nedáva zmysel).
+  function ownedRaceCounts(p) {
+    const counts = {};
+    const add = defId => {
+      const r = Cards.byId[defId].race;
+      if (r) counts[r] = (counts[r] || 0) + 1;
+    };
+    for (const c of p.deck) add(c.defId);
+    for (const c of p.discard) add(c.defId);
+    for (const x of p.hand) if (!x.spell) add(x.defId);
+    for (const x of p.board) add(x.defId);
+    return counts;
+  }
+
   function cardScore(state, p, defId) {
     const def = Cards.byId[defId];
     let score = def.tier;
@@ -31,13 +46,30 @@ const Bot = (() => {
       if (owned === 2) score += 6;      // dokončí trojicu
       else if (owned === 1) score += 2; // rozbieha trojicu
     }
-    if (def.spell) score += 0.5;
-    // Rasová synergia: preferuj rasu, ktorej má bot na ploche najviac.
+    const races = ownedRaceCounts(p);
     if (def.race) {
-      const same = p.board.filter(x => Cards.byId[x.defId].race === def.race).length;
-      score += same * 0.4;
+      // drž sa dominantnej rasy
+      score += (races[def.race] || 0) * 0.5;
+    }
+    if (def.power) {
+      const fx = def.power.fx;
+      // aury permanentne zväčšujú celý balíček – kupuj skoro a rád
+      if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;
+      if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
+    }
+    if (def.spell) {
+      // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
+      score += (3 - Engine.cardCost(defId)) * 0.8;
+      if (def.fx.type === "gold") score += 1.5;
     }
     return score;
+  }
+
+  // Battlecry buffery hraj až po ostatných – zasiahnu plnú plochu.
+  function isBattlecryBuffer(defId) {
+    const pw = Cards.byId[defId].power;
+    return !!pw && pw.kw === "battlecry" &&
+      ["buffRace", "buffAllFriends", "buffFriend", "futureRace"].includes(pw.fx.type);
   }
 
   function botTurn(state, pid, difficulty) {
@@ -83,20 +115,12 @@ const Bot = (() => {
         : Engine.buyPrivate(state, pid, choice.i));
     }
 
-    // 4. Zahraj kúzla a príšerky z ruky.
+    // 4a. Kúzla, ktoré dávajú zdroje/karty (pred vykladaním).
     playGoldSpells(state, p, push); // mohla prísť ďalšia minca z draw
     for (let i = p.hand.length - 1; i >= 0; i--) {
       const inst = p.hand[i];
       if (!inst || !inst.spell) continue;
-      const fx = Cards.byId[inst.defId].fx;
-      if (fx.type === "buffTarget" && p.board.length) {
-        const target = cfg.smartSpells
-          ? [...p.board].sort((a, b) => b.atk - a.atk)[0]
-          : p.board[Math.floor(state.rng() * p.board.length)];
-        push(Engine.castSpell(state, pid, i, target.uid));
-      } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
-        push(Engine.castSpell(state, pid, i));
-      } else if (fx.type === "discover") {
+      if (Cards.byId[inst.defId].fx.type === "discover") {
         push(Engine.castSpell(state, pid, i));
         if (state.pendingDiscover) {
           const opts = state.pendingDiscover.options;
@@ -109,7 +133,9 @@ const Bot = (() => {
         }
       }
     }
-    // Príšerky: najsilnejšie prvé (easy náhodne), kým je miesto.
+
+    // 4b. Príšerky: obyčajné prvé (najsilnejšie), battlecry buffery na koniec,
+    // aby zasiahli plnú plochu. Easy hrá náhodne.
     guard = 20;
     while (p.board.length < Engine.BOARD_MAX && guard-- > 0) {
       const minions = p.hand
@@ -117,9 +143,33 @@ const Bot = (() => {
         .filter(x => x.inst && !x.inst.spell);
       if (!minions.length) break;
       let choice;
-      if (cfg.randomBuy) choice = minions[Math.floor(state.rng() * minions.length)];
-      else choice = minions.sort((a, b) => (b.inst.atk + b.inst.hp) - (a.inst.atk + a.inst.hp))[0];
+      if (cfg.randomBuy) {
+        choice = minions[Math.floor(state.rng() * minions.length)];
+      } else {
+        minions.sort((a, b) => {
+          const ba = isBattlecryBuffer(a.inst.defId) ? 1 : 0;
+          const bb = isBattlecryBuffer(b.inst.defId) ? 1 : 0;
+          if (ba !== bb) return ba - bb; // buffery neskôr
+          return (b.inst.atk + b.inst.hp) - (a.inst.atk + a.inst.hp);
+        });
+        choice = minions[0];
+      }
       push(Engine.playMinion(state, pid, choice.i));
+    }
+
+    // 4c. Buff kúzla až po vyložení – cieľ = najsilnejšia príšera.
+    for (let i = p.hand.length - 1; i >= 0; i--) {
+      const inst = p.hand[i];
+      if (!inst || !inst.spell) continue;
+      const fx = Cards.byId[inst.defId].fx;
+      if (fx.type === "buffTarget" && p.board.length) {
+        const target = cfg.smartSpells
+          ? [...p.board].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0]
+          : p.board[Math.floor(state.rng() * p.board.length)];
+        push(Engine.castSpell(state, pid, i, target.uid));
+      } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
+        push(Engine.castSpell(state, pid, i));
+      }
     }
 
     push(Engine.endShopTurn(state, pid));
