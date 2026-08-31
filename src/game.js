@@ -721,7 +721,8 @@ function cardEl(instOrId, opts) {
   let inner = `<span class="tier-tag">${art ? def.tier : "⭐" + def.tier}</span>`;
   if (opts.shop) inner += `<span class="cost">🪙${Engine.cardCost(defId)}</span>`;
   // Koľko kópií už vlastníš (vrátane balíčka a kôpky) – kúpa tretej evolvne.
-  if (opts.owned) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
+  // Kúzla sa neevolvujú, počítadlo by na nich zavádzalo.
+  if (opts.owned && !def.spell) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
   if (art) {
     el.classList.add("full-art");
     el.style.backgroundImage = `url("${art}")`;
