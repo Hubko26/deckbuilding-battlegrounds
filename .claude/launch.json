@@ -6,6 +6,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["server.mjs", "5180"],
       "port": 5180
+    },
+    {
+      "name": "arena-alt",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["server.mjs", "5181"],
+      "port": 5181
     }
   ]
 }

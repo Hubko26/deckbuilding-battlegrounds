@@ -20,7 +20,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
-  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra 2, Srdce 3).
+  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra/Svätožiara/
+  Pierko/Kliatba 2, Srdce 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -117,25 +118,29 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 | Start of fight | **Pred bojom** | na začiatku automatického boja |
 | End of turn | **Po nákupe** | na konci tvojej nákupnej fázy |
 | On attack | **Pri útoku** | keď príšerka útočí (dočasný efekt, len v boji) |
+| After a spell | **Po kúzle** | keď zošleš kúzlo, kým je víla na ploche |
+| Divine Shield | **Božský štít** | prvé zranenie sa zruší (štít praskne); z kúzla Svätožiara |
 
 Nie každá príšerka má schopnosť – niektoré majú len silu a život.
 
 ## Rasy (tribes)
 
 Každá príšerka má rasu; kúzla rasu nemajú. Rasy poháňajú synergie („+2/+2 všetkým
-Zvieratám“). Roster tvorí **30 príšer z art sady** (3 rasy × 10), každá príšerka
+Zvieratám“). Roster tvorí **40 príšer z art sád** (4 rasy × 10), každá príšerka
 má vlastné meno a obrázok pre každý evolučný stupeň (napr. Rattlewink →
 Bonebound → Ossuary Hound). Zdrojová grafika je v ZIP (neverzuje sa),
 optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 
 | Rasa | SK | Téma |
 |------|----|------|
-| beast | Zviera | veľké telá – aury, taunty a stále väčšie Mláďatá |
+| beast | Zviera | veľké telá – aury, taunty a trvalý rast |
 | elemental | Živel | výbuchy – single aj AoE damage, evolve = viac zásahov |
 | undead | Nemŕtvy | horda kostíkov + Pretečenie |
+| fairy | Víla | Po kúzle – schopnosti spúšťané zoslaním kúzla |
 
-Ďalšie rasy (Dragon, Fairy, Human, Ogre) sa pridajú s ďalšími art sadami –
-dátový model je pripravený (pole `race` na karte).
+Roster: **40 príšer z art sád** (4 rasy × 10). Ďalšie rasy (Dragon, Human,
+Ogre) sa pridajú s ďalšími art sadami – dátový model je pripravený
+(pole `race` na karte).
 
 ### Rasové archetypy (implementované)
 
@@ -195,26 +200,37 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - Kúzlo **Večná iskra** ⚡ (t3, cena 2): trvalý bonus (`dmgBoost`) –
   „všetky tvoje výboje a výbuchy (navždy) dávajú +1 damage". Stackuje sa –
   elemental ekvivalent permanentných aur (malý krok +1, aby nesnowballoval).
+  UI: popisky výbojov/výbuchov ukazujú číslo aj s bonusom majiteľa a
+  zvýrazňujú ho zelenou (trieda `.boosted`), nech hráč vidí reálny damage.
+
+**🧚 Fairy – Po kúzle (implementované)**
+
+- Schopnosti víl sa spúšťajú **zoslaním kúzla**, kým je víla na ploche
+  (keyword `afterSpell`, opakovateľná obdoba battlecry). Kúzla zaberajú
+  miesto v ruke a balíčku na úkor príšer – víly túto cenu premieňajú
+  na výhodu.
+- Roster: F002 rast +1/+1, F003 buff náhodného kamaráta, F001 potiahni
+  kartu, F004 taunt +1/+2, F005 vráť 1 🪙, F006/F009 vyvolaj Svetlušku 🧚
+  (1/2; v nákupe ide token rovno na plochu), F007 taunt +1/+1 Vílam,
+  F008 (t6) +2/+2 všetkým tvojim príšerkám.
+- F010 (t4, Pri vyložení): **+1/+1 za každé kúzlo zahrané v tejto hre**
+  (`spellScale`, počítadlo `p.spellsCast`) – škáluje s celou hrou, ale
+  prepočíta sa pri každom vyložení, žiadny trvalý buff (nesnowballuje).
+- Podporné kúzla (pre všetkých, ale víly z nich ťažia dvakrát):
+  - **Svätožiara** 😇 (t3): vybraná príšerka získa **Božský štít** –
+    prvé zranenie sa zruší, štít praskne (`inst.shield`; Žabia kliatba
+    a iné ne-damage efekty ho obchádzajú),
+  - **Fénixovo pierko** 🪶 (t3): vybraná príšerka sa po smrti raz vráti
+    s 1 životom (`inst.revive`; deathrattle sa pri návrate nespúšťa),
+  - **Žabia kliatba** 🐸 (t4): odložená kliatba – v najbližšom boji sa
+    náhodnej súperovej príšerke zmení život na 1 (anti-beast tech).
+- Balance (simulácia): fairy build ~48 % vs beast aj elemental, ~30 % vs
+  undead – horda malé vílie telá zožerie; je to vedomý counter (kruh sa
+  uzatvára cez elementálov, ktorí hordu kosia).
 
 ### Plánované rasové mechaniky
 
 Návrhy pre ďalšie art sady (zatiaľ neimplementované).
-
-**🧚 Fairy (Víla) – nová rasa: mágia a kúzla**
-
-- Víly sú orientované na kúzla: ich schopnosti sa spúšťajú **zoslaním kúzla**.
-  Kúzla zaberajú miesto v ruke a v balíčku na úkor príšer (doťah 5, ruka max 8) –
-  to je prirodzená cena hrania „spell" archetypu a víly ju premieňajú na výhodu.
-- Nový keyword **„Po kúzle"** – spustí sa vždy, keď zošleš kúzlo, kým je víla
-  na ploche (obdoba battlecry, ale opakovateľná):
-  - „Po kúzle: **potiahni kartu**." – vlajková synergia; kompenzuje ruku
-    preplnenú kúzlami a roztáča deckbuilding motor,
-  - „Po kúzle: +1/+1 tejto víle" – rast počas nákupnej fázy,
-  - „Po kúzle: buffni náhodnú vílu / vyvolaj slabý token",
-  - vyššie tiery: „Po kúzle: vráť si 1 🪙" alebo „ďalšie kúzlo v tomto
-    kole stojí o 1 menej".
-- Kúzla samotné ostávajú bez rasy – víly reagujú na zoslanie, nie na
-  vlastníctvo. Fairy aury (`futureRace`) fungujú štandardne.
 
 **🐲 Dragon (Drak) – nová rasa: plošný enabler všetkých rás**
 

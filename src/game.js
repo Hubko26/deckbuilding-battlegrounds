@@ -180,6 +180,26 @@ const L = {
     cs: "🤫 Nabito: v nejbližším boji bude umlčena soupeřova příšerka",
     en: "🤫 Charged: an enemy minion will be silenced next fight",
   },
+  hexPendingMsg: {
+    sk: "🐸 Nabité: v najbližšom boji sa súperovej príšerke zmení život na 1",
+    cs: "🐸 Nabito: v nejbližším boji se soupeřově příšerce změní život na 1",
+    en: "🐸 Charged: an enemy minion's health becomes 1 next fight",
+  },
+  hexMsg: {
+    sk: "dostal Žabiu kliatbu – život klesol na 1",
+    cs: "dostal Žabí kletbu – život klesl na 1",
+    en: "was frog-cursed – health dropped to 1",
+  },
+  shieldPopMsg: {
+    sk: "Božský štít praskol a zablokoval zranenie",
+    cs: "Božský štít praskl a zablokoval zranění",
+    en: "Divine Shield popped and blocked the damage",
+  },
+  reviveMsg: {
+    sk: "sa vrátil s 1 životom (Fénixovo pierko)",
+    cs: "se vrátil s 1 životem (Fénixovo pírko)",
+    en: "returned with 1 health (Phoenix Feather)",
+  },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
   you: { sk: "Ty", cs: "Ty", en: "You" },
   opp: { sk: "Súper", cs: "Soupeř", en: "Opponent" },
@@ -551,6 +571,40 @@ async function runBattle() {
         }
         break;
       }
+      case "hex": {
+        const el = cardById(ev.uid);
+        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
+        log(`🐸 ${name} ${t(L.hexMsg)}`);
+        if (el) {
+          floatText(el, "🐸");
+          Sfx.zap();
+          await sleep(700);
+        }
+        break;
+      }
+      case "shieldPop": {
+        const el = cardById(ev.uid);
+        log(`😇 ${t(L.shieldPopMsg)}`);
+        if (el) {
+          el.querySelector(".shield-badge")?.remove();
+          floatText(el, "😇💥");
+          await sleep(500);
+        }
+        break;
+      }
+      case "revive": {
+        const el = cardById(ev.uid);
+        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
+        log(`🪶 ${name} ${t(L.reviveMsg)}`);
+        if (el) {
+          const hpEl = el.querySelector(".hp");
+          if (hpEl) hpEl.textContent = "1";
+          floatText(el, "🪶✨", true);
+          Sfx.evolve();
+          await sleep(800);
+        }
+        break;
+      }
       case "silence": {
         // Umlčaná príšerka: trvalý 🤫 badge + preškrtnutý text + log s menom.
         const el = cardById(ev.uid);
@@ -628,7 +682,7 @@ async function runBattle() {
           uid: ev.uid, defId: ev.defId, rank: ev.rank || 1,
           atk: ev.atk ?? def.atk, hp: ev.hp ?? def.hp, maxHp: ev.hp ?? def.hp,
           taunt: !!def.taunt,
-        }, {});
+        }, { owner: ev.pid });
         el.style.order = String(ev.slot ?? 0);
         row.appendChild(el);
         Sfx.summon();
@@ -745,7 +799,7 @@ function renderBoardList(el, list, mine) {
   el.innerHTML = "";
   for (let i = 0; i < list.length; i++) {
     const inst = list[i];
-    const card = cardEl(inst, {});
+    const card = cardEl(inst, mine ? {} : { owner: OPP });
     // Rad je vycentrovaný (flex); poradie útoku zľava doprava drží CSS order.
     const slot = inst.slot ?? i;
     card.style.order = String(slot);
@@ -855,8 +909,12 @@ function cardEl(instOrId, opts) {
   el.className = "card" + ((isInst ? instOrId.taunt : def.taunt) ? " taunt" : "");
   el.dataset.rank = rank;
   if (isInst) el.dataset.uid = instOrId.uid;
-  const text = Cards.cardText(def, rank, I18N.lang, true);
-  const plainText = Cards.cardText(def, rank, I18N.lang);
+  // Trvalý bonus Večnej iskry majiteľa (opts.owner, default ja) – výboje
+  // a výbuchy ukážu v popisku navýšené číslo (zeleno).
+  const owner = state ? state[opts.owner || MY] : null;
+  const boost = (owner && owner.dmgBoost) || 0;
+  const text = Cards.cardText(def, rank, I18N.lang, true, boost);
+  const plainText = Cards.cardText(def, rank, I18N.lang, false, boost);
   const name = Cards.nameOf(def, rank, I18N.lang);
   const art = Cards.artOf(def, rank);
   // Príšery majú kompletnú kartu ako obrázok (rám + art); tier číslo sa
@@ -872,6 +930,9 @@ function cardEl(instOrId, opts) {
   } else {
     inner += `<div class="em">${def.emoji}</div>`;
   }
+  // Božský štít / Fénixovo pierko – trvalé badge, kým efekt drží.
+  if (isInst && instOrId.shield) inner += `<span class="shield-badge">😇</span>`;
+  if (isInst && instOrId.revive) inner += `<span class="revive-badge">🪶</span>`;
   inner += `<div class="nm">${name}</div>`;
   inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
@@ -1140,15 +1201,16 @@ function act(events) {
   // hráč VIDÍ, že sa niečo stalo: proc badge, +a/+h nad kartou, log chárg.
   for (const ev of events) {
     if (ev.pid !== MY) continue;
-    if (ev.type === "play") {
-      const def = Cards.byId[ev.defId];
-      if (def.power && def.power.kw === "battlecry") {
+    if (ev.type === "play" || (ev.type === "proc" && ev.kw === "afterSpell")) {
+      const kw = ev.type === "play" ? "battlecry" : "afterSpell";
+      const def = ev.type === "play" ? Cards.byId[ev.defId] : null;
+      if (ev.type === "proc" || (def.power && def.power.kw === "battlecry")) {
         const el = cardById(ev.uid);
         if (el) {
           el.classList.add("proc");
           const badge = document.createElement("div");
           badge.className = "proc-badge";
-          badge.textContent = Cards.KW_LABEL.battlecry[I18N.lang] + "!";
+          badge.textContent = Cards.KW_LABEL[kw][I18N.lang] + "!";
           el.appendChild(badge);
           Sfx.buff();
           setTimeout(() => { el.classList.remove("proc"); badge.remove(); }, 900);
@@ -1168,6 +1230,7 @@ function act(events) {
     if (ev.type === "dmgBoost") log(t(L.chargeDmgMsg).replace("{n}", ev.n).replace("{t}", ev.total));
     if (ev.type === "summonCharge") log(t(L.chargeSummonMsg).replace("{n}", ev.n));
     if (ev.type === "silencePending") log(t(L.silencePendingMsg));
+    if (ev.type === "hexPending") log(t(L.hexPendingMsg));
   }
   // Trojica zo skrytých kópií (balíček/kôpka) – ohlás popupom.
   if (hiddenEvolves.length) {

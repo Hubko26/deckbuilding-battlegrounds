@@ -33,9 +33,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 - Evolve: 3 rovnaké kópie (karta + stupeň) KDEKOĽVEK (plocha, ruka,
   balíček, kôpka) sa automaticky spoja: bronz → strieborná (staty ×2)
   → zlatá (×4); efekty ×2/×3. Predaj karty = +1 peniaz, karta preč z hry.
-- Rasy: Beast 🐾, Elemental ✨, Undead 💀. Keywords: Pri vyložení
-  (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred bojom,
-  Po nákupe, Pri útoku. Buffy z boja sú dočasné; trvalé sú buffy
+- Rasy: Beast 🐾, Elemental ✨, Undead 💀, Fairy 🧚. Keywords: Pri
+  vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
+  bojom, Po nákupe, Pri útoku, Po kúzle (afterSpell – spustí sa každým
+  zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
+  sa zruší; z kúzla Svätožiara). Buffy z boja sú dočasné; trvalé sú buffy
   z nákupnej fázy a AURY (`futureRace`: „VŠETKY tvoje X, aj v balíčku,
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
 - Rasové archetypy (trojuholník counterov):
@@ -52,8 +54,14 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
     Counter na undead hordu, slabé proti veľkým beast telám.
-  - **Tokeny nedostávajú aury** (`futureRace`) – kostík aj Mláďa škálujú
-    len stupňom rodiča.
+  - **Fairy = Po kúzle motor**: F001 draw, F005 vracia zlato, F006/F009
+    Svetlušky, F008 (t6) +2/+2 všetkým. Kupuj kúzla húfne – každé kúzlo
+    spustí všetky víly na ploche; víly vykladaj PRED hraním kúziel.
+    Kúzla: Svätožiara (Božský štít), Fénixovo pierko (revive 1 HP),
+    Žabia kliatba (HP súperovej príšerky na 1 – anti-beast). Fairy build
+    ~48 % vs beast/elemental, slabý vs undead horda (~30 %).
+  - **Tokeny nedostávajú aury** (`futureRace`) – kostík, Mláďa aj
+    Svetluška škálujú len stupňom rodiča.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 

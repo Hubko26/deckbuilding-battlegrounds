@@ -40,7 +40,21 @@ test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", ()
     }
     for (const lang of ["sk", "cs", "en"]) C.cardText(d, 2, lang); // nesmie spadnúť
   }
-  assert.equal(minions, 30);
+  assert.equal(minions, 40); // 4 rasy × 10 príšer
+});
+
+test("cardText s dmgBoost: výboj/výbuch ukáže navýšené číslo (Večná iskra)", () => {
+  const { C } = fresh();
+  // E001: výboj 2 damage – s boostom 2 ukáže 4; HTML verzia zeleným spanom
+  const e1 = C.byId["E001"];
+  assert.match(C.cardText(e1, 1, "sk", false, 2), /4 damage/);
+  assert.match(C.cardText(e1, 1, "sk", true, 2), /<span class="boosted">4<\/span> damage/);
+  assert.match(C.cardText(e1, 1, "sk", false, 0), /2 damage/); // bez boostu základ
+  // E010: výbuch 2×rank – rank 2 = 4, s boostom 1 ukáže 5
+  const e10 = C.byId["E010"];
+  assert.match(C.cardText(e10, 2, "sk", false, 1), /5 damage/);
+  // viacnásobný výboj (rank 3): boost sa pripočíta ku KAŽDÉMU zásahu
+  assert.match(C.cardText(e1, 3, "sk", false, 2), /3× 4 damage/);
 });
 
 test("art súbory existujú pre všetky príšery a stupne", async () => {
@@ -503,6 +517,118 @@ test("Umlčanie: v najbližšom boji zruší schopnosť aj taunt náhodnej súpe
   // Umlčaný deathrattle nevyvolá kostíkov.
   assert.ok(!events.some(e => e.type === "summon"));
   assert.equal(state.p1.silences, 0); // nabité kúzlo sa spotrebovalo
+});
+
+test("víly Po kúzle: každé kúzlo spustí schopnosti víl na ploche", () => {
+  const { state, E } = fresh(71);
+  E.startRound(state);
+  const p = state.p1;
+  const dew = E.makeInst(state, "F001", 1); dew.slot = 0;   // Po kúzle: potiahni kartu
+  const cap = E.makeInst(state, "F002", 1); cap.slot = 1;   // Po kúzle: +1/+1 pre seba
+  p.board = [dew, cap];
+  p.hand = [E.makeInst(state, "minca", 1)];
+  p.deck = [{ defId: "B001", rank: 1 }];
+  p.discard = [];
+  const before = p.money;
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.money, before + 2);              // minca zafungovala
+  assert.ok(p.hand.some(x => x.defId === "B001")); // víla dotiahla kartu
+  assert.equal(cap.atk, 2);                       // víla narástla
+  assert.equal(cap.hp, 3);
+});
+
+test("spellScale F010: +1/+1 za každé kúzlo zahrané v tejto hre (pri vyložení)", () => {
+  const { state, E, C } = fresh(76);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "minca", 1), E.makeInst(state, "minca", 1)];
+  E.castSpell(state, "p1", 0);
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.spellsCast, 2);
+  p.hand = [E.makeInst(state, "F010", 1)];
+  p.board = [];
+  E.playMinion(state, "p1", 0);
+  const m = p.board[0];
+  assert.equal(m.atk, C.byId["F010"].atk + 2); // +1/+1 za každé z 2 kúziel
+  assert.equal(m.hp, C.byId["F010"].hp + 2);
+});
+
+test("víly Po kúzle: summon víla vyvolá Svetlušku na plochu v nákupe", () => {
+  const { state, E } = fresh(72);
+  E.startRound(state);
+  const p = state.p1;
+  const pix = E.makeInst(state, "F006", 1); pix.slot = 0; // Po kúzle: vyvolaj Svetlušku
+  p.board = [pix];
+  p.hand = [E.makeInst(state, "minca", 1)];
+  E.castSpell(state, "p1", 0);
+  const tok = p.board.find(x => x.defId === "svetluska");
+  assert.ok(tok);
+  assert.equal(tok.atk, 1);
+});
+
+test("Svätožiara: Božský štít zablokuje prvé zranenie, potom praskne", () => {
+  const { state, E } = fresh(73);
+  E.startRound(state);
+  const p = state.p1;
+  const bear = E.makeInst(state, "B002", 1); bear.slot = 0; // 4/5 taunt
+  p.board = [bear];
+  p.hand = [E.makeInst(state, "svatoziara", 1)];
+  E.castSpell(state, "p1", 0, bear.uid);
+  assert.equal(bear.shield, true);
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "B001", 1), { slot: 0 })]; // 2/2
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const pop = events.find(e => e.type === "shieldPop");
+  assert.ok(pop);
+  // Prvý útok medveďa nezranil: hp event po prvom útoku ostal na plnej hodnote.
+  const idx = events.indexOf(pop);
+  const hpAfter = events.slice(idx).find(e => e.type === "hp" && e.uid === bear.uid);
+  assert.equal(hpAfter.hp, 5);
+});
+
+test("Fénixovo pierko: príšerka sa po smrti raz vráti s 1 HP", () => {
+  const { state, E } = fresh(74);
+  E.startRound(state);
+  const p = state.p1;
+  const bird = E.makeInst(state, "B001", 1); bird.slot = 0; // 2/2
+  p.board = [bird];
+  p.hand = [E.makeInst(state, "pierko", 1)];
+  E.castSpell(state, "p1", 0, bird.uid);
+  assert.equal(bird.revive, true);
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "U010", 1), { slot: 0 })]; // 8/10 – zabije 2/2
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const rev = events.find(e => e.type === "revive" && e.uid === bird.uid);
+  assert.ok(rev);
+  // Druhá smrť už je definitívna.
+  const die = events.find(e => e.type === "die" && e.uid === bird.uid);
+  assert.ok(die);
+});
+
+test("Žabia kliatba: v najbližšom boji zmení náhodnej súperovej príšerke HP na 1", () => {
+  const { state, E } = fresh(75);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "kliatba", 1)];
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.hexes, 1);
+  E.endShopTurn(state, "p1");
+  const tank = E.makeInst(state, "U010", 1); tank.slot = 0; // 8/10
+  state.p2.board = [tank];
+  state.p1.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const hex = events.find(e => e.type === "hex" && e.uid === tank.uid);
+  assert.ok(hex);
+  assert.equal(state.p1.hexes, 0); // spotrebovaná
 });
 
 test("kúzlo Štít: dá vybranej príšerke Obrancu bez statov", () => {

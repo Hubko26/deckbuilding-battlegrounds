@@ -16,18 +16,21 @@ const Cards = (() => {
     beast: { sk: "Zviera", cs: "Zvíře", en: "Beast" },
     elemental: { sk: "Živel", cs: "Živel", en: "Elemental" },
     undead: { sk: "Nemŕtvy", cs: "Nemrtvý", en: "Undead" },
+    fairy: { sk: "Víla", cs: "Víla", en: "Fairy" },
   };
   const RACES_PL = { // datív množného čísla („+2/+2 všetkým Zvieratám“)
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
     elemental: { sk: "Živlom", cs: "Živlům", en: "Elementals" },
     undead: { sk: "Nemŕtvym", cs: "Nemrtvým", en: "Undead" },
+    fairy: { sk: "Vílam", cs: "Vílám", en: "Fairies" },
   };
   const RACES_NOM = { // nominatív množného čísla („všetky budúce Zvieratá“)
     beast: { sk: "Zvieratá", cs: "Zvířata", en: "Beasts" },
     elemental: { sk: "Živly", cs: "Živly", en: "Elementals" },
     undead: { sk: "Nemŕtvi", cs: "Nemrtví", en: "Undead" },
+    fairy: { sk: "Víly", cs: "Víly", en: "Fairies" },
   };
-  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀" };
+  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚" };
 
   const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
     ({ id, tier, race, stageNames, atk, hp, ...extra });
@@ -97,6 +100,28 @@ const Cards = (() => {
     M("U010", 6, "undead", ["Wispwarden", "Lantern Guard", "Soul Bastion"], 8, 10,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 1, h: 1 } } }),
 
+    // ---------- Víly (Fairy) – schopnosti sa spúšťajú zoslaním kúzla ----------
+    M("F002", 1, "fairy", ["Gleamcap", "Sporejester", "Mycelial Monarch"], 1, 2,
+      { power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 1 } } }),
+    M("F003", 1, "fairy", ["Petalprank", "Briarwink", "Rosethorn Duchess"], 2, 1,
+      { power: { kw: "afterSpell", fx: { type: "buffFriend", a: 1, h: 1 } } }),
+    M("F001", 2, "fairy", ["Dewwhistle", "Bloomtrill", "Garden Empress"], 2, 3,
+      { power: { kw: "afterSpell", fx: { type: "draw", n: 1 } } }),
+    M("F004", 2, "fairy", ["Thistletick", "Burrbounce", "Thornball Titan"], 2, 5,
+      { taunt: true, power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 2 } } }),
+    M("F005", 3, "fairy", ["Moonlace", "Silversilk", "Celestial Weaver"], 3, 5,
+      { power: { kw: "afterSpell", fx: { type: "gold", n: 1 } } }),
+    M("F006", 3, "fairy", ["Puddlepix", "Lilytrick", "Pondcourt Prince"], 3, 4,
+      { power: { kw: "afterSpell", fx: { type: "summon", token: "svetluska", n: 1 } } }),
+    M("F007", 4, "fairy", ["Acornkin", "Branchbaron", "Oakheart Regent"], 4, 7,
+      { taunt: true, power: { kw: "afterSpell", fx: { type: "buffRace", race: "fairy", a: 1, h: 1 } } }),
+    M("F010", 4, "fairy", ["Mirrorling", "Glimmerdouble", "Prism Queen"], 3, 4,
+      { power: { kw: "battlecry", fx: { type: "spellScale", a: 1, h: 1 } } }),
+    M("F009", 5, "fairy", ["Honeyfizz", "Nectarbolt", "Hivecrown"], 5, 7,
+      { power: { kw: "afterSpell", fx: { type: "summon", token: "svetluska", n: 2 } } }),
+    M("F008", 6, "fairy", ["Starbud", "Cometbloom", "Astral Bouquet"], 7, 8,
+      { power: { kw: "afterSpell", fx: { type: "buffAllFriends", a: 2, h: 2 } } }),
+
     // ---------- Kúzla (spoločné pre všetkých) ----------
     { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
       name: { sk: "Zlatá minca", cs: "Zlatá mince", en: "Gold Coin" } },
@@ -116,6 +141,12 @@ const Cards = (() => {
       name: { sk: "Ohnivé srdce", cs: "Ohnivé srdce", en: "Fiery Heart" } },
     { id: "iskra", cost: 2, tier: 3, emoji: "⚡", spell: true, fx: { type: "dmgBoost", n: 1 },
       name: { sk: "Večná iskra", cs: "Věčná jiskra", en: "Eternal Spark" } },
+    { id: "svatoziara", cost: 2, tier: 3, emoji: "😇", spell: true, fx: { type: "buffTarget", a: 0, h: 0, shield: true },
+      name: { sk: "Svätožiara", cs: "Svatozář", en: "Halo" } },
+    { id: "pierko", cost: 2, tier: 3, emoji: "🪶", spell: true, fx: { type: "buffTarget", a: 0, h: 0, revive: true },
+      name: { sk: "Fénixovo pierko", cs: "Fénixovo pírko", en: "Phoenix Feather" } },
+    { id: "kliatba", cost: 2, tier: 4, emoji: "🐸", spell: true, fx: { type: "hex", n: 1 },
+      name: { sk: "Žabia kliatba", cs: "Žabí kletba", en: "Frog Curse" } },
   ];
 
   // Tokeny – vyvolávané príšerky, nie sú v obchode ani v balíčku.
@@ -124,6 +155,8 @@ const Cards = (() => {
       name: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" } },
     { id: "bublina", tier: 1, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
       name: { sk: "Bublina", cs: "Bublina", en: "Bubble" } },
+    { id: "svetluska", tier: 1, race: "fairy", emoji: "🧚", atk: 1, hp: 2, token: true,
+      name: { sk: "Svetluška", cs: "Světluška", en: "Firefly" } },
     { id: "mlada", tier: 1, race: "beast", emoji: "🐣", atk: 1, hp: 1, token: true,
       name: { sk: "Mláďa", cs: "Mládě", en: "Cub" } },
   ];
@@ -150,6 +183,7 @@ const Cards = (() => {
     deathrattle: { sk: "Pri smrti", cs: "Při smrti", en: "Deathrattle" },
     startFight: { sk: "Pred bojom", cs: "Před bojem", en: "Start of fight" },
     endTurn: { sk: "Po nákupe", cs: "Po nákupu", en: "End of turn" },
+    afterSpell: { sk: "Po kúzle", cs: "Po kouzle", en: "After a spell" },
     onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
   };
@@ -182,15 +216,28 @@ const Cards = (() => {
       cs: `+${f.a * m}/+${f.h * m} všem kamarádům`,
       en: `+${f.a * m}/+${f.h * m} to all friends`,
     }),
-    buffTarget: (f, m) => (!f.a && !f.h && f.taunt ? {
-      sk: `vybraná príšerka získa Obrancu`,
-      cs: `vybraná příšerka získá Obránce`,
-      en: `give a chosen minion Taunt`,
-    } : {
-      sk: `+${f.a * m}/+${f.h * m} vybranej príšerke` + (f.taunt ? " a Obranca" : ""),
-      cs: `+${f.a * m}/+${f.h * m} vybrané příšerce` + (f.taunt ? " a Obránce" : ""),
-      en: `+${f.a * m}/+${f.h * m} to a chosen minion` + (f.taunt ? " and Taunt" : ""),
-    }),
+    buffTarget: (f, m) => {
+      if (!f.a && !f.h && f.shield) return {
+        sk: "vybraná príšerka získa Božský štít (zablokuje prvé zranenie)",
+        cs: "vybraná příšerka získá Božský štít (zablokuje první zranění)",
+        en: "give a chosen minion Divine Shield (blocks the first damage)",
+      };
+      if (!f.a && !f.h && f.revive) return {
+        sk: "vybraná príšerka sa po smrti raz vráti s 1 životom",
+        cs: "vybraná příšerka se po smrti jednou vrátí s 1 životem",
+        en: "a chosen minion returns once after death with 1 health",
+      };
+      if (!f.a && !f.h && f.taunt) return {
+        sk: "vybraná príšerka získa Obrancu",
+        cs: "vybraná příšerka získá Obránce",
+        en: "give a chosen minion Taunt",
+      };
+      return {
+        sk: `+${f.a * m}/+${f.h * m} vybranej príšerke` + (f.taunt ? " a Obranca" : ""),
+        cs: `+${f.a * m}/+${f.h * m} vybrané příšerce` + (f.taunt ? " a Obránce" : ""),
+        en: `+${f.a * m}/+${f.h * m} to a chosen minion` + (f.taunt ? " and Taunt" : ""),
+      };
+    },
     draw: (f, m) => ({
       sk: `dotiahni ${f.n * m} kart${f.n * m === 1 ? "u" : "y"}`,
       cs: `lízni ${f.n * m} kart${f.n * m === 1 ? "u" : "y"}`,
@@ -208,19 +255,20 @@ const Cards = (() => {
     }),
     // Evolve škáluje počet zásahov (1/2/3), nie silu – text to ukazuje.
     // Výboj mieri na najslabšieho nepriateľa (kosí tokeny, nekŕmi deathrattly).
-    dmgWeakEnemy: (f, m) => (m === 1 ? {
-      sk: `${f.n} damage najslabšiemu nepriateľovi`,
-      cs: `${f.n} damage nejslabšímu nepříteli`,
-      en: `deal ${f.n} damage to the weakest enemy`,
+    // hl = číslo aj s trvalým bonusom Večnej iskry (dmgBoost), zvýraznené.
+    dmgWeakEnemy: (f, m, hl) => (m === 1 ? {
+      sk: `${hl(f.n)} damage najslabšiemu nepriateľovi`,
+      cs: `${hl(f.n)} damage nejslabšímu nepříteli`,
+      en: `deal ${hl(f.n)} damage to the weakest enemy`,
     } : {
-      sk: `${m}× ${f.n} damage najslabším nepriateľom`,
-      cs: `${m}× ${f.n} damage nejslabším nepřátelům`,
-      en: `deal ${f.n} damage to the ${m} weakest enemies`,
+      sk: `${m}× ${hl(f.n)} damage najslabším nepriateľom`,
+      cs: `${m}× ${hl(f.n)} damage nejslabším nepřátelům`,
+      en: `deal ${hl(f.n)} damage to the ${m} weakest enemies`,
     }),
-    dmgAllEnemies: (f, m) => ({
-      sk: `výbuch: ${f.n * m} damage VŠETKÝM nepriateľom`,
-      cs: `výbuch: ${f.n * m} damage VŠEM nepřátelům`,
-      en: `explosion: ${f.n * m} damage to ALL enemies`,
+    dmgAllEnemies: (f, m, hl) => ({
+      sk: `výbuch: ${hl(f.n * m)} damage VŠETKÝM nepriateľom`,
+      cs: `výbuch: ${hl(f.n * m)} damage VŠEM nepřátelům`,
+      en: `explosion: ${hl(f.n * m)} damage to ALL enemies`,
     }),
     summon: (f, m) => {
       const a = byId[f.token].atk * STAT_MULT[m];
@@ -247,15 +295,20 @@ const Cards = (() => {
       cs: `všechny tvé výboje a výbuchy (navždy) dávají +${f.n * m} damage`,
       en: `all your zaps and explosions (forever) deal +${f.n * m} damage`,
     }),
+    spellScale: (f, m) => ({
+      sk: `+${f.a * m}/+${f.h * m} pre seba za každé kúzlo, ktoré si v tejto hre zahral`,
+      cs: `+${f.a * m}/+${f.h * m} pro sebe za každé kouzlo, které jsi v této hře zahrál`,
+      en: `+${f.a * m}/+${f.h * m} for itself for each spell you've cast this game`,
+    }),
+    hex: () => ({
+      sk: "v najbližšom boji sa náhodnej súperovej príšerke zmení život na 1",
+      cs: "v nejbližším boji se náhodné soupeřově příšerce změní život na 1",
+      en: "next fight, a random enemy minion's health becomes 1",
+    }),
     silence: () => ({
       sk: "v najbližšom boji stratí náhodná súperova príšerka so schopnosťou svoj efekt aj Obrancu",
       cs: "v nejbližším boji ztratí náhodná soupeřova příšerka se schopností svůj efekt i Obránce",
       en: "next fight, a random enemy minion with an ability loses its effect and Taunt",
-    }),
-    dmgBoost: (f, m) => ({
-      sk: `všetky tvoje výboje a výbuchy (navždy) dávajú +${f.n * m} damage`,
-      cs: `všechny tvé výboje a výbuchy (navždy) dávají +${f.n * m} damage`,
-      en: `all your zaps and explosions (forever) deal +${f.n * m} damage`,
     }),
     discover: () => ({
       sk: "vyber si 1 z 3 kariet do ruky",
@@ -266,20 +319,28 @@ const Cards = (() => {
 
   // Popis karty pre daný stupeň (rank 1–3) a jazyk.
   // html=true obalí kľúčové slová (Taunt, Deathrattle…) do <strong>.
-  function cardText(def, rank, lang, html) {
+  // boost = trvalý bonus Večnej iskry majiteľa – výboje/výbuchy ukážu
+  // navýšené číslo (html navyše zeleno cez <span class="boosted">).
+  function cardText(def, rank, lang, html, boost) {
     const m = rank; // efekty ×1/×2/×3
     const b = s => (html ? `<strong>${s}</strong>` : s);
+    const hl = base => {
+      if (!boost) return String(base);
+      const v = base + boost;
+      return html ? `<span class="boosted">${v}</span>` : String(v);
+    };
+    const fxText = (fx, mult) => FX_TEXT[fx.type](fx, mult, hl)[lang];
     const parts = [];
     if (def.taunt) parts.push(b(TAUNT_LABEL[lang]) + ".");
     if (def.power && def.power.kw === "raceDeath") {
       // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
       const r = RACES[def.power.fx.race];
       const label = { sk: `Keď zomrie tvoje ${r.sk}`, cs: `Když zemře tvé ${r.cs}`, en: `When your ${r.en} dies` };
-      parts.push(`${b(label[lang])}: ${FX_TEXT[def.power.fx.type](def.power.fx, m)[lang]}.`);
+      parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
     } else if (def.power) {
-      parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${FX_TEXT[def.power.fx.type](def.power.fx, m)[lang]}.`);
+      parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${fxText(def.power.fx, m)}.`);
     }
-    if (def.spell) parts.push(FX_TEXT[def.fx.type](def.fx, 1)[lang][0].toUpperCase() + FX_TEXT[def.fx.type](def.fx, 1)[lang].slice(1) + ".");
+    if (def.spell) { const s = fxText(def.fx, 1); parts.push(s[0].toUpperCase() + s.slice(1) + "."); }
     return parts.join(" ");
   }
 

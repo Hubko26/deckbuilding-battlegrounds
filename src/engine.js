@@ -117,6 +117,8 @@ const Engine = (() => {
       dmgBoost: 0, // trvalo: všetky výboje/výbuchy +n damage (kúzlo Večná iskra)
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
+      hexes: 0, // nabité Žabie kliatby – v najbližšom boji zmenia HP cieľa na 1
+      spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
     };
   }
@@ -394,6 +396,20 @@ const Engine = (() => {
     return events;
   }
 
+  // Po kúzle (víly): každé úspešné zoslanie kúzla spustí schopnosti víl
+  // na vlastnej ploche – opakovateľná obdoba battlecry. Zároveň rastie
+  // trvalé počítadlo zahraných kúziel (spellScale karty).
+  function afterSpellProcs(state, p, events) {
+    p.spellsCast++;
+    for (const inst of [...p.board]) {
+      const def = Cards.byId[inst.defId];
+      if (def.power && def.power.kw === "afterSpell") {
+        events.push({ type: "proc", pid: p.id, uid: inst.uid, kw: "afterSpell" });
+        applyShopFx(state, p, def.power.fx, inst.rank, inst, events);
+      }
+    }
+  }
+
   // target: uid príšerky na vlastnej ploche (len pre buffTarget).
   function castSpell(state, pid, handIdx, targetUid) {
     const p = state[pid];
@@ -407,8 +423,12 @@ const Engine = (() => {
       p.hand.splice(handIdx, 1);
       buff(target, fx.a, fx.h);
       if (fx.taunt) target.taunt = true;
+      if (fx.shield) target.shield = true; // Božský štít: zablokuje prvé zranenie
+      if (fx.revive) target.revive = true; // po smrti sa raz vráti s 1 HP
       p.discard.push({ defId: inst.defId, rank: 1 });
-      return [{ type: "spell", pid, defId: inst.defId, targetUid }];
+      const events = [{ type: "spell", pid, defId: inst.defId, targetUid }];
+      afterSpellProcs(state, p, events);
+      return events;
     }
     if (fx.type === "discover") {
       p.hand.splice(handIdx, 1);
@@ -416,13 +436,16 @@ const Engine = (() => {
       const options = [];
       for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier));
       state.pendingDiscover = { pid, options };
-      return [{ type: "discoverStart", pid, options }];
+      const events = [{ type: "discoverStart", pid, options }];
+      afterSpellProcs(state, p, events);
+      return events;
     }
-    // gold, buffAllFriends – bez cieľa
+    // gold, buffAllFriends, dmgBoost, silence, hex – bez cieľa
     p.hand.splice(handIdx, 1);
     p.discard.push({ defId: inst.defId, rank: 1 });
     const events = [{ type: "spell", pid, defId: inst.defId }];
     applyShopFx(state, p, fx, 1, null, events);
+    afterSpellProcs(state, p, events);
     return events;
   }
 
@@ -510,6 +533,16 @@ const Engine = (() => {
           events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
         break;
+      case "spellScale": {
+        // +a/+h pre seba za KAŽDÉ kúzlo zahrané v tejto hre – prepočíta sa
+        // pri každom vyložení, žiadny trvalý buff (nesnowballuje cez kópie).
+        const n = p.spellsCast;
+        if (n > 0) {
+          buff(self, fx.a * m * n, fx.h * m * n);
+          events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * m * n, h: fx.h * m * n });
+        }
+        break;
+      }
       case "growSelf":
         buff(self, fx.a * m, fx.h * m);
         if (fx.perm) {
@@ -548,6 +581,25 @@ const Engine = (() => {
         p.silences += fx.n * m;
         events.push({ type: "silencePending", pid: p.id, total: p.silences });
         break;
+      case "hex":
+        // Žabia kliatba: v najbližšom boji sa náhodnej súperovej príšerke
+        // zmení život na 1 (nie je to damage – obchádza Božský štít).
+        p.hexes += fx.n * m;
+        events.push({ type: "hexPending", pid: p.id, total: p.hexes });
+        break;
+      case "summon": {
+        // Vyvolanie v nákupnej fáze (víly „Po kúzle“): token ide rovno na
+        // plochu a bojuje v najbližšom boji. Plná plocha = token prepadne.
+        for (let i = 0; i < fx.n; i++) {
+          if (p.board.length >= BOARD_MAX) break;
+          const tok = makeInst(state, fx.token, Math.min(m, 3), p);
+          tok.slot = freeSlot(p.board, BOARD_MAX);
+          p.board.push(tok);
+          sortBoard(p);
+          events.push({ type: "summon", pid: p.id, uid: tok.uid, defId: fx.token, slot: tok.slot, rank: tok.rank, atk: tok.atk, hp: tok.hp });
+        }
+        break;
+      }
       case "futureRace": {
         // Permanentná aura: VŠETKY príšerky danej rasy – aktuálne na ploche
         // a v ruke hneď, budúce inštancie (balíček, kôpka, tokeny) cez auru
@@ -634,6 +686,21 @@ const Engine = (() => {
       }
     }
 
+    // Žabie kliatby – náhodnej súperovej príšerke sa zmení život na 1
+    // (nie je to damage, Božský štít nepomôže).
+    for (const pid of [attacker, other(attacker)]) {
+      const p = state[pid];
+      while (p.hexes > 0) {
+        p.hexes--;
+        const targets = sides[other(pid)].filter(x => x.hp > 1);
+        if (!targets.length) continue;
+        const t = pick(targets, state.rng);
+        t.hp = 1;
+        events.push({ type: "hex", pid: other(pid), uid: t.uid, defId: t.defId });
+        events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+      }
+    }
+
     // Pred bojom – začínajúca strana prvá.
     for (const pid of [attacker, other(attacker)]) {
       for (const inst of [...sides[pid]]) {
@@ -667,8 +734,8 @@ const Engine = (() => {
       const taunts = enemies.filter(x => x.taunt);
       const d = pick(taunts.length ? taunts : enemies, state.rng);
       events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
-      a.hp -= d.atk;
-      d.hp -= a.atk;
+      dealDmg(a, d.atk, attacker, events);
+      dealDmg(d, a.atk, other(attacker), events);
       events.push({ type: "hp", pid: attacker, uid: a.uid, hp: a.hp });
       events.push({ type: "hp", pid: other(attacker), uid: d.uid, hp: d.hp });
       handleDeaths(state, sides, events);
@@ -731,7 +798,7 @@ const Engine = (() => {
           if (!enemies.length) break;
           const minHp = Math.min(...enemies.map(x => x.hp));
           const t = pick(enemies.filter(x => x.hp === minHp), state.rng);
-          t.hp -= hitDmg;
+          dealDmg(t, hitDmg, other(pid), events);
           events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: hitDmg, from: self.uid });
           events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
           handleDeaths(state, sides, events);
@@ -745,6 +812,11 @@ const Engine = (() => {
         const dmg = fx.n * m + state[pid].dmgBoost;
         const hits = [];
         for (const t of sides[other(pid)].filter(x => x.hp > 0)) {
+          if (t.shield) {
+            t.shield = false;
+            events.push({ type: "shieldPop", pid: other(pid), uid: t.uid });
+            continue;
+          }
           t.hp -= dmg;
           hits.push({ uid: t.uid, hp: t.hp });
         }
@@ -828,10 +900,29 @@ const Engine = (() => {
     });
   }
 
+  // Božský štít: prvé zranenie sa úplne zruší (štít praskne, staty ostávajú).
+  function dealDmg(target, dmg, pid, events) {
+    if (dmg <= 0) return;
+    if (target.shield) {
+      target.shield = false;
+      events.push({ type: "shieldPop", pid, uid: target.uid });
+      return;
+    }
+    target.hp -= dmg;
+  }
+
   function handleDeaths(state, sides, events) {
     for (const pid of ["p1", "p2"]) {
       for (const inst of [...sides[pid]]) {
         if (inst.hp > 0 || inst.dead) continue;
+        // Fénixovo pierko: raz sa vráti s 1 životom namiesto smrti.
+        if (inst.revive) {
+          inst.revive = false;
+          inst.hp = 1;
+          events.push({ type: "revive", pid, uid: inst.uid, defId: inst.defId });
+          events.push({ type: "hp", pid, uid: inst.uid, hp: 1 });
+          continue;
+        }
         inst.dead = true;
         // Poradie pre UI: proc badge + efekt kým je karta ešte vidno, potom smrť.
         const def = Cards.byId[inst.defId];

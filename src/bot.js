@@ -38,6 +38,15 @@ const Bot = (() => {
     return counts;
   }
 
+  // Počet kúziel vo všetkých zónach – kvôli hodnote víl („Po kúzle“).
+  function ownedSpellCount(p) {
+    let n = 0;
+    for (const c of p.deck) if (Cards.byId[c.defId].spell) n++;
+    for (const c of p.discard) if (Cards.byId[c.defId].spell) n++;
+    for (const x of p.hand) if (x.spell) n++;
+    return n;
+  }
+
   function cardScore(state, p, defId) {
     const def = Cards.byId[defId];
     let score = def.tier;
@@ -56,11 +65,15 @@ const Bot = (() => {
       // aury permanentne zväčšujú celý balíček – kupuj skoro a rád
       if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;
       if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
+      // víly („Po kúzle“) rastú s počtom kúziel v balíčku
+      if (def.power.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
     }
     if (def.spell) {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
       score += (3 - Engine.cardCost(defId)) * 0.8;
       if (def.fx.type === "gold") score += 1.5;
+      // víly na kúzla reagujú („Po kúzle“) – kúzla sú s nimi hodnotnejšie
+      score += (races.fairy || 0) * 0.5;
       // Večná iskra škáluje s počtom vlastných elementálov (výboje/výbuchy)
       if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
     }
@@ -79,6 +92,10 @@ const Bot = (() => {
     const p = state[pid];
     const events = [];
     const push = ev => { if (ev) events.push(...ev); };
+
+    // 0. Príšerky na plochu HNEĎ – víly („Po kúzle“) tak zachytia triggery
+    //    zo všetkých kúziel zahraných v tomto ťahu.
+    deployMinions(state, p, cfg, push);
 
     // 1. Kúzla na peniaze zahraj hneď (viac na nákupy).
     playGoldSpells(state, p, push);
@@ -137,9 +154,34 @@ const Bot = (() => {
       }
     }
 
-    // 4b. Príšerky: obyčajné prvé (najsilnejšie), battlecry buffery na koniec,
-    // aby zasiahli plnú plochu. Easy hrá náhodne.
-    guard = 20;
+    // 4b. Príšerky dokúpené/dotiahnuté počas ťahu (zvyšok ruky).
+    deployMinions(state, p, cfg, push);
+
+    // 4c. Buff kúzla až po vyložení – cieľ = najsilnejšia príšera.
+    for (let i = p.hand.length - 1; i >= 0; i--) {
+      const inst = p.hand[i];
+      if (!inst || !inst.spell) continue;
+      const fx = Cards.byId[inst.defId].fx;
+      if (fx.type === "buffTarget" && p.board.length) {
+        const target = cfg.smartSpells
+          ? [...p.board].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0]
+          : p.board[Math.floor(state.rng() * p.board.length)];
+        push(Engine.castSpell(state, pid, i, target.uid));
+      } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
+        push(Engine.castSpell(state, pid, i));
+      } else if (fx.type === "silence" || fx.type === "dmgBoost" || fx.type === "hex") {
+        push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
+      }
+    }
+
+    push(Engine.endShopTurn(state, pid));
+    return events;
+  }
+
+  // Vyloženie príšer: obyčajné prvé (najsilnejšie), battlecry buffery na
+  // koniec, aby zasiahli plnú plochu. Easy hrá náhodne.
+  function deployMinions(state, p, cfg, push) {
+    let guard = 20;
     while (p.board.length < Engine.BOARD_MAX && guard-- > 0) {
       const minions = p.hand
         .map((inst, i) => ({ inst, i }))
@@ -157,28 +199,8 @@ const Bot = (() => {
         });
         choice = minions[0];
       }
-      push(Engine.playMinion(state, pid, choice.i));
+      push(Engine.playMinion(state, p.id, choice.i));
     }
-
-    // 4c. Buff kúzla až po vyložení – cieľ = najsilnejšia príšera.
-    for (let i = p.hand.length - 1; i >= 0; i--) {
-      const inst = p.hand[i];
-      if (!inst || !inst.spell) continue;
-      const fx = Cards.byId[inst.defId].fx;
-      if (fx.type === "buffTarget" && p.board.length) {
-        const target = cfg.smartSpells
-          ? [...p.board].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0]
-          : p.board[Math.floor(state.rng() * p.board.length)];
-        push(Engine.castSpell(state, pid, i, target.uid));
-      } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
-        push(Engine.castSpell(state, pid, i));
-      } else if (fx.type === "silence" || fx.type === "dmgBoost") {
-        push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
-      }
-    }
-
-    push(Engine.endShopTurn(state, pid));
-    return events;
   }
 
   function playGoldSpells(state, p, push) {

@@ -277,11 +277,20 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* Umlčaná príšerka (kúzlo Umlčanie) – schopnosť preškrtnutá a stlmená,
    trvalý 🤫 badge cez art, nech je to vidno aj na malých kartách. */
 .card.silenced .tx { text-decoration: line-through; opacity: .45; }
+/* Číslo výboja/výbuchu navýšené Večnou iskrou – zelené, nech vidno bonus. */
+.card .tx .boosted { color: #1e9e40; font-weight: 800; }
 .card .silence-badge {
   position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
   font-size: 1.9em; line-height: 1; pointer-events: none;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.7));
 }
+/* Božský štít a Fénixovo pierko – malé trvalé badge v rohoch artu. */
+.card .shield-badge, .card .revive-badge {
+  position: absolute; top: 3%; font-size: 1.2em; line-height: 1;
+  pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
+}
+.card .shield-badge { right: 5%; }
+.card .revive-badge { right: 22%; }
 .card.frozen::after {
   content: "❄️"; position: absolute; top: 2%; left: 50%; transform: translateX(-50%);
   font-size: .7em;
@@ -404,6 +413,41 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   0% { transform: scale(1); filter: brightness(1); }
   50% { transform: scale(1.25); filter: brightness(1.6); }
   100% { transform: scale(1); filter: brightness(1); }
+}
+
+/* ---------- Mobil (na šírku): PlayGround-mobile-wide.png (1850×850).
+   Rovnaká logika ako desktop (6+6 slotov, veľký stred), ale iné pomery:
+   sloty hore y 101–228, dole y 611–738, x ~395–1410; rámiky balíčkov na
+   bokoch (y 144–266 a 560–678), bannery hore/dole v strede. */
+@media (orientation: landscape) and (max-height: 600px) {
+  #stage {
+    width: min(98vw, calc(73vh * 1850 / 850));
+    aspect-ratio: 1850 / 850;
+    background-image: url("PlayGround-mobile-wide.png");
+  }
+  .log { width: min(98vw, calc(73vh * 1850 / 850)); font-size: .8rem; }
+
+  .hero-plate { left: 35.1%; width: 29.7%; grid-template-columns: 1fr 5cqw 1fr; font-size: 2.4cqh; }
+  .hero-plate.top { top: 1.2%; height: 9.4%; }
+  .hero-plate.bottom { top: 89.6%; height: 9.4%; }
+  .hero-plate .tier-shield { font-size: 4cqh; transform: translateY(1.2cqh); }
+
+  .corner { width: 7%; }
+  .corner.tl { left: 2.1%; top: 16.9%; height: 14.4%; }
+  .corner.bl { left: 2.1%; top: 65.9%; height: 13.9%; }
+  .corner.tr { left: 90.9%; top: 16.9%; height: 14.4%; }
+  .corner.br { left: 90.9%; top: 65.9%; height: 13.9%; }
+
+  .board { left: 21.35%; width: 54.9%; }
+  .board.opp { top: 11.9%; height: 14.9%; }
+  .board.mine { top: 34%; height: 30%; }
+
+  .shop-panel { left: 21%; top: 11.5%; width: 55.6%; height: 24%; }
+  .shop-row { min-height: 14.9cqh; }
+
+  #stage .hand { left: 21.7%; width: 53.7%; top: 71.9%; height: 14.9%; }
+
+  .end-turn { left: 89.5%; top: 41%; width: 9%; height: 7.5%; font-size: 2cqh; }
 }
 
 /* ---------- Mobil (na výšku): PlayGround-mobile.png, 5 slotov v rade.
