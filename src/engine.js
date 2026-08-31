@@ -603,11 +603,14 @@ const Engine = (() => {
         p.silences--;
         const targets = sides[other(pid)].filter(x =>
           x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || x.taunt));
-        if (!targets.length) continue;
+        if (!targets.length) {
+          events.push({ type: "silenceFizzle", pid });
+          continue;
+        }
         const t = pick(targets, state.rng);
         t.silenced = true;
         t.taunt = false;
-        events.push({ type: "silence", pid: other(pid), uid: t.uid });
+        events.push({ type: "silence", pid: other(pid), uid: t.uid, defId: t.defId, rank: t.rank });
       }
     }
 

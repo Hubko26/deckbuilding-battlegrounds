@@ -274,8 +274,14 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   border-radius: 1cqh;
 }
 .card.frozen { filter: drop-shadow(0 0 .5cqh #4fc3f7); }
-/* Umlčaná príšerka (kúzlo Umlčanie) – schopnosť preškrtnutá a stlmená. */
+/* Umlčaná príšerka (kúzlo Umlčanie) – schopnosť preškrtnutá a stlmená,
+   trvalý 🤫 badge cez art, nech je to vidno aj na malých kartách. */
 .card.silenced .tx { text-decoration: line-through; opacity: .45; }
+.card .silence-badge {
+  position: absolute; left: 50%; top: 22%; transform: translateX(-50%);
+  font-size: 1.9em; line-height: 1; pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,.7));
+}
 .card.frozen::after {
   content: "❄️"; position: absolute; top: 2%; left: 50%; transform: translateX(-50%);
   font-size: .7em;

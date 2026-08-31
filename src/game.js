@@ -155,6 +155,16 @@ const L = {
     cs: "💀 Přetečení: plocha plná, staty tokenu dostali kamarádi",
     en: "💀 Overflow: board full, friends got the token's stats",
   },
+  silencedMsg: {
+    sk: "je umlčaný – stratil schopnosť aj Obrancu",
+    cs: "je umlčen – ztratil schopnost i Obránce",
+    en: "is silenced – lost its ability and Taunt",
+  },
+  silenceFizzleMsg: {
+    sk: "🤫 Umlčanie nenašlo cieľ (súper nemá príšerku so schopnosťou)",
+    cs: "🤫 Umlčení nenašlo cíl (soupeř nemá příšerku se schopností)",
+    en: "🤫 Silence found no target (no enemy minion with an ability)",
+  },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
   you: { sk: "Ty", cs: "Ty", en: "You" },
   opp: { sk: "Súper", cs: "Soupeř", en: "Opponent" },
@@ -527,14 +537,26 @@ async function runBattle() {
         break;
       }
       case "silence": {
-        // Umlčaná príšerka: 🤫 + preškrtnutý text schopnosti.
+        // Umlčaná príšerka: trvalý 🤫 badge + preškrtnutý text + log s menom.
         const el = cardById(ev.uid);
+        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
+        log(`🤫 ${name} ${t(L.silencedMsg)}`);
         if (el) {
-          floatText(el, "🤫");
           el.classList.add("silenced");
+          const badge = document.createElement("div");
+          badge.className = "silence-badge";
+          badge.textContent = "🤫";
+          el.appendChild(badge);
+          floatText(el, "🤫");
           Sfx.zap();
-          await sleep(600);
+          el.classList.add("proc");
+          await sleep(900);
+          el.classList.remove("proc");
         }
+        break;
+      }
+      case "silenceFizzle": {
+        log(t(L.silenceFizzleMsg));
         break;
       }
       case "aoeDmg": {
