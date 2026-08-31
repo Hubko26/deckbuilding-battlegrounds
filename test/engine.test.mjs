@@ -436,6 +436,28 @@ test("spell slot: freeze all zmrazí aj kúzlo, prežije refresh aj koniec kola"
   assert.equal(p.spellShop.frozen, false); // a rozmrazil sa
 });
 
+test("Večná iskra: trvalý +1 damage k výbojom aj výbuchom, stackuje sa", () => {
+  const { state, E } = fresh(41);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "iskra", 1), E.makeInst(state, "iskra", 1)];
+  E.castSpell(state, "p1", 0);
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.dmgBoost, 2);
+  // Výboj: E001 (3 dmg) → 5 dmg; výbuch: E002 (3 všetkým) → 5 všetkým.
+  E.endShopTurn(state, "p1");
+  const zap = E.makeInst(state, "E001", 1); zap.slot = 0;
+  state.p1.board = [zap];
+  state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const hit = events.find(e => e.type === "powerDmg" && e.from === zap.uid);
+  assert.ok(hit);
+  assert.equal(hit.n, fresh().C.byId["E001"].power.fx.n + 2);
+});
+
 test("kúzlo Štít: dá vybranej príšerke Obrancu bez statov", () => {
   const { state, E } = fresh();
   E.startRound(state);
@@ -511,8 +533,9 @@ test("battlecry buffRace: buffne len príšerky rovnakej rasy", () => {
   p.hand = [E.makeInst(state, "E008", 1)];        // battlecry: +1/+1 Živlom
   E.playMinion(state, "p1", 0);
   const { C } = fresh();
-  assert.equal(elem.atk, C.byId["E001"].atk + 1); // živel buffnutý
-  assert.equal(beast.atk, C.byId["B001"].atk);    // zviera nie
+  const fx = C.byId["E008"].power.fx;
+  assert.equal(elem.atk, C.byId["E001"].atk + fx.a); // živel buffnutý
+  assert.equal(beast.atk, C.byId["B001"].atk);       // zviera nie
 });
 
 test("boj: prázdna plocha prehráva, damage = súčet stupňov preživších", () => {
@@ -560,7 +583,7 @@ test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie 
   const { state, E } = fresh(15);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const hound = E.makeInst(state, "U009", 2); hound.slot = 0; // strieborný: vyvolaj 4× Kostík
+  const hound = E.makeInst(state, "U009", 2); hound.slot = 0; // strieborný: vyvolaj 3× Kostík
   state.p1.board = [hound];
   state.p2.board = [Object.assign(E.makeInst(state, "E010", 3), { slot: 0 })]; // 32/32 – zabije ho
   state.p1.hand = []; state.p2.hand = [];
@@ -568,10 +591,10 @@ test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie 
   state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
   const summons = events.filter(e => e.type === "summon" && e.defId === "kostik");
-  assert.equal(summons.length, 4);        // počet = základ (4), nie 4×2
+  assert.equal(summons.length, 3);        // počet = základ (3), nie 3×2
   for (const s of summons) {
     assert.equal(s.rank, 2);              // stupeň rodiča
-    assert.equal(s.atk, 2);               // 1/1 → 2/2
+    assert.equal(s.atk, 4);               // 2/1 → 4/2
     assert.equal(s.hp, 2);
   }
 });
@@ -596,17 +619,18 @@ test("Pretečenie: undead token, čo sa nezmestí, rozdelí staty živým kamar�
   assert.equal(summons.length, 1);
   const over = events.filter(e => e.type === "overflow");
   assert.equal(over.length, 1);
-  assert.equal(over[0].atk, 1);
+  assert.equal(over[0].atk, 2);
   assert.equal(over[0].hp, 1);
-  // 1/1 sa nedá deliť medzi 5 – jeden náhodný kamarát dostane +1/+1.
+  // 2/1 sa nedá deliť medzi 5 – zvyšky idú náhodným kamarátom (prvý v poradí
+  // dostane +1/+1, druhý +1/+0).
   const idx = events.indexOf(over[0]);
-  const buffAfter = events.slice(idx + 1).find(e => e.type === "buff");
-  assert.ok(buffAfter);
-  assert.equal(buffAfter.a, 1);
-  assert.equal(buffAfter.h, 1);
+  const buffs = events.slice(idx + 1).filter(e => e.type === "buff");
+  assert.ok(buffs.length >= 1);
+  assert.equal(buffs.reduce((s, b) => s + b.a, 0), 2); // celý atk rozdelený
+  assert.equal(buffs.reduce((s, b) => s + b.h, 0), 1); // celé hp rozdelené
 });
 
-test("Mláďa navždy rastie: druhé vyvolanie je o +2/+2 väčšie, počítadlo je trvalé", () => {
+test("Mláďa navždy rastie: druhé vyvolanie je o +1/+1 väčšie, počítadlo je trvalé", () => {
   const { state, E } = fresh(22);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -622,11 +646,11 @@ test("Mláďa navždy rastie: druhé vyvolanie je o +2/+2 väčšie, počítadlo
   assert.equal(cubs.length, 2);
   assert.equal(cubs[0].atk, 1); // prvé Mláďa 1/1
   assert.equal(cubs[0].hp, 1);
-  assert.equal(cubs[1].atk, 3); // druhé už 3/3
-  assert.equal(cubs[1].hp, 3);
+  assert.equal(cubs[1].atk, 2); // druhé už 2/2
+  assert.equal(cubs[1].hp, 2);
   // Počítadlo prežije boj (trvalé pre celú hru).
-  assert.equal(state.p1.tokenGrowth.mlada.a, 4);
-  assert.equal(state.p1.tokenGrowth.mlada.h, 4);
+  assert.equal(state.p1.tokenGrowth.mlada.a, 2);
+  assert.equal(state.p1.tokenGrowth.mlada.h, 2);
 });
 
 test("multi-hit: strieborný dmgRandomEnemy zasiahne 2× po základnej sile", () => {
@@ -642,7 +666,8 @@ test("multi-hit: strieborný dmgRandomEnemy zasiahne 2× po základnej sile", ()
   const events = E.doBattle(state);
   const hits = events.filter(e => e.type === "powerDmg" && e.from === zap.uid);
   assert.equal(hits.length, 2);
-  for (const h of hits) assert.equal(h.n, 1); // sila sa neškáluje, počet áno
+  const base = fresh().C.byId["E001"].power.fx.n;
+  for (const h of hits) assert.equal(h.n, base); // sila sa neškáluje, počet áno
 });
 
 test("výbuch dmgAllEnemies zasiahne všetkých živých nepriateľov", () => {
@@ -659,9 +684,10 @@ test("výbuch dmgAllEnemies zasiahne všetkých živých nepriateľov", () => {
   const death = events.find(e => e.type === "proc" && e.kw === "deathrattle" && e.uid === bomb.uid);
   assert.ok(death);
   const idx = events.indexOf(death);
-  const hits = events.slice(idx + 1).filter(e => e.type === "powerDmg" && e.from === bomb.uid);
-  assert.equal(hits.length, 3); // všetci traja nepriatelia
-  for (const h of hits) assert.equal(h.n, 1);
+  const wave = events.slice(idx + 1).find(e => e.type === "aoeDmg" && e.from === bomb.uid);
+  assert.ok(wave); // jedna vlna, nie projektily po jednom
+  assert.equal(wave.n, fresh().C.byId["E002"].power.fx.n);
+  assert.equal(wave.hits.length, 3); // všetci traja nepriatelia naraz
 });
 
 test("po boji ide všetko do discard – plochy sú prázdne, tokeny miznú", () => {

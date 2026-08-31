@@ -17,7 +17,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúpa: `Engine.buySpell(state, pid)`). Tier spoločných = NIŽŠÍ z tierov
   oboch hráčov; súkromné idú podľa vlastného tieru. Príšera stojí 3,
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Kniha/Koreň/Vlna 2,
-  Srdce 3). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
+  Srdce/Iskra 3; Večná iskra = trvalé +1 damage výbojom a výbuchom,
+  stackuje sa – kupuj pri elemental builde). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
 - Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/7/8/9/10,
@@ -36,15 +37,19 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   z nákupnej fázy a AURY (`futureRace`: „VŠETKY tvoje X, aj v balíčku,
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
 - Rasové archetypy (trojuholník counterov):
-  - **Beast = rastúce telá**: B007/B008 vyvolávajú Mláďa 🐣, každé
-    vyvolanie ho navždy zväčší o +2/+2 (trvalé počítadlo `tokenGrowth`,
-    zdieľané oboma kartami, evolve zväčšuje krok na +4/+6).
+  - **Beast = rastúce telá**: B007/B008 vyvolávajú Mláďa 🐣. Počítadlo
+    rastu (`tokenGrowth`) kŕmi LEN B007 (Pri smrti, +1/+1, evolve krok
+    +2/+3); B008 (Pred bojom) vyvoláva Mláďa v aktuálnej veľkosti bez
+    zvyšovania počítadla. B007 kupuj skoro, B008 je payoff.
   - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
-    U006 2×, U009 4× kostík; undead token, čo sa nezmestí na plnú
+    U006 2×, U009 3× kostík (2/1); undead token, čo sa nezmestí na plnú
     plochu, rozdelí svoje staty živým vlastným príšerkám.
-  - **Elemental = výbuchy**: `dmgRandomEnemy` škáluje pri evolve POČET
-    zásahov (1/2/3), nie silu; `dmgAllEnemies` (E002, E010) bije všetkých
-    naraz. Counter na undead hordu, slabé proti veľkým beast telám.
+  - **Elemental = výbuchy**: `dmgWeakEnemy` mieri na NAJSLABŠIEHO
+    nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
+    `dmgAllEnemies` (E002, E010) bije všetkých naraz jednou vlnou.
+    Counter na undead hordu, slabé proti veľkým beast telám.
+  - **Tokeny nedostávajú aury** (`futureRace`) – kostík ostáva 2/1
+    (škáluje len stupňom rodiča), Mláďa rastie vlastným počítadlom.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 

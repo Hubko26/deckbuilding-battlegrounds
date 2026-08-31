@@ -4,7 +4,9 @@
   "private": true,
   "description": "Detský autobattler + deckbuilding – Zvieracia aréna. Čisté HTML/JS, bez buildu.",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "sim": "node tools/balance-sim.mjs",
+    "scenario": "node tools/scenario.mjs"
   },
   "engines": {
     "node": ">=20"

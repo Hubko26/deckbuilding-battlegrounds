@@ -61,6 +61,8 @@ const Bot = (() => {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
       score += (3 - Engine.cardCost(defId)) * 0.8;
       if (def.fx.type === "gold") score += 1.5;
+      // Večná iskra škáluje s počtom vlastných elementálov (výboje/výbuchy)
+      if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
     }
     return score;
   }

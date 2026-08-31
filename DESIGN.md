@@ -20,7 +20,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
-  (Minca/Štít 1, Jablko/Kniha/Koreň/Vlna 2, Srdce 3).
+  (Minca/Štít 1, Jablko/Kniha/Koreň/Vlna 2, Srdce/Iskra 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -87,8 +87,8 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - Staty: strieborná = **×2**, zlatá = **×4** základu. Čísla schopností: strieborná ×2,
   zlatá ×3. Vyvolávané tokeny sa škálujú SILOU, nie počtom: strieborný
   deathrattle vyvolá tokeny stupňa 2 (2/2), zlatý stupňa 3 (4/4).
-  **Výnimka – `dmgRandomEnemy`**: evolve škáluje POČET zásahov (1/2/3),
-  nie silu – strieborný výboj dá 2× základný damage dvom náhodným cieľom
+  **Výnimka – `dmgWeakEnemy`**: evolve škáluje POČET zásahov (1/2/3),
+  nie silu – strieborný výboj dá 2× základný damage najslabším cieľom
   (counter na hordy malých tokenov, proti veľkým telám ostáva slabý).
 - Buffy z troch zlúčených kusov sa nezachovajú (v prototype; zjednodušenie).
 - Kúzla sa neevolvujú.
@@ -148,19 +148,21 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 **🐾 Beast – rastúce Mláďa**
 
 - B007 (t1, Pri smrti) a B008 (t3, Pred bojom) vyvolávajú **Mláďa** 🐣.
-  Mláďa je zakaždým silnejšie: každé vyvolanie pridá hráčovi do trvalého
-  počítadla (`tokenGrowth`, obdoba permanentných aur) +2/+2 – ďalšie Mláďa
-  sa narodí o toľko väčšie. Počítadlo je zdieľané oboma kartami a platí
-  celú hru; evolve zvyšuje **krok rastu** (strieborná +4/+4, zlatá +6/+6),
-  nie počet vyvolaných – drží líniu „beast = jedno silnejúce telo".
-- Mláďa je beast, takže dostáva aj beast aury (`futureRace`) pri vzniku.
+  Mláďa je zakaždým silnejšie: trvalé počítadlo rastu (`tokenGrowth`,
+  obdoba permanentných aur) však kŕmi **len B007** – rast má cenu smrti.
+  Každá jeho smrť pridá +1/+1; evolve zvyšuje **krok rastu** (strieborná
+  +2/+2, zlatá +3/+3), nie počet vyvolaných. B008 vyvoláva Mláďa
+  v aktuálnej narastenej veľkosti, ale počítadlo nezvyšuje – „Pred bojom"
+  motor bez rizika bol podľa simulácie prestrelený (mirror 91 % pri kroku
+  +2 a oboch kartách kŕmiacich rast; po nerfoch ~80 % vs 72 % kontrola).
 
 **💀 Undead – horda kostríkov + Pretečenie**
 
 - Viac kariet vyvoláva kostíkov a vo väčších počtoch: U001 (t1, Pri smrti)
   2×, U005 (t3, Pred bojom) 2×, U006 (t3, taunt, Pri smrti) 2×, U009
-  (t5, Pri smrti) 4×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
-  U009 6/5).
+  (t5, Pri smrti) 3×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
+  U009 5/4). Kostík je **2/1** – bije tvrdo (páka na veľké beast telá),
+  ale padne na jediný ping (elemental counter).
 - **Pretečenie**: keď sa vyvolávaný nemŕtvy token nezmestí na plnú plochu
   (max 5), nezmizne naprázdno – jeho staty sa rozdelia medzi živé vlastné
   príšerky (rovným dielom, zvyšok náhodne cez `state.rng`). Platí len
@@ -169,14 +171,21 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **✨ Elemental – explozívny archetyp**
 
-- Single-target damage (`dmgRandomEnemy`): E001/E005 (Pred bojom), E006
-  (Pri smrti). Evolve = **viac zásahov po základnej sile** (1/2/3), nie
-  väčší zásah – presný counter na small summons, jeden 4-damage hit by bol
-  overkill na 1/1 tokene.
-- AoE výbuchy (`dmgAllEnemies`): E002 (t1, taunt, Pri smrti: 1 všetkým),
-  E010 (t6, Pred bojom: 2 všetkým). AoE škáluje damage so stupňom (×1/×2/×3),
-  preto base drž nízko (1–2) a AoE len na málo kartách, nech úplne nevypne
-  undead swarm.
+- Výboje (`dmgWeakEnemy`): E001/E005 (Pred bojom), E006 (Pri smrti) –
+  mieria na **najslabšieho** (najmenej HP) nepriateľa: kosia tokeny
+  a nekŕmia zbytočne deathrattle telá (náhodný cieľ podľa simulácie
+  undead paradoxne posilňoval). Evolve = **viac zásahov po základnej
+  sile** (1/2/3), nie väčší zásah.
+- AoE výbuchy (`dmgAllEnemies`): E002 (t1, taunt, Pri smrti: 3 všetkým),
+  E010 (t6, Pred bojom: 4 všetkým). Jedna veľká vlna – engine pošle jeden
+  `aoeDmg` event a UI zasiahne všetkých NARAZ, žiadne projektily po jednom.
+- **Tokeny nedostávajú aury** (`futureRace` sa na ne neaplikuje) – kostíky
+  ostávajú malé a AoE/výboje ich spoľahlivo čistia; bez toho undead
+  podľa simulácie bil elementálov 80:20. Mláďa škáluje vlastným rastom,
+  kostík stupňom rodiča.
+- Kúzlo **Večná iskra** ⚡ (t4, cena 3): všetky tvoje výboje a výbuchy
+  (navždy) dávajú +1 damage. Stackuje sa (`p.dmgBoost`) – elemental
+  ekvivalent permanentných aur, škáluje damage plán do late game.
 
 ### Plánované rasové mechaniky
 
@@ -218,7 +227,7 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované).
   +1/+0 všetkým) buffujú naprieč rasami – to je priestor na cross-race combá.
 - **Permanentné aury** (`futureRace`): „Pri vyložení: VŠETKY tvoje Zvieratá
   (aj v balíčku, navždy) dostanú +1/+1.“ Platí do konca hry na každú novú
-  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú aj tokeny) – keďže sa
+  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú; tokeny NIE) – keďže sa
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):

@@ -8,6 +8,10 @@ commity, UI) je slovenčina.
 ## Príkazy
 
 - `npm test` – testy (`node --test`, Node >= 20). Púšťaj po každej zmene engine.
+- `npm run sim [-- N]` – balance simulácia bot vs bot (race matchupy, per-card
+  winrate). Púšťaj pri zmene kariet/balance.
+- `npm run scenario -- "B002:2 B001" "U009 U005" [n=500]` – odohrá N bojov
+  zadaného mid-game scenára (boardy, aury, dmgBoost, rast Mláďaťa).
 - `node server.mjs` – lokálny server na `http://localhost:5180` (aj LAN multiplayer).
 - Žiadny build, lint ani bundler – súbory sa servírujú tak, ako sú.
 

@@ -59,7 +59,9 @@ const Engine = (() => {
       atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m,
       taunt: !!def.taunt,
     };
-    const aura = p && def.race && p.raceBuffs && p.raceBuffs[def.race];
+    // Tokeny aury nedostávajú – kostíky ostávajú malé (AoE ich zmetie),
+    // škálujú len stupňom rodiča (a Mláďa vlastným rastom).
+    const aura = p && def.race && !def.token && p.raceBuffs && p.raceBuffs[def.race];
     if (aura) {
       inst.atk += aura.a;
       inst.hp += aura.h;
@@ -113,6 +115,7 @@ const Engine = (() => {
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
       tokenGrowth: {}, // trvalý rast tokenov: { mlada: {a, h} } – každé vyvolanie pridáva
+      dmgBoost: 0, // trvalý bonus k damage výbojov a výbuchov (kúzlo Večná iskra)
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
     };
   }
@@ -507,6 +510,12 @@ const Engine = (() => {
         p.hp = Math.min(HERO_HP, p.hp + fx.n * m);
         events.push({ type: "heal", pid: p.id, n: fx.n * m });
         break;
+      case "dmgBoost":
+        // Trvalý bonus: všetky výboje (dmgWeakEnemy) a výbuchy (dmgAllEnemies)
+        // hráča dávajú navždy +n damage. Kúzla sa stackujú.
+        p.dmgBoost += fx.n * m;
+        events.push({ type: "dmgBoost", pid: p.id, n: fx.n * m, total: p.dmgBoost });
+        break;
       case "futureRace": {
         // Permanentná aura: VŠETKY príšerky danej rasy – aktuálne na ploche
         // a v ruke hneď, budúce inštancie (balíček, kôpka, tokeny) cez auru
@@ -658,29 +667,34 @@ const Engine = (() => {
   function applyBattleFx(state, sides, pid, self, fx, rank, events) {
     const m = rank;
     switch (fx.type) {
-      case "dmgRandomEnemy": {
-        // Evolve škáluje POČET zásahov (1/2/3), nie silu – multi-hit je counter
-        // na hordy malých tokenov; proti veľkým telám ostáva slabý (zámer).
+      case "dmgWeakEnemy": {
+        // Výboj mieri na NAJSLABŠIEHO (najmenej HP) nepriateľa – kosí tokeny
+        // a nekŕmi zbytočne deathrattle telá. Evolve škáluje POČET zásahov
+        // (1/2/3), nie silu; proti veľkým telám ostáva slabý (zámer).
+        const hitDmg = fx.n + state[pid].dmgBoost;
         for (let i = 0; i < m; i++) {
           const enemies = sides[other(pid)].filter(x => x.hp > 0);
           if (!enemies.length) break;
-          const t = pick(enemies, state.rng);
-          t.hp -= fx.n;
-          events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: fx.n, from: self.uid });
+          const minHp = Math.min(...enemies.map(x => x.hp));
+          const t = pick(enemies.filter(x => x.hp === minHp), state.rng);
+          t.hp -= hitDmg;
+          events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: hitDmg, from: self.uid });
           events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
           handleDeaths(state, sides, events);
         }
         break;
       }
       case "dmgAllEnemies": {
-        // Výbuch: zasiahne všetkých živých nepriateľov naraz. Damage škáluje
+        // Výbuch: jedna veľká vlna zasiahne všetkých živých nepriateľov NARAZ
+        // (jeden event pre UI – žiadne projektily po jednom). Damage škáluje
         // so stupňom (×1/×2/×3) – držať base nízko, nech nevypne swarm úplne.
-        const dmg = fx.n * m;
+        const dmg = fx.n * m + state[pid].dmgBoost;
+        const hits = [];
         for (const t of sides[other(pid)].filter(x => x.hp > 0)) {
           t.hp -= dmg;
-          events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: dmg, from: self.uid });
-          events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+          hits.push({ uid: t.uid, hp: t.hp });
         }
+        if (hits.length) events.push({ type: "aoeDmg", pid: other(pid), n: dmg, from: self.uid, hits });
         handleDeaths(state, sides, events);
         break;
       }
@@ -724,12 +738,17 @@ const Engine = (() => {
           const full = alive.length >= BOARD_MAX;
           if (full && Cards.byId[fx.token].race !== "undead") break;
           const tok = makeInst(state, fx.token, Math.min(m, 3), p);
-          if (fx.grow) {
-            const g = p.tokenGrowth[fx.token] || { a: 0, h: 0 };
+          // Nazbieraný rast dostane KAŽDÉ vyvolanie tokenu; počítadlo kŕmia
+          // len karty s fx.grow (B007 deathrattle – rast má cenu smrti).
+          const g = p.tokenGrowth[fx.token];
+          if (g) {
             tok.atk += g.a;
             tok.hp += g.h;
             tok.maxHp += g.h;
-            p.tokenGrowth[fx.token] = { a: g.a + fx.grow.a * m, h: g.h + fx.grow.h * m };
+          }
+          if (fx.grow) {
+            const cur = g || { a: 0, h: 0 };
+            p.tokenGrowth[fx.token] = { a: cur.a + fx.grow.a * m, h: cur.h + fx.grow.h * m };
           }
           if (full) {
             overflowStats(state, alive, tok, pid, events);

@@ -477,6 +477,23 @@ async function runBattle() {
         }
         break;
       }
+      case "aoeDmg": {
+        // Veľká vlna: zasiahne všetkých nepriateľov NARAZ – žiadne projektily.
+        const els = ev.hits.map(h => cardById(h.uid)).filter(Boolean);
+        Sfx.zap();
+        for (const el of els) {
+          el.classList.add("hit");
+          floatText(el, `-${ev.n}`);
+        }
+        for (const h of ev.hits) {
+          const el = cardById(h.uid);
+          const hpEl = el && el.querySelector(".hp");
+          if (hpEl) hpEl.textContent = String(Math.max(0, h.hp));
+        }
+        await sleep(650);
+        for (const el of els) el.classList.remove("hit");
+        break;
+      }
       case "buff": {
         const el = cardById(ev.uid);
         if (el) {
@@ -665,7 +682,7 @@ function renderShop() {
   // Aktívne permanentné aury („všetky budúce X…“).
   $("auraEl").textContent = Object.entries(p.raceBuffs || {})
     .map(([race, b]) => `${Cards.RACE_ICON[race]}+${b.a}/+${b.h}`)
-    .join(" ");
+    .join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "");
   const banner = $("turnBanner");
   if (state.active === MY) {
     banner.textContent = `${t(L.round)} ${state.round} · ${t(L.yourTurn)}`;
