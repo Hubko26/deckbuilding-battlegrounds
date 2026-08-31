@@ -114,7 +114,7 @@ const Engine = (() => {
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
-      dmgCharge: 0, // jednorazovo: ďalší výboj/výbuch +n damage (kúzlo Iskra)
+      dmgBoost: 0, // trvalo: všetky výboje/výbuchy +n damage (kúzlo Večná iskra)
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
@@ -167,6 +167,14 @@ const Engine = (() => {
     return events;
   }
 
+  // Kópia karty do kôpky/balíčka; permanentný rast (pa/ph – „Po nákupe
+  // navždy“ karty) cestuje s konkrétnou kópiou cez celý cyklus balíčka.
+  function pileCard(inst) {
+    const c = { defId: inst.defId, rank: inst.rank || 1 };
+    if (inst.pa || inst.ph) { c.pa = inst.pa || 0; c.ph = inst.ph || 0; }
+    return c;
+  }
+
   function drawCards(state, p, n, events) {
     for (let i = 0; i < n; i++) {
       if (p.hand.length >= HAND_MAX) break;
@@ -177,6 +185,13 @@ const Engine = (() => {
       }
       const c = p.deck.pop();
       const inst = makeInst(state, c.defId, c.rank, p);
+      if (c.pa || c.ph) {
+        inst.pa = c.pa || 0;
+        inst.ph = c.ph || 0;
+        inst.atk += inst.pa;
+        inst.hp += inst.ph;
+        inst.maxHp += inst.ph;
+      }
       inst.slot = freeSlot(p.hand, HAND_MAX);
       p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: c.defId });
@@ -453,7 +468,7 @@ const Engine = (() => {
     const inst = p[zone][idx];
     if (!inst) return null;
     p[zone].splice(idx, 1);
-    p.discard.push({ defId: inst.defId, rank: inst.rank || 1 });
+    p.discard.push(pileCard(inst));
     return [{ type: "discard", pid, defId: inst.defId }];
   }
 
@@ -497,6 +512,11 @@ const Engine = (() => {
         break;
       case "growSelf":
         buff(self, fx.a * m, fx.h * m);
+        if (fx.perm) {
+          // Trvalý rast: uloží sa na kópiu karty a prežije cyklus balíčka.
+          self.pa = (self.pa || 0) + fx.a * m;
+          self.ph = (self.ph || 0) + fx.h * m;
+        }
         events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * m, h: fx.h * m });
         break;
       case "draw":
@@ -511,11 +531,11 @@ const Engine = (() => {
         p.hp = Math.min(HERO_HP, p.hp + fx.n * m);
         events.push({ type: "heal", pid: p.id, n: fx.n * m });
         break;
-      case "dmgCharge":
-        // Jednorazová charga: ĎALŠÍ výboj/výbuch dá +n damage, potom sa minie.
-        // Chargy sa stackujú (spotrebuje ich všetky prvý damage efekt).
-        p.dmgCharge += fx.n * m;
-        events.push({ type: "dmgCharge", pid: p.id, n: fx.n * m, total: p.dmgCharge });
+      case "dmgBoost":
+        // Trvalý bonus: všetky výboje a výbuchy hráča dávajú navždy +n damage.
+        // Kúzla sa stackujú – elemental ekvivalent permanentných aur.
+        p.dmgBoost += fx.n * m;
+        events.push({ type: "dmgBoost", pid: p.id, n: fx.n * m, total: p.dmgBoost });
         break;
       case "summonCharge":
         // Jednorazová charga: ĎALŠIE vyvolanie v boji vyvolá +n tokenov navyše.
@@ -566,7 +586,7 @@ const Engine = (() => {
     }
     // Nezahrané karty z ruky do discard pile.
     for (const inst of p.hand.splice(0)) {
-      p.discard.push({ defId: inst.defId, rank: inst.rank || 1 });
+      p.discard.push(pileCard(inst));
     }
     if (pid === state.first) {
       state.active = other(pid);
@@ -671,15 +691,14 @@ const Engine = (() => {
 
     // Po boji ide VŠETKO (padlé aj preživšie karty) do discard pile a plocha
     // sa vyprázdni – každé kolo sa bojisko stavia nanovo. Tokeny miznú z hry.
-    // Nabité chargy (Iskra, U007) platia len tento boj – nevyužité prepadnú,
-    // nech sa nehromadia naprieč kolami.
+    // Nabitá summon charga (U007) platí len tento boj – nevyužitá prepadne,
+    // nech sa nehromadí naprieč kolami. dmgBoost (Večná iskra) je trvalý.
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
-      p.dmgCharge = 0;
       p.summonCharge = 0;
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
-        p.discard.push({ defId: inst.defId, rank: inst.rank });
+        p.discard.push(pileCard(inst));
         events.push({ type: "toDiscard", pid, defId: inst.defId });
       }
       p.board = [];
@@ -706,9 +725,7 @@ const Engine = (() => {
         // Výboj mieri na NAJSLABŠIEHO (najmenej HP) nepriateľa – kosí tokeny
         // a nekŕmi zbytočne deathrattle telá. Evolve škáluje POČET zásahov
         // (1/2/3), nie silu; proti veľkým telám ostáva slabý (zámer).
-        // Iskra: jednorazová charga zosilní tento výboj a minie sa.
-        const hitDmg = fx.n + state[pid].dmgCharge;
-        state[pid].dmgCharge = 0;
+        const hitDmg = fx.n + state[pid].dmgBoost;
         for (let i = 0; i < m; i++) {
           const enemies = sides[other(pid)].filter(x => x.hp > 0);
           if (!enemies.length) break;
@@ -725,8 +742,7 @@ const Engine = (() => {
         // Výbuch: jedna veľká vlna zasiahne všetkých živých nepriateľov NARAZ
         // (jeden event pre UI – žiadne projektily po jednom). Damage škáluje
         // so stupňom (×1/×2/×3) – držať base nízko, nech nevypne swarm úplne.
-        const dmg = fx.n * m + state[pid].dmgCharge;
-        state[pid].dmgCharge = 0;
+        const dmg = fx.n * m + state[pid].dmgBoost;
         const hits = [];
         for (const t of sides[other(pid)].filter(x => x.hp > 0)) {
           t.hp -= dmg;

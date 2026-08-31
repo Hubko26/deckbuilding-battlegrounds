@@ -9,7 +9,7 @@
 //   n=500          počet bojov (default 500)
 //   aura1=beast:1:2   permanentná aura hráča 1 (rasa:atk:hp) – aplikuje sa na board
 //   aura2=...         to isté pre hráča 2
-//   boost1=2       dmgCharge hráča 1 (Iskra – ďalší výboj/výbuch +n)
+//   boost1=2       dmgBoost hráča 1 (Večná iskra – výboje/výbuchy navždy +n)
 //   boost2=...
 //   charge1=1      summonCharge hráča 1 (ďalšie vyvolanie +n navyše)
 //   charge2=...
@@ -98,7 +98,7 @@ function applyMods(state, E, pid, idx) {
     const [race, a, h] = aura.split(":");
     p.raceBuffs[race] = { a: Number(a || 0), h: Number(h || 0) };
   }
-  p.dmgCharge = Number(opts["boost" + idx] || 0);
+  p.dmgBoost = Number(opts["boost" + idx] || 0);
   p.summonCharge = Number(opts["charge" + idx] || 0);
 }
 

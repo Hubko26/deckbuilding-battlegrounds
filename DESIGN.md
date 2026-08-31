@@ -153,7 +153,12 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - B009 (t4) je **mrchožrút** (`raceDeath`): „Keď zomrie tvoje Zviera:
   +2/+2 pre seba" – rast je bojový a dočasný, viazaný na padlé vlastné
   zvieratá (synergia s Mláďaťom a trade-ami), evolve ×2/×3.
-- B003/B008 rastú v nákupnej fáze (Po nákupe +1/+1).
+- B003 (t1) a B008 (t3) rastú v nákupnej fáze **NAVŽDY** („Po nákupe:
+  +1/+1 resp. +2/+2 pre seba" s `perm: true`): rast sa uloží na konkrétnu
+  kópiu karty (`pa`/`ph`) a prežije boj aj cyklus kôpka → balíček → ruka.
+  Bez toho boli tieto karty de facto vanilla (rast sa po boji zahodil).
+  Evolve tri kópie spája na čistú kartu – trvalý rast kópií sa pri ňom
+  stráca (rovnaké zjednodušenie ako pri buffoch).
 
 **💀 Undead – horda kostríkov + Pretečenie**
 
@@ -187,10 +192,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - **Tokeny nedostávajú aury** (`futureRace` sa na ne neaplikuje) – kostíky
   ostávajú malé a AoE/výboje ich spoľahlivo čistia; bez toho undead
   podľa simulácie bil elementálov 80:20. Kostík škáluje stupňom rodiča.
-- Kúzlo **Iskra** ⚡ (t3, cena 2): jednorazová charga (`dmgCharge`) –
-  „tvoj ďalší výboj alebo výbuch dá +2 damage". Stackuje sa, minie sa
-  prvým damage efektom. (Permanentná verzia snowballovala – zámerne
-  one-shot, rovnako ako `summonCharge`.)
+- Kúzlo **Večná iskra** ⚡ (t3, cena 2): trvalý bonus (`dmgBoost`) –
+  „všetky tvoje výboje a výbuchy (navždy) dávajú +1 damage". Stackuje sa –
+  elemental ekvivalent permanentných aur (malý krok +1, aby nesnowballoval).
 
 ### Plánované rasové mechaniky
 
@@ -240,7 +244,8 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované).
   prirodzene rastie do vyšších čísel.
 - **Dočasné boosty** – všetko, čo sa udeje v boji (Pri útoku, Pred bojom,
   Pri smrti buffy), platí len do konca boja: po boji idú karty do discard
-  pile ako čisté kópie.
+  pile ako čisté kópie. Výnimka: trvalý rast `perm` kariet (B003/B008)
+  cestuje s kópiou cez celý cyklus balíčka.
 
 ## Kúzla
 

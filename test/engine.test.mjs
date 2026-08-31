@@ -375,6 +375,29 @@ test("deathrattle buffRace: buffne živých kamarátov rovnakej rasy v boji", ()
   assert.ok(events.some(e => e.type === "buff" && e.uid === buddy.uid));
 });
 
+test("trvalý rast (perm growSelf): Hopple si nesie +1/+1 cez boj aj cyklus balíčka", () => {
+  const { state, E } = fresh(61);
+  E.startRound(state);
+  const p = state.p1;
+  const frog = E.makeInst(state, "B003", 1); frog.slot = 0; // Po nákupe: +1/+1 NAVŽDY
+  p.board = [frog];
+  p.hand = [];
+  E.endShopTurn(state, "p1");
+  assert.equal(frog.atk, 2); // buff hneď
+  assert.equal(frog.pa, 1);  // a zapísaný ako trvalý
+  E.endShopTurn(state, "p2");
+  state.p2.board = []; state.p2.hand = [];
+  E.doBattle(state); // žaba prežije (súper prázdny), ide do kôpky
+  const copy = [...p.discard, ...p.deck].find(c => c.defId === "B003" && c.pa === 1);
+  assert.ok(copy, "kópia v kôpke/balíčku si drží trvalý rast");
+  // Dotiahnutie: inštancia vznikne aj s trvalým rastom.
+  p.deck = [copy]; p.discard = p.discard.filter(c => c !== copy); p.hand = [];
+  E.beginShopTurn(state, "p1");
+  const drawn = p.hand.find(x => x.defId === "B003");
+  assert.equal(drawn.atk, 2);
+  assert.equal(drawn.hp, 2);
+});
+
 test("endShopTurn: Po nákupe efekty, ruka do discard, druhý hráč na ťahu", () => {
   const { state, E } = fresh();
   E.startRound(state);
@@ -436,14 +459,14 @@ test("spell slot: freeze all zmrazí aj kúzlo, prežije refresh aj koniec kola"
   assert.equal(p.spellShop.frozen, false); // a rozmrazil sa
 });
 
-test("Iskra: jednorazová charga +2 k ďalšiemu výboju, potom sa minie", () => {
+test("Večná iskra: trvalý +1 damage k výbojom, stackuje sa a prežije boj", () => {
   const { state, E } = fresh(41);
   E.startRound(state);
   const p = state.p1;
   p.hand = [E.makeInst(state, "iskra", 1), E.makeInst(state, "iskra", 1)];
   E.castSpell(state, "p1", 0);
   E.castSpell(state, "p1", 0);
-  assert.equal(p.dmgCharge, 4); // 2 iskry sa stacknú
+  assert.equal(p.dmgBoost, 2); // 2 iskry sa stacknú
   E.endShopTurn(state, "p1");
   const zap = E.makeInst(state, "E005", 1); zap.slot = 0; // Pred bojom: výboj 2
   state.p1.board = [zap];
@@ -454,8 +477,8 @@ test("Iskra: jednorazová charga +2 k ďalšiemu výboju, potom sa minie", () =>
   const events = E.doBattle(state);
   const hit = events.find(e => e.type === "powerDmg" && e.from === zap.uid);
   assert.ok(hit);
-  assert.equal(hit.n, fresh().C.byId["E005"].power.fx.n + 4); // charga pripočítaná
-  assert.equal(state.p1.dmgCharge, 0); // a minutá
+  assert.equal(hit.n, fresh().C.byId["E005"].power.fx.n + 2); // bonus pripočítaný
+  assert.equal(state.p1.dmgBoost, 2); // a TRVALÝ – prežil boj
 });
 
 test("Umlčanie: v najbližšom boji zruší schopnosť aj taunt náhodnej súperovej príšerky", () => {

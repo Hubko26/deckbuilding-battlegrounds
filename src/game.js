@@ -166,9 +166,9 @@ const L = {
     en: "🤫 Silence found no target (no enemy minion with an ability)",
   },
   chargeDmgMsg: {
-    sk: "⚡ Nabité: tvoj ďalší výboj alebo výbuch dá +{n} damage",
-    cs: "⚡ Nabito: tvůj další výboj nebo výbuch dá +{n} damage",
-    en: "⚡ Charged: your next zap or explosion deals +{n} damage",
+    sk: "⚡ Navždy: všetky tvoje výboje a výbuchy +{n} damage (spolu +{t})",
+    cs: "⚡ Navždy: všechny tvé výboje a výbuchy +{n} damage (celkem +{t})",
+    en: "⚡ Forever: all your zaps and explosions +{n} damage (total +{t})",
   },
   chargeSummonMsg: {
     sk: "🧟 Nabité: tvoje ďalšie vyvolanie v boji vyvolá o {n} viac",
@@ -784,7 +784,7 @@ function renderShop() {
   // Aktívne permanentné aury („všetky budúce X…“).
   $("auraEl").textContent = Object.entries(p.raceBuffs || {})
     .map(([race, b]) => `${Cards.RACE_ICON[race]}+${b.a}/+${b.h}`)
-    .join(" ") + (p.dmgCharge ? ` ⚡+${p.dmgCharge}` : "") +
+    .join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "") +
     (p.summonCharge ? ` 🧟+${p.summonCharge}` : "");
   const banner = $("turnBanner");
   if (state.active === MY) {
@@ -1165,7 +1165,7 @@ function act(events) {
     }
     if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
     if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);
-    if (ev.type === "dmgCharge") log(t(L.chargeDmgMsg).replace("{n}", ev.n));
+    if (ev.type === "dmgBoost") log(t(L.chargeDmgMsg).replace("{n}", ev.n).replace("{t}", ev.total));
     if (ev.type === "summonCharge") log(t(L.chargeSummonMsg).replace("{n}", ev.n));
     if (ev.type === "silencePending") log(t(L.silencePendingMsg));
   }

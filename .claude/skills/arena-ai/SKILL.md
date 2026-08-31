@@ -17,10 +17,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúpa: `Engine.buySpell(state, pid)`). Tier spoločných = NIŽŠÍ z tierov
   oboch hráčov; súkromné idú podľa vlastného tieru. Príšera stojí 3,
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
-  Vlna/Iskra 2, Srdce 3; Iskra = jednorazovo ďalší výboj/výbuch +2 damage,
-  stackuje sa, kupuj pri elemental builde; Umlčanie = v najbližšom boji
-  náhodná súperova príšerka so schopnosťou stratí efekt aj Obrancu –
-  counter na deathrattle a Pred bojom motory). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
+  Vlna/Iskra 2, Srdce 3; Večná iskra = TRVALO všetky výboje/výbuchy
+  +1 damage, stackuje sa, kupuj pri elemental builde; Umlčanie =
+  v najbližšom boji náhodná súperova príšerka so schopnosťou stratí
+  efekt aj Obrancu – counter na deathrattle a Pred bojom motory). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
 - Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/7/8/9/10,
@@ -42,7 +42,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   - **Beast = telá a mrchožrút**: B007 vyvoláva fixné Mláďa 🐣 (1/1,
     škáluje len evolvom). B009 = scavenger („Keď zomrie tvoje Zviera:
     +2/+2 pre seba", bojové, dočasné) – chráň ho a kŕm smrťami zvierat.
-    B003/B008 rastú Po nákupe.
+    B003/B008 rastú Po nákupe NAVŽDY (rast sa drží na kópii karty cez
+    cyklus balíčka) – kupuj ich skoro a vykladaj každé kolo.
   - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
     U006 2×, U009 3× kostík (2/1); undead token, čo sa nezmestí na plnú
     plochu, rozdelí svoje staty živým vlastným príšerkám. U007 battlecry

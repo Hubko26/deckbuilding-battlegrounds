@@ -36,7 +36,7 @@ const Cards = (() => {
     // ---------- Zvieratá (Beast) ----------
     M("B001", 1, "beast", ["Bristlebit", "Quilltail", "Ironwood Ravager"], 2, 2),
     M("B003", 1, "beast", ["Hopple", "Bogbell", "Mirethrone"], 1, 1,
-      { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
+      { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1, perm: true } } }),
     M("B007", 1, "beast", ["Finwhisk", "Rapidsnout", "Riverking"], 1, 1,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 1 } } }),
     M("B004", 2, "beast", ["Hootnip", "Moongaze", "Nightoracle"], 2, 3,
@@ -46,7 +46,7 @@ const Cards = (() => {
     M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
-      { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
+      { power: { kw: "endTurn", fx: { type: "growSelf", a: 2, h: 2, perm: true } } }),
     M("B006", 4, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 4, 7,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
     M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 5, 4,
@@ -114,8 +114,8 @@ const Cards = (() => {
       name: { sk: "Veľká vlna", cs: "Velká vlna", en: "Big Wave" } },
     { id: "srdce", cost: 3, tier: 4, emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
       name: { sk: "Ohnivé srdce", cs: "Ohnivé srdce", en: "Fiery Heart" } },
-    { id: "iskra", cost: 2, tier: 3, emoji: "⚡", spell: true, fx: { type: "dmgCharge", n: 2 },
-      name: { sk: "Iskra", cs: "Jiskra", en: "Spark" } },
+    { id: "iskra", cost: 2, tier: 3, emoji: "⚡", spell: true, fx: { type: "dmgBoost", n: 1 },
+      name: { sk: "Večná iskra", cs: "Věčná jiskra", en: "Eternal Spark" } },
   ];
 
   // Tokeny – vyvolávané príšerky, nie sú v obchode ani v balíčku.
@@ -158,9 +158,9 @@ const Cards = (() => {
   // Šablóny textov efektov. `m` je násobič čísel podľa stupňa (1/2/3).
   const FX_TEXT = {
     growSelf: (f, m) => ({
-      sk: `+${f.a * m}/+${f.h * m} pre seba`,
-      cs: `+${f.a * m}/+${f.h * m} pro sebe`,
-      en: `+${f.a * m}/+${f.h * m} for itself`,
+      sk: `+${f.a * m}/+${f.h * m} pre seba` + (f.perm ? " (NAVŽDY – rast ostáva aj po boji)" : ""),
+      cs: `+${f.a * m}/+${f.h * m} pro sebe` + (f.perm ? " (NAVŽDY – růst zůstává i po boji)" : ""),
+      en: `+${f.a * m}/+${f.h * m} for itself` + (f.perm ? " (FOREVER – growth survives battles)" : ""),
     }),
     buffFriend: (f, m) => ({
       sk: `+${f.a * m}/+${f.h * m} náhodnému kamarátovi`,
@@ -242,10 +242,10 @@ const Cards = (() => {
       cs: `tvé další vyvolání v boji vyvolá o ${f.n * m} víc`,
       en: `your next summon in battle summons ${f.n * m} extra`,
     }),
-    dmgCharge: (f, m) => ({
-      sk: `tvoj ďalší výboj alebo výbuch dá +${f.n * m} damage`,
-      cs: `tvůj další výboj nebo výbuch dá +${f.n * m} damage`,
-      en: `your next zap or explosion deals +${f.n * m} damage`,
+    dmgBoost: (f, m) => ({
+      sk: `všetky tvoje výboje a výbuchy (navždy) dávajú +${f.n * m} damage`,
+      cs: `všechny tvé výboje a výbuchy (navždy) dávají +${f.n * m} damage`,
+      en: `all your zaps and explosions (forever) deal +${f.n * m} damage`,
     }),
     silence: () => ({
       sk: "v najbližšom boji stratí náhodná súperova príšerka so schopnosťou svoj efekt aj Obrancu",
