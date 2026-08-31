@@ -248,7 +248,8 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované).
 - Identita: **obrovské staty za cenu chaosu** – každý ogre má nadpriemerné
   čísla, ale jeho efekt sa môže obrátiť proti vlastníkovi. Všetka náhoda
   cez `state.rng` (multiplayer determinizmus platí ďalej).
-- Navrhované schopnosti (rozložené cez keywordy ako pri ostatných rasách):
+- Schválené schopnosti – všetkých 6 (implementácia čaká na art sadu),
+  rozložené cez keywordy ako pri ostatných rasách:
   - **Ožratý úder** (Pri útoku): „50 % šanca, že sa trafí sám za polovicu
     svojho útoku." Vlajkový derp – veľké telo, občas sa zmláti samo.
   - **Zožer kamaráta** (Pri vyložení): „Zožerie suseda a získa jeho staty."
