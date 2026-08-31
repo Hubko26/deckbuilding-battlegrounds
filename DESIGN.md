@@ -232,11 +232,39 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované).
     +2/+2 do konca boja" (dočasný `buffRace` cez cieľ).
 - Ďalšie nápady v rovnakom duchu: „Pred bojom: tvoja najpočetnejšia rasa
   +1/+1", „Po nákupe: náhodná tvoja rasa +1/+1".
+- **Tier 6 highlight**: „Pri vyložení: vyber príšerku – **evolvne
+  o stupeň vyššie**" (bronz → strieborná → zlatá bez zbierania trojice).
+  Ultimátny cross-race payoff; zlatú už nezdvihne. Implementačne: vytvor
+  `makeInst(defId, rank+1)` na mieste cieľa (buffy cieľa sa stratia ako
+  pri bežnom evolve).
 - Telá: nadpriemerné neutrálne staty (drak je silný aj sám o sebe),
   vyššie tiery – draci sú prirodzene late-game karty.
 - Balance poznámka: cielená permanentná aura je silnejšia než fixná
   (vždy trafí dominantnú rasu) – čísla drž nižšie než pri rasových
   aurách, alebo daj vyšší tier.
+
+**👹 Ogre (Ogr) – nová rasa: derpy chaos**
+
+- Identita: **obrovské staty za cenu chaosu** – každý ogre má nadpriemerné
+  čísla, ale jeho efekt sa môže obrátiť proti vlastníkovi. Všetka náhoda
+  cez `state.rng` (multiplayer determinizmus platí ďalej).
+- Navrhované schopnosti (rozložené cez keywordy ako pri ostatných rasách):
+  - **Ožratý úder** (Pri útoku): „50 % šanca, že sa trafí sám za polovicu
+    svojho útoku." Vlajkový derp – veľké telo, občas sa zmláti samo.
+  - **Zožer kamaráta** (Pri vyložení): „Zožerie suseda a získa jeho staty."
+    Silný battlecry so skutočnou cenou; combo s lacnými tokenmi.
+  - **Chaos výbuch** (Pred bojom): „2 damage VŠETKÝM príšerkám – aj tvojim."
+    Ogri s veľkým HP vlastný výbuch prežijú, malé tokeny nie – sekundárny
+    anti-swarm, friendly fire je súčasť zábavy.
+  - **Hod mincou** (Pri vyložení, t1): „Hoď mincou 🪙 – +4/+4 alebo −2/−2."
+    Lacný gambling filler, deťom čitateľné.
+  - **Divoká rana** (Pri smrti): „5 damage úplne náhodnej príšerke –
+    hocijakej, aj tvojej." Ruská ruleta s veľkým číslom.
+  - **Zmätený obranca** (t6 highlight): „Obranca. Pri smrti: 50 % šanca,
+    že vstane s 1 HP na NÁHODNEJ strane plochy." Môže vstať u súpera.
+- Balance: očakávaná hodnota efektov mierne záporná/neutrálna, kompenzujú
+  ju staty nad krivkou – hráč platí rozptylom, nie silou. UI: chaos
+  momenty hlásiť nápadne (🎲/🪙 popup + log), nech je derp vidno.
 
 **🙋 Human (Človek) – nová rasa: Božský štít (Divine Shield)**
 
