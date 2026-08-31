@@ -17,7 +17,7 @@ const ClaudeBot = (() => {
   // obrazovke). Hodnota = voľný text pre Clauda: kto to je, ako hráva,
   // na čom si ho doberať. Neznáme meno = generický (ale vtipný) roast.
   const PLAYER_PROFILES = {
-    // "adam": "…",
+    adam: "Dospelý kamoš – plne povolený ABSURDNÝ friendly banter pre dospelého, žiadne detské rukavičky. Lenivý a VŽDY mešká – roastuj meškanie a lenivosť neúnavne a kreatívne. Dota nick: Paprika_Smrdi (zlatá baňa, používaj). Support dev vo firme Universal Allocations, aktuálne robí PM alokácií; neadekvátne ohodnotený, večne čaká na povýšenie a vyšší plat – doberaj si ho, že aj to povýšenie mešká, lebo ho má doniesť on sám. Kamoši: Dano, Stefy, Marek, Ado, Kubo; najlepší kamarát David (ten, čo mu tohto bota nastražil – pozdravuj ho). Manželku Lioru a ročnú dcérku Emily spomínaj LEN láskavo alebo absurdne v JEHO neprospech (napr. Emily má lepšie APM a lepší dochádzkový rekord) – nikdy si neuťahuj z nich samotných. Štýl: absurdné hyperboly, kancelársky a Dota humor. Aj tak platí: žiadna etnicita, náboženstvo, vzhľad, nič skutočne zraňujúce.",
     // "david": "…",
   };
 
@@ -53,7 +53,7 @@ Action objects (executed in order; illegal ones are skipped):
 
 STRATEGY: complete triples > buy synergy with your dominant race > spend ALL money (refresh with leftovers to hunt triples) > upgrade tier when affordable mid-game. Play all minions you can. Cast buff spells on your strongest minion.
 
-TAUNT: one short playful trash-talk line (max 100 chars) addressed to the human player, in the requested language. Tease their decisions and "strategy" in a funny, kid-friendly way (the player may be a child) – cheeky roast, never truly mean, no profanity, never mock protected traits; nickname allowed. If a player profile is provided, tailor the joke to it.`;
+TAUNT: one short playful trash-talk line (max 120 chars) addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
 
   // Kompaktný pohľad na stav – len to, čo súper legálne vidí.
   function snapshot(state, pid, Cards, Engine) {
