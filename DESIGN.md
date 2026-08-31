@@ -126,7 +126,7 @@ Nie každá príšerka má schopnosť – niektoré majú len silu a život.
 ## Rasy (tribes)
 
 Každá príšerka má rasu; kúzla rasu nemajú. Rasy poháňajú synergie („+2/+2 všetkým
-Zvieratám“). Roster tvorí **40 príšer z art sád** (4 rasy × 10), každá príšerka
+Zvieratám“). Roster tvorí **50 príšer z art sád** (5 rás × 10), každá príšerka
 má vlastné meno a obrázok pre každý evolučný stupeň (napr. Rattlewink →
 Bonebound → Ossuary Hound). Zdrojová grafika je v ZIP (neverzuje sa),
 optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
@@ -137,9 +137,10 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 | elemental | Živel | výbuchy – single aj AoE damage, evolve = viac zásahov |
 | undead | Nemŕtvy | horda kostíkov + Pretečenie |
 | fairy | Víla | Po kúzle – schopnosti spúšťané zoslaním kúzla |
+| dragon | Drak | žoldnieri – cielené battlecry zosilňujú rasu cieľa |
 
-Roster: **40 príšer z art sád** (4 rasy × 10). Ďalšie rasy (Dragon, Human,
-Ogre) sa pridajú s ďalšími art sadami – dátový model je pripravený
+Roster: **50 príšer z art sád** (5 rás × 10). Ďalšie rasy (Human, Ogre)
+sa pridajú s ďalšími art sadami – dátový model je pripravený
 (pole `race` na karte).
 
 ### Rasové archetypy (implementované)
@@ -276,34 +277,28 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 ### Plánované rasové mechaniky
 
-Návrhy pre ďalšie art sady (zatiaľ neimplementované).
+**🐲 Dragon (Drak) – žoldnieri: zosilňujú rasu cieľa (implementované)**
 
-**🐲 Dragon (Drak) – nová rasa: plošný enabler všetkých rás**
+- Draci nemajú vlastnú kmeňovú synergiu – zosilňujú akúkoľvek rasu,
+  ktorú práve hráš. **Cielený battlecry** (prvý v hre): hráč pustí draka
+  z ruky priamo na vlastnú príšerku a efekt sa aplikuje na JEJ rasu;
+  drop mimo príšerky = fallback (najsilnejšia vlastná príšerka), takže
+  efekt nikdy nevyhorí naprázdno. Bot/Claude hrá cez rovnaký fallback,
+  Claude vie posielať `target` v akcii `play`.
+- Roster: D001 3/2 a D007 2/4 vanilky (t1, telá nad krivkou);
+  D002 (t2) battlecry rasa cieľa +1/+1 do boja (`buffRaceOf`);
+  D006 (t2, Po nákupe) náhodná tvoja rasa +1/+1 (`buffRandomRace`);
+  D004 (t3) battlecry **Discover karta rasy cieľa** (`discoverRace`);
+  D005 (t3, Pred bojom) najpočetnejšia rasa +1/+1 (`buffTopRace`);
+  D003 (t4) a D009 (t5) battlecry **permanentná aura rasy cieľa** +1/+1
+  (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
+  dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
+  D010 (t6) battlecry **cieľ evolvne o stupeň** (`evolveTarget`,
+  bronz→striebro→zlato, zlatú nezdvihne; buffy cieľa sa stratia ako pri
+  bežnom evolve).
+- Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
-- Draci nemajú vlastnú kmeňovú synergiu – sú **žoldnieri**, ktorí zosilňujú
-  akúkoľvek rasu, ktorú práve hráš. Kombinujú sa s každým buildom.
-- Kľúčový vzor: **cielený battlecry** – hráč vyberie príšerku a efekt sa
-  aplikuje na JEJ rasu (prvý cielený battlecry v hre; UI targeting sa
-  prevezme z kúziel `buffTarget`):
-  - „Pri vyložení: vyber príšerku – jej rasa dostane **permanentnú auru
-    +1/+1**" (cielený `futureRace` – drak vie kŕmiť beast, undead aj
-    elemental auru podľa buildu),
-  - „Pri vyložení: vyber príšerku – **Discover karta jej rasy**" (vyber 1
-    z 3 kariet danej rasy do ruky; discover pool filtrovaný podľa rasy),
-  - lacnejší variant: „Pri vyložení: vyber príšerku – jej rasa dostane
-    +2/+2 do konca boja" (dočasný `buffRace` cez cieľ).
-- Ďalšie nápady v rovnakom duchu: „Pred bojom: tvoja najpočetnejšia rasa
-  +1/+1", „Po nákupe: náhodná tvoja rasa +1/+1".
-- **Tier 6 highlight**: „Pri vyložení: vyber príšerku – **evolvne
-  o stupeň vyššie**" (bronz → strieborná → zlatá bez zbierania trojice).
-  Ultimátny cross-race payoff; zlatú už nezdvihne. Implementačne: vytvor
-  `makeInst(defId, rank+1)` na mieste cieľa (buffy cieľa sa stratia ako
-  pri bežnom evolve).
-- Telá: nadpriemerné neutrálne staty (drak je silný aj sám o sebe),
-  vyššie tiery – draci sú prirodzene late-game karty.
-- Balance poznámka: cielená permanentná aura je silnejšia než fixná
-  (vždy trafí dominantnú rasu) – čísla drž nižšie než pri rasových
-  aurách, alebo daj vyšší tier.
+Návrhy pre ďalšie art sady (zatiaľ neimplementované):
 
 **👹 Ogre (Ogr) – nová rasa: derpy chaos**
 

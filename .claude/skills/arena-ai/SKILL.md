@@ -33,7 +33,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 - Evolve: 3 rovnaké kópie (karta + stupeň) KDEKOĽVEK (plocha, ruka,
   balíček, kôpka) sa automaticky spoja: bronz → strieborná (staty ×2)
   → zlatá (×4); efekty ×2/×3. Predaj karty = +1 peniaz, karta preč z hry.
-- Rasy: Beast 🐾, Elemental ✨, Undead 💀, Fairy 🧚. Keywords: Pri
+- Rasy: Beast 🐾, Elemental ✨, Undead 💀, Fairy 🧚, Dragon 🐲. Keywords: Pri
   vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
   bojom, Po nákupe, Pri útoku, Po kúzle (afterSpell – spustí sa každým
   zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
@@ -65,6 +65,12 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     príšerky na 1 – anti-beast), Zvitok múdrosti (draw 2 – cykluje
     k telám). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
+  - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
+    battlecry na RASU vybranej príšerky – D002/D008 buff do boja,
+    D003/D009 permanentná aura +1/+1, D004 discover rasy, D010 (t6)
+    evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
+    rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
+    keď je telo nad krivkou alebo battlecry živí tvoju rasu.
   - **Tokeny nedostávajú aury** (`futureRace`) – kostík aj Mláďa
     škálujú len stupňom rodiča.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ

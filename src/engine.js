@@ -380,10 +380,13 @@ const Engine = (() => {
   }
 
   // ---------- Hranie kariet ----------
-  function playMinion(state, pid, handIdx) {
+  // targetUid (voliteľné): cieľ pre CIELENÉ battlecry (draci) – príšerka na
+  // vlastnej ploche. Bez cieľa si efekt vyberie fallback sám (viď applyShopFx).
+  function playMinion(state, pid, handIdx, targetUid) {
     const p = state[pid];
     const inst = p.hand[handIdx];
     if (!inst || inst.spell || p.board.length >= BOARD_MAX) return null;
+    const target = targetUid ? p.board.find(x => x.uid === targetUid) : null;
     p.hand.splice(handIdx, 1);
     inst.slot = freeSlot(p.board, BOARD_MAX);
     p.board.push(inst);
@@ -391,7 +394,7 @@ const Engine = (() => {
     const events = [{ type: "play", pid, uid: inst.uid, defId: inst.defId }];
     const def = Cards.byId[inst.defId];
     if (def.power && def.power.kw === "battlecry") {
-      applyShopFx(state, p, def.power.fx, inst.rank, inst, events);
+      applyShopFx(state, p, def.power.fx, inst.rank, inst, events, target);
     }
     checkEvolve(state, p, events);
     return events;
@@ -512,9 +515,73 @@ const Engine = (() => {
   }
 
   // Efekty použiteľné počas nákupnej fázy.
-  function applyShopFx(state, p, fx, rank, self, events) {
+  // target: cieľ cieleného battlecry (draci). Fallback bez cieľa: najsilnejšia
+  // vlastná príšerka OKREM seba – dračie efekty tak vždy niečo trafia.
+  function applyShopFx(state, p, fx, rank, self, events, target) {
     const m = rank;
+    const pickTarget = () => {
+      if (target && p.board.includes(target)) return target;
+      const others = p.board.filter(x => x !== self);
+      if (!others.length) return null;
+      return others.sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0];
+    };
     switch (fx.type) {
+      case "buffRaceOf": {
+        // Drak: +a/+h všetkým príšerkám RASY cieľa (do konca boja).
+        const t = pickTarget();
+        if (!t) break;
+        const race = Cards.byId[t.defId].race;
+        for (const f of p.board) {
+          if (f.spell || Cards.byId[f.defId].race !== race) continue;
+          buff(f, fx.a * m, fx.h * m);
+          events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
+        }
+        break;
+      }
+      case "futureRaceOf": {
+        // Drak: permanentná aura pre RASU cieľa (ako futureRace, rasa za behu).
+        const t = pickTarget();
+        if (!t) break;
+        const race = Cards.byId[t.defId].race;
+        applyShopFx(state, p, { type: "futureRace", race, a: fx.a, h: fx.h }, rank, self, events);
+        break;
+      }
+      case "discoverRace": {
+        // Drak: Discover karta RASY cieľa (1 z 3, tier <= vlastný).
+        const t = pickTarget();
+        if (!t) break;
+        const race = Cards.byId[t.defId].race;
+        const pool = Cards.DEFS.filter(d => !d.spell && d.race === race && d.tier <= p.tier);
+        if (!pool.length) break;
+        const options = [];
+        for (let i = 0; i < 3; i++) options.push(pick(pool, state.rng).id);
+        state.pendingDiscover = { pid: p.id, options };
+        events.push({ type: "discoverStart", pid: p.id, options });
+        break;
+      }
+      case "evolveTarget": {
+        // Drak t6: cieľ evolvne o stupeň (bronz→striebro→zlato); zlatú nezdvihne.
+        // Buffy cieľa sa stratia ako pri bežnom evolve, sloty ostávajú.
+        const t = pickTarget();
+        if (!t || t.rank >= 3 || Cards.byId[t.defId].token) break;
+        const up = makeInst(state, t.defId, t.rank + 1, p);
+        up.slot = t.slot;
+        p.board[p.board.indexOf(t)] = up;
+        events.push({ type: "evolve", pid: p.id, uid: up.uid, defId: up.defId, rank: up.rank, replaced: t.uid });
+        break;
+      }
+      case "buffRandomRace": {
+        // Drak: náhodná TVOJA rasa na ploche +a/+h (do konca boja).
+        const races = [...new Set(p.board.filter(x => !x.spell).map(x => Cards.byId[x.defId].race).filter(Boolean))];
+        if (!races.length) break;
+        const race = pick(races, state.rng);
+        for (const f of p.board) {
+          if (f.spell || Cards.byId[f.defId].race !== race) continue;
+          buff(f, fx.a * m, fx.h * m);
+          events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
+        }
+        break;
+      }
       case "buffFriend": {
         const friends = p.board.filter(x => x !== self);
         if (friends.length) {
@@ -850,6 +917,25 @@ const Engine = (() => {
           events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
         break;
+      case "buffTopRace": {
+        // Drak (Pred bojom): tvoja NAJPOČETNEJŠIA rasa na ploche +a/+h.
+        const counts = {};
+        for (const f of sides[pid]) {
+          if (f.hp <= 0) continue;
+          const r = Cards.byId[f.defId].race;
+          if (r) counts[r] = (counts[r] || 0) + 1;
+        }
+        const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+        if (!top) break;
+        for (const f of sides[pid]) {
+          if (f.hp <= 0 || Cards.byId[f.defId].race !== top[0]) continue;
+          f.atk += fx.a * m;
+          f.maxHp += fx.h * m;
+          f.hp += fx.h * m;
+          events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
+        }
+        break;
+      }
       case "buffRace":
         // Rasová synergia v boji – buffne živé príšerky rovnakej rasy.
         for (const f of sides[pid]) {

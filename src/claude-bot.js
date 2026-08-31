@@ -42,7 +42,7 @@ RULES:
 - 3 copies of the same card+rank ANYWHERE (board/hand/deck/discard) auto-merge into a stronger rank (stats x2 / x4). Completing triples is the strongest play.
 - Shop: common cards (shared), private cards, and one spell slot. Refresh costs 1. Tier upgrade unlocks stronger cards and +1 private slot.
 - Spells are cast for free from hand; they return to your deck cycle (one-shot token spells vanish).
-- Races: beast (big bodies/auras), elemental (zaps/AoE), undead (skeleton swarm), fairy (abilities trigger on each spell cast). Stick to a dominant race for synergy.
+- Races: beast (big bodies/auras), elemental (zaps/AoE), undead (skeleton swarm), fairy (abilities trigger on each spell cast), dragon (mercenaries – above-curve bodies whose battlecries boost the RACE of a targeted friendly minion; they fit into any build). Stick to a dominant race for synergy.
 - Battle: sides alternate attacks, random targets, Taunt minions must be hit first. "startFight"/"deathrattle"/"onAttack" abilities as written on cards.
 
 YOUR TASK: return ONLY a JSON object, no markdown fences, shaped:
@@ -52,7 +52,7 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"upgrade"}                          buy tier upgrade
 - {"a":"buy","id":"<cardId>"}              buy card with that id from any shop row
 - {"a":"refresh"}                          reroll shop (1 gold)
-- {"a":"play","id":"<cardId>"}             play minion from hand to board
+- {"a":"play","id":"<cardId>","target":"<own board cardId, optional>"}  play minion from hand to board; target only matters for dragons with targeted battlecries (the effect applies to the TARGET's race – target a minion of your dominant race!)
 - {"a":"cast","id":"<spellId>","target":"<own board cardId, optional>"}  cast spell
 - {"a":"sell","zone":"hand"|"board","id":"<cardId>"}  sell for 1 gold
 
@@ -187,7 +187,11 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         }
         case "play": {
           const i = findIdx(p.hand, act.id, false);
-          if (i >= 0) run("playMinion", [i]);
+          if (i < 0) break;
+          // Draci (cielený battlecry): voliteľný target = vlastná príšerka,
+          // efekt sa aplikuje na JEJ rasu.
+          const tgt = act.target ? p.board.find(x => x.defId === act.target) : null;
+          run("playMinion", tgt ? [i, tgt.uid] : [i]);
           break;
         }
         case "cast": {
@@ -195,13 +199,6 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
           if (i < 0) break;
           const tgt = act.target ? p.board.find(x => x.defId === act.target) : null;
           run("castSpell", tgt ? [i, tgt.uid] : [i]);
-          // Discover (Kniha prianí): dovyber heuristikou, nech ťah nezasekne.
-          if (state.pendingDiscover && state.pendingDiscover.pid === pid) {
-            const optsD = state.pendingDiscover.options;
-            let best = 0;
-            optsD.forEach((d, j) => { if (Bot.cardScore(state, p, d) > Bot.cardScore(state, p, optsD[best])) best = j; });
-            run("pickDiscover", [best]);
-          }
           break;
         }
         case "sell": {
@@ -211,6 +208,14 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
           break;
         }
       }
+      // Discover (Kniha prianí / dračí discoverRace): dovyber heuristikou,
+      // nech sa ťah nezasekne na pendingDiscover.
+      if (state.pendingDiscover && state.pendingDiscover.pid === pid) {
+        const optsD = state.pendingDiscover.options;
+        let best = 0;
+        optsD.forEach((d, j) => { if (Bot.cardScore(state, p, d) > Bot.cardScore(state, p, optsD[best])) best = j; });
+        run("pickDiscover", [best]);
+      }
     }
     // Dohraj zvyšné príšerky z ruky (nech plán s dierami nenechá prázdny board).
     let dg = 10;
@@ -218,6 +223,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       const i = p.hand.findIndex(x => x && !x.spell);
       if (i < 0) break;
       run("playMinion", [i]);
+      if (state.pendingDiscover && state.pendingDiscover.pid === pid) run("pickDiscover", [0]);
     }
     run("endShopTurn", []);
     return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 250) : null };

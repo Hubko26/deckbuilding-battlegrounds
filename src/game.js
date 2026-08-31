@@ -1323,12 +1323,21 @@ function markZones(src, on) {
   if (!inst) return;
   set($("shopPanel"), "drop-sell");
   set($("myDiscardBox"), "drop-ok"); // odhodenie do kôpky
-  if (inst.spell && Cards.byId[inst.defId].fx.type === "buffTarget") {
+  const def = Cards.byId[inst.defId];
+  if (inst.spell && def.fx.type === "buffTarget") {
     $("myBoard").querySelectorAll(".card").forEach(c => set(c, "target-ok"));
   } else {
     set($("myBoard"), "drop-ok");
+    // Cielený battlecry (draci): karty na ploche svietia ako ciele –
+    // drop na konkrétnu príšerku vyberie jej rasu, drop vedľa = fallback.
+    if (!inst.spell && TARGETED_BATTLECRY.has(def.power?.fx?.type)) {
+      $("myBoard").querySelectorAll(".card").forEach(c => set(c, "target-ok"));
+    }
   }
 }
+
+// Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget"]);
 
 function endDrag(e) {
   const d = drag;
@@ -1392,7 +1401,15 @@ function endDrag(e) {
     if (inRect(e, $("myBoard"))) act(doAction("castSpell", src.idx));
     return;
   }
-  if (inRect(e, $("myBoard"))) act(doAction("playMinion", src.idx));
+  if (inRect(e, $("myBoard"))) {
+    // Cielený battlecry (draci): drop priamo na vlastnú príšerku = cieľ.
+    const def = Cards.byId[inst.defId];
+    if (TARGETED_BATTLECRY.has(def.power?.fx?.type)) {
+      const targetEl = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
+      if (targetEl) { act(doAction("playMinion", src.idx, Number(targetEl.dataset.uid))); return; }
+    }
+    act(doAction("playMinion", src.idx));
+  }
 }
 
 // ---------- Interakcie hráča ----------

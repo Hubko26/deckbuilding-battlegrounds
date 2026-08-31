@@ -17,20 +17,23 @@ const Cards = (() => {
     elemental: { sk: "Živel", cs: "Živel", en: "Elemental" },
     undead: { sk: "Nemŕtvy", cs: "Nemrtvý", en: "Undead" },
     fairy: { sk: "Víla", cs: "Víla", en: "Fairy" },
+    dragon: { sk: "Drak", cs: "Drak", en: "Dragon" },
   };
   const RACES_PL = { // datív množného čísla („+2/+2 všetkým Zvieratám“)
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
     elemental: { sk: "Živlom", cs: "Živlům", en: "Elementals" },
     undead: { sk: "Nemŕtvym", cs: "Nemrtvým", en: "Undead" },
     fairy: { sk: "Vílam", cs: "Vílám", en: "Fairies" },
+    dragon: { sk: "Drakom", cs: "Drakům", en: "Dragons" },
   };
   const RACES_NOM = { // nominatív množného čísla („všetky budúce Zvieratá“)
     beast: { sk: "Zvieratá", cs: "Zvířata", en: "Beasts" },
     elemental: { sk: "Živly", cs: "Živly", en: "Elementals" },
     undead: { sk: "Nemŕtvi", cs: "Nemrtví", en: "Undead" },
     fairy: { sk: "Víly", cs: "Víly", en: "Fairies" },
+    dragon: { sk: "Draky", cs: "Draci", en: "Dragons" },
   };
-  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚" };
+  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲" };
 
   const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
     ({ id, tier, race, stageNames, atk, hp, ...extra });
@@ -122,6 +125,29 @@ const Cards = (() => {
     M("F009", 5, "fairy", ["Honeyfizz", "Nectarbolt", "Hivecrown"], 8, 8),
     M("F008", 6, "fairy", ["Starbud", "Cometbloom", "Astral Bouquet"], 7, 8,
       { power: { kw: "afterSpell", fx: { type: "buffAllFriends", a: 2, h: 2 } } }),
+
+    // ---------- Draci (Dragon) – žoldnieri: zosilňujú RASU cieľa ----------
+    // Cielený battlecry (fx s targetom): hráč pustí draka na vlastnú príšerku
+    // a efekt sa aplikuje na JEJ rasu; bez cieľa fallback = najsilnejšia
+    // vlastná príšerka. Telá nad krivkou – drak je silný aj sám.
+    M("D001", 1, "dragon", ["Flickerwyrm", "Blazewing", "Inferno Crown"], 3, 2),
+    M("D007", 1, "dragon", ["Puffsnack", "Sugarscale", "Confection Colossus"], 2, 4),
+    M("D002", 2, "dragon", ["Puddlewing", "Tidecoil", "Oceanic Leviathan"], 3, 4,
+      { power: { kw: "battlecry", fx: { type: "buffRaceOf", a: 1, h: 1 } } }),
+    M("D006", 2, "dragon", ["Lunabat", "Crescentwing", "Eclipse Dragon"], 2, 5,
+      { power: { kw: "endTurn", fx: { type: "buffRandomRace", a: 1, h: 1 } } }),
+    M("D004", 3, "dragon", ["Shardnip", "Prismwing", "Cathedral Dragon"], 4, 4,
+      { power: { kw: "battlecry", fx: { type: "discoverRace" } } }),
+    M("D005", 3, "dragon", ["Nimbusnip", "Galefin", "Tempest Emperor"], 5, 4,
+      { power: { kw: "startFight", fx: { type: "buffTopRace", a: 1, h: 1 } } }),
+    M("D003", 4, "dragon", ["Mossclaw", "Grovewyrm", "Worldbark Dragon"], 5, 6,
+      { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
+    M("D008", 5, "dragon", ["Rivetwyrm", "Forgewing", "Ironstar Dragon"], 6, 9,
+      { taunt: true, power: { kw: "battlecry", fx: { type: "buffRaceOf", a: 2, h: 2 } } }),
+    M("D009", 5, "dragon", ["Petalwyrm", "Rosescale", "Spring Sovereign"], 7, 7,
+      { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
+    M("D010", 6, "dragon", ["Specklestar", "Cometcoil", "Galaxy Dragon"], 8, 8,
+      { power: { kw: "battlecry", fx: { type: "evolveTarget" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
@@ -332,6 +358,37 @@ const Cards = (() => {
       sk: "vyber si 1 z 3 kariet do ruky",
       cs: "vyber si 1 ze 3 karet do ruky",
       en: "discover: pick 1 of 3 cards",
+    }),
+    // Draci: efekty viazané na RASU vybranej príšerky (cielený battlecry).
+    buffRaceOf: (f, m) => ({
+      sk: `vyber príšerku – jej rasa dostane +${f.a * m}/+${f.h * m}`,
+      cs: `vyber příšerku – její rasa dostane +${f.a * m}/+${f.h * m}`,
+      en: `pick a minion – its race gets +${f.a * m}/+${f.h * m}`,
+    }),
+    futureRaceOf: (f, m) => ({
+      sk: `vyber príšerku – VŠETKY tvoje karty jej rasy (aj v balíčku, navždy) dostanú +${f.a * m}/+${f.h * m}`,
+      cs: `vyber příšerku – VŠECHNY tvé karty její rasy (i v balíčku, navždy) dostanou +${f.a * m}/+${f.h * m}`,
+      en: `pick a minion – ALL your cards of its race (deck too, forever) get +${f.a * m}/+${f.h * m}`,
+    }),
+    discoverRace: () => ({
+      sk: "vyber príšerku – vyber si 1 z 3 kariet jej rasy",
+      cs: "vyber příšerku – vyber si 1 ze 3 karet její rasy",
+      en: "pick a minion – discover a card of its race",
+    }),
+    evolveTarget: () => ({
+      sk: "vyber príšerku – evolvne o stupeň vyššie (zlatú už nezdvihne)",
+      cs: "vyber příšerku – evolvne o stupeň výše (zlatou už nezvedne)",
+      en: "pick a minion – it evolves one rank up (gold can't go higher)",
+    }),
+    buffTopRace: (f, m) => ({
+      sk: `tvoja najpočetnejšia rasa dostane +${f.a * m}/+${f.h * m}`,
+      cs: `tvá nejpočetnější rasa dostane +${f.a * m}/+${f.h * m}`,
+      en: `your most numerous race gets +${f.a * m}/+${f.h * m}`,
+    }),
+    buffRandomRace: (f, m) => ({
+      sk: `náhodná tvoja rasa na ploche dostane +${f.a * m}/+${f.h * m}`,
+      cs: `náhodná tvá rasa na ploše dostane +${f.a * m}/+${f.h * m}`,
+      en: `a random race of yours on the board gets +${f.a * m}/+${f.h * m}`,
     }),
   };
 

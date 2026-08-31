@@ -40,7 +40,94 @@ test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", ()
     }
     for (const lang of ["sk", "cs", "en"]) C.cardText(d, 2, lang); // nesmie spadnúť
   }
-  assert.equal(minions, 40); // 4 rasy × 10 príšer
+  assert.equal(minions, 50); // 5 rás × 10 príšer
+});
+
+test("drak buffRaceOf: cielený battlecry buffne rasu cieľa; bez cieľa fallback na najsilnejšiu", () => {
+  const { state, E, C } = fresh(80);
+  E.startRound(state);
+  const p = state.p1;
+  const bear = E.makeInst(state, "B001", 1); bear.slot = 0;  // beast 2/2
+  const bone = E.makeInst(state, "U001", 1); bone.slot = 1;  // undead 1/1
+  p.board = [bear, bone];
+  p.hand = [E.makeInst(state, "D002", 1)];
+  E.playMinion(state, "p1", 0, bear.uid); // cieľ = beast
+  assert.equal(bear.atk, 3); // +1/+1 len beastom
+  assert.equal(bone.atk, 1);
+  // bez cieľa: fallback = najsilnejšia príšerka – teraz prvý drak (3/4),
+  // takže +1/+1 dostanú draci; medveď aj kostík ostávajú.
+  const d1 = p.board.find(x => x.defId === "D002");
+  p.hand = [E.makeInst(state, "D002", 1)];
+  E.playMinion(state, "p1", 0);
+  assert.equal(d1.atk, 4);
+  assert.equal(bear.atk, 3);
+  assert.equal(bone.atk, 1);
+});
+
+test("drak futureRaceOf: permanentná aura pre rasu cieľa", () => {
+  const { state, E, C } = fresh(81);
+  E.startRound(state);
+  const p = state.p1;
+  const bone = E.makeInst(state, "U001", 1); bone.slot = 0;
+  p.board = [bone];
+  p.hand = [E.makeInst(state, "D003", 1)];
+  E.playMinion(state, "p1", 0, bone.uid);
+  assert.equal(p.raceBuffs.undead.a, 1);
+  assert.equal(p.raceBuffs.undead.h, 1);
+  assert.equal(bone.atk, 2); // aura hneď aj na plochu
+  const fresh2 = E.makeInst(state, "U002", 1, p); // nová undead inštancia
+  assert.equal(fresh2.atk, C.byId["U002"].atk + 1);
+});
+
+test("drak evolveTarget: cieľ evolvne o stupeň, zlatú už nezdvihne", () => {
+  const { state, E, C } = fresh(82);
+  E.startRound(state);
+  const p = state.p1;
+  const bear = E.makeInst(state, "B001", 1); bear.slot = 0;
+  p.board = [bear];
+  p.hand = [E.makeInst(state, "D010", 1)];
+  E.playMinion(state, "p1", 0, bear.uid);
+  const up = p.board.find(x => x.defId === "B001");
+  assert.equal(up.rank, 2);
+  assert.equal(up.atk, C.byId["B001"].atk * 2);
+  // zlatá ostáva zlatá
+  const gold = E.makeInst(state, "B003", 3); gold.slot = 2;
+  p.board.push(gold);
+  p.hand = [E.makeInst(state, "D010", 1)];
+  E.playMinion(state, "p1", 0, gold.uid);
+  assert.equal(gold.rank, 3);
+  assert.ok(p.board.includes(gold));
+});
+
+test("drak discoverRace: ponuka len z rasy cieľa a vlastného tieru", () => {
+  const { state, E, C } = fresh(83);
+  E.startRound(state);
+  const p = state.p1;
+  const bone = E.makeInst(state, "U001", 1); bone.slot = 0;
+  p.board = [bone];
+  p.hand = [E.makeInst(state, "D004", 1)];
+  E.playMinion(state, "p1", 0, bone.uid);
+  assert.ok(state.pendingDiscover);
+  for (const id of state.pendingDiscover.options) {
+    assert.equal(C.byId[id].race, "undead");
+    assert.ok(C.byId[id].tier <= p.tier);
+  }
+  E.pickDiscover(state, "p1", 0);
+});
+
+test("drak buffTopRace (Pred bojom): najpočetnejšia rasa dostane +1/+1", () => {
+  const { state, E } = fresh(84);
+  const p = state.p1;
+  const b1 = Object.assign(E.makeInst(state, "B001", 1), { slot: 0 });
+  const b2 = Object.assign(E.makeInst(state, "B001", 1), { slot: 1 });
+  const u1 = Object.assign(E.makeInst(state, "U001", 1), { slot: 2 });
+  const drak = Object.assign(E.makeInst(state, "D005", 1), { slot: 3 });
+  p.board = [b1, b2, u1, drak];
+  state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  E.endShopTurn(state, "p1");
+  const events = E.doBattle(state);
+  const buffs = events.filter(e => e.type === "buff" && (e.uid === b1.uid || e.uid === b2.uid));
+  assert.equal(buffs.length, 2); // beast je najpočetnejší (2×)
 });
 
 test("cardText s dmgBoost: výboj/výbuch ukáže navýšené číslo (Večná iskra)", () => {

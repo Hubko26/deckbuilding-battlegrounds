@@ -223,6 +223,14 @@ const Bot = (() => {
         choice = minions[0];
       }
       push(Engine.playMinion(state, p.id, choice.i));
+      // Dračí battlecry (discoverRace) môže otvoriť discover – dovyber,
+      // inak by sa ťah zasekol na pendingDiscover.
+      if (state.pendingDiscover && state.pendingDiscover.pid === p.id) {
+        const opts = state.pendingDiscover.options;
+        let best = 0;
+        opts.forEach((d, j) => { if (cardScore(state, p, d, cfg) > cardScore(state, p, opts[best], cfg)) best = j; });
+        push(Engine.pickDiscover(state, p.id, best));
+      }
     }
   }
 
