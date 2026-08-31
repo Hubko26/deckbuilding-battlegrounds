@@ -216,6 +216,28 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované).
 - Kúzla samotné ostávajú bez rasy – víly reagujú na zoslanie, nie na
   vlastníctvo. Fairy aury (`futureRace`) fungujú štandardne.
 
+**🐲 Dragon (Drak) – nová rasa: plošný enabler všetkých rás**
+
+- Draci nemajú vlastnú kmeňovú synergiu – sú **žoldnieri**, ktorí zosilňujú
+  akúkoľvek rasu, ktorú práve hráš. Kombinujú sa s každým buildom.
+- Kľúčový vzor: **cielený battlecry** – hráč vyberie príšerku a efekt sa
+  aplikuje na JEJ rasu (prvý cielený battlecry v hre; UI targeting sa
+  prevezme z kúziel `buffTarget`):
+  - „Pri vyložení: vyber príšerku – jej rasa dostane **permanentnú auru
+    +1/+1**" (cielený `futureRace` – drak vie kŕmiť beast, undead aj
+    elemental auru podľa buildu),
+  - „Pri vyložení: vyber príšerku – **Discover karta jej rasy**" (vyber 1
+    z 3 kariet danej rasy do ruky; discover pool filtrovaný podľa rasy),
+  - lacnejší variant: „Pri vyložení: vyber príšerku – jej rasa dostane
+    +2/+2 do konca boja" (dočasný `buffRace` cez cieľ).
+- Ďalšie nápady v rovnakom duchu: „Pred bojom: tvoja najpočetnejšia rasa
+  +1/+1", „Po nákupe: náhodná tvoja rasa +1/+1".
+- Telá: nadpriemerné neutrálne staty (drak je silný aj sám o sebe),
+  vyššie tiery – draci sú prirodzene late-game karty.
+- Balance poznámka: cielená permanentná aura je silnejšia než fixná
+  (vždy trafí dominantnú rasu) – čísla drž nižšie než pri rasových
+  aurách, alebo daj vyšší tier.
+
 **🙋 Human (Človek) – nová rasa: Božský štít (Divine Shield)**
 
 - Ľudia stavajú na keyworde **Božský štít**: prvý zásah, ktorý by príšerku
