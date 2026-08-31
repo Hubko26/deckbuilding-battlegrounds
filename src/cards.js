@@ -282,7 +282,8 @@ const Cards = (() => {
         cs: `vyvolej ${f.n}× ${byId[f.token].name.cs} (${a}/${h})`,
         en: `summon ${f.n}× ${byId[f.token].name.en} (${a}/${h})`,
       };
-      if (byId[f.token].race === "undead") {
+      // Pretečenie: undead tokeny v boji, Svetluška v nákupe (víly).
+      if (byId[f.token].race === "undead" || f.token === "svetluska") {
         base.sk += `; ak sa nezmestí, jeho staty dostanú kamaráti`;
         base.cs += `; když se nevejde, jeho staty dostanou kamarádi`;
         base.en += `; if it doesn't fit, friends get its stats`;

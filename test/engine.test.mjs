@@ -620,6 +620,23 @@ test("víly Po kúzle: summon víla vyvolá Svetlušku na plochu v nákupe", () 
   assert.equal(tok.atk, 1);
 });
 
+test("víly summon: plná plocha = Pretečenie, staty Svetlušky dostanú kamaráti", () => {
+  const { state, E } = fresh(78);
+  E.startRound(state);
+  const p = state.p1;
+  p.board = [1, 2, 3, 4, 5].map((_, i) => Object.assign(E.makeInst(state, "B001", 1), { slot: i }));
+  const pix = p.board[0];
+  Object.assign(pix, E.makeInst(state, "F006", 1), { slot: 0 }); // víla v plnej ploche
+  p.board[0] = pix;
+  p.hand = [E.makeInst(state, "minca", 1)];
+  const statsBefore = p.board.reduce((s, x) => s + x.atk + x.hp, 0);
+  const events = E.castSpell(state, "p1", 0);
+  assert.equal(p.board.length, 5); // token sa nezmestil
+  assert.ok(events.some(e => e.type === "overflow"));
+  const statsAfter = p.board.reduce((s, x) => s + x.atk + x.hp, 0);
+  assert.equal(statsAfter, statsBefore + 1 + 2); // 1/2 Svetluška rozdelená
+});
+
 test("Svätožiara: Božský štít zablokuje prvé zranenie, potom praskne", () => {
   const { state, E } = fresh(73);
   E.startRound(state);

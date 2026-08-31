@@ -212,8 +212,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - Roster: F002 rast +1/+1 **NAVŽDY**, F003 buff náhodného kamaráta,
   F001 potiahni kartu, F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
   F006/F009 vyvolaj Svetlušku 🧚 (1/2; v nákupe ide token rovno na
-  plochu), F007 taunt +1/+1 Vílam, F008 (t6) +2/+2 všetkým tvojim
-  príšerkám.
+  plochu, **plná plocha = Pretečenie** – staty Svetlušky dostanú
+  kamaráti, inak by schopnosť bola v late game mŕtva), F007 taunt
+  +1/+1 Vílam, F008 (t6) +2/+2 všetkým tvojim príšerkám.
 - **Self-rast víl (F002, F004) je permanentný** (`perm: true`, ako
   Hopple/Snortlet) – prežije boj aj cyklus balíčka; kúzla do víl sú
   investícia navždy. Plošné buffy (F003/F007/F008) ostávajú dočasné –

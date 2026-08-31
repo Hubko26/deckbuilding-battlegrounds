@@ -55,7 +55,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
     Counter na undead hordu, slabé proti veľkým beast telám.
   - **Fairy = Po kúzle motor**: F001 draw, F005 vracia zlato, F006/F009
-    Svetlušky, F008 (t6) +2/+2 všetkým. Self-rast F002/F004 je
+    Svetlušky (plná plocha = Pretečenie – staty rozdá kamarátom),
+    F008 (t6) +2/+2 všetkým. Self-rast F002/F004 je
     PERMANENTNÝ (prežije cyklus balíčka) – kúzla do nich sú investícia
     navždy. Kupuj kúzla húfne – každé kúzlo spustí všetky víly na
     ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský

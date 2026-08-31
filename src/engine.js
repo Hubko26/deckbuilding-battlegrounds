@@ -594,10 +594,15 @@ const Engine = (() => {
         break;
       case "summon": {
         // Vyvolanie v nákupnej fáze (víly „Po kúzle“): token ide rovno na
-        // plochu a bojuje v najbližšom boji. Plná plocha = token prepadne.
+        // plochu a bojuje v najbližšom boji. Plná plocha = Pretečenie:
+        // token rozdelí svoje staty živým kamarátom (inak by F006/F009
+        // boli v late game s plnou plochou mŕtve schopnosti).
         for (let i = 0; i < fx.n; i++) {
-          if (p.board.length >= BOARD_MAX) break;
           const tok = makeInst(state, fx.token, Math.min(m, 3), p);
+          if (p.board.length >= BOARD_MAX) {
+            overflowStats(state, p.board, tok, p.id, events);
+            continue;
+          }
           tok.slot = freeSlot(p.board, BOARD_MAX);
           p.board.push(tok);
           sortBoard(p);
