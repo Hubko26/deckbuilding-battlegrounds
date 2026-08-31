@@ -11,7 +11,11 @@ commity, UI) je slovenčina.
 - `npm run sim [-- N]` – balance simulácia bot vs bot (race matchupy, per-card
   winrate). Púšťaj pri zmene kariet/balance.
 - `npm run scenario -- "B002:2 B001" "U009 U005" [n=500]` – odohrá N bojov
-  zadaného mid-game scenára (boardy, aury, dmgBoost, rast Mláďaťa).
+  zadaného mid-game scenára (boardy, aury, chargy).
+- `npm run replay -- arena-games.json [last|<id>] [round=N] [verbose=1]` –
+  presný replay zaznamenanej hry. Hra loguje seed + akcie do localStorage
+  (posledných 10 hier); hráč ich stiahne v konzole prehliadača cez
+  `arenaLogSave()`. Pri hlásení chyby si vyžiadaj tento súbor.
 - `node server.mjs` – lokálny server na `http://localhost:5180` (aj LAN multiplayer).
 - Žiadny build, lint ani bundler – súbory sa servírujú tak, ako sú.
 

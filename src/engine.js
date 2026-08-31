@@ -668,8 +668,12 @@ const Engine = (() => {
 
     // Po boji ide VŠETKO (padlé aj preživšie karty) do discard pile a plocha
     // sa vyprázdni – každé kolo sa bojisko stavia nanovo. Tokeny miznú z hry.
+    // Nabité chargy (Iskra, U007) platia len tento boj – nevyužité prepadnú,
+    // nech sa nehromadia naprieč kolami.
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
+      p.dmgCharge = 0;
+      p.summonCharge = 0;
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
         p.discard.push({ defId: inst.defId, rank: inst.rank });

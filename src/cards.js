@@ -56,7 +56,7 @@ const Cards = (() => {
 
     // ---------- Živly (Elemental) ----------
     M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 1, 2,
-      { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 2 } } }),
     M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 0, h: 1 } } }),

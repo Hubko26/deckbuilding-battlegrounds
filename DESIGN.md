@@ -164,7 +164,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   ale padne na jediný ping (elemental counter).
 - U007 (t4, Pri vyložení) dáva jednorazovú chargu (`summonCharge`):
   „tvoje ďalšie vyvolanie v boji vyvolá o 1 viac". Chargy sa stackujú
-  a minú sa prvým vyvolaním.
+  a minú sa prvým vyvolaním. Strieborný dáva +2, zlatý +3 (čísla ×stupeň).
+  **Chargy (aj Iskra) platia len najbližší boj** – nevyužité po boji
+  prepadnú, nech sa nehromadia naprieč kolami.
 - **Pretečenie**: keď sa vyvolávaný nemŕtvy token nezmestí na plnú plochu
   (max 5), nezmizne naprázdno – jeho staty sa rozdelia medzi živé vlastné
   príšerky (rovným dielom, zvyšok náhodne cez `state.rng`). Platí len
@@ -173,7 +175,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **✨ Elemental – explozívny archetyp**
 
-- Výboje (`dmgWeakEnemy`): E001 (t1, Pri smrti 2), E005 (t3, Pred bojom 2),
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 2), E005 (t3, Pred bojom 2),
   E006 (t3, Pri smrti 3) – mieria na **najslabšieho** (najmenej HP)
   nepriateľa: kosia tokeny a nekŕmia zbytočne deathrattle telá (náhodný
   cieľ podľa simulácie undead paradoxne posilňoval). Evolve = **viac

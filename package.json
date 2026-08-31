@@ -6,7 +6,8 @@
   "scripts": {
     "test": "node --test",
     "sim": "node tools/balance-sim.mjs",
-    "scenario": "node tools/scenario.mjs"
+    "scenario": "node tools/scenario.mjs",
+    "replay": "node tools/replay.mjs"
   },
   "engines": {
     "node": ">=20"

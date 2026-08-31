@@ -169,10 +169,48 @@ let difficulty = localStorage.getItem("arena.diff") || "normal";
 let busy = false;         // beží animácia / ťah bota
 let drag = null;          // aktívne ťahanie karty
 
+// ---------- Záznam hry (replay log) ----------
+// Engine je deterministický: seed + sekvencia akcií = presný replay celej hry
+// (tools/replay.mjs). Ukladá sa posledných 10 hier do localStorage.
+// Pri hlásení chyby: otvor konzolu, zavolaj arenaLogSave() a pošli súbor.
+const GameLog = (() => {
+  const KEY = "arena.games";
+  let cur = null;
+  function start(seed, meta) {
+    cur = { id: Date.now(), date: new Date().toISOString(), seed, ...meta, actions: [] };
+    persist();
+  }
+  function push(actor, name, args) {
+    if (!cur) return;
+    cur.actions.push([actor, name, ...(args || [])]);
+    persist();
+  }
+  function persist() {
+    if (!cur) return;
+    try {
+      const all = JSON.parse(localStorage.getItem(KEY) || "[]").filter(g => g.id !== cur.id);
+      all.push(cur);
+      while (all.length > 10) all.shift();
+      localStorage.setItem(KEY, JSON.stringify(all));
+    } catch { /* plné/vypnuté úložisko – hra beží ďalej bez záznamu */ }
+  }
+  function dump() { try { return localStorage.getItem(KEY) || "[]"; } catch { return "[]"; } }
+  return { start, push, dump };
+})();
+window.arenaLog = () => GameLog.dump();
+window.arenaLogSave = () => {
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(new Blob([GameLog.dump()], { type: "application/json" }));
+  a.download = "arena-games.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+};
+
 // Lokálna akcia: vykoná sa v engine a v sieťovej hre sa pošle súperovi,
 // ktorý ju aplikuje na svojej (identickej, rovnako seedovanej) kópii stavu.
 function doAction(name, ...args) {
   const ev = Engine[name](state, MY, ...args);
+  if (ev) GameLog.push(MY, name, args);
   if (ev && mode === "net") Net.sendAction(name, args);
   return ev;
 }
@@ -219,7 +257,11 @@ function renderPick() {
 function startGame() {
   mode = "bot";
   MY = "p1"; OPP = "p2";
-  state = Engine.newGame(Math.random);
+  // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
+  // replaynúť zo záznamu (GameLog + tools/replay.mjs).
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  state = Engine.newGame(Engine.seededRng(seed));
+  GameLog.start(seed, { mode: "bot", difficulty });
   enterGameScreen();
   act(Engine.startRound(state));
   driveFlow();
@@ -252,6 +294,7 @@ function netHandlers() {
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = Engine.newGame(Engine.seededRng(msg.seed));
+      GameLog.start(msg.seed, { mode: "net", you: msg.you });
       enterGameScreen();
       act(Engine.startRound(state));
       driveFlow();
@@ -313,6 +356,7 @@ let remoteQueue = Promise.resolve();
 async function applyRemote(msg) {
   if (!state || state.phase === "over" || mode !== "net") return;
   const ev = Engine[msg.name](state, OPP, ...(msg.args || []));
+  if (ev) GameLog.push(OPP, msg.name, msg.args || []);
   if (ev) {
     for (const e of ev) { const m = oppEventMsg(e); if (m) log(m); }
     renderAll();
@@ -351,6 +395,7 @@ async function runBotTurn() {
   busy = true;
   renderAll();
   await sleep(600);
+  GameLog.push(OPP, "botTurn", [difficulty]);
   const events = Bot.botTurn(state, OPP, difficulty);
   for (const ev of events) {
     const msg = oppEventMsg(ev);
@@ -391,6 +436,7 @@ async function runBattle() {
     p1: { deck: state.p1.deck.length, discard: state.p1.discard.length, hp: state.p1.hp },
     p2: { deck: state.p2.deck.length, discard: state.p2.discard.length, hp: state.p2.hp },
   };
+  GameLog.push("_", "doBattle", []);
   const events = Engine.doBattle(state);
   renderAll();
   renderBoardList($("oppBoard"), snap[OPP], false);
