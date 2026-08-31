@@ -512,20 +512,108 @@ test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie 
   const { state, E } = fresh(15);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const hound = E.makeInst(state, "U009", 2); hound.slot = 0; // strieborný: vyvolaj 3× Kostík
+  const hound = E.makeInst(state, "U009", 2); hound.slot = 0; // strieborný: vyvolaj 4× Kostík
   state.p1.board = [hound];
-  state.p2.board = [Object.assign(E.makeInst(state, "E010", 3), { slot: 0 })]; // 36/32 – zabije ho
+  state.p2.board = [Object.assign(E.makeInst(state, "E010", 3), { slot: 0 })]; // 32/32 – zabije ho
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = [];
   state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
   const summons = events.filter(e => e.type === "summon" && e.defId === "kostik");
-  assert.equal(summons.length, 3);        // počet = základ (3), nie 3×2
+  assert.equal(summons.length, 4);        // počet = základ (4), nie 4×2
   for (const s of summons) {
     assert.equal(s.rank, 2);              // stupeň rodiča
     assert.equal(s.atk, 2);               // 1/1 → 2/2
     assert.equal(s.hp, 2);
   }
+});
+
+test("Pretečenie: undead token, čo sa nezmestí, rozdelí staty živým kamarátom", () => {
+  const { state, E } = fresh(21);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  // U001 (taunt ručne, aby zomrel prvý) + 4 tuční kamaráti bez tauntu = plná plocha.
+  const rattler = E.makeInst(state, "U001", 1); rattler.slot = 0; rattler.taunt = true;
+  const pals = [1, 2, 3, 4].map(i => {
+    const x = E.makeInst(state, "U008", 1); x.slot = i; x.taunt = false; return x;
+  });
+  state.p1.board = [rattler, ...pals];
+  state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })]; // 4/5 útočník
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  // U001 zomrie → 2 kostíky: prvý sa zmestí (4 živí), druhý pretečie.
+  const summons = events.filter(e => e.type === "summon" && e.defId === "kostik");
+  assert.equal(summons.length, 1);
+  const over = events.filter(e => e.type === "overflow");
+  assert.equal(over.length, 1);
+  assert.equal(over[0].atk, 1);
+  assert.equal(over[0].hp, 1);
+  // 1/1 sa nedá deliť medzi 5 – jeden náhodný kamarát dostane +1/+1.
+  const idx = events.indexOf(over[0]);
+  const buffAfter = events.slice(idx + 1).find(e => e.type === "buff");
+  assert.ok(buffAfter);
+  assert.equal(buffAfter.a, 1);
+  assert.equal(buffAfter.h, 1);
+});
+
+test("Mláďa navždy rastie: druhé vyvolanie je o +2/+2 väčšie, počítadlo je trvalé", () => {
+  const { state, E } = fresh(22);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const a = E.makeInst(state, "B007", 1); a.slot = 0;
+  const b = E.makeInst(state, "B007", 1); b.slot = 1;
+  state.p1.board = [a, b];
+  state.p2.board = [Object.assign(E.makeInst(state, "E010", 1), { slot: 0 })]; // AoE 2 zabije obe 1/1
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const cubs = events.filter(e => e.type === "summon" && e.defId === "mlada");
+  assert.equal(cubs.length, 2);
+  assert.equal(cubs[0].atk, 1); // prvé Mláďa 1/1
+  assert.equal(cubs[0].hp, 1);
+  assert.equal(cubs[1].atk, 3); // druhé už 3/3
+  assert.equal(cubs[1].hp, 3);
+  // Počítadlo prežije boj (trvalé pre celú hru).
+  assert.equal(state.p1.tokenGrowth.mlada.a, 4);
+  assert.equal(state.p1.tokenGrowth.mlada.h, 4);
+});
+
+test("multi-hit: strieborný dmgRandomEnemy zasiahne 2× po základnej sile", () => {
+  const { state, E } = fresh(23);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const zap = E.makeInst(state, "E001", 2); zap.slot = 0; // Pred bojom: 2× 1 dmg
+  state.p1.board = [zap];
+  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "B002", 1), { slot: i }));
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const hits = events.filter(e => e.type === "powerDmg" && e.from === zap.uid);
+  assert.equal(hits.length, 2);
+  for (const h of hits) assert.equal(h.n, 1); // sila sa neškáluje, počet áno
+});
+
+test("výbuch dmgAllEnemies zasiahne všetkých živých nepriateľov", () => {
+  const { state, E } = fresh(24);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const bomb = E.makeInst(state, "E002", 1); bomb.slot = 0; // taunt, pri smrti 1 dmg všetkým
+  state.p1.board = [bomb];
+  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "B002", 1), { slot: i }));
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const death = events.find(e => e.type === "proc" && e.kw === "deathrattle" && e.uid === bomb.uid);
+  assert.ok(death);
+  const idx = events.indexOf(death);
+  const hits = events.slice(idx + 1).filter(e => e.type === "powerDmg" && e.from === bomb.uid);
+  assert.equal(hits.length, 3); // všetci traja nepriatelia
+  for (const h of hits) assert.equal(h.n, 1);
 });
 
 test("po boji ide všetko do discard – plochy sú prázdne, tokeny miznú", () => {

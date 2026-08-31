@@ -32,6 +32,16 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   Po nákupe, Pri útoku. Buffy z boja sú dočasné; trvalé sú buffy
   z nákupnej fázy a AURY (`futureRace`: „VŠETKY tvoje X, aj v balíčku,
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
+- Rasové archetypy (trojuholník counterov):
+  - **Beast = rastúce telá**: B007/B008 vyvolávajú Mláďa 🐣, každé
+    vyvolanie ho navždy zväčší o +2/+2 (trvalé počítadlo `tokenGrowth`,
+    zdieľané oboma kartami, evolve zväčšuje krok na +4/+6).
+  - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
+    U006 2×, U009 4× kostík; undead token, čo sa nezmestí na plnú
+    plochu, rozdelí svoje staty živým vlastným príšerkám.
+  - **Elemental = výbuchy**: `dmgRandomEnemy` škáluje pri evolve POČET
+    zásahov (1/2/3), nie silu; `dmgAllEnemies` (E002, E010) bije všetkých
+    naraz. Counter na undead hordu, slabé proti veľkým beast telám.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 
@@ -59,6 +69,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
    doľava (útočia skôr, buff platí dlhšie).
 7. **Predaj** používaj na riedenie balíčka od slabých tier-1 kariet
    v neskorej hre – zvyšuje šancu dotiahnuť silné karty.
+8. **Counterpick podľa súperovho nákupu** (vidíš ho v logu): proti undead
+   horde kupuj elementálov (multi-hit/AoE), proti elementálom veľké beast
+   telá a aury, proti beastom undead hordu. Mláďa karty (B007/B008) kupuj
+   čo najskôr – zdieľané počítadlo rastie celú hru. S plnou undead plochou
+   sú ďalšie summony stále hodnotné (Pretečenie = buffy).
 
 ## Rozhranie akcií (pre Claude-bot driver)
 

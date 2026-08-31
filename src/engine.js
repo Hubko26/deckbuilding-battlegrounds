@@ -103,6 +103,7 @@ const Engine = (() => {
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
+      tokenGrowth: {}, // trvalý rast tokenov: { mlada: {a, h} } – každé vyvolanie pridáva
     };
   }
 
@@ -631,12 +632,28 @@ const Engine = (() => {
     const m = rank;
     switch (fx.type) {
       case "dmgRandomEnemy": {
-        const enemies = sides[other(pid)].filter(x => x.hp > 0);
-        if (!enemies.length) break;
-        const t = pick(enemies, state.rng);
-        t.hp -= fx.n * m;
-        events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: fx.n * m, from: self.uid });
-        events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+        // Evolve škáluje POČET zásahov (1/2/3), nie silu – multi-hit je counter
+        // na hordy malých tokenov; proti veľkým telám ostáva slabý (zámer).
+        for (let i = 0; i < m; i++) {
+          const enemies = sides[other(pid)].filter(x => x.hp > 0);
+          if (!enemies.length) break;
+          const t = pick(enemies, state.rng);
+          t.hp -= fx.n;
+          events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: fx.n, from: self.uid });
+          events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+          handleDeaths(state, sides, events);
+        }
+        break;
+      }
+      case "dmgAllEnemies": {
+        // Výbuch: zasiahne všetkých živých nepriateľov naraz. Damage škáluje
+        // so stupňom (×1/×2/×3) – držať base nízko, nech nevypne swarm úplne.
+        const dmg = fx.n * m;
+        for (const t of sides[other(pid)].filter(x => x.hp > 0)) {
+          t.hp -= dmg;
+          events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: dmg, from: self.uid });
+          events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+        }
         handleDeaths(state, sides, events);
         break;
       }
@@ -668,12 +685,29 @@ const Engine = (() => {
       case "summon": {
         // Evolvnutá karta vyvoláva SILNEJŠIE tokeny (stupeň rodiča: staty
         // ×2/×4), počet sa so stupňom neškáluje.
+        // fx.grow: token navždy rastie – každé vyvolanie pridá hráčovi do
+        // počítadla (tokenGrowth) +a/+h × stupeň; ďalší token je väčší.
+        // Pretečenie (undead): token, čo sa nezmestí na plnú plochu, rozdelí
+        // svoje staty medzi živé vlastné príšerky (rovným dielom, zvyšok náhodne).
         const board = sides[pid];
         const idx = board.indexOf(self);
+        const p = state[pid];
         for (let i = 0; i < fx.n; i++) {
           const alive = board.filter(x => x.hp > 0);
-          if (alive.length >= BOARD_MAX) break;
-          const tok = makeInst(state, fx.token, Math.min(m, 3), state[pid]);
+          const full = alive.length >= BOARD_MAX;
+          if (full && Cards.byId[fx.token].race !== "undead") break;
+          const tok = makeInst(state, fx.token, Math.min(m, 3), p);
+          if (fx.grow) {
+            const g = p.tokenGrowth[fx.token] || { a: 0, h: 0 };
+            tok.atk += g.a;
+            tok.hp += g.h;
+            tok.maxHp += g.h;
+            p.tokenGrowth[fx.token] = { a: g.a + fx.grow.a * m, h: g.h + fx.grow.h * m };
+          }
+          if (full) {
+            overflowStats(state, alive, tok, pid, events);
+            continue;
+          }
           tok.slot = freeSlot(alive, BOARD_MAX);
           board.splice(idx + 1 + i, 0, tok);
           events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token, slot: tok.slot, rank: tok.rank, atk: tok.atk, hp: tok.hp });
@@ -681,6 +715,27 @@ const Engine = (() => {
         break;
       }
     }
+  }
+
+  // Pretečenie: staty nezmestivšieho sa tokenu sa rozdelia medzi živé vlastné
+  // príšerky – rovným dielom, zvyšok dostanú náhodné (poradie z rng, aby bol
+  // multiplayer deterministický). Dočasné ako všetky bojové buffy.
+  function overflowStats(state, aliveList, tok, pid, events) {
+    if (!aliveList.length) return;
+    const order = shuffle(aliveList.slice(), state.rng);
+    const n = order.length;
+    const baseA = Math.floor(tok.atk / n), remA = tok.atk % n;
+    const baseH = Math.floor(tok.hp / n), remH = tok.hp % n;
+    events.push({ type: "overflow", pid, defId: tok.defId, atk: tok.atk, hp: tok.hp });
+    order.forEach((f, i) => {
+      const a = baseA + (i < remA ? 1 : 0);
+      const h = baseH + (i < remH ? 1 : 0);
+      if (!a && !h) return;
+      f.atk += a;
+      f.maxHp += h;
+      f.hp += h;
+      events.push({ type: "buff", pid, uid: f.uid, a, h });
+    });
   }
 
   function handleDeaths(state, sides, events) {

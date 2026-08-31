@@ -150,6 +150,11 @@ const L = {
   ok: { sk: "OK", cs: "OK", en: "OK" },
   begins: { sk: "začína", cs: "začíná", en: "begins" },
   battleDraw: { sk: "Boj skončil remízou.", cs: "Boj skončil remízou.", en: "The fight was a draw." },
+  overflowMsg: {
+    sk: "💀 Pretečenie: plocha plná, staty tokenu dostali kamaráti",
+    cs: "💀 Přetečení: plocha plná, staty tokenu dostali kamarádi",
+    en: "💀 Overflow: board full, friends got the token's stats",
+  },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
   you: { sk: "Ty", cs: "Ty", en: "You" },
   opp: { sk: "Súper", cs: "Soupeř", en: "Opponent" },
@@ -510,6 +515,11 @@ async function runBattle() {
         row.appendChild(el);
         Sfx.summon();
         await sleep(450);
+        break;
+      }
+      case "overflow": {
+        // Token sa nezmestil – buff eventy hneď za ním ukážu, kto čo dostal.
+        log(`${t(L.overflowMsg)} (+${ev.atk}/+${ev.hp})`);
         break;
       }
       case "toDiscard": {

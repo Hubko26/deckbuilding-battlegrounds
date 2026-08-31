@@ -83,6 +83,9 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - Staty: strieborná = **×2**, zlatá = **×4** základu. Čísla schopností: strieborná ×2,
   zlatá ×3. Vyvolávané tokeny sa škálujú SILOU, nie počtom: strieborný
   deathrattle vyvolá tokeny stupňa 2 (2/2), zlatý stupňa 3 (4/4).
+  **Výnimka – `dmgRandomEnemy`**: evolve škáluje POČET zásahov (1/2/3),
+  nie silu – strieborný výboj dá 2× základný damage dvom náhodným cieľom
+  (counter na hordy malých tokenov, proti veľkým telám ostáva slabý).
 - Buffy z troch zlúčených kusov sa nezachovajú (v prototype; zjednodušenie).
 - Kúzla sa neevolvujú.
 
@@ -123,16 +126,57 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 
 | Rasa | SK | Téma |
 |------|----|------|
-| beast | Zviera | staty, taunty, rast |
-| elemental | Živel | Pred bojom damage a buffy |
-| undead | Nemŕtvy | Pri smrti – tokeny, buffy, damage |
+| beast | Zviera | veľké telá – aury, taunty a stále väčšie Mláďatá |
+| elemental | Živel | výbuchy – single aj AoE damage, evolve = viac zásahov |
+| undead | Nemŕtvy | horda kostíkov + Pretečenie |
 
 Ďalšie rasy (Dragon, Fairy, Human, Ogre) sa pridajú s ďalšími art sadami –
 dátový model je pripravený (pole `race` na karte).
 
+### Rasové archetypy (implementované)
+
+Tri rasy tvoria trojuholník counterov: **Elemental > Undead** (multi-hit
+a výbuchy zabíjajú 1/1 kostíkov), **Beast > Elemental** (malé pingy sa
+strácajú na veľkých telách), **Undead > Beast** (viac tiel = viac útokov
+v cykle, Pretečenie škáluje aj po zaplnení plochy). Mechaniky sú rozložené
+cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
+
+**🐾 Beast – rastúce Mláďa**
+
+- B007 (t1, Pri smrti) a B008 (t3, Pred bojom) vyvolávajú **Mláďa** 🐣.
+  Mláďa je zakaždým silnejšie: každé vyvolanie pridá hráčovi do trvalého
+  počítadla (`tokenGrowth`, obdoba permanentných aur) +2/+2 – ďalšie Mláďa
+  sa narodí o toľko väčšie. Počítadlo je zdieľané oboma kartami a platí
+  celú hru; evolve zvyšuje **krok rastu** (strieborná +4/+4, zlatá +6/+6),
+  nie počet vyvolaných – drží líniu „beast = jedno silnejúce telo".
+- Mláďa je beast, takže dostáva aj beast aury (`futureRace`) pri vzniku.
+
+**💀 Undead – horda kostríkov + Pretečenie**
+
+- Viac kariet vyvoláva kostíkov a vo väčších počtoch: U001 (t1, Pri smrti)
+  2×, U005 (t3, Pred bojom) 2×, U006 (t3, taunt, Pri smrti) 2×, U009
+  (t5, Pri smrti) 4×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
+  U009 6/5).
+- **Pretečenie**: keď sa vyvolávaný nemŕtvy token nezmestí na plnú plochu
+  (max 5), nezmizne naprázdno – jeho staty sa rozdelia medzi živé vlastné
+  príšerky (rovným dielom, zvyšok náhodne cez `state.rng`). Platí len
+  v boji a je dočasné ako všetky bojové buffy. AoE výbuchy čistia plochu,
+  čím tokenom uvoľňujú sloty – prirodzená anti-synergia s Pretečením.
+
+**✨ Elemental – explozívny archetyp**
+
+- Single-target damage (`dmgRandomEnemy`): E001/E005 (Pred bojom), E006
+  (Pri smrti). Evolve = **viac zásahov po základnej sile** (1/2/3), nie
+  väčší zásah – presný counter na small summons, jeden 4-damage hit by bol
+  overkill na 1/1 tokene.
+- AoE výbuchy (`dmgAllEnemies`): E002 (t1, taunt, Pri smrti: 1 všetkým),
+  E010 (t6, Pred bojom: 2 všetkým). AoE škáluje damage so stupňom (×1/×2/×3),
+  preto base drž nízko (1–2) a AoE len na málo kartách, nech úplne nevypne
+  undead swarm.
+
 ### Plánované rasové mechaniky
 
-Návrhy pre ďalšie art sady a rework existujúcich rás (zatiaľ neimplementované).
+Návrhy pre ďalšie art sady (zatiaľ neimplementované).
 
 **🧚 Fairy (Víla) – nová rasa: mágia a kúzla**
 
@@ -150,29 +194,18 @@ Návrhy pre ďalšie art sady a rework existujúcich rás (zatiaľ neimplementov
 - Kúzla samotné ostávajú bez rasy – víly reagujú na zoslanie, nie na
   vlastníctvo. Fairy aury (`futureRace`) fungujú štandardne.
 
-**💀 Undead – rework: horda kostríkov + Pretečenie**
+**🙋 Human (Človek) – nová rasa: Božský štít (Divine Shield)**
 
-- Téma rasy sa vyhrocuje: **veľa slabých tiel**. Viac deathrattle kariet
-  vyvoláva kostríkov a vo väčších počtoch (2–3 naraz, na vyšších tieroch viac);
-  jednotlivé nemŕtve telá ostávajú štatovo podpriemerné.
-- Nová pasívna mechanika **Pretečenie**: keď sa vyvolávaný nemŕtvy (typicky
-  kostrík) nezmestí na plnú plochu (max 5), nezmizne naprázdno – jeho staty
-  sa **prerozdelia medzi ostatné žijúce vlastné príšery** (rovným dielom,
-  zvyšok náhodne). Plná plocha tak premieňa ďalšie tokeny na buffy a undead
-  „wide" stratégia škáluje aj po zaplnení dosky.
-  - Platí v boji a je dočasná ako všetky bojové buffy (po boji idú karty do
-    kôpky ako čisté kópie). Implementačne: vetva „board plný" v `summon`
-    efekte namiesto ticheho zahodenia tokenu.
-
-**🐾 Beast – deathrattle s rastúcou príšerou**
-
-- Nová beast karta: „Pri smrti: vyvolaj Mláďa." – Mláďa je **zakaždým
-  silnejšie**: každé ďalšie vyvolanie počas hry má o +2/+2 viac. Počítadlo
-  rastu je trvalé pre hráča na celú hru (obdoba permanentných aur,
-  `raceBuffs`), takže karta prirodzene škáluje do late game.
-- Evolve zvyšuje **krok rastu** (strieborná +4/+4, zlatá +6/+6 za vyvolanie),
-  nie počet vyvolaných – drží líniu „beast = jedno silnejúce telo",
-  kontrast k undead horde.
+- Ľudia stavajú na keyworde **Božský štít**: prvý zásah, ktorý by príšerku
+  zranil, sa úplne zruší (štít praskne, staty ostávajú). Štýl Hearthstone
+  Divine Shield.
+- Synergie: „Pri vyložení: daj Božský štít kamarátovi", „Pred bojom: obnov
+  štíty všetkým Ľuďom", karty, ktoré sa buffnú, keď im praskne štít.
+- Counter dynamika: multi-hit elementáli štíty efektívne lámu (veľa malých
+  zásahov), horda kostíkov tiež; proti veľkým beast telám štít blokuje
+  jeden obrovský hit – prirodzene zapadne do trojuholníka.
+- Implementačne: `inst.shield` boolean, vetva v boji pred odpočtom HP;
+  evolve môže pridať „štít sa raz obnoví".
 
 ### Synergie
 
