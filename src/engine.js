@@ -114,6 +114,8 @@ const Engine = (() => {
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
+      fightRaceBuffs: {}, // dočasné rasové buffy „do konca boja" (draci) – platia
+      // aj pre neskôr vyložené karty a tokeny vyvolané POČAS boja
       spentSpells: [], // kúzla zahrané v tomto ťahu – do kôpky až na konci ťahu
       dmgBoost: 0, // trvalo: všetky výboje/výbuchy +n damage (kúzlo Večná iskra)
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
@@ -429,6 +431,12 @@ const Engine = (() => {
     sortBoard(p);
     const events = [{ type: "play", pid, uid: inst.uid, defId: inst.defId }];
     const def = Cards.byId[inst.defId];
+    // Dračí buff „do konca boja" platí aj pre karty vyložené po ňom.
+    const fb = def.race && p.fightRaceBuffs[def.race];
+    if (fb && (fb.a || fb.h)) {
+      buff(inst, fb.a, fb.h);
+      events.push({ type: "buff", pid, uid: inst.uid, a: fb.a, h: fb.h });
+    }
     if (def.power && def.power.kw === "battlecry") {
       applyShopFx(state, p, def.power.fx, inst.rank, inst, events, target);
     }
@@ -563,7 +571,8 @@ const Engine = (() => {
     };
     switch (fx.type) {
       case "buffRaceOf": {
-        // Drak: +a/+h všetkým príšerkám RASY cieľa (do konca boja).
+        // Drak: +a/+h všetkým príšerkám RASY cieľa (do konca boja) – aj tým,
+        // ktoré do boja pribudnú neskôr (vyloženie z ruky, tokeny v boji).
         const t = pickTarget();
         if (!t) break;
         const race = Cards.byId[t.defId].race;
@@ -572,6 +581,8 @@ const Engine = (() => {
           buff(f, fx.a * m, fx.h * m);
           events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
+        const fb = (p.fightRaceBuffs[race] ||= { a: 0, h: 0 });
+        fb.a += fx.a * m; fb.h += fx.h * m;
         break;
       }
       case "futureRaceOf": {
@@ -624,6 +635,8 @@ const Engine = (() => {
           buff(f, fx.a * m, fx.h * m);
           events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
+        const fb = (p.fightRaceBuffs[race] ||= { a: 0, h: 0 });
+        fb.a += fx.a * m; fb.h += fx.h * m;
         break;
       }
       case "buffFriend": {
@@ -885,6 +898,7 @@ const Engine = (() => {
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       p.summonCharge = 0;
+      p.fightRaceBuffs = {}; // dračie buffy „do konca boja" po boji končia
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
         p.discard.push(pileCard(inst));
@@ -1007,6 +1021,12 @@ const Engine = (() => {
           const full = alive.length >= BOARD_MAX;
           if (full && Cards.byId[fx.token].race !== "undead") break;
           const tok = makeInst(state, fx.token, Math.min(m, 3), p);
+          // Dračí buff „do konca boja" dostanú aj tokeny vyvolané počas boja
+          // (permanentné rasové aury tokeny neberú – toto je vedomá výnimka).
+          const fb = Cards.byId[fx.token].race && p.fightRaceBuffs[Cards.byId[fx.token].race];
+          if (fb && (fb.a || fb.h)) {
+            tok.atk += fb.a; tok.hp += fb.h; tok.maxHp += fb.h;
+          }
           if (full) {
             overflowStats(state, alive, tok, pid, events);
             continue;

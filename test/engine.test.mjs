@@ -491,11 +491,11 @@ test("futureRace aura: budúce príšerky rasy dostanú bonus, existujúce nie",
   assert.equal(p.raceBuffs.beast.h, 3);
 });
 
-test("onAttack: dočasný boost pri útoku v boji (len rovnaká rasa)", () => {
+test("onAttack: dočasný boost pri útoku v boji", () => {
   const { state, E } = fresh(12);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const dasher = E.makeInst(state, "B005", 1); dasher.slot = 0; // onAttack: Zvieratá +1/0
+  const dasher = E.makeInst(state, "E004", 1); dasher.slot = 0; // onAttack: kamaráti +1/0
   const pal = E.makeInst(state, "B002", 1); pal.slot = 1;       // beast 4/5
   state.p1.board = [dasher, pal];
   state.p2.board = [E.makeInst(state, "U008", 1)]; // 3/8 taunt – prežije
@@ -505,6 +505,31 @@ test("onAttack: dočasný boost pri útoku v boji (len rovnaká rasa)", () => {
   assert.ok(proc);
   assert.equal(proc.uid, dasher.uid);
   assert.ok(events.some(e => e.type === "buff" && e.uid === pal.uid && e.a === 1));
+});
+
+test("dračí buff rasy (D002): dostanú ho aj neskôr vyložené karty a tokeny v boji", () => {
+  const { state, E } = fresh(14);
+  E.startRound(state);
+  const p = state.p1;
+  const b = E.makeInst(state, "B005", 1); b.slot = 0; // beast 3/2, deathrattle 2× mláďa
+  p.board = [b];
+  const drak = E.makeInst(state, "D002", 1); // battlecry: rasa cieľa +1/+1
+  p.hand = [drak];
+  E.playMinion(state, "p1", 0, b.uid);
+  assert.equal(b.atk, 4); // 3+1 – okamžitý buff na ploche
+  const late = E.makeInst(state, "B001", 1); // beast 2/2 vyložený PO drakovi
+  p.hand = [late];
+  E.playMinion(state, "p1", 0);
+  assert.equal(late.atk, 3); // 2+1 – buff platí aj pre neskôr vyložené
+  E.endShopTurn(state, "p1");
+  state.p2.board = [E.makeInst(state, "E010", 1)]; // 9/8 – B005 zomrie
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  const sum = events.find(e => e.type === "summon" && e.defId === "mlada");
+  assert.ok(sum, "mláďa sa má vyvolať");
+  assert.equal(sum.atk, 2); // 1+1 – buff dostal aj token vyvolaný v boji
+  assert.equal(sum.hp, 2);
+  assert.equal(Object.keys(state.p1.fightRaceBuffs).length, 0); // po boji buff končí
 });
 
 test("deathrattle buffRace: buffne živých kamarátov rovnakej rasy v boji", () => {

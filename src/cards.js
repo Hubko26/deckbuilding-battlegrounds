@@ -47,8 +47,9 @@ const Cards = (() => {
       { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 1 } } }),
     M("B004", 2, "beast", ["Hootnip", "Moongaze", "Nightoracle"], 2, 3,
       { power: { kw: "battlecry", fx: { type: "draw", n: 1 } } }),
+    // B005: stádo mláďat pri smrti – kŕmi B009 (rastie za smrť zvieraťa).
     M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2,
-      { power: { kw: "onAttack", fx: { type: "buffRace", race: "beast", a: 1, h: 0 } } }),
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 2 } } }),
     M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,

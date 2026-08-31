@@ -44,8 +44,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
 - Rasové archetypy (trojuholník counterov):
   - **Beast = telá a mrchožrút**: B007 vyvoláva fixné Mláďa 🐣 (1/1,
-    škáluje len evolvom). B009 = scavenger („Keď zomrie tvoje Zviera:
-    +2/+2 pre seba", bojové, dočasné) – chráň ho a kŕm smrťami zvierat.
+    škáluje len evolvom), B005 (t2) pri smrti vyvolá 2× Mláďa.
+    B009 = scavenger („Keď zomrie tvoje Zviera:
+    +2/+2 pre seba", bojové, dočasné) – chráň ho a kŕm smrťami zvierat
+    (B005/B007 mláďatá = lacné smrti zvierat).
     B003/B008 rastú Po nákupe NAVŽDY (rast sa drží na kópii karty cez
     cyklus balíčka) – kupuj ich skoro a vykladaj každé kolo.
   - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
@@ -68,13 +70,16 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     k telám). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
-    battlecry na RASU vybranej príšerky – D002/D008 buff do boja,
+    battlecry na RASU vybranej príšerky – D002/D008 buff do boja
+    (aura do konca boja: dostanú ju aj neskôr vyložené karty a tokeny
+    vyvolané v boji – kombuje so summon buildmi),
     D003/D009 permanentná aura +1/+1, D004 discover rasy, D010 (t6)
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
     keď je telo nad krivkou alebo battlecry živí tvoju rasu.
-  - **Tokeny nedostávajú aury** (`futureRace`) – kostík aj Mláďa
-    škálujú len stupňom rodiča.
+  - **Tokeny nedostávajú permanentné aury** (`futureRace`) – kostík aj
+    Mláďa škálujú len stupňom rodiča. Výnimka: dočasný dračí buff
+    (D002/D006/D008) tokeny v boji dostanú.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 

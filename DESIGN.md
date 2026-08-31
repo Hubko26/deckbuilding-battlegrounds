@@ -291,6 +291,10 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   drop mimo príšerky = fallback (najsilnejšia vlastná príšerka), takže
   efekt nikdy nevyhorí naprázdno. Bot/Claude hrá cez rovnaký fallback,
   Claude vie posielať `target` v akcii `play`.
+- Dočasné rasové buffy (`buffRaceOf`, `buffRandomRace`) sú **aura do konca
+  najbližšieho boja** (`p.fightRaceBuffs`): dostanú ju aj karty vyložené po
+  drakovi a tokeny vyvolané počas boja (vedomá výnimka – permanentné rasové
+  aury tokeny neberú). Po boji sa nuluje.
 - Roster: D001 3/2 a D007 2/4 vanilky (t1, telá nad krivkou);
   D002 (t2) battlecry rasa cieľa +1/+1 do boja (`buffRaceOf`);
   D006 (t2, Po nákupe) náhodná tvoja rasa +1/+1 (`buffRandomRace`);
