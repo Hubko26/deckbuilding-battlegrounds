@@ -9,15 +9,15 @@
 //   n=500          počet bojov (default 500)
 //   aura1=beast:1:2   permanentná aura hráča 1 (rasa:atk:hp) – aplikuje sa na board
 //   aura2=...         to isté pre hráča 2
-//   boost1=2       dmgBoost hráča 1 (Večná iskra – výboje/výbuchy +n)
+//   boost1=2       dmgCharge hráča 1 (Iskra – ďalší výboj/výbuch +n)
 //   boost2=...
-//   grow1=5        tokenGrowth Mláďaťa hráča 1 (+5/+5 nazbieraný rast)
-//   grow2=...
+//   charge1=1      summonCharge hráča 1 (ďalšie vyvolanie +n navyše)
+//   charge2=...
 //   verbose=1      vypíše event log prvého boja
 //
 // Príklady:
 //   node tools/scenario.mjs "U009:2 U001 U001" "E005 E002 E001"
-//   node tools/scenario.mjs "B008 B007" "U010:2" grow1=8 n=1000
+//   node tools/scenario.mjs "B008 B007" "U010:2" boost1=2 n=1000
 //   node tools/scenario.mjs "E010" "U001 U001 U001 U005 U006" boost1=2 verbose=1
 
 import fs from "node:fs";
@@ -81,7 +81,7 @@ function parseOpts(args) {
 
 const [specA, specB, ...rest] = process.argv.slice(2);
 if (!specA || !specB) {
-  console.log('Použitie: node tools/scenario.mjs "B002:2 B001" "U009 U005" [n=500] [aura1=beast:1:1] [boost1=1] [grow1=5] [verbose=1]');
+  console.log('Použitie: node tools/scenario.mjs "B002:2 B001" "U009 U005" [n=500] [aura1=beast:1:1] [boost1=1] [charge1=1] [verbose=1]');
   process.exit(0);
 }
 const opts = parseOpts(rest);
@@ -98,9 +98,8 @@ function applyMods(state, E, pid, idx) {
     const [race, a, h] = aura.split(":");
     p.raceBuffs[race] = { a: Number(a || 0), h: Number(h || 0) };
   }
-  p.dmgBoost = Number(opts["boost" + idx] || 0);
-  const grow = Number(opts["grow" + idx] || 0);
-  if (grow) p.tokenGrowth.mlada = { a: grow, h: grow };
+  p.dmgCharge = Number(opts["boost" + idx] || 0);
+  p.summonCharge = Number(opts["charge" + idx] || 0);
 }
 
 function setup(seed) {
@@ -145,7 +144,7 @@ for (let i = 0; i < N; i++) {
 
 const pct = x => (x / N * 100).toFixed(1) + "%";
 console.log(`\nScenár: [${specA}]  vs  [${specB}]  (${N} bojov)`);
-const mods = ["aura1", "aura2", "boost1", "boost2", "grow1", "grow2"]
+const mods = ["aura1", "aura2", "boost1", "boost2", "charge1", "charge2"]
   .filter(k => opts[k]).map(k => `${k}=${opts[k]}`).join(" ");
 if (mods) console.log(`Modifikátory: ${mods}`);
 console.log(`Hráč A vyhral: ${winA} (${pct(winA)}) | priemerný damage hrdinovi B: ${winA ? (dmgToB / winA).toFixed(1) : "-"}`);

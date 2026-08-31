@@ -20,7 +20,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
-  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna 2, Srdce/Iskra 3).
+  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra 2, Srdce 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -145,16 +145,15 @@ strácajú na veľkých telách), **Undead > Beast** (viac tiel = viac útokov
 v cykle, Pretečenie škáluje aj po zaplnení plochy). Mechaniky sú rozložené
 cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
-**🐾 Beast – rastúce Mláďa**
+**🐾 Beast – telá a mrchožrút**
 
-- B007 (t1, Pri smrti) a B008 (t3, Pred bojom) vyvolávajú **Mláďa** 🐣.
-  Mláďa je zakaždým silnejšie: trvalé počítadlo rastu (`tokenGrowth`,
-  obdoba permanentných aur) však kŕmi **len B007** – rast má cenu smrti.
-  Každá jeho smrť pridá +1/+1; evolve zvyšuje **krok rastu** (strieborná
-  +2/+2, zlatá +3/+3), nie počet vyvolaných. B008 vyvoláva Mláďa
-  v aktuálnej narastenej veľkosti, ale počítadlo nezvyšuje – „Pred bojom"
-  motor bez rizika bol podľa simulácie prestrelený (mirror 91 % pri kroku
-  +2 a oboch kartách kŕmiacich rast; po nerfoch ~80 % vs 72 % kontrola).
+- B007 (t1, Pri smrti) vyvoláva **Mláďa** 🐣 – fixný token 1/1, škáluje
+  len evolvom rodiča (2/2, 4/4). Trvalé počítadlo rastu bolo odstránené:
+  infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
+- B009 (t4) je **mrchožrút** (`raceDeath`): „Keď zomrie tvoje Zviera:
+  +2/+2 pre seba" – rast je bojový a dočasný, viazaný na padlé vlastné
+  zvieratá (synergia s Mláďaťom a trade-ami), evolve ×2/×3.
+- B003/B008 rastú v nákupnej fáze (Po nákupe +1/+1).
 
 **💀 Undead – horda kostríkov + Pretečenie**
 
@@ -163,6 +162,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   (t5, Pri smrti) 3×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
   U009 5/4). Kostík je **2/1** – bije tvrdo (páka na veľké beast telá),
   ale padne na jediný ping (elemental counter).
+- U007 (t4, Pri vyložení) dáva jednorazovú chargu (`summonCharge`):
+  „tvoje ďalšie vyvolanie v boji vyvolá o 1 viac". Chargy sa stackujú
+  a minú sa prvým vyvolaním.
 - **Pretečenie**: keď sa vyvolávaný nemŕtvy token nezmestí na plnú plochu
   (max 5), nezmizne naprázdno – jeho staty sa rozdelia medzi živé vlastné
   príšerky (rovným dielom, zvyšok náhodne cez `state.rng`). Platí len
@@ -171,21 +173,22 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **✨ Elemental – explozívny archetyp**
 
-- Výboje (`dmgWeakEnemy`): E001/E005 (Pred bojom), E006 (Pri smrti) –
-  mieria na **najslabšieho** (najmenej HP) nepriateľa: kosia tokeny
-  a nekŕmia zbytočne deathrattle telá (náhodný cieľ podľa simulácie
-  undead paradoxne posilňoval). Evolve = **viac zásahov po základnej
-  sile** (1/2/3), nie väčší zásah.
-- AoE výbuchy (`dmgAllEnemies`): E002 (t1, taunt, Pri smrti: 3 všetkým),
-  E010 (t6, Pred bojom: 4 všetkým). Jedna veľká vlna – engine pošle jeden
-  `aoeDmg` event a UI zasiahne všetkých NARAZ, žiadne projektily po jednom.
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pri smrti 2), E005 (t3, Pred bojom 2),
+  E006 (t3, Pri smrti 3) – mieria na **najslabšieho** (najmenej HP)
+  nepriateľa: kosia tokeny a nekŕmia zbytočne deathrattle telá (náhodný
+  cieľ podľa simulácie undead paradoxne posilňoval). Evolve = **viac
+  zásahov po základnej sile** (1/2/3), nie väčší zásah. Čísla drž nízko
+  (2–3) – vyššie hodnoty v simulácii vyrábali uber karty.
+- AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: 2 všetkým).
+  Jedna veľká vlna – engine pošle jeden `aoeDmg` event a UI zasiahne
+  všetkých NARAZ, žiadne projektily po jednom.
 - **Tokeny nedostávajú aury** (`futureRace` sa na ne neaplikuje) – kostíky
   ostávajú malé a AoE/výboje ich spoľahlivo čistia; bez toho undead
-  podľa simulácie bil elementálov 80:20. Mláďa škáluje vlastným rastom,
-  kostík stupňom rodiča.
-- Kúzlo **Večná iskra** ⚡ (t4, cena 3): všetky tvoje výboje a výbuchy
-  (navždy) dávajú +1 damage. Stackuje sa (`p.dmgBoost`) – elemental
-  ekvivalent permanentných aur, škáluje damage plán do late game.
+  podľa simulácie bil elementálov 80:20. Kostík škáluje stupňom rodiča.
+- Kúzlo **Iskra** ⚡ (t3, cena 2): jednorazová charga (`dmgCharge`) –
+  „tvoj ďalší výboj alebo výbuch dá +2 damage". Stackuje sa, minie sa
+  prvým damage efektom. (Permanentná verzia snowballovala – zámerne
+  one-shot, rovnako ako `summonCharge`.)
 
 ### Plánované rasové mechaniky
 

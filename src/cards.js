@@ -38,7 +38,7 @@ const Cards = (() => {
     M("B003", 1, "beast", ["Hopple", "Bogbell", "Mirethrone"], 1, 1,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
     M("B007", 1, "beast", ["Finwhisk", "Rapidsnout", "Riverking"], 1, 1,
-      { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 1, grow: { a: 1, h: 1 } } } }),
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 1 } } }),
     M("B004", 2, "beast", ["Hootnip", "Moongaze", "Nightoracle"], 2, 3,
       { power: { kw: "battlecry", fx: { type: "draw", n: 1 } } }),
     M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2,
@@ -46,27 +46,26 @@ const Cards = (() => {
     M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
-      { power: { kw: "startFight", fx: { type: "summon", token: "mlada", n: 1 } } }),
+      { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1 } } }),
     M("B006", 4, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 4, 7,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
-    M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 6, 4,
-      { power: { kw: "battlecry", fx: { type: "buffRace", race: "beast", a: 2, h: 2 } } }),
+    M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 5, 4,
+      { power: { kw: "raceDeath", fx: { type: "growSelf", race: "beast", a: 2, h: 2 } } }),
     M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } } }),
 
     // ---------- Živly (Elemental) ----------
     M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 1, 2,
-      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
-    M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3,
-      { taunt: true, power: { kw: "deathrattle", fx: { type: "dmgAllEnemies", n: 3 } } }),
+      { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+    M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 0, h: 1 } } }),
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 3,
       { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 0 } } }),
-    M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 4, 5,
-      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 5 } } }),
-    M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 5, 4,
-      { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 5 } } }),
+    M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 4,
+      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+    M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 3,
+      { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 7,
       { power: { kw: "endTurn", fx: { type: "buffRace", race: "elemental", a: 1, h: 1 } } }),
     M("E008", 4, "elemental", ["Prismite", "Shardmane", "Auroraclysm"], 5, 5,
@@ -74,7 +73,7 @@ const Cards = (() => {
     M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
     M("E010", 6, "elemental", ["Duskdrop", "Gloamstalker", "Eclipse Sovereign"], 9, 9,
-      { power: { kw: "startFight", fx: { type: "dmgAllEnemies", n: 4 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgAllEnemies", n: 2 } } }),
 
     // ---------- Nemŕtvi (Undead) ----------
     M("U001", 1, "undead", ["Rattlewink", "Bonebound", "Ossuary Hound"], 1, 1,
@@ -89,8 +88,8 @@ const Cards = (() => {
       { power: { kw: "startFight", fx: { type: "summon", token: "kostik", n: 2 } } }),
     M("U006", 3, "undead", ["Bonebell", "Knellhorn", "Cathedral Ram"], 2, 6,
       { taunt: true, power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 2 } } }),
-    M("U007", 4, "undead", ["Shroudling", "Veilprank", "Phantom Duke"], 6, 5,
-      { power: { kw: "battlecry", fx: { type: "buffRace", race: "undead", a: 2, h: 2 } } }),
+    M("U007", 4, "undead", ["Shroudling", "Veilprank", "Phantom Duke"], 5, 4,
+      { power: { kw: "battlecry", fx: { type: "summonCharge", n: 1 } } }),
     M("U008", 4, "undead", ["Tombturtle", "Reliquaryback", "Necropolis Tortoise"], 3, 8,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 1, h: 0 } } }),
     M("U009", 5, "undead", ["Hollowhound", "Gravehowl", "Sepulcher Sentinel"], 5, 4,
@@ -115,8 +114,8 @@ const Cards = (() => {
       name: { sk: "Veľká vlna", cs: "Velká vlna", en: "Big Wave" } },
     { id: "srdce", cost: 3, tier: 4, emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
       name: { sk: "Ohnivé srdce", cs: "Ohnivé srdce", en: "Fiery Heart" } },
-    { id: "iskra", cost: 3, tier: 4, emoji: "⚡", spell: true, fx: { type: "dmgBoost", n: 1 },
-      name: { sk: "Večná iskra", cs: "Věčná jiskra", en: "Eternal Spark" } },
+    { id: "iskra", cost: 2, tier: 3, emoji: "⚡", spell: true, fx: { type: "dmgCharge", n: 2 },
+      name: { sk: "Iskra", cs: "Jiskra", en: "Spark" } },
   ];
 
   // Tokeny – vyvolávané príšerky, nie sú v obchode ani v balíčku.
@@ -152,6 +151,7 @@ const Cards = (() => {
     startFight: { sk: "Pred bojom", cs: "Před bojem", en: "Start of fight" },
     endTurn: { sk: "Po nákupe", cs: "Po nákupu", en: "End of turn" },
     onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
+    raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
   };
   const TAUNT_LABEL = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
 
@@ -230,15 +230,6 @@ const Cards = (() => {
         cs: `vyvolej ${f.n}× ${byId[f.token].name.cs} (${a}/${h})`,
         en: `summon ${f.n}× ${byId[f.token].name.en} (${a}/${h})`,
       };
-      if (f.grow) {
-        base.sk += `; každé vyvolanie ho navždy zväčší o +${f.grow.a * m}/+${f.grow.h * m}`;
-        base.cs += `; každé vyvolání ho navždy zvětší o +${f.grow.a * m}/+${f.grow.h * m}`;
-        base.en += `; each summon makes it +${f.grow.a * m}/+${f.grow.h * m} bigger forever`;
-      } else if (byId[f.token].id === "mlada") {
-        base.sk += `; je také veľké, ako Mláďa narástlo`;
-        base.cs += `; je tak velké, jak Mládě narostlo`;
-        base.en += `; as big as your Cub has grown`;
-      }
       if (byId[f.token].race === "undead") {
         base.sk += `; ak sa nezmestí, jeho staty dostanú kamaráti`;
         base.cs += `; když se nevejde, jeho staty dostanou kamarádi`;
@@ -246,6 +237,16 @@ const Cards = (() => {
       }
       return base;
     },
+    summonCharge: (f, m) => ({
+      sk: `tvoje ďalšie vyvolanie v boji vyvolá o ${f.n * m} viac`,
+      cs: `tvé další vyvolání v boji vyvolá o ${f.n * m} víc`,
+      en: `your next summon in battle summons ${f.n * m} extra`,
+    }),
+    dmgCharge: (f, m) => ({
+      sk: `tvoj ďalší výboj alebo výbuch dá +${f.n * m} damage`,
+      cs: `tvůj další výboj nebo výbuch dá +${f.n * m} damage`,
+      en: `your next zap or explosion deals +${f.n * m} damage`,
+    }),
     silence: () => ({
       sk: "v najbližšom boji stratí náhodná súperova príšerka so schopnosťou svoj efekt aj Obrancu",
       cs: "v nejbližším boji ztratí náhodná soupeřova příšerka se schopností svůj efekt i Obránce",
@@ -270,7 +271,12 @@ const Cards = (() => {
     const b = s => (html ? `<strong>${s}</strong>` : s);
     const parts = [];
     if (def.taunt) parts.push(b(TAUNT_LABEL[lang]) + ".");
-    if (def.power) {
+    if (def.power && def.power.kw === "raceDeath") {
+      // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
+      const r = RACES[def.power.fx.race];
+      const label = { sk: `Keď zomrie tvoje ${r.sk}`, cs: `Když zemře tvé ${r.cs}`, en: `When your ${r.en} dies` };
+      parts.push(`${b(label[lang])}: ${FX_TEXT[def.power.fx.type](def.power.fx, m)[lang]}.`);
+    } else if (def.power) {
       parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${FX_TEXT[def.power.fx.type](def.power.fx, m)[lang]}.`);
     }
     if (def.spell) parts.push(FX_TEXT[def.fx.type](def.fx, 1)[lang][0].toUpperCase() + FX_TEXT[def.fx.type](def.fx, 1)[lang].slice(1) + ".");

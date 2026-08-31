@@ -693,7 +693,8 @@ function renderShop() {
   // Aktívne permanentné aury („všetky budúce X…“).
   $("auraEl").textContent = Object.entries(p.raceBuffs || {})
     .map(([race, b]) => `${Cards.RACE_ICON[race]}+${b.a}/+${b.h}`)
-    .join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "");
+    .join(" ") + (p.dmgCharge ? ` ⚡+${p.dmgCharge}` : "") +
+    (p.summonCharge ? ` 🧟+${p.summonCharge}` : "");
   const banner = $("turnBanner");
   if (state.active === MY) {
     banner.textContent = `${t(L.round)} ${state.round} · ${t(L.yourTurn)}`;

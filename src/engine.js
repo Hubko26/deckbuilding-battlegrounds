@@ -114,8 +114,8 @@ const Engine = (() => {
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
-      tokenGrowth: {}, // trvalý rast tokenov: { mlada: {a, h} } – každé vyvolanie pridáva
-      dmgBoost: 0, // trvalý bonus k damage výbojov a výbuchov (kúzlo Večná iskra)
+      dmgCharge: 0, // jednorazovo: ďalší výboj/výbuch +n damage (kúzlo Iskra)
+      summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
     };
@@ -511,11 +511,16 @@ const Engine = (() => {
         p.hp = Math.min(HERO_HP, p.hp + fx.n * m);
         events.push({ type: "heal", pid: p.id, n: fx.n * m });
         break;
-      case "dmgBoost":
-        // Trvalý bonus: všetky výboje (dmgWeakEnemy) a výbuchy (dmgAllEnemies)
-        // hráča dávajú navždy +n damage. Kúzla sa stackujú.
-        p.dmgBoost += fx.n * m;
-        events.push({ type: "dmgBoost", pid: p.id, n: fx.n * m, total: p.dmgBoost });
+      case "dmgCharge":
+        // Jednorazová charga: ĎALŠÍ výboj/výbuch dá +n damage, potom sa minie.
+        // Chargy sa stackujú (spotrebuje ich všetky prvý damage efekt).
+        p.dmgCharge += fx.n * m;
+        events.push({ type: "dmgCharge", pid: p.id, n: fx.n * m, total: p.dmgCharge });
+        break;
+      case "summonCharge":
+        // Jednorazová charga: ĎALŠIE vyvolanie v boji vyvolá +n tokenov navyše.
+        p.summonCharge += fx.n * m;
+        events.push({ type: "summonCharge", pid: p.id, n: fx.n * m, total: p.summonCharge });
         break;
       case "silence":
         // Odložená kliatba: spotrebuje sa na začiatku najbližšieho boja –
@@ -694,7 +699,9 @@ const Engine = (() => {
         // Výboj mieri na NAJSLABŠIEHO (najmenej HP) nepriateľa – kosí tokeny
         // a nekŕmi zbytočne deathrattle telá. Evolve škáluje POČET zásahov
         // (1/2/3), nie silu; proti veľkým telám ostáva slabý (zámer).
-        const hitDmg = fx.n + state[pid].dmgBoost;
+        // Iskra: jednorazová charga zosilní tento výboj a minie sa.
+        const hitDmg = fx.n + state[pid].dmgCharge;
+        state[pid].dmgCharge = 0;
         for (let i = 0; i < m; i++) {
           const enemies = sides[other(pid)].filter(x => x.hp > 0);
           if (!enemies.length) break;
@@ -711,7 +718,8 @@ const Engine = (() => {
         // Výbuch: jedna veľká vlna zasiahne všetkých živých nepriateľov NARAZ
         // (jeden event pre UI – žiadne projektily po jednom). Damage škáluje
         // so stupňom (×1/×2/×3) – držať base nízko, nech nevypne swarm úplne.
-        const dmg = fx.n * m + state[pid].dmgBoost;
+        const dmg = fx.n * m + state[pid].dmgCharge;
+        state[pid].dmgCharge = 0;
         const hits = [];
         for (const t of sides[other(pid)].filter(x => x.hp > 0)) {
           t.hp -= dmg;
@@ -749,30 +757,20 @@ const Engine = (() => {
       case "summon": {
         // Evolvnutá karta vyvoláva SILNEJŠIE tokeny (stupeň rodiča: staty
         // ×2/×4), počet sa so stupňom neškáluje.
-        // fx.grow: token navždy rastie – každé vyvolanie pridá hráčovi do
-        // počítadla (tokenGrowth) +a/+h × stupeň; ďalší token je väčší.
+        // summonCharge (U007): jednorazovo pridá +n tokenov k ĎALŠIEMU
+        // vyvolaniu, potom sa minie.
         // Pretečenie (undead): token, čo sa nezmestí na plnú plochu, rozdelí
         // svoje staty medzi živé vlastné príšerky (rovným dielom, zvyšok náhodne).
         const board = sides[pid];
         const idx = board.indexOf(self);
         const p = state[pid];
-        for (let i = 0; i < fx.n; i++) {
+        const count = fx.n + p.summonCharge;
+        p.summonCharge = 0;
+        for (let i = 0; i < count; i++) {
           const alive = board.filter(x => x.hp > 0);
           const full = alive.length >= BOARD_MAX;
           if (full && Cards.byId[fx.token].race !== "undead") break;
           const tok = makeInst(state, fx.token, Math.min(m, 3), p);
-          // Nazbieraný rast dostane KAŽDÉ vyvolanie tokenu; počítadlo kŕmia
-          // len karty s fx.grow (B007 deathrattle – rast má cenu smrti).
-          const g = p.tokenGrowth[fx.token];
-          if (g) {
-            tok.atk += g.a;
-            tok.hp += g.h;
-            tok.maxHp += g.h;
-          }
-          if (fx.grow) {
-            const cur = g || { a: 0, h: 0 };
-            p.tokenGrowth[fx.token] = { a: cur.a + fx.grow.a * m, h: cur.h + fx.grow.h * m };
-          }
           if (full) {
             overflowStats(state, alive, tok, pid, events);
             continue;
@@ -817,6 +815,16 @@ const Engine = (() => {
         if (def.power && def.power.kw === "deathrattle" && !inst.silenced) {
           events.push({ type: "proc", pid, uid: inst.uid, kw: "deathrattle" });
           applyBattleFx(state, sides, pid, inst, def.power.fx, inst.rank, events);
+        }
+        // Scavenger (raceDeath): živí VLASTNÍ pozorovatelia rastú, keď padne
+        // kamarát ich rasy (napr. B009 „Keď zomrie tvoje Zviera: +2/+2“).
+        for (const f of sides[pid]) {
+          if (f === inst || f.hp <= 0 || f.silenced) continue;
+          const fDef = Cards.byId[f.defId];
+          if (!fDef.power || fDef.power.kw !== "raceDeath") continue;
+          if (fDef.power.fx.race !== def.race) continue;
+          events.push({ type: "proc", pid, uid: f.uid, kw: "raceDeath" });
+          applyBattleFx(state, sides, pid, f, fDef.power.fx, f.rank, events);
         }
         events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
       }

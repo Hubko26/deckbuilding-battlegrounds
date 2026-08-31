@@ -61,8 +61,8 @@ const Bot = (() => {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
       score += (3 - Engine.cardCost(defId)) * 0.8;
       if (def.fx.type === "gold") score += 1.5;
-      // Večná iskra škáluje s počtom vlastných elementálov (výboje/výbuchy)
-      if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
+      // Iskra škáluje s počtom vlastných elementálov (výboje/výbuchy)
+      if (def.fx.type === "dmgCharge") score += (races.elemental || 0) * 0.4;
     }
     return score;
   }
@@ -172,7 +172,7 @@ const Bot = (() => {
         push(Engine.castSpell(state, pid, i, target.uid));
       } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
         push(Engine.castSpell(state, pid, i));
-      } else if (fx.type === "silence" || fx.type === "dmgBoost") {
+      } else if (fx.type === "silence" || fx.type === "dmgCharge") {
         push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
       }
     }
