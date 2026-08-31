@@ -21,7 +21,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
   (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra/Svätožiara/
-  Pierko/Kliatba 2, Srdce 3).
+  Pierko/Kliatba/Zvitok 2, Srdce 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -209,10 +209,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   (keyword `afterSpell`, opakovateľná obdoba battlecry). Kúzla zaberajú
   miesto v ruke a balíčku na úkor príšer – víly túto cenu premieňajú
   na výhodu.
-- Roster: F002 rast +1/+1, F003 buff náhodného kamaráta, F001 potiahni
-  kartu, F004 taunt +1/+2, F005 vráť 1 🪙, F006/F009 vyvolaj Svetlušku 🧚
-  (1/2; v nákupe ide token rovno na plochu), F007 taunt +1/+1 Vílam,
-  F008 (t6) +2/+2 všetkým tvojim príšerkám.
+- Roster: F002 rast +1/+1 **NAVŽDY**, F003 buff náhodného kamaráta,
+  F001 potiahni kartu, F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
+  F006/F009 vyvolaj Svetlušku 🧚 (1/2; v nákupe ide token rovno na
+  plochu), F007 taunt +1/+1 Vílam, F008 (t6) +2/+2 všetkým tvojim
+  príšerkám.
+- **Self-rast víl (F002, F004) je permanentný** (`perm: true`, ako
+  Hopple/Snortlet) – prežije boj aj cyklus balíčka; kúzla do víl sú
+  investícia navždy. Plošné buffy (F003/F007/F008) ostávajú dočasné –
+  za lacné opakovateľné kúzla by permanentný plošný rast snowballoval.
 - F010 (t4, Pri vyložení): **+1/+1 za každé kúzlo zahrané v tejto hre**
   (`spellScale`, počítadlo `p.spellsCast`) – škáluje s celou hrou, ale
   prepočíta sa pri každom vyložení, žiadny trvalý buff (nesnowballuje).
@@ -223,7 +228,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   - **Fénixovo pierko** 🪶 (t3): vybraná príšerka sa po smrti raz vráti
     s 1 životom (`inst.revive`; deathrattle sa pri návrate nespúšťa),
   - **Žabia kliatba** 🐸 (t4): odložená kliatba – v najbližšom boji sa
-    náhodnej súperovej príšerke zmení život na 1 (anti-beast tech).
+    náhodnej súperovej príšerke zmení život na 1 (anti-beast tech),
+  - **Zvitok múdrosti** 📜 (t2, cena 2): dotiahni 2 karty – spell balíčky
+    nemajú telá, Zvitok cykluje k príšerám a spúšťa víly.
+- **Karanténa kúziel**: zahrané kúzlo ide do kôpky až NA KONCI ťahu
+  (`p.spentSpells`). Bez toho by draw (reshuffle kôpky pri prázdnom
+  balíčku) vrátil Zvitok do ruky a zoslanie je zadarmo → nekonečný
+  cyklus draw → Po kúzle → permanentný rast v jednom ťahu.
 - Balance (simulácia): fairy build ~48 % vs beast aj elemental, ~30 % vs
   undead – horda malé vílie telá zožerie; je to vedomý counter (kruh sa
   uzatvára cez elementálov, ktorí hordu kosia).

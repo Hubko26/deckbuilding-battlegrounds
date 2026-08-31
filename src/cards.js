@@ -102,13 +102,13 @@ const Cards = (() => {
 
     // ---------- Víly (Fairy) – schopnosti sa spúšťajú zoslaním kúzla ----------
     M("F002", 1, "fairy", ["Gleamcap", "Sporejester", "Mycelial Monarch"], 1, 2,
-      { power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 1 } } }),
+      { power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 1, perm: true } } }),
     M("F003", 1, "fairy", ["Petalprank", "Briarwink", "Rosethorn Duchess"], 2, 1,
       { power: { kw: "afterSpell", fx: { type: "buffFriend", a: 1, h: 1 } } }),
     M("F001", 2, "fairy", ["Dewwhistle", "Bloomtrill", "Garden Empress"], 2, 3,
       { power: { kw: "afterSpell", fx: { type: "draw", n: 1 } } }),
     M("F004", 2, "fairy", ["Thistletick", "Burrbounce", "Thornball Titan"], 2, 5,
-      { taunt: true, power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 2 } } }),
+      { taunt: true, power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 2, perm: true } } }),
     M("F005", 3, "fairy", ["Moonlace", "Silversilk", "Celestial Weaver"], 3, 5,
       { power: { kw: "afterSpell", fx: { type: "gold", n: 1 } } }),
     M("F006", 3, "fairy", ["Puddlepix", "Lilytrick", "Pondcourt Prince"], 3, 4,
@@ -133,6 +133,10 @@ const Cards = (() => {
       name: { sk: "Umlčanie", cs: "Umlčení", en: "Silence" } },
     { id: "kniha", cost: 2, tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
       name: { sk: "Kniha prianí", cs: "Kniha přání", en: "Wish Book" } },
+    // Draw kúzlo: spell balíčky nemajú telá – Zvitok cykluje k príšerám
+    // a spúšťa víly („Po kúzle“); dotiahnuté karty sa dajú hneď zahrať.
+    { id: "zvitok", cost: 2, tier: 2, emoji: "📜", spell: true, fx: { type: "draw", n: 2 },
+      name: { sk: "Zvitok múdrosti", cs: "Svitek moudrosti", en: "Wisdom Scroll" } },
     { id: "koren", cost: 2, tier: 3, emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
       name: { sk: "Pevný koreň", cs: "Pevný kořen", en: "Sturdy Root" } },
     { id: "vlna", cost: 2, tier: 3, emoji: "🌊", spell: true, fx: { type: "buffAllFriends", a: 1, h: 1 },

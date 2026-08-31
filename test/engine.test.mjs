@@ -537,6 +537,60 @@ test("víly Po kúzle: každé kúzlo spustí schopnosti víl na ploche", () => 
   assert.equal(cap.hp, 3);
 });
 
+test("víly F002/F004: rast Po kúzle je trvalý – prežije boj aj cyklus balíčka", () => {
+  const { state, E, C } = fresh(74);
+  E.startRound(state);
+  const p = state.p1;
+  const cap = E.makeInst(state, "F002", 1); cap.slot = 0; // Po kúzle: +1/+1 NAVŽDY
+  p.board = [cap];
+  p.hand = [E.makeInst(state, "minca", 1)];
+  p.deck = []; p.discard = [];
+  E.castSpell(state, "p1", 0);
+  assert.equal(cap.pa, 1); // trvalý rast na kópii
+  assert.equal(cap.ph, 1);
+  // cyklus balíčka: plocha → kôpka → balíček → ruka; rast musí ostať
+  p.discard.push(E.pileCard(cap));
+  p.board = [];
+  const events = [];
+  E.drawCards(state, p, 2, events);
+  const back = p.hand.find(x => x.defId === "F002");
+  assert.ok(back);
+  assert.equal(back.atk, C.byId["F002"].atk + 1);
+  assert.equal(back.hp, C.byId["F002"].hp + 1);
+});
+
+test("Zvitok múdrosti: dotiahne 2 karty a spustí víly (Po kúzle)", () => {
+  const { state, E } = fresh(75);
+  E.startRound(state);
+  const p = state.p1;
+  const cap = E.makeInst(state, "F002", 1); cap.slot = 0;
+  p.board = [cap];
+  p.hand = [E.makeInst(state, "zvitok", 1)];
+  p.deck = [{ defId: "B001", rank: 1 }, { defId: "B002", rank: 1 }];
+  p.discard = [];
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.hand.length, 2); // zvitok preč, 2 dotiahnuté
+  assert.equal(cap.atk, 2);       // víla zareagovala na kúzlo
+});
+
+test("zahrané kúzlo sa v tom istom ťahu nedá znova dotiahnuť (žiadny nekonečný cyklus)", () => {
+  const { state, E } = fresh(77);
+  E.startRound(state);
+  const p = state.p1;
+  p.board = [];
+  p.hand = [E.makeInst(state, "zvitok", 1)];
+  p.deck = []; p.discard = [];
+  E.castSpell(state, "p1", 0);
+  // zvitok je v karanténe – draw 2 nemá čo potiahnuť, cyklus sa zastaví
+  assert.equal(p.hand.length, 0);
+  assert.equal(p.discard.length, 0);
+  assert.equal(p.spentSpells.length, 1);
+  E.endShopTurn(state, "p1");
+  // až koniec ťahu vráti kúzlo do kôpky
+  assert.equal(p.spentSpells.length, 0);
+  assert.ok(p.discard.some(c => c.defId === "zvitok"));
+});
+
 test("spellScale F010: +1/+1 za každé kúzlo zahrané v tejto hre (pri vyložení)", () => {
   const { state, E, C } = fresh(76);
   E.startRound(state);
@@ -661,13 +715,15 @@ test("kúzla majú vlastnú cenu (minca 1), príšery fixne 3", () => {
   assert.equal(E.buyCommon(state, "p1", 0), null); // na príšeru nemá
 });
 
-test("kúzlo gold: +2 peniaze a ide do discard", () => {
+test("kúzlo gold: +2 peniaze, do kôpky až na konci ťahu (karanténa)", () => {
   const { state, E } = fresh();
   E.startRound(state);
   const p = state.p1;
   p.hand = [E.makeInst(state, "minca", 1)];
   E.castSpell(state, "p1", 0);
   assert.equal(p.money, 5);
+  assert.ok(p.spentSpells.some(c => c.defId === "minca"));
+  E.endShopTurn(state, "p1");
   assert.ok(p.discard.some(c => c.defId === "minca"));
 });
 

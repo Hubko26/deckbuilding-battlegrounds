@@ -55,11 +55,14 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
     Counter na undead hordu, slabé proti veľkým beast telám.
   - **Fairy = Po kúzle motor**: F001 draw, F005 vracia zlato, F006/F009
-    Svetlušky, F008 (t6) +2/+2 všetkým. Kupuj kúzla húfne – každé kúzlo
-    spustí všetky víly na ploche; víly vykladaj PRED hraním kúziel.
-    Kúzla: Svätožiara (Božský štít), Fénixovo pierko (revive 1 HP),
-    Žabia kliatba (HP súperovej príšerky na 1 – anti-beast). Fairy build
-    ~48 % vs beast/elemental, slabý vs undead horda (~30 %).
+    Svetlušky, F008 (t6) +2/+2 všetkým. Self-rast F002/F004 je
+    PERMANENTNÝ (prežije cyklus balíčka) – kúzla do nich sú investícia
+    navždy. Kupuj kúzla húfne – každé kúzlo spustí všetky víly na
+    ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský
+    štít), Fénixovo pierko (revive 1 HP), Žabia kliatba (HP súperovej
+    príšerky na 1 – anti-beast), Zvitok múdrosti (draw 2 – cykluje
+    k telám). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
+    v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Tokeny nedostávajú aury** (`futureRace`) – kostík, Mláďa aj
     Svetluška škálujú len stupňom rodiča.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ

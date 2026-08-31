@@ -114,6 +114,7 @@ const Engine = (() => {
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
+      spentSpells: [], // kúzla zahrané v tomto ťahu – do kôpky až na konci ťahu
       dmgBoost: 0, // trvalo: všetky výboje/výbuchy +n damage (kúzlo Večná iskra)
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
@@ -411,6 +412,10 @@ const Engine = (() => {
   }
 
   // target: uid príšerky na vlastnej ploche (len pre buffTarget).
+  // Zahrané kúzlo NEJDE do kôpky hneď, ale do karantény (spentSpells) –
+  // do kôpky padne až na konci ťahu. Inak by ho draw (reshuffle kôpky)
+  // mohol vrátiť do ruky a Zvitok + víly by točili nekonečný cyklus
+  // permanentných buffov zadarmo v jednom ťahu.
   function castSpell(state, pid, handIdx, targetUid) {
     const p = state[pid];
     const inst = p.hand[handIdx];
@@ -425,14 +430,14 @@ const Engine = (() => {
       if (fx.taunt) target.taunt = true;
       if (fx.shield) target.shield = true; // Božský štít: zablokuje prvé zranenie
       if (fx.revive) target.revive = true; // po smrti sa raz vráti s 1 HP
-      p.discard.push({ defId: inst.defId, rank: 1 });
+      p.spentSpells.push({ defId: inst.defId, rank: 1 });
       const events = [{ type: "spell", pid, defId: inst.defId, targetUid }];
       afterSpellProcs(state, p, events);
       return events;
     }
     if (fx.type === "discover") {
       p.hand.splice(handIdx, 1);
-      p.discard.push({ defId: inst.defId, rank: 1 });
+      p.spentSpells.push({ defId: inst.defId, rank: 1 });
       const options = [];
       for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier));
       state.pendingDiscover = { pid, options };
@@ -440,9 +445,9 @@ const Engine = (() => {
       afterSpellProcs(state, p, events);
       return events;
     }
-    // gold, buffAllFriends, dmgBoost, silence, hex – bez cieľa
+    // gold, buffAllFriends, dmgBoost, silence, hex, draw – bez cieľa
     p.hand.splice(handIdx, 1);
-    p.discard.push({ defId: inst.defId, rank: 1 });
+    p.spentSpells.push({ defId: inst.defId, rank: 1 });
     const events = [{ type: "spell", pid, defId: inst.defId }];
     applyShopFx(state, p, fx, 1, null, events);
     afterSpellProcs(state, p, events);
@@ -640,6 +645,8 @@ const Engine = (() => {
     for (const inst of p.hand.splice(0)) {
       p.discard.push(pileCard(inst));
     }
+    // Kúzla zahrané v tomto ťahu sa až teraz vracajú do kôpky.
+    p.discard.push(...p.spentSpells.splice(0));
     if (pid === state.first) {
       state.active = other(pid);
       events.push(...beginShopTurn(state, state.active));
@@ -951,6 +958,7 @@ const Engine = (() => {
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
+    pileCard, drawCards, // pre testy a nástroje (cyklus balíčka s trvalým rastom)
   };
 })();
 

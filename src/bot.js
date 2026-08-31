@@ -72,6 +72,8 @@ const Bot = (() => {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
       score += (3 - Engine.cardCost(defId)) * 0.8;
       if (def.fx.type === "gold") score += 1.5;
+      // draw cykluje k príšerám – cennejší, čím viac kúziel balíček riedi
+      if (def.fx.type === "draw") score += 1 + ownedSpellCount(p) * 0.2;
       // víly na kúzla reagujú („Po kúzle“) – kúzla sú s nimi hodnotnejšie
       score += (races.fairy || 0) * 0.5;
       // Večná iskra škáluje s počtom vlastných elementálov (výboje/výbuchy)
@@ -203,10 +205,14 @@ const Bot = (() => {
     }
   }
 
+  // Zdrojové kúzla (peniaze + draw) hraj hneď – dotiahnuté karty a zlato
+  // sa dajú v tom istom ťahu použiť.
   function playGoldSpells(state, p, push) {
     for (let i = p.hand.length - 1; i >= 0; i--) {
       const inst = p.hand[i];
-      if (inst && inst.spell && Cards.byId[inst.defId].fx.type === "gold") {
+      if (!inst || !inst.spell) continue;
+      const fxType = Cards.byId[inst.defId].fx.type;
+      if (fxType === "gold" || fxType === "draw") {
         push(Engine.castSpell(state, p.id, i));
       }
     }
