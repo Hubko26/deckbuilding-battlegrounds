@@ -466,6 +466,14 @@ sa na ne triafať prstom. Návrh:
 - Spodný (plne viditeľný) rad má byť ten akčnejší: súkromné karty
   nižších indexov + spell slot; presné rozdelenie doladiť pri
   implementácii.
+- **Vlastné karty sa môžu prekrývať**: ruka aj vlastná plocha počas
+  nákupu nepotrebujú plnú viditeľnosť – karty sa vejárovito prekryjú
+  do strán (horizontálny negatívny margin, vidno ľavý pruh karty s
+  artom), takže aj 5–6 kariet zaberie úzky pruh a uvoľní výšku pre
+  veľký obchod. Detail karty opäť rieši long-press preview; drag & drop
+  funguje z viditeľného pruhu. Poradie prekrytia (z-index) rastie
+  zľava doprava, aktívna/ťahaná karta ide navrch. V boji sa vlastná
+  plocha prekrývať nesmie – tam sú karty veľké a čitateľné (časť 1).
 
 ### 3. Zrušenie spoločného obchodu (LEN súkromná ponuka)
 
