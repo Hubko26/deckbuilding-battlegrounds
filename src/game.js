@@ -697,10 +697,23 @@ function renderShop() {
     } else card.classList.add("disabled");
     priv.appendChild(card);
   });
+  // Špeciálny slot na kúzlo – neberie miesto príšerám.
+  if (p.spellShop) {
+    const s = p.spellShop;
+    const card = cardEl(s.defId, { shop: true });
+    card.classList.add("spell-slot");
+    if (s.frozen) card.classList.add("frozen");
+    if (myTurn && p.money >= Engine.cardCost(s.defId)) {
+      card.classList.add("buyable");
+      attachDrag(card, { type: "spell", idx: 0 });
+    } else card.classList.add("disabled");
+    priv.appendChild(card);
+  }
 
   $("refreshBtn").textContent = `${t(L.refresh)} (${Engine.REFRESH_COST}🪙)`;
   $("refreshBtn").disabled = !myTurn || p.money < Engine.REFRESH_COST;
-  const allFrozen = p.priv.length > 0 && p.priv.every(s => s.frozen);
+  const allFrozen = p.priv.length > 0 && p.priv.every(s => s.frozen) &&
+    (!p.spellShop || p.spellShop.frozen);
   $("freezeBtn").textContent = allFrozen ? t(L.unfreeze) : t(L.freeze);
   $("freezeBtn").classList.toggle("frozen-on", allFrozen);
   $("freezeBtn").disabled = !myTurn;
@@ -887,7 +900,7 @@ function inRect(e, el) {
 // Zvýrazni platné ciele počas ťahania.
 function markZones(src, on) {
   const set = (el, cls) => el.classList.toggle(cls, on);
-  if (src.type === "common" || src.type === "priv") {
+  if (src.type === "common" || src.type === "priv" || src.type === "spell") {
     set($("handEl"), "drop-ok");
     set($("myBoard"), "drop-ok");
     return;
@@ -919,11 +932,11 @@ function endDrag(e) {
   const src = d.src;
   const p = state[MY];
 
-  if (src.type === "common" || src.type === "priv") {
+  if (src.type === "common" || src.type === "priv" || src.type === "spell") {
     if (inRect(e, $("handEl")) || inRect(e, $("myBoard"))) {
-      act(src.type === "common"
-        ? doAction("buyCommon", src.idx)
-        : doAction("buyPrivate", src.idx));
+      act(src.type === "common" ? doAction("buyCommon", src.idx)
+        : src.type === "priv" ? doAction("buyPrivate", src.idx)
+        : doAction("buySpell"));
     }
     return;
   }

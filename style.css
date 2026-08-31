@@ -263,6 +263,13 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   position: absolute; top: -4%; right: -4%; font-size: .7em; padding: .2em .35em;
   border-radius: 999px; box-shadow: 0 1px 0 #9bc; z-index: 4;
 }
+/* Špeciálny slot na kúzlo v obchode – oddelený a fialovo orámovaný. */
+.card.spell-slot {
+  margin-left: 1.2cqh;
+  outline: .3cqh dashed #c084fc;
+  outline-offset: .2cqh;
+  border-radius: 1cqh;
+}
 .card.frozen { filter: drop-shadow(0 0 .5cqh #4fc3f7); }
 .card.frozen::after {
   content: "❄️"; position: absolute; top: 2%; left: 50%; transform: translateX(-50%);

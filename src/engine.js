@@ -68,10 +68,17 @@ const Engine = (() => {
     return inst;
   }
 
-  // Náhodná karta z obchodného poolu (bez tokenov), tier <= limit.
+  // Náhodná PRÍŠERA z obchodného poolu (bez tokenov a kúziel), tier <= limit.
+  // Kúzla majú vlastný slot (rollSpell) – neberú miesto príšerám.
   // Classy nie sú – všetci hráči ťahajú z rovnakého poolu.
   function rollCard(state, tierLimit) {
-    const pool = Cards.DEFS.filter(d => d.tier <= tierLimit);
+    const pool = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell);
+    return pick(pool, state.rng).id;
+  }
+
+  function rollSpell(state, tierLimit) {
+    const pool = Cards.DEFS.filter(d => d.spell && d.tier <= tierLimit);
+    // Tier 1 má vždy aspoň jedno kúzlo (Minca), pool nie je nikdy prázdny.
     return pick(pool, state.rng).id;
   }
 
@@ -92,8 +99,10 @@ const Engine = (() => {
       for (let i = 0; i < 10; i++) p.deck.push({ defId: pick(basics, rng).id, rank: 1 });
     }
     for (let i = 0; i < COMMON_COUNT; i++) state.commons.push(rollCard(state, 1));
-    fillPrivate(state, "p1");
-    fillPrivate(state, "p2");
+    for (const pid of ["p1", "p2"]) {
+      fillPrivate(state, pid);
+      state[pid].spellShop = { defId: rollSpell(state, 1), frozen: false };
+    }
     return state;
   }
 
@@ -104,6 +113,7 @@ const Engine = (() => {
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
       tokenGrowth: {}, // trvalý rast tokenov: { mlada: {a, h} } – každé vyvolanie pridáva
+      spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
     };
   }
 
@@ -138,6 +148,8 @@ const Engine = (() => {
       p.priv = p.priv.filter(s => s.frozen);
       for (const s of p.priv) s.frozen = false;
       fillPrivate(state, pid);
+      if (p.spellShop.frozen) p.spellShop.frozen = false;
+      else p.spellShop.defId = rollSpell(state, p.tier);
     }
     state.active = state.first;
     return beginShopTurn(state, state.active);
@@ -266,6 +278,19 @@ const Engine = (() => {
     return events;
   }
 
+  // Kúpa kúzla zo špeciálneho slotu; slot sa hneď doplní novým kúzlom.
+  function buySpell(state, pid) {
+    const p = state[pid];
+    const defId = p.spellShop.defId;
+    if (p.money < cardCost(defId)) return null;
+    p.money -= cardCost(defId);
+    const events = [{ type: "buy", pid, defId }];
+    acquireCard(state, p, defId, events);
+    p.bought.push(defId);
+    p.spellShop = { defId: rollSpell(state, p.tier), frozen: false };
+    return events;
+  }
+
   // Kúpená karta ide do balíčka; globálny checkEvolve hneď spojí trojicu,
   // ak kúpou vznikla (aj z kópií schovaných v balíčku/kôpke).
   function acquireCard(state, p, defId, events) {
@@ -293,15 +318,17 @@ const Engine = (() => {
     for (let i = 0; i < p.priv.length; i++) {
       if (!p.priv[i].frozen) p.priv[i] = { defId: rollCard(state, p.tier), frozen: false };
     }
+    if (!p.spellShop.frozen) p.spellShop.defId = rollSpell(state, p.tier);
     return [{ type: "refresh", pid }];
   }
 
-  // Zmraz / odmraz celú súkromnú ponuku (štýl Battlegrounds).
+  // Zmraz / odmraz celú súkromnú ponuku vrátane kúzla (štýl Battlegrounds).
   function toggleFreezeAll(state, pid) {
     const p = state[pid];
     if (!p.priv.length) return null;
-    const freeze = p.priv.some(s => !s.frozen);
+    const freeze = p.priv.some(s => !s.frozen) || !p.spellShop.frozen;
     for (const s of p.priv) s.frozen = freeze;
+    p.spellShop.frozen = freeze;
     return [{ type: "freezeAll", pid, frozen: freeze }];
   }
 
@@ -757,7 +784,7 @@ const Engine = (() => {
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST,
     TIER_MAX, privateCount, income, seededRng, cardCost,
-    newGame, startRound, beginShopTurn, buyCommon, buyPrivate, refreshShop,
+    newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
   };

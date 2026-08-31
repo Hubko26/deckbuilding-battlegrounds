@@ -20,7 +20,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
-  (Minca 1, Jablko/Kniha/Koreň/Vlna 2, Srdce 3).
+  (Minca/Štít 1, Jablko/Kniha/Koreň/Vlna 2, Srdce 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -35,6 +35,10 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - **Súkromné karty** – každý hráč má vlastné, súper ich nevidí. Počet:
   `min(tier + 1, 6)` (na tieri 1 sú 2, každý upgrade pridá jednu, strop 6). Tier
   obmedzený vlastným tierom – len tu hráč vidí karty svojho (vyššieho) tieru.
+- **Spell slot** – kúzla majú vlastný súkromný slot (1 kúzlo, vlastný tier),
+  neberú miesto príšerám: spoločné aj súkromné sloty ponúkajú LEN príšery.
+  Slot sa správa ako súkromná karta: refresh ho rolluje, Freeze ho zmrazí,
+  po boji sa rolluje nanovo, kúpa ho hneď doplní novým kúzlom.
 - **Po každom boji sa obchod rolluje nanovo** – celá spoločná ponuka aj všetky
   nezmrazené súkromné karty.
 - **Freeze** ❄ – len na vlastných súkromných kartách; zmrazená karta prežije refresh

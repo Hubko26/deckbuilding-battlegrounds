@@ -99,6 +99,7 @@ const Bot = (() => {
       const options = [];
       state.commons.forEach((defId, i) => options.push({ kind: "common", i, defId }));
       p.priv.forEach((s, i) => options.push({ kind: "priv", i, defId: s.defId }));
+      if (p.spellShop) options.push({ kind: "spell", i: 0, defId: p.spellShop.defId });
       const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
       if (!affordable.length) break;
       options.length = 0;
@@ -110,9 +111,9 @@ const Bot = (() => {
         options.sort((a, b) => cardScore(state, p, b.defId) - cardScore(state, p, a.defId));
         choice = options[0];
       }
-      push(choice.kind === "common"
-        ? Engine.buyCommon(state, pid, choice.i)
-        : Engine.buyPrivate(state, pid, choice.i));
+      push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
+        : choice.kind === "priv" ? Engine.buyPrivate(state, pid, choice.i)
+        : Engine.buySpell(state, pid));
     }
 
     // 4a. Kúzla, ktoré dávajú zdroje/karty (pred vykladaním).

@@ -101,6 +101,8 @@ const Cards = (() => {
     // ---------- Kúzla (spoločné pre všetkých) ----------
     { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
       name: { sk: "Zlatá minca", cs: "Zlatá mince", en: "Gold Coin" } },
+    { id: "stit", cost: 1, tier: 1, emoji: "🛡️", spell: true, fx: { type: "buffTarget", a: 0, h: 0, taunt: true },
+      name: { sk: "Štít", cs: "Štít", en: "Shield" } },
     { id: "jablko", cost: 2, tier: 2, emoji: "🍎", spell: true, fx: { type: "buffTarget", a: 2, h: 2 },
       name: { sk: "Zázračné jablko", cs: "Zázračné jablko", en: "Magic Apple" } },
     { id: "kniha", cost: 2, tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
@@ -176,7 +178,11 @@ const Cards = (() => {
       cs: `+${f.a * m}/+${f.h * m} všem kamarádům`,
       en: `+${f.a * m}/+${f.h * m} to all friends`,
     }),
-    buffTarget: (f, m) => ({
+    buffTarget: (f, m) => (!f.a && !f.h && f.taunt ? {
+      sk: `vybraná príšerka získa Obrancu`,
+      cs: `vybraná příšerka získá Obránce`,
+      en: `give a chosen minion Taunt`,
+    } : {
       sk: `+${f.a * m}/+${f.h * m} vybranej príšerke` + (f.taunt ? " a Obranca" : ""),
       cs: `+${f.a * m}/+${f.h * m} vybrané příšerce` + (f.taunt ? " a Obránce" : ""),
       en: `+${f.a * m}/+${f.h * m} to a chosen minion` + (f.taunt ? " and Taunt" : ""),

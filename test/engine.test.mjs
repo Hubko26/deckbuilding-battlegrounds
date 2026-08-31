@@ -401,6 +401,54 @@ test("prázdny balíček: discard sa zamieša a doťahuje sa ďalej", () => {
   assert.equal(p.discard.length, 0);
 });
 
+test("spell slot: obchod ponúka kúzlo mimo príšerích slotov, kúpa doplní nové", () => {
+  const { state, E, C } = fresh(31);
+  E.startRound(state);
+  const p = state.p1;
+  // Commons a súkromné sloty už kúzla neobsahujú.
+  assert.ok(state.commons.every(id => !C.byId[id].spell));
+  assert.ok(p.priv.every(s => !C.byId[s.defId].spell));
+  assert.ok(C.byId[p.spellShop.defId].spell);
+  assert.equal(C.byId[p.spellShop.defId].tier, 1); // vlastný tier
+  p.money = 10;
+  p.hand = [];
+  const defId = p.spellShop.defId;
+  const ev = E.buySpell(state, "p1");
+  assert.equal(ev[0].type, "buy");
+  assert.ok(p.deck.some(c => c.defId === defId));
+  assert.ok(C.byId[p.spellShop.defId].spell); // slot hneď doplnený kúzlom
+});
+
+test("spell slot: freeze all zmrazí aj kúzlo, prežije refresh aj koniec kola", () => {
+  const { state, E } = fresh(32);
+  E.startRound(state);
+  const p = state.p1;
+  E.toggleFreezeAll(state, "p1");
+  assert.equal(p.spellShop.frozen, true);
+  const kept = p.spellShop.defId;
+  p.money = 5;
+  E.refreshShop(state, "p1");
+  assert.equal(p.spellShop.defId, kept);
+  E.endShopTurn(state, "p1");
+  E.endShopTurn(state, "p2");
+  E.doBattle(state); // prázdne plochy → nové kolo
+  assert.equal(p.spellShop.defId, kept); // prežil
+  assert.equal(p.spellShop.frozen, false); // a rozmrazil sa
+});
+
+test("kúzlo Štít: dá vybranej príšerke Obrancu bez statov", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  const m = E.makeInst(state, "B001", 1); // 2/2 bez tauntu
+  p.board = [m];
+  p.hand = [E.makeInst(state, "stit", 1)];
+  E.castSpell(state, "p1", 0, m.uid);
+  assert.equal(m.taunt, true);
+  assert.equal(m.atk, 2); // staty nezmenené
+  assert.equal(m.hp, 2);
+});
+
 test("kúzla majú vlastnú cenu (minca 1), príšery fixne 3", () => {
   const { state, E } = fresh();
   E.startRound(state);
