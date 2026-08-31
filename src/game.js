@@ -424,7 +424,11 @@ async function runBattle() {
       case "die": {
         const el = cardById(ev.uid);
         Sfx.die();
-        if (el) { el.classList.add("dying"); await sleep(500); el.remove(); }
+        if (el) {
+          // mouseleave po remove() nepríde – zatvor preview padlej karty ručne.
+          if (previewEl && previewEl._srcCard === el) hidePreview();
+          el.classList.add("dying"); await sleep(500); el.remove();
+        }
         break;
       }
       case "summon": {
@@ -694,8 +698,10 @@ function attachPreview(card, instOrId, opts) {
   });
 }
 
+// Funguje aj počas boja a ťahu súpera (busy) – hráč si chce prezrieť
+// súperove príšery; blokuje ho len aktívne ťahanie karty.
 function showPreview(card, instOrId, opts) {
-  if (drag || busy) return;
+  if (drag) return;
   hidePreview();
   const big = cardEl(instOrId, { ...opts, big: true });
   big.classList.add("preview-card");
@@ -717,6 +723,7 @@ function showPreview(card, instOrId, opts) {
   y = Math.max(8, Math.min(y, window.innerHeight - ph - 8));
   big.style.left = x + "px";
   big.style.top = y + "px";
+  big._srcCard = card;
   previewEl = big;
 }
 
