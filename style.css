@@ -152,6 +152,21 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .corner.tr { left: 85.2%; top: 17%; height: 21%; }
 .corner.br { left: 85.2%; top: 57.5%; height: 21%; }
 
+/* Pravidlo dnešnej arény (mutácia): ikonka vľavo medzi súperovým balíčkom
+   a kôpkou; ťuk pripomenie pravidlo v logu. */
+.mutator {
+  position: absolute; left: 4.5%; top: 39.5%; width: 11.8%; height: 17%;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: .4cqh; cursor: pointer; text-align: center;
+  background: rgba(30, 20, 5, .55); border-radius: 1.4cqh;
+  box-shadow: inset 0 0 0 .3cqh rgba(255, 215, 106, .5);
+}
+.mutator .ic { font-size: 4.2cqh; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+.mutator .lb {
+  font-size: 1.4cqh; font-weight: 800; color: #ffd76a; line-height: 1.1;
+  text-shadow: 0 1px 2px #000; padding: 0 .3cqw;
+}
+
 /* ---------- Rozloženie stredu ----------
    Horný rad slotov = OBCHOD počas nákupu; v boji tam hrá súperov board.
    Stred = moje bojujúce karty (veľké). Spodný rad slotov = moja ruka. */
@@ -494,6 +509,9 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .corner.bl { left: 2.1%; top: 65.9%; height: 13.9%; }
   .corner.tr { left: 90.9%; top: 16.9%; height: 14.4%; }
   .corner.br { left: 90.9%; top: 65.9%; height: 13.9%; }
+  .mutator { left: 1.2%; top: 35%; width: 8.8%; height: 26%; }
+  .mutator .ic { font-size: 5.5cqh; }
+  .mutator .lb { font-size: 1.8cqh; }
 
   .board { left: 21.35%; width: 54.9%; }
   .board.opp { top: 11.9%; height: 14.9%; }
@@ -545,6 +563,9 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .corner .ic { font-size: 2.2cqh; }
   .corner .lb { font-size: 1cqh; }
   .corner .ct { font-size: 2.1cqh; }
+  .mutator { left: 1.6%; top: 42%; width: 14%; height: 9%; }
+  .mutator .ic { font-size: 2.6cqh; }
+  .mutator .lb { font-size: 1cqh; }
 
   .board { left: 18.02%; width: 63.6%; gap: 1.8cqw; }
   .board.opp { top: 12.3%; height: 10.9%; }

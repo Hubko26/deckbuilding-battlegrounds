@@ -105,7 +105,7 @@ function applyMods(state, E, pid, idx) {
 function setup(seed) {
   const ctx = loadCtx();
   const E = ctx.Engine;
-  const s = E.newGame(seeded(seed));
+  const s = E.newGame(seeded(seed), null);
   s.round = 10; // mid-game kontext (na boj nemá vplyv okrem logu)
   for (const [pid, idx, board] of [["p1", 1, boardA], ["p2", 2, boardB]]) {
     applyMods(s, E, pid, idx);

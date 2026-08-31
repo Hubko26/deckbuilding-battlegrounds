@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=zoom1">
+  <link rel="stylesheet" href="style.css?v=mut1">
 </head>
 <body>
   <header>
@@ -74,6 +74,8 @@
 
         <div class="corner tl" id="oppDeckBox"></div>
         <div class="corner bl" id="oppDiscardBox"></div>
+        <!-- Pravidlo dnešnej arény (mutácia) – medzi súperovým balíčkom a kôpkou -->
+        <div class="mutator hidden" id="mutatorBox"></div>
         <div class="corner tr" id="myDiscardBox"></div>
         <div class="corner br" id="myDeckBox"></div>
 
@@ -141,9 +143,9 @@
   <script src="src/net.js?v=227ed0b1"></script>
   <script src="src/sfx.js?v=9db2e501"></script>
   <script src="src/cards.js?v=beast2"></script>
-  <script src="src/engine.js?v=drakfix1"></script>
-  <script src="src/bot.js?v=dragon1"></script>
-  <script src="src/claude-bot.js?v=dragon1"></script>
-  <script src="src/game.js?v=zoom1"></script>
+  <script src="src/engine.js?v=mut1"></script>
+  <script src="src/bot.js?v=mut1"></script>
+  <script src="src/claude-bot.js?v=mut1"></script>
+  <script src="src/game.js?v=mut1"></script>
 </body>
 </html>

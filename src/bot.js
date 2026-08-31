@@ -146,7 +146,7 @@ const Bot = (() => {
           choice = options[0];
           // Junk-skip: keď je aj najlepšia ponuka slabá a ostáva refresh
           // + peniaze naň, nekupuj – rovno refreshni a hľadaj lepšie.
-          if (rerolls > 0 && p.money >= Engine.REFRESH_COST + Engine.CARD_COST &&
+          if (rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST &&
               cardScore(state, p, choice.defId, cfg) < (cfg.buyBar || 0)) break;
         }
         push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
@@ -154,7 +154,7 @@ const Bot = (() => {
           : Engine.buySpell(state, pid));
       }
       if (rerolls-- <= 0) break;
-      if (p.money < Engine.REFRESH_COST + Engine.CARD_COST) break;
+      if (p.money < Engine.refreshCost(state) + Engine.CARD_COST) break;
       push(Engine.refreshShop(state, pid));
     }
 

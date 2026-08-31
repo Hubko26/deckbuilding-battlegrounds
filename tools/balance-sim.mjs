@@ -43,7 +43,7 @@ function loadCtx() {
 function playGame(seed, cfg1, cfg2) {
   const ctx = loadCtx();
   const E = ctx.Engine, B = ctx.Bot;
-  const s = E.newGame(seeded(seed));
+  const s = E.newGame(seeded(seed), null);
   Object.assign(s.p1, cfg1);
   Object.assign(s.p2, cfg2);
   E.startRound(s);

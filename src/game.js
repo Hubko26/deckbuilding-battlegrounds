@@ -104,6 +104,50 @@ const L = {
   freeze: { sk: "❄️ Freeze", cs: "❄️ Freeze", en: "❄️ Freeze" },
   unfreeze: { sk: "❄️ Odmraziť", cs: "❄️ Rozmrazit", en: "❄️ Unfreeze" },
   tierUp: { sk: "⬆️ Upgrade", cs: "⬆️ Upgrade", en: "⬆️ Upgrade" },
+  // Mutácie – „Pravidlo dnešnej arény" (engine MUTATORS); e = ikonka.
+  mutTitle: { sk: "Pravidlo arény", cs: "Pravidlo arény", en: "Arena rule" },
+  mutators: {
+    echoDeath: {
+      e: "🔁", sk: "Dvojité ozveny", cs: "Dvojité ozvěny", en: "Double Echoes",
+      d: { sk: "Schopnosti Pri smrti sa spúšťajú 2×.", cs: "Schopnosti Při smrti se spouští 2×.", en: "Deathrattles trigger twice." },
+    },
+    bloodMoon: {
+      e: "🌕", sk: "Krvavý mesiac", cs: "Krvavý měsíc", en: "Blood Moon",
+      d: { sk: "Príšerky, čo prežijú boj, dostanú +1/+1 navždy.", cs: "Příšerky, které přežijí boj, dostanou +1/+1 navždy.", en: "Minions that survive a fight get +1/+1 forever." },
+    },
+    freeRefresh: {
+      e: "🔄", sk: "Rýchly trh", cs: "Rychlý trh", en: "Fast Market",
+      d: { sk: "Refresh obchodu je zadarmo.", cs: "Refresh obchodu je zdarma.", en: "Shop refresh is free." },
+    },
+    twinEvolve: {
+      e: "👯", sk: "Dvojčatá", cs: "Dvojčata", en: "Twins",
+      d: { sk: "Na evolve stačia 2 kópie namiesto 3.", cs: "Na evolve stačí 2 kopie místo 3.", en: "Evolving takes 2 copies instead of 3." },
+    },
+    plenty: {
+      e: "🛒", sk: "Hojnosť", cs: "Hojnost", en: "Abundance",
+      d: { sk: "Obchod ponúka +1 spoločnú kartu.", cs: "Obchod nabízí +1 společnou kartu.", en: "The shop offers +1 shared card." },
+    },
+    richSell: {
+      e: "💰", sk: "Náhly zisk", cs: "Náhlý zisk", en: "Windfall",
+      d: { sk: "Predaj karty dáva 2 mince.", cs: "Prodej karty dává 2 mince.", en: "Selling a card gives 2 coins." },
+    },
+    smallArena: {
+      e: "⚡", sk: "Malá aréna", cs: "Malá aréna", en: "Small Arena",
+      d: { sk: "Hrdinovia majú len 25 ❤️.", cs: "Hrdinové mají jen 25 ❤️.", en: "Heroes have only 25 ❤️." },
+    },
+    marathon: {
+      e: "🐢", sk: "Maratón", cs: "Maraton", en: "Marathon",
+      d: { sk: "Hrdinovia majú 45 ❤️.", cs: "Hrdinové mají 45 ❤️.", en: "Heroes have 45 ❤️." },
+    },
+    gift: {
+      e: "🎁", sk: "Darček", cs: "Dárek", en: "Gift",
+      d: { sk: "Každé kolo dostaneš náhodné kúzlo do ruky.", cs: "Každé kolo dostaneš náhodné kouzlo do ruky.", en: "Each round you get a random spell in hand." },
+    },
+    echoCry: {
+      e: "📣", sk: "Echo battlecry", cs: "Echo battlecry", en: "Echo Battlecry",
+      d: { sk: "Battlecry sa spúšťa 2×.", cs: "Battlecry se spouští 2×.", en: "Battlecries trigger twice." },
+    },
+  },
   discoverTitle: { sk: "📖 Vyber si kartu", cs: "📖 Vyber si kartu", en: "📖 Pick a card" },
   win: { sk: "🏆 Vyhral si!", cs: "🏆 Vyhrál jsi!", en: "🏆 You win!" },
   lose: { sk: "😢 Prehral si…", cs: "😢 Prohrál jsi…", en: "😢 You lose…" },
@@ -418,6 +462,20 @@ function enterGameScreen() {
   $("newGameBtn").classList.remove("hidden");
   $("overOverlay").classList.add("hidden");
   logClear();
+  renderMutator();
+}
+
+// „Pravidlo dnešnej arény" – ikonka vľavo medzi súperovým balíčkom a kôpkou.
+// Ťuk = pripomenutie pravidla v logu (mobil nemá hover na title).
+function renderMutator() {
+  const box = $("mutatorBox");
+  const m = state && state.mutator && L.mutators[state.mutator];
+  if (!m) { box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  box.innerHTML = `<div class="ic">${m.e}</div><div class="lb">${t(m)}</div>`;
+  box.title = `${t(L.mutTitle)}: ${t(m)} – ${t(m.d)}`;
+  box.onclick = () => log(`${m.e} ${t(m)}: ${t(m.d)}`);
+  log(`${m.e} ${t(L.mutTitle)}: ${t(m)} – ${t(m.d)}`);
 }
 
 // ---------- Hra po sieti ----------
@@ -1107,8 +1165,8 @@ function renderShop() {
     priv.appendChild(card);
   }
 
-  $("refreshBtn").textContent = `${t(L.refresh)} (${Engine.REFRESH_COST}🪙)`;
-  $("refreshBtn").disabled = !myTurn || p.money < Engine.REFRESH_COST;
+  $("refreshBtn").textContent = `${t(L.refresh)} (${Engine.refreshCost(state)}🪙)`;
+  $("refreshBtn").disabled = !myTurn || p.money < Engine.refreshCost(state);
   const allFrozen = p.priv.length > 0 && p.priv.every(s => s.frozen) &&
     (!p.spellShop || p.spellShop.frozen);
   $("freezeBtn").textContent = allFrozen ? t(L.unfreeze) : t(L.freeze);

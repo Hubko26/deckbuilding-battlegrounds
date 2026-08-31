@@ -388,6 +388,32 @@ vítané, rozbiehajú evolve).
 
 Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 
+## Mutácie – „Pravidlo dnešnej arény"
+
+Každá hra má **jednu náhodnú mutáciu** – globálne pravidlo, ktoré platí pre
+oboch hráčov a mení hru (novelita + adaptácia). Žrebuje sa **prvým ťahom
+z `state.rng` v `newGame`**, takže multiplayer aj replay ju odvodia zo seedu
+bez extra synchronizácie. `newGame(rng, null)` = bez mutácie (testy, balance
+sim), `newGame(rng, "id")` = vynútená (testy konkrétnej mutácie). UI ukazuje
+ikonku s názvom vľavo medzi súperovým balíčkom a kôpkou (ťuk = pripomenutie
+pravidla v logu); texty v `game.js` (`L.mutators`).
+
+| id | pravidlo |
+|---|---|
+| `echoDeath` | schopnosti Pri smrti sa spúšťajú 2× |
+| `bloodMoon` | príšerky, čo prežijú boj, +1/+1 navždy (pa/ph na kópii) |
+| `freeRefresh` | refresh obchodu zadarmo (`Engine.refreshCost(state)`) |
+| `twinEvolve` | na evolve stačia 2 kópie namiesto 3 |
+| `plenty` | obchod má 4 spoločné karty namiesto 3 |
+| `richSell` | predaj karty dáva 2 mince |
+| `smallArena` | hrdinovia 25 HP |
+| `marathon` | hrdinovia 45 HP |
+| `gift` | každé kolo obaja dostanú náhodné kúzlo do ruky navyše (po draw) |
+| `echoCry` | battlecry sa spúšťa 2× (druhý discover sa preskočí – jeden pending) |
+
+Zemetrasenie (smrť najslabšej príšerky po boji) zamietnuté – plocha sa po
+boji aj tak vyprázdňuje.
+
 ## Technika
 
 - Čistý JS bez frameworku a bez buildu, `index.html` v koreňi repa → GitHub Pages.

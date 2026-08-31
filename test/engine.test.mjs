@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { loadEngine, seeded } from "./harness.mjs";
 
-function fresh(seed = 1) {
+function fresh(seed = 1, mutator = null) {
   const ctx = loadEngine();
-  const state = ctx.Engine.newGame(seeded(seed));
+  const state = ctx.Engine.newGame(seeded(seed), mutator);
   return { ctx, state, E: ctx.Engine, C: ctx.Cards };
 }
 
@@ -1196,7 +1196,7 @@ test("determinizmus: rovnaký seed + rovnaké akcie = identický stav (multiplay
   const play = () => {
     const ctx = loadEngine();
     const E = ctx.Engine;
-    const s = E.newGame(E.seededRng(12345));
+    const s = E.newGame(E.seededRng(12345), null);
     E.startRound(s);
     E.buyCommon(s, "p1", 0);
     if (s.p1.hand.some(c => !c.spell)) E.playMinion(s, "p1", s.p1.hand.findIndex(c => !c.spell));
@@ -1248,4 +1248,113 @@ test("striedanie: v párnom kole začína p2", () => {
   E.doBattle(state);
   assert.equal(state.round, 2);
   assert.equal(state.active, "p2");
+});
+
+// ---------- Mutácie („Pravidlo dnešnej arény") ----------
+
+test("mutácie: newGame bez parametra žrebuje, null = žiadna, string = vynútená", () => {
+  const { state, E } = fresh(5); // fresh posiela null
+  assert.equal(state.mutator, null);
+  const rolled = E.newGame(E.seededRng(5));
+  assert.ok(E.MUTATORS.includes(rolled.mutator));
+  // rovnaký seed → rovnaká mutácia (multiplayer/replay determinizmus)
+  assert.equal(E.newGame(E.seededRng(5)).mutator, rolled.mutator);
+  const forced = E.newGame(E.seededRng(5), "gift");
+  assert.equal(forced.mutator, "gift");
+});
+
+test("mutácia smallArena/marathon: životy hrdinov 25/45", () => {
+  const { E } = fresh();
+  assert.equal(E.newGame(E.seededRng(1), "smallArena").p1.hp, 25);
+  assert.equal(E.newGame(E.seededRng(1), "marathon").p2.hp, 45);
+});
+
+test("mutácia plenty: obchod má 4 spoločné karty", () => {
+  const { state } = fresh(3, "plenty");
+  assert.equal(state.commons.length, 4);
+});
+
+test("mutácia freeRefresh: refresh nič nestojí", () => {
+  const { state, E } = fresh(4, "freeRefresh");
+  E.startRound(state);
+  const p = state[state.active];
+  const before = p.money;
+  assert.equal(E.refreshCost(state), 0);
+  assert.ok(E.refreshShop(state, state.active));
+  assert.equal(p.money, before);
+});
+
+test("mutácia richSell: predaj dáva 2 mince", () => {
+  const { state, E } = fresh(4, "richSell");
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  p.hand = [E.makeInst(state, "B001", 1)];
+  p.hand[0].slot = 0;
+  const before = p.money;
+  E.sellCard(state, pid, "hand", 0);
+  assert.equal(p.money, before + 2);
+});
+
+test("mutácia twinEvolve: 2 kópie sa spoja", () => {
+  const { state, E } = fresh(6, "twinEvolve");
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [1, 2].map(() => E.makeInst(state, "B001", 1));
+  p.hand.forEach((x, i) => x.slot = i);
+  const events = [];
+  E.checkEvolve(state, p, events);
+  assert.ok(events.some(e => e.type === "evolve"));
+  assert.equal(p.hand.length + p.board.length, 1);
+});
+
+test("mutácia echoDeath: deathrattle sa spustí 2× (U001 vyvolá 4 kostíkov)", () => {
+  const { state, E } = fresh(7, "echoDeath");
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const u = E.makeInst(state, "U001", 1); u.slot = 0; // deathrattle: 2× kostík
+  state.p1.board = [u];
+  state.p2.board = [E.makeInst(state, "E010", 1)]; // 9/8 zabije U001
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  const summons = events.filter(e => e.type === "summon" && e.defId === "kostik" && e.pid === "p1");
+  assert.equal(summons.length, 4);
+});
+
+test("mutácia echoCry: battlecry 2× (E008 buffne živly +4/+4 spolu)", () => {
+  const { state, E } = fresh(8, "echoCry");
+  E.startRound(state);
+  const p = state.p1;
+  const pal = E.makeInst(state, "E002", 1); pal.slot = 0; // elemental 1/3
+  p.board = [pal];
+  p.hand = [E.makeInst(state, "E008", 1)]; // battlecry: živly +2/+2
+  E.playMinion(state, "p1", 0);
+  assert.equal(pal.atk, 1 + 4);
+  assert.equal(pal.maxHp, 3 + 4);
+});
+
+test("mutácia bloodMoon: preživší dostane +1/+1 navždy (pa/ph na kópii)", () => {
+  const { state, E } = fresh(9, "bloodMoon");
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const big = E.makeInst(state, "U010", 1); big.slot = 0; // 8/10 prežije
+  state.p1.board = [big];
+  state.p2.board = [E.makeInst(state, "B001", 1)]; // 2/2 zomrie
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  assert.ok(events.some(e => e.type === "bloodMoon" && e.pid === "p1"));
+  const copy = state.p1.discard.find(c => c.defId === "U010");
+  assert.equal(copy.pa, 1);
+  assert.equal(copy.ph, 1);
+});
+
+test("mutácia gift: obaja hráči dostanú raz za kolo kúzlo do ruky navyše", () => {
+  const { state, E } = fresh(10, "gift");
+  E.startRound(state);
+  const active = state.active;
+  const p = state[active];
+  assert.equal(p.hand.filter(x => x.spell).length >= 1, true);
+  const spells = p.hand.filter(x => x.spell).length;
+  // druhé beginShopTurn v TOM ISTOM kole nepridá ďalšie kúzlo
+  E.beginShopTurn(state, active);
+  assert.equal(p.hand.filter(x => x.spell).length, spells);
 });

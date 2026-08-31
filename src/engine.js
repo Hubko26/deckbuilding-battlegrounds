@@ -14,10 +14,28 @@ const Engine = (() => {
   const TIER_BASE_COST = { 2: 5, 3: 7, 4: 8, 5: 9, 6: 10 };
   const BATTLE_CAP = 200; // poistka proti nekonečnému boju
 
+  // Mutácie – „Pravidlo dnešnej arény": jedna na hru, platí pre oboch hráčov.
+  // Žrebuje sa PRVÝM ťahom z rng v newGame → multiplayer aj replay ju odvodia
+  // zo seedu bez extra synchronizácie. Texty a ikonky rieši UI (game.js).
+  const MUTATORS = [
+    "echoDeath",   // deathrattly sa spúšťajú 2×
+    "bloodMoon",   // príšerky, čo prežijú boj, +1/+1 navždy
+    "freeRefresh", // refresh obchodu zadarmo
+    "twinEvolve",  // na evolve stačia 2 kópie
+    "plenty",      // obchod má +1 spoločnú kartu
+    "richSell",    // predaj karty dáva 2 mince
+    "smallArena",  // hrdinovia 25 HP
+    "marathon",    // hrdinovia 45 HP
+    "gift",        // každé kolo obaja dostanú náhodné kúzlo do ruky
+    "echoCry",     // battlecry sa spúšťa 2×
+  ];
+
   const privateCount = tier => Math.min(tier + 1, 6);
   const income = round => Math.min(round + 2, 10);
   // Cena karty: príšery fixne 3, kúzla majú vlastnú cenu (def.cost).
   const cardCost = defId => Cards.byId[defId].cost ?? CARD_COST;
+  // Cena refreshu závisí od mutácie („freeRefresh" = zadarmo).
+  const refreshCost = state => state.mutator === "freeRefresh" ? 0 : REFRESH_COST;
 
   // ---------- Pomocníci ----------
   // Trvalé pozície: karta si drží slot (v ruke aj na ploche), po minutí
@@ -88,19 +106,25 @@ const Engine = (() => {
 
   // ---------- Založenie hry ----------
   // Štartovací balíček: 10 náhodných príšer tieru 1 (duplicity vítané – evolve).
-  function newGame(rng) {
+  // mutatorId: undefined = vyžrebuj z rng (bežná hra), null = bez mutácie
+  // (testy, balance sim), string = vynútená konkrétna mutácia.
+  function newGame(rng, mutatorId) {
+    const mutator = mutatorId === null ? null : (mutatorId ?? pick(MUTATORS, rng));
     const state = {
       rng, uidSeq: 0, round: 0, phase: "shop", active: null, first: "p1",
-      commons: [], winner: null, pendingDiscover: null,
+      commons: [], winner: null, pendingDiscover: null, mutator,
       p1: makePlayer("p1"),
       p2: makePlayer("p2"),
     };
+    if (mutator === "smallArena") { state.p1.hp = 25; state.p2.hp = 25; }
+    if (mutator === "marathon") { state.p1.hp = 45; state.p2.hp = 45; }
     const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell);
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       for (let i = 0; i < 10; i++) p.deck.push({ defId: pick(basics, rng).id, rank: 1 });
     }
-    for (let i = 0; i < COMMON_COUNT; i++) state.commons.push(rollCard(state, 1));
+    const commonCount = COMMON_COUNT + (mutator === "plenty" ? 1 : 0);
+    for (let i = 0; i < commonCount; i++) state.commons.push(rollCard(state, 1));
     for (const pid of ["p1", "p2"]) {
       fillPrivate(state, pid);
       state[pid].spellShop = { defId: rollSpell(state, 1), frozen: false };
@@ -123,6 +147,7 @@ const Engine = (() => {
       hexes: 0, // nabité Žabie kliatby – v najbližšom boji zmenia HP cieľa na 1
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
+      giftRound: 0, // mutácia „gift": v ktorom kole hráč naposledy dostal kúzlo
     };
   }
 
@@ -168,6 +193,15 @@ const Engine = (() => {
     const p = state[pid];
     const events = [];
     drawCards(state, p, HAND_DRAW - p.hand.length, events);
+    // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
+    // aby nebralo miesto normálnemu draw).
+    if (state.mutator === "gift" && p.giftRound !== state.round && p.hand.length < HAND_MAX) {
+      p.giftRound = state.round;
+      const inst = makeInst(state, rollSpell(state, p.tier));
+      inst.slot = freeSlot(p.hand, HAND_MAX);
+      p.hand.push(inst);
+      events.push({ type: "draw", pid: p.id, defId: inst.defId });
+    }
     checkEvolve(state, p, events);
     return events;
   }
@@ -225,7 +259,9 @@ const Engine = (() => {
       p.deck.forEach((c, i) => { if (countable(c.defId, c.rank)) { const e = g(c.defId, c.rank); e.deck.push(i); e.total++; } });
       p.discard.forEach((c, i) => { if (countable(c.defId, c.rank)) { const e = g(c.defId, c.rank); e.discard.push(i); e.total++; } });
 
-      const entry = Object.entries(groups).find(([, v]) => v.total >= 3);
+      // Mutácia „twinEvolve": na spojenie stačia 2 kópie namiesto 3.
+      const NEED = state.mutator === "twinEvolve" ? 2 : 3;
+      const entry = Object.entries(groups).find(([, v]) => v.total >= NEED);
       if (!entry) return;
       const [key, v] = entry;
       const defId = key.slice(0, key.lastIndexOf("|"));
@@ -246,7 +282,7 @@ const Engine = (() => {
       });
       const noteRef = c => consumed.push({ a: c.pa || 0, h: c.ph || 0, pa: c.pa || 0, ph: c.ph || 0 });
 
-      let need = 3, boardSlot = null, hidden = false;
+      let need = NEED, boardSlot = null, hidden = false;
       while (need > 0 && v.board.length) {
         const inst = v.board.shift();
         if (boardSlot === null) boardSlot = inst.slot;
@@ -370,8 +406,8 @@ const Engine = (() => {
 
   function refreshShop(state, pid) {
     const p = state[pid];
-    if (p.money < REFRESH_COST) return null;
-    p.money -= REFRESH_COST;
+    if (p.money < refreshCost(state)) return null;
+    p.money -= refreshCost(state);
     for (let i = 0; i < state.commons.length; i++) {
       state.commons[i] = rollCard(state, commonTierLimit(state));
     }
@@ -438,7 +474,11 @@ const Engine = (() => {
       events.push({ type: "buff", pid, uid: inst.uid, a: fb.a, h: fb.h });
     }
     if (def.power && def.power.kw === "battlecry") {
-      applyShopFx(state, p, def.power.fx, inst.rank, inst, events, target);
+      // Mutácia „echoCry": battlecry sa spustí dvakrát.
+      const times = state.mutator === "echoCry" ? 2 : 1;
+      for (let r = 0; r < times; r++) {
+        applyShopFx(state, p, def.power.fx, inst.rank, inst, events, target);
+      }
     }
     checkEvolve(state, p, events);
     return events;
@@ -554,7 +594,7 @@ const Engine = (() => {
     const inst = p[zone][idx];
     if (!inst) return null;
     p[zone].splice(idx, 1);
-    p.money += SELL_GAIN;
+    p.money += SELL_GAIN + (state.mutator === "richSell" ? 1 : 0);
     return [{ type: "sell", pid, defId: inst.defId }];
   }
 
@@ -595,6 +635,8 @@ const Engine = (() => {
       }
       case "discoverRace": {
         // Drak: Discover karta RASY cieľa (1 z 3, tier <= vlastný).
+        // Druhé echo (mutácia echoCry) by prepísalo čakajúci discover – preskoč.
+        if (state.pendingDiscover) break;
         const t = pickTarget();
         if (!t) break;
         const race = Cards.byId[t.defId].race;
@@ -899,6 +941,18 @@ const Engine = (() => {
       const p = state[pid];
       p.summonCharge = 0;
       p.fightRaceBuffs = {}; // dračie buffy „do konca boja" po boji končia
+      // Mutácia „bloodMoon": preživšie príšerky +1/+1 NAVŽDY (permanentný
+      // rast pa/ph cestuje s kópiou karty cez balíček; tokeny aj tak miznú).
+      if (state.mutator === "bloodMoon") {
+        for (const f of sides[pid]) {
+          if (f.hp <= 0) continue;
+          const inst = p.board.find(x => x.uid === f.uid);
+          if (!inst || Cards.byId[inst.defId].token) continue;
+          inst.pa = (inst.pa || 0) + 1;
+          inst.ph = (inst.ph || 0) + 1;
+          events.push({ type: "bloodMoon", pid, uid: inst.uid, defId: inst.defId });
+        }
+      }
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
         p.discard.push(pileCard(inst));
@@ -1088,8 +1142,12 @@ const Engine = (() => {
         // Poradie pre UI: proc badge + efekt kým je karta ešte vidno, potom smrť.
         const def = Cards.byId[inst.defId];
         if (def.power && def.power.kw === "deathrattle" && !inst.silenced) {
-          events.push({ type: "proc", pid, uid: inst.uid, kw: "deathrattle" });
-          applyBattleFx(state, sides, pid, inst, def.power.fx, inst.rank, events);
+          // Mutácia „echoDeath": deathrattle sa spustí dvakrát.
+          const times = state.mutator === "echoDeath" ? 2 : 1;
+          for (let r = 0; r < times; r++) {
+            events.push({ type: "proc", pid, uid: inst.uid, kw: "deathrattle" });
+            applyBattleFx(state, sides, pid, inst, def.power.fx, inst.rank, events);
+          }
         }
         // Scavenger (raceDeath): živí VLASTNÍ pozorovatelia rastú, keď padne
         // kamarát ich rasy (napr. B009 „Keď zomrie tvoje Zviera: +2/+2“).
@@ -1108,7 +1166,7 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST,
-    TIER_MAX, privateCount, income, seededRng, cardCost,
+    TIER_MAX, MUTATORS, privateCount, income, seededRng, cardCost, refreshCost,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,

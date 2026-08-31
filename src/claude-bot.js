@@ -104,8 +104,9 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         commons: state.commons.map(id => card(id, 1)),
         private: p.priv.map(s => ({ ...card(s.defId, 1), frozen: s.frozen })),
         spell: p.spellShop ? card(p.spellShop.defId, 1) : null,
-        refreshCost: Engine.REFRESH_COST,
+        refreshCost: Engine.refreshCost(state),
       },
+      mutator: state.mutator || null, // „Pravidlo dnešnej arény" – nech ho Claude zohľadní
     };
   }
 

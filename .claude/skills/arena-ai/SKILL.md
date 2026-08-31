@@ -8,6 +8,15 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 ## Pravidlá v skratke
 
 - 1v1 autobattler + deckbuilding. Hrdina má 35 HP; prehráva, kto klesne na 0.
+- **Mutácia („Pravidlo dnešnej arény")**: každá hra má jedno náhodné globálne
+  pravidlo pre oboch hráčov (`state.mutator`, Claude ho dostáva v stave ako
+  `mutator`). Prispôsob stratégiu: `echoDeath` deathrattly 2× (undead/summon
+  raj), `bloodMoon` preživší +1/+1 navždy (stavaj na prežitie), `freeRefresh`
+  refresh zadarmo (rolluj agresívne za trojicami), `twinEvolve` evolve z 2
+  kópií (páry majú hodnotu trojíc), `plenty` 4 spoločné karty, `richSell`
+  predaj za 2 (lacnejšie pivotovanie), `smallArena` 25 HP (tempo > scaling),
+  `marathon` 45 HP (greed/scaling vyhráva), `gift` kúzlo do ruky každé kolo
+  (víly profitujú), `echoCry` battlecry 2× (draci/battlecry telá raj).
 - Kolo = nákupná fáza hráča A → nákupná fáza hráča B → automatický boj.
   V nepárnom kole začína p1, v párnom p2.
 - Peniaze: `min(kolo + 2, 10)` na začiatku kola, neminuté prepadnú.

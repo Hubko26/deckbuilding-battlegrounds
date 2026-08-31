@@ -6,7 +6,7 @@ import { loadEngine, seeded } from "./harness.mjs";
 for (const diff of ["easy", "normal", "hard"]) {
   test(`bot (${diff}): odohrá ťah bez chýb a neminie viac než má`, () => {
     const ctx = loadEngine();
-    const state = ctx.Engine.newGame(seeded(42));
+    const state = ctx.Engine.newGame(seeded(42), null);
     ctx.Engine.startRound(state);
     ctx.Engine.endShopTurn(state, "p1");
     assert.equal(state.active, "p2");
@@ -20,7 +20,7 @@ for (const diff of ["easy", "normal", "hard"]) {
 
 test("celá hra bot vs bot dobehne do konca", () => {
   const ctx = loadEngine();
-  const state = ctx.Engine.newGame(seeded(7));
+  const state = ctx.Engine.newGame(seeded(7), null);
   ctx.Engine.startRound(state);
   let guard = 200;
   while (state.phase !== "over" && guard-- > 0) {
@@ -35,7 +35,7 @@ test("celá hra bot vs bot dobehne do konca", () => {
 test("bot hrá battlecry buffer až po obyčajných príšerách (buff zasiahne plochu)", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;
-  const state = E.newGame(seeded(21));
+  const state = E.newGame(seeded(21), null);
   E.startRound(state);
   E.endShopTurn(state, "p1");
   const p = state.p2;
@@ -54,7 +54,7 @@ test("bot hrá battlecry buffer až po obyčajných príšerách (buff zasiahne 
 test("bot skóre: aura vlastnej rasy má vysokú prioritu", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;
-  const state = E.newGame(seeded(22));
+  const state = E.newGame(seeded(22), null);
   const p = state.p2;
   p.deck = [
     { defId: "U001", rank: 1 }, { defId: "U002", rank: 1 },
@@ -69,7 +69,7 @@ test("bot skóre: aura vlastnej rasy má vysokú prioritu", () => {
 
 test("bot skóre: preferuje dokončenie trojice", () => {
   const ctx = loadEngine();
-  const state = ctx.Engine.newGame(seeded(3));
+  const state = ctx.Engine.newGame(seeded(3), null);
   const p = state.p2;
   p.board = [ctx.Engine.makeInst(state, "B005", 1), ctx.Engine.makeInst(state, "B005", 1)];
   const pairScore = ctx.Bot.cardScore(state, p, "B005");
