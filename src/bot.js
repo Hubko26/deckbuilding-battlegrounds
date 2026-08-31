@@ -67,6 +67,8 @@ const Bot = (() => {
       if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
       // víly („Po kúzle“) rastú s počtom kúziel v balíčku
       if (def.power.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
+      // Iskrička z battlecry kŕmi Po kúzle víly – hodnotnejšia s vílami
+      if (def.power.fx.type === "addSpell") score += 1 + (races.fairy || 0) * 0.5;
     }
     if (def.spell) {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá

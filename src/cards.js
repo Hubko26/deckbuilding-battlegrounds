@@ -111,14 +111,15 @@ const Cards = (() => {
       { taunt: true, power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 2, perm: true } } }),
     M("F005", 3, "fairy", ["Moonlace", "Silversilk", "Celestial Weaver"], 3, 5,
       { power: { kw: "afterSpell", fx: { type: "gold", n: 1 } } }),
-    M("F006", 3, "fairy", ["Puddlepix", "Lilytrick", "Pondcourt Prince"], 3, 4,
-      { power: { kw: "afterSpell", fx: { type: "summon", token: "svetluska", n: 1 } } }),
+    // F006: battlecry dáva jednorazovú Iskričku – kŕmi Po kúzle motor.
+    M("F006", 3, "fairy", ["Puddlepix", "Lilytrick", "Pondcourt Prince"], 4, 4,
+      { power: { kw: "battlecry", fx: { type: "addSpell", spell: "iskricka", n: 1 } } }),
     M("F007", 4, "fairy", ["Acornkin", "Branchbaron", "Oakheart Regent"], 4, 7,
       { taunt: true, power: { kw: "afterSpell", fx: { type: "buffRace", race: "fairy", a: 1, h: 1 } } }),
     M("F010", 4, "fairy", ["Mirrorling", "Glimmerdouble", "Prism Queen"], 3, 4,
       { power: { kw: "battlecry", fx: { type: "spellScale", a: 1, h: 1 } } }),
-    M("F009", 5, "fairy", ["Honeyfizz", "Nectarbolt", "Hivecrown"], 5, 7,
-      { power: { kw: "afterSpell", fx: { type: "summon", token: "svetluska", n: 2 } } }),
+    // F009: vanilka – veľké telo bez schopnosti (ako B001/E002 nižšie tiery).
+    M("F009", 5, "fairy", ["Honeyfizz", "Nectarbolt", "Hivecrown"], 8, 8),
     M("F008", 6, "fairy", ["Starbud", "Cometbloom", "Astral Bouquet"], 7, 8,
       { power: { kw: "afterSpell", fx: { type: "buffAllFriends", a: 2, h: 2 } } }),
 
@@ -159,8 +160,12 @@ const Cards = (() => {
       name: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" } },
     { id: "bublina", tier: 1, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
       name: { sk: "Bublina", cs: "Bublina", en: "Bubble" } },
-    { id: "svetluska", tier: 1, race: "fairy", emoji: "🧚", atk: 1, hp: 2, token: true,
-      name: { sk: "Svetluška", cs: "Světluška", en: "Firefly" } },
+    // Iskrička: jednorazové kúzlo z battlecry F006 – po zoslaní ZMIZNE
+    // (nejde do kôpky ani balíčka), rovnako prepadne nezahraná na konci ťahu.
+    { id: "iskricka", tier: 1, emoji: "✨", spell: true, token: true, cost: 0,
+      fx: { type: "buffTarget", a: 1, h: 0 },
+      name: { sk: "Iskrička", cs: "Jiskřička", en: "Sparkle" },
+      nameAcc: { sk: "Iskričku", cs: "Jiskřičku", en: "Sparkle" } }, // akuzatív („pridaj Iskričku“)
     { id: "mlada", tier: 1, race: "beast", emoji: "🐣", atk: 1, hp: 1, token: true,
       name: { sk: "Mláďa", cs: "Mládě", en: "Cub" } },
   ];
@@ -282,13 +287,20 @@ const Cards = (() => {
         cs: `vyvolej ${f.n}× ${byId[f.token].name.cs} (${a}/${h})`,
         en: `summon ${f.n}× ${byId[f.token].name.en} (${a}/${h})`,
       };
-      // Pretečenie: undead tokeny v boji, Svetluška v nákupe (víly).
-      if (byId[f.token].race === "undead" || f.token === "svetluska") {
+      if (byId[f.token].race === "undead") {
         base.sk += `; ak sa nezmestí, jeho staty dostanú kamaráti`;
         base.cs += `; když se nevejde, jeho staty dostanou kamarádi`;
         base.en += `; if it doesn't fit, friends get its stats`;
       }
       return base;
+    },
+    addSpell: (f, m) => {
+      const n = byId[f.spell].nameAcc || byId[f.spell].name;
+      return {
+        sk: `pridaj do ruky ${m > 1 ? m + "× " : ""}${n.sk} (jednorazové kúzlo)`,
+        cs: `přidej do ruky ${m > 1 ? m + "× " : ""}${n.cs} (jednorázové kouzlo)`,
+        en: `add ${m > 1 ? m + "× " : ""}${byId[f.spell].name.en} to your hand (one-shot spell)`,
+      };
     },
     summonCharge: (f, m) => ({
       sk: `tvoje ďalšie vyvolanie v boji vyvolá o ${f.n * m} viac`,
@@ -346,6 +358,10 @@ const Cards = (() => {
       parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${fxText(def.power.fx, m)}.`);
     }
     if (def.spell) { const s = fxText(def.fx, 1); parts.push(s[0].toUpperCase() + s.slice(1) + "."); }
+    if (def.spell && def.token) {
+      const note = { sk: "Jednorazové – po ťahu zmizne.", cs: "Jednorázové – po tahu zmizí.", en: "One-shot – vanishes after the turn." };
+      parts.push(note[lang]);
+    }
     return parts.join(" ");
   }
 

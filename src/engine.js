@@ -430,14 +430,14 @@ const Engine = (() => {
       if (fx.taunt) target.taunt = true;
       if (fx.shield) target.shield = true; // Božský štít: zablokuje prvé zranenie
       if (fx.revive) target.revive = true; // po smrti sa raz vráti s 1 HP
-      p.spentSpells.push({ defId: inst.defId, rank: 1 });
+      if (!def.token) p.spentSpells.push({ defId: inst.defId, rank: 1 }); // jednorazové kúzla miznú
       const events = [{ type: "spell", pid, defId: inst.defId, targetUid }];
       afterSpellProcs(state, p, events);
       return events;
     }
     if (fx.type === "discover") {
       p.hand.splice(handIdx, 1);
-      p.spentSpells.push({ defId: inst.defId, rank: 1 });
+      if (!def.token) p.spentSpells.push({ defId: inst.defId, rank: 1 }); // jednorazové kúzla miznú
       const options = [];
       for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier));
       state.pendingDiscover = { pid, options };
@@ -496,7 +496,8 @@ const Engine = (() => {
     const inst = p[zone][idx];
     if (!inst) return null;
     p[zone].splice(idx, 1);
-    p.discard.push(pileCard(inst));
+    // Jednorazové kúzlo (Iskrička) nejde do kôpky – odhodením zmizne.
+    if (!Cards.byId[inst.defId].token) p.discard.push(pileCard(inst));
     return [{ type: "discard", pid, defId: inst.defId }];
   }
 
@@ -592,21 +593,16 @@ const Engine = (() => {
         p.hexes += fx.n * m;
         events.push({ type: "hexPending", pid: p.id, total: p.hexes });
         break;
-      case "summon": {
-        // Vyvolanie v nákupnej fáze (víly „Po kúzle“): token ide rovno na
-        // plochu a bojuje v najbližšom boji. Plná plocha = Pretečenie:
-        // token rozdelí svoje staty živým kamarátom (inak by F006/F009
-        // boli v late game s plnou plochou mŕtve schopnosti).
-        for (let i = 0; i < fx.n; i++) {
-          const tok = makeInst(state, fx.token, Math.min(m, 3), p);
-          if (p.board.length >= BOARD_MAX) {
-            overflowStats(state, p.board, tok, p.id, events);
-            continue;
-          }
-          tok.slot = freeSlot(p.board, BOARD_MAX);
-          p.board.push(tok);
-          sortBoard(p);
-          events.push({ type: "summon", pid: p.id, uid: tok.uid, defId: fx.token, slot: tok.slot, rank: tok.rank, atk: tok.atk, hp: tok.hp });
+      case "addSpell": {
+        // Jednorazové kúzlo do ruky (battlecry F006): nejde do balíčka,
+        // po zoslaní aj po konci ťahu zmizne. Evolve škáluje počet (1/2/3).
+        // Plná ruka = zvyšok prepadne.
+        for (let i = 0; i < fx.n * m; i++) {
+          if (p.hand.length >= HAND_MAX) break;
+          const sp = makeInst(state, fx.spell, 1);
+          sp.slot = freeSlot(p.hand, HAND_MAX);
+          p.hand.push(sp);
+          events.push({ type: "addSpell", pid: p.id, defId: fx.spell });
         }
         break;
       }
@@ -646,8 +642,9 @@ const Engine = (() => {
         applyShopFx(state, p, def.power.fx, inst.rank, inst, events);
       }
     }
-    // Nezahrané karty z ruky do discard pile.
+    // Nezahrané karty z ruky do discard pile (jednorazové kúzla miznú).
     for (const inst of p.hand.splice(0)) {
+      if (Cards.byId[inst.defId].token) continue;
       p.discard.push(pileCard(inst));
     }
     // Kúzla zahrané v tomto ťahu sa až teraz vracajú do kôpky.

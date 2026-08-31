@@ -607,34 +607,37 @@ test("spellScale F010: +1/+1 za každé kúzlo zahrané v tejto hre (pri vylože
   assert.equal(m.hp, C.byId["F010"].hp + 2);
 });
 
-test("víly Po kúzle: summon víla vyvolá Svetlušku na plochu v nákupe", () => {
-  const { state, E } = fresh(72);
+test("F006 battlecry: pridá Iskričku do ruky; jednorazová – po zoslaní aj po ťahu zmizne", () => {
+  const { state, E, C } = fresh(72);
   E.startRound(state);
   const p = state.p1;
-  const pix = E.makeInst(state, "F006", 1); pix.slot = 0; // Po kúzle: vyvolaj Svetlušku
-  p.board = [pix];
-  p.hand = [E.makeInst(state, "minca", 1)];
-  E.castSpell(state, "p1", 0);
-  const tok = p.board.find(x => x.defId === "svetluska");
-  assert.ok(tok);
-  assert.equal(tok.atk, 1);
+  p.board = [];
+  p.hand = [E.makeInst(state, "F006", 1)];
+  p.deck = []; p.discard = [];
+  E.playMinion(state, "p1", 0);
+  const spark = p.hand.find(x => x.defId === "iskricka");
+  assert.ok(spark && spark.spell);
+  // zoslanie: +1/+0 vybranej príšerke, kúzlo zmizne (nie kôpka, nie karanténa)
+  const idx = p.hand.indexOf(spark);
+  E.castSpell(state, "p1", idx, p.board[0].uid);
+  assert.equal(p.board[0].atk, C.byId["F006"].atk + 1);
+  assert.equal(p.spentSpells.length, 0);
+  assert.equal(p.discard.filter(c => c.defId === "iskricka").length, 0);
+  // nezahraná Iskrička na konci ťahu prepadne
+  p.hand = [E.makeInst(state, "iskricka", 1)];
+  E.endShopTurn(state, "p1");
+  assert.equal(p.discard.filter(c => c.defId === "iskricka").length, 0);
 });
 
-test("víly summon: plná plocha = Pretečenie, staty Svetlušky dostanú kamaráti", () => {
-  const { state, E } = fresh(78);
+test("Iskrička spúšťa Po kúzle víly (kŕmi vlastný motor)", () => {
+  const { state, E } = fresh(79);
   E.startRound(state);
   const p = state.p1;
-  p.board = [1, 2, 3, 4, 5].map((_, i) => Object.assign(E.makeInst(state, "B001", 1), { slot: i }));
-  const pix = p.board[0];
-  Object.assign(pix, E.makeInst(state, "F006", 1), { slot: 0 }); // víla v plnej ploche
-  p.board[0] = pix;
-  p.hand = [E.makeInst(state, "minca", 1)];
-  const statsBefore = p.board.reduce((s, x) => s + x.atk + x.hp, 0);
-  const events = E.castSpell(state, "p1", 0);
-  assert.equal(p.board.length, 5); // token sa nezmestil
-  assert.ok(events.some(e => e.type === "overflow"));
-  const statsAfter = p.board.reduce((s, x) => s + x.atk + x.hp, 0);
-  assert.equal(statsAfter, statsBefore + 1 + 2); // 1/2 Svetluška rozdelená
+  const cap = E.makeInst(state, "F002", 1); cap.slot = 0;
+  p.board = [cap];
+  p.hand = [E.makeInst(state, "iskricka", 1)];
+  E.castSpell(state, "p1", 0, cap.uid);
+  assert.equal(cap.atk, 1 + 1 + 1); // základ 1 + Iskrička +1 + vlastný rast +1
 });
 
 test("Svätožiara: Božský štít zablokuje prvé zranenie, potom praskne", () => {
