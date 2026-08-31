@@ -1184,7 +1184,8 @@ function cardEl(instOrId, opts) {
 // vidno ho podľa farby kryštálu na ráme karty.
 function raceLine(def, rank) {
   if (def.spell) return t(L.spellWord);
-  return t(Cards.RACES[def.race]);
+  // Ikona rasy pred menom – rasu vidno na prvý pohľad aj na malej karte.
+  return `${Cards.RACE_ICON[def.race] || ""} ${t(Cards.RACES[def.race])}`;
 }
 
 // ---------- Hover preview – zväčšená čitateľná karta ----------

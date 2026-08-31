@@ -231,11 +231,15 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   text-transform: uppercase; color: #3a2a10; letter-spacing: .02em;
   pointer-events: none;
 }
-/* Rasa: úplne dole medzi útokom (kruh) a životom (srdce). */
+/* Rasa: pilulka dole medzi útokom (kruh) a životom (srdce) – tmavý podklad
+   + biely text + ikona, nech je rasa čitateľná na každom arte aj v preview. */
 .card .race {
-  position: absolute; left: 25%; right: 25%; bottom: 4.5%;
-  font-size: .5em; font-weight: 800; letter-spacing: .08em;
-  text-transform: uppercase; color: #5a4426; text-shadow: 0 1px 1px #ffeccb;
+  position: absolute; left: 50%; transform: translateX(-50%); bottom: 4.2%;
+  max-width: 64%; white-space: nowrap; overflow: hidden;
+  font-size: .5em; font-weight: 800; letter-spacing: .05em;
+  text-transform: uppercase; color: #fff; text-shadow: 0 1px 2px #000;
+  background: rgba(18, 24, 40, .75); border-radius: 999px;
+  padding: .15em .6em;
   pointer-events: none;
 }
 .card .tx {
