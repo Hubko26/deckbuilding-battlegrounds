@@ -312,10 +312,11 @@ const Cards = (() => {
       cs: `všechny tvé výboje a výbuchy (navždy) dávají +${f.n * m} damage`,
       en: `all your zaps and explosions (forever) deal +${f.n * m} damage`,
     }),
-    spellScale: (f, m) => ({
-      sk: `+${f.a * m}/+${f.h * m} pre seba za každé kúzlo, ktoré si v tejto hre zahral`,
-      cs: `+${f.a * m}/+${f.h * m} pro sebe za každé kouzlo, které jsi v této hře zahrál`,
-      en: `+${f.a * m}/+${f.h * m} for itself for each spell you've cast this game`,
+    // Bonus za kúzlo sa neškáluje stupňom – evolve rastie cez základné staty.
+    spellScale: (f) => ({
+      sk: `+${f.a}/+${f.h} pre seba za každé kúzlo, ktoré si v tejto hre zahral`,
+      cs: `+${f.a}/+${f.h} pro sebe za každé kouzlo, které jsi v této hře zahrál`,
+      en: `+${f.a}/+${f.h} for itself for each spell you've cast this game`,
     }),
     hex: () => ({
       sk: "v najbližšom boji sa náhodnej súperovej príšerke zmení život na 1",

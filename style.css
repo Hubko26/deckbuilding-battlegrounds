@@ -354,6 +354,27 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .win-box button { margin-top: 12px; }
 @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
+/* ---------- Trash-talk bublina bota (nad jeho bannerom) ---------- */
+.taunt-bubble {
+  position: absolute; left: 50%; top: 11.5%; transform: translateX(-50%);
+  background: #fff; color: #123; font-weight: 700; font-size: 2.2cqh;
+  padding: .9cqh 1.8cqh; border-radius: 2cqh; max-width: 62%;
+  box-shadow: 0 .4cqh 1.2cqh rgba(0,0,0,.35); z-index: 40;
+  animation: tauntPop .25s ease-out; pointer-events: none; text-align: center;
+  line-height: 1.25;
+}
+/* vlastné keyframes: musia niesť aj translateX, inak animácia zruší centrovanie */
+@keyframes tauntPop {
+  from { transform: translateX(-50%) scale(.5); opacity: 0; }
+  to { transform: translateX(-50%) scale(1); opacity: 1; }
+}
+.taunt-bubble::before {
+  content: ""; position: absolute; top: -1.1cqh; left: 50%;
+  transform: translateX(-50%);
+  border: .7cqh solid transparent; border-bottom-color: #fff; border-top: 0;
+}
+.taunt-bubble.out { opacity: 0; transition: opacity .45s; }
+
 /* ---------- Boj – animácie ---------- */
 .fight-banner {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);

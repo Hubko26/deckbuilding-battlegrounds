@@ -542,10 +542,12 @@ const Engine = (() => {
       case "spellScale": {
         // +a/+h pre seba za KAŽDÉ kúzlo zahrané v tejto hre – prepočíta sa
         // pri každom vyložení, žiadny trvalý buff (nesnowballuje cez kópie).
+        // Bonus sa NEnásobí stupňom (evolve už zdvojnásobuje základné staty) –
+        // so škálovaním ×2/×3 za kúzlo mala karta 36/36 v 5. kole.
         const n = p.spellsCast;
         if (n > 0) {
-          buff(self, fx.a * m * n, fx.h * m * n);
-          events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * m * n, h: fx.h * m * n });
+          buff(self, fx.a * n, fx.h * n);
+          events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * n, h: fx.h * n });
         }
         break;
       }

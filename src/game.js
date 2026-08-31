@@ -257,6 +257,9 @@ function doAction(name, ...args) {
   const ev = Engine[name](state, MY, ...args);
   if (ev) GameLog.push(MY, name, args);
   if (ev && mode === "net") Net.sendAction(name, args);
+  // Trash-talk bota na hráčove rozhodnutia (len proti botovi).
+  if (ev && name === "sellCard") botTaunt("sell", 0.5);
+  if (ev && name === "refreshShop") botTaunt("refresh", 0.5);
   return ev;
 }
 
@@ -436,9 +439,57 @@ async function driveFlow() {
   }
 }
 
+// ---------- Trash-talk bota ----------
+// Bot občas hodí bublinu nad svoj banner – vtipné doberanie hráčovych
+// rozhodnutí (detská hra: štipľavé, nie zlé). Náhoda tu NEjde cez state.rng –
+// je to čisto UI, determinizmus enginu a replay ostávajú nedotknuté.
+const TAUNTS = {
+  turn: {
+    sk: ["Sleduj majstra. A rob si poznámky. 📝", "Môj procesor beží na 2 %. Aj tak stačí.", "Ty premýšľaš? Ja počítam. Rozdiel uvidíš o kolo.", "Teraz sa hrá stratégia. Konečne."],
+    cs: ["Sleduj mistra. A dělej si poznámky. 📝", "Můj procesor běží na 2 %. I tak to stačí.", "Ty přemýšlíš? Já počítám. Rozdíl uvidíš za kolo.", "Teď se hraje strategie. Konečně."],
+    en: ["Watch the master. Take notes. 📝", "My CPU runs at 2%. Still enough.", "You think? I compute. You'll see the difference next round.", "Time for actual strategy. Finally."],
+  },
+  win: {
+    sk: ["Au! To bolo vypočítané. Na rozdiel od tvojho ťahu. 😎", "Tvoje príšerky bojovali statočne. Proti tvojej stratégii.", "Chceš návod? Píše sa v ňom: nehraj zle. 😜", "Ja mám procesor, ty máš... no, uvidíme nabudúce."],
+    cs: ["Au! To bylo vypočítané. Na rozdíl od tvého tahu. 😎", "Tvé příšerky bojovaly statečně. Proti tvé strategii.", "Chceš návod? Píše se v něm: nehraj špatně. 😜", "Já mám procesor, ty máš... no, uvidíme příště."],
+    en: ["Ouch! That was calculated. Unlike your turn. 😎", "Your minions fought bravely. Against your strategy.", "Want a manual? It says: don't play badly. 😜", "I have a CPU, you have... well, see you next round."],
+  },
+  lose: {
+    sk: ["Pff! Šťastena. Slnko mi svietilo do senzorov. ☀️", "To sa neráta, mal som otvorených priveľa tabov.", "Náhoda. Štatistika je stále na mojej strane.", "Aj pokazené hodiny majú dvakrát denne pravdu."],
+    cs: ["Pff! Klika. Slunce mi svítilo do senzorů. ☀️", "To se nepočítá, měl jsem otevřeno moc tabů.", "Náhoda. Statistika je pořád na mé straně.", "I rozbité hodiny mají dvakrát denně pravdu."],
+    en: ["Pff! Luck. The sun was in my sensors. ☀️", "Doesn't count, I had too many tabs open.", "Coincidence. Statistics are still on my side.", "Even a broken clock is right twice a day."],
+  },
+  sell: {
+    sk: ["Kúpiš za 3, predáš za 1. Ekonóm roka! 📉", "Tá karta si zaslúžila lepšieho majiteľa. Mňa.", "Predal si to? Odvážne. Hlúpe, ale odvážne."],
+    cs: ["Koupíš za 3, prodáš za 1. Ekonom roku! 📉", "Ta karta si zasloužila lepšího majitele. Mě.", "Prodals to? Odvážné. Hloupé, ale odvážné."],
+    en: ["Buy for 3, sell for 1. Economist of the year! 📉", "That card deserved a better owner. Me.", "You sold that? Bold. Silly, but bold."],
+  },
+  refresh: {
+    sk: ["Točíš obchod ako práčku. Stratégiu ti nevyperie. 🌀", "Refresh mozgu za 1 zlatku bohužiaľ nemajú.", "Hľadáš niečo? Skús hľadať plán. 🔍"],
+    cs: ["Točíš obchod jako pračku. Strategii ti nevypere. 🌀", "Refresh mozku za 1 zlaťák bohužel nemají.", "Hledáš něco? Zkus hledat plán. 🔍"],
+    en: ["Spinning the shop like a washing machine. It won't wash you a strategy. 🌀", "Sadly no brain-refresh for 1 gold.", "Looking for something? Try looking for a plan. 🔍"],
+  },
+};
+let lastTauntAt = 0;
+function botTaunt(kind, chance) {
+  if (mode !== "bot" || !state || state.phase === "over") return;
+  const now = Date.now();
+  if (now - lastTauntAt < 6000) return; // nespamuj
+  if (Math.random() > chance) return;
+  const pool = TAUNTS[kind][I18N.lang] || TAUNTS[kind].sk;
+  lastTauntAt = now;
+  document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
+  const el = document.createElement("div");
+  el.className = "taunt-bubble";
+  el.textContent = pool[Math.floor(Math.random() * pool.length)];
+  $("stage").appendChild(el);
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, 3800);
+}
+
 async function runBotTurn() {
   busy = true;
   renderAll();
+  botTaunt("turn", 0.3);
   await sleep(600);
   GameLog.push(OPP, "botTurn", [difficulty]);
   const events = Bot.botTurn(state, OPP, difficulty);
@@ -707,6 +758,7 @@ async function runBattle() {
         floatText(chip, `-${ev.dmg}`);
         renderHero(chip, { ...state[ev.pid], hp: ev.hp });
         log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
+        botTaunt(ev.pid === MY ? "win" : "lose", 0.8);
         await sleep(700);
         break;
       }

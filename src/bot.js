@@ -7,10 +7,14 @@
 
 const Bot = (() => {
   // Nastavenie obtiažnosti heuristiky.
+  // refreshHunt: koľkokrát za ťah smie bot refreshnúť obchod, keď mu po
+  // nákupoch ostávajú peniaze (lov trojíc). raceFocus: váha držania sa
+  // dominantnej rasy pri nákupe. buyBar: pod toto skóre hard nekupuje,
+  // kým môže refreshovať – ladené simuláciou (81 % vs normal bot).
   const DIFF = {
-    easy: { randomBuy: true, upgradeAggro: 0, smartSpells: false },
-    normal: { randomBuy: false, upgradeAggro: 1, smartSpells: true },
-    hard: { randomBuy: false, upgradeAggro: 2, smartSpells: true },
+    easy: { randomBuy: true, upgradeAggro: 0, smartSpells: false, refreshHunt: 0, raceFocus: 0.5, buyBar: 0 },
+    normal: { randomBuy: false, upgradeAggro: 1, smartSpells: true, refreshHunt: 0, raceFocus: 0.5, buyBar: 0 },
+    hard: { randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 6, raceFocus: 1.0, buyBar: 10 },
   };
 
   // Koľko kópií karty bot vlastní (všade) – kvôli skladaniu trojíc.
@@ -47,7 +51,7 @@ const Bot = (() => {
     return n;
   }
 
-  function cardScore(state, p, defId) {
+  function cardScore(state, p, defId, cfg) {
     const def = Cards.byId[defId];
     let score = def.tier;
     const owned = ownedCount(p, defId);
@@ -57,8 +61,8 @@ const Bot = (() => {
     }
     const races = ownedRaceCounts(p);
     if (def.race) {
-      // drž sa dominantnej rasy
-      score += (races[def.race] || 0) * 0.5;
+      // drž sa dominantnej rasy (hard drží silnejšie)
+      score += (races[def.race] || 0) * ((cfg && cfg.raceFocus) || 0.5);
     }
     if (def.power) {
       const fx = def.power.fx;
@@ -73,6 +77,8 @@ const Bot = (() => {
     if (def.spell) {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
       score += (3 - Engine.cardCost(defId)) * 0.8;
+      // kúzla nedávajú telá – priveľa kúziel riedi balíček (víly to vrátia)
+      score -= Math.max(0, ownedSpellCount(p) - 3) * 0.6;
       if (def.fx.type === "gold") score += 1.5;
       // draw cykluje k príšerám – cennejší, čím viac kúziel balíček riedi
       if (def.fx.type === "draw") score += 1 + ownedSpellCount(p) * 0.2;
@@ -117,26 +123,39 @@ const Bot = (() => {
     }
 
     // 3. Nakupuj, kým sú peniaze. Easy kupuje náhodne, inak podľa skóre.
-    let guard = 20;
-    while (guard-- > 0) {
-      const options = [];
-      state.commons.forEach((defId, i) => options.push({ kind: "common", i, defId }));
-      p.priv.forEach((s, i) => options.push({ kind: "priv", i, defId: s.defId }));
-      if (p.spellShop) options.push({ kind: "spell", i: 0, defId: p.spellShop.defId });
-      const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
-      if (!affordable.length) break;
-      options.length = 0;
-      options.push(...affordable);
-      let choice;
-      if (cfg.randomBuy) {
-        choice = options[Math.floor(state.rng() * options.length)];
-      } else {
-        options.sort((a, b) => cardScore(state, p, b.defId) - cardScore(state, p, a.defId));
-        choice = options[0];
+    //    Hard: keď po vykúpení ponuky ostávajú peniaze na refresh + kartu,
+    //    refreshne obchod a nakupuje znova (lov trojíc a lepších kariet) –
+    //    neminuté peniaze aj tak na konci kola prepadnú.
+    let rerolls = cfg.refreshHunt || 0;
+    for (;;) {
+      let guard = 20;
+      while (guard-- > 0) {
+        const options = [];
+        state.commons.forEach((defId, i) => options.push({ kind: "common", i, defId }));
+        p.priv.forEach((s, i) => options.push({ kind: "priv", i, defId: s.defId }));
+        if (p.spellShop) options.push({ kind: "spell", i: 0, defId: p.spellShop.defId });
+        const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
+        if (!affordable.length) break;
+        options.length = 0;
+        options.push(...affordable);
+        let choice;
+        if (cfg.randomBuy) {
+          choice = options[Math.floor(state.rng() * options.length)];
+        } else {
+          options.sort((a, b) => cardScore(state, p, b.defId, cfg) - cardScore(state, p, a.defId, cfg));
+          choice = options[0];
+          // Junk-skip: keď je aj najlepšia ponuka slabá a ostáva refresh
+          // + peniaze naň, nekupuj – rovno refreshni a hľadaj lepšie.
+          if (rerolls > 0 && p.money >= Engine.REFRESH_COST + Engine.CARD_COST &&
+              cardScore(state, p, choice.defId, cfg) < (cfg.buyBar || 0)) break;
+        }
+        push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
+          : choice.kind === "priv" ? Engine.buyPrivate(state, pid, choice.i)
+          : Engine.buySpell(state, pid));
       }
-      push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
-        : choice.kind === "priv" ? Engine.buyPrivate(state, pid, choice.i)
-        : Engine.buySpell(state, pid));
+      if (rerolls-- <= 0) break;
+      if (p.money < Engine.REFRESH_COST + Engine.CARD_COST) break;
+      push(Engine.refreshShop(state, pid));
     }
 
     // 4a. Kúzla, ktoré dávajú zdroje/karty (pred vykladaním).
@@ -151,7 +170,7 @@ const Bot = (() => {
           let bestIdx = Math.floor(state.rng() * opts.length);
           if (cfg.smartSpells) {
             bestIdx = 0;
-            opts.forEach((d, j) => { if (cardScore(state, p, d) > cardScore(state, p, opts[bestIdx])) bestIdx = j; });
+            opts.forEach((d, j) => { if (cardScore(state, p, d, cfg) > cardScore(state, p, opts[bestIdx], cfg)) bestIdx = j; });
           }
           push(Engine.pickDiscover(state, pid, bestIdx));
         }

@@ -227,6 +227,8 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - F010 (t4, Pri vyložení): **+1/+1 za každé kúzlo zahrané v tejto hre**
   (`spellScale`, počítadlo `p.spellsCast`) – škáluje s celou hrou, ale
   prepočíta sa pri každom vyložení, žiadny trvalý buff (nesnowballuje).
+  Bonus za kúzlo sa **nenásobí stupňom** (evolve rastie len cez základné
+  staty ×2/×4) – so škálovaním ×2/×3 za kúzlo mala karta 36/36 v 5. kole.
 - Podporné kúzla (pre všetkých, ale víly z nich ťažia dvakrát):
   - **Svätožiara** 😇 (t3): vybraná príšerka získa **Božský štít** –
     prvé zranenie sa zruší, štít praskne (`inst.shield`; Žabia kliatba
