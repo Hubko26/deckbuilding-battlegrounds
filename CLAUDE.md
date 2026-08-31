@@ -26,6 +26,10 @@ commity, UI) je slovenčina.
 - `src/bot.js` – heuristický súper (easy/normal/hard); hrá len cez Engine API.
 - `src/game.js` – UI, animácie, prehrávanie eventov z engine.
 - `src/net.js` – multiplayer (replikácia akcií), `src/sfx.js` – zvuky.
+- `src/claude-bot.js` – Claude súper (obtiažnosť „🧠 Claude“): ťah hrá
+  Anthropic API priamo z prehliadača s hráčovým kľúčom (localStorage,
+  nikdy v repe); akcie sa logujú jednotlivo, replay funguje bez API.
+  Pri zlyhaní API dohrá ťah hard bot.
 - `test/engine.test.mjs`, `test/bot.test.mjs` – testy engine a bota.
 - `DESIGN.md` – herné pravidlá a rozhodnutia; pri zmene pravidiel ho aktualizuj.
 - `.claude/skills/arena-ai/SKILL.md` – pravidlá + stratégia pre AI bota; tiež

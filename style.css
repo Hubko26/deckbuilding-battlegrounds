@@ -64,6 +64,14 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .rules-box { font-size: .85rem; padding: 12px 14px 14px; }
 }
 .pick-box h2 { font-size: 1.1rem; margin: 10px 0; }
+/* Claude súper: kľúč + profil hráča (BYO key – žije len v localStorage). */
+.claude-setup { margin-top: 12px; display: grid; gap: 6px; text-align: left; }
+.claude-setup label { font-size: .85rem; font-weight: 700; color: #345; }
+.claude-setup input {
+  font-size: .95rem; padding: 7px 10px; border: 2px solid #9bc;
+  border-radius: 10px; font-family: inherit; width: 100%;
+}
+.claude-note { font-size: .75rem; color: #567; line-height: 1.35; }
 .diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .diff-pick button.active { background: #ffd33d; font-weight: 700; }
 .big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }

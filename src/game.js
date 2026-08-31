@@ -62,6 +62,29 @@ const L = {
     easy: { sk: "🙂 Ľahký", cs: "🙂 Lehký", en: "🙂 Easy" },
     normal: { sk: "😎 Normálny", cs: "😎 Normální", en: "😎 Normal" },
     hard: { sk: "😈 Ťažký", cs: "😈 Těžký", en: "😈 Hard" },
+    claude: { sk: "🧠 Claude", cs: "🧠 Claude", en: "🧠 Claude" },
+  },
+  claudeKeyLabel: { sk: "Anthropic API kľúč:", cs: "Anthropic API klíč:", en: "Anthropic API key:" },
+  claudeKeyNote: {
+    sk: "Kľúč ostáva len v tomto prehliadači (localStorage) – nikam inam sa neposiela, platí sa zaň Anthropic API.",
+    cs: "Klíč zůstává jen v tomto prohlížeči (localStorage) – nikam jinam se neposílá, platí se za něj Anthropic API.",
+    en: "The key stays in this browser only (localStorage) – it goes nowhere else; Anthropic API usage is billed.",
+  },
+  claudeDescLabel: { sk: "Profil hráča (na trash-talk na mieru):", cs: "Profil hráče (na trash-talk na míru):", en: "Player profile (for tailored trash-talk):" },
+  claudeDescPh: {
+    sk: "napr. Kubo, 8 rokov, vždy kupuje drahé karty a zabúda na trojice",
+    cs: "např. Kuba, 8 let, vždy kupuje drahé karty a zapomíná na trojice",
+    en: "e.g. Jake, 8, always buys expensive cards and forgets triples",
+  },
+  claudeNeedKey: {
+    sk: "Claude súper potrebuje API kľúč – vlož ho do políčka.",
+    cs: "Claude soupeř potřebuje API klíč – vlož ho do políčka.",
+    en: "The Claude opponent needs an API key – paste it in the field.",
+  },
+  claudeFallback: {
+    sk: "⚠️ Claude nedostupný (API zlyhalo) – ťah dohral ťažký bot.",
+    cs: "⚠️ Claude nedostupný (API selhalo) – tah dohrál těžký bot.",
+    en: "⚠️ Claude unavailable (API failed) – hard bot finished the turn.",
   },
   play: { sk: "Hraj!", cs: "Hraj!", en: "Play!" },
   newGame: { sk: "Nová hra", cs: "Nová hra", en: "New game" },
@@ -293,18 +316,40 @@ function renderRules() {
 function renderPick() {
   const dbox = $("diffPick");
   dbox.innerHTML = "";
-  for (const d of ["easy", "normal", "hard"]) {
+  for (const d of ["easy", "normal", "hard", "claude"]) {
     const b = document.createElement("button");
     b.textContent = t(L.diffs[d]);
     b.className = difficulty === d ? "active" : "";
     b.addEventListener("click", () => { difficulty = d; localStorage.setItem("arena.diff", d); renderPick(); });
     dbox.appendChild(b);
   }
+  // Claude súper: API kľúč (BYO key – len localStorage) + profil hráča.
+  const cs = $("claudeSetup");
+  cs.classList.toggle("hidden", difficulty !== "claude");
+  if (difficulty === "claude" && !cs.dataset.ready) {
+    cs.dataset.ready = "1";
+    $("claudeKey").value = localStorage.getItem("arena.apiKey") || "";
+    $("claudeDesc").value = localStorage.getItem("arena.playerDesc") || "";
+    $("claudeKey").addEventListener("input", e => localStorage.setItem("arena.apiKey", e.target.value.trim()));
+    $("claudeDesc").addEventListener("input", e => localStorage.setItem("arena.playerDesc", e.target.value));
+  }
+  if (difficulty === "claude") {
+    $("claudeKeyLabel").textContent = t(L.claudeKeyLabel);
+    $("claudeDescLabel").textContent = t(L.claudeDescLabel);
+    $("claudeDesc").placeholder = t(L.claudeDescPh);
+    $("claudeKeyNote").textContent = t(L.claudeKeyNote);
+  }
 }
 
 function startGame() {
+  if (difficulty === "claude" && !(localStorage.getItem("arena.apiKey") || "").trim()) {
+    alert(t(L.claudeNeedKey));
+    $("claudeKey").focus();
+    return;
+  }
   mode = "bot";
   MY = "p1"; OPP = "p2";
+  lastBattleNote = null;
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
@@ -471,32 +516,69 @@ const TAUNTS = {
   },
 };
 let lastTauntAt = 0;
+function showTauntBubble(text, ms) {
+  document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
+  const el = document.createElement("div");
+  el.className = "taunt-bubble";
+  el.textContent = text;
+  $("stage").appendChild(el);
+  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, ms || 3800);
+}
 function botTaunt(kind, chance) {
   if (mode !== "bot" || !state || state.phase === "over") return;
+  if (difficulty === "claude") return; // Claude trash-talkuje vlastnými hláškami
   const now = Date.now();
   if (now - lastTauntAt < 6000) return; // nespamuj
   if (Math.random() > chance) return;
   const pool = TAUNTS[kind][I18N.lang] || TAUNTS[kind].sk;
   lastTauntAt = now;
-  document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
-  const el = document.createElement("div");
-  el.className = "taunt-bubble";
-  el.textContent = pool[Math.floor(Math.random() * pool.length)];
-  $("stage").appendChild(el);
-  setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, 3800);
+  showTauntBubble(pool[Math.floor(Math.random() * pool.length)]);
 }
+
+// Výsledok posledného boja z pohľadu bota – kontext pre Claudov trash-talk.
+let lastBattleNote = null;
 
 async function runBotTurn() {
   busy = true;
   renderAll();
+  if (difficulty === "claude") { await runClaudeTurn(); return; }
   botTaunt("turn", 0.3);
   await sleep(600);
   GameLog.push(OPP, "botTurn", [difficulty]);
   const events = Bot.botTurn(state, OPP, difficulty);
+  await playOppEvents(events);
+}
+
+async function playOppEvents(events) {
   for (const ev of events) {
     const msg = oppEventMsg(ev);
     if (msg) { log(msg); renderAll(); await sleep(650); }
   }
+}
+
+// Ťah Clauda: reálny model cez API (kľúč hráča). Pri zlyhaní dohrá ťažký
+// heuristický bot, nech hra nikdy nezamrzne; replay log sedí v oboch vetvách.
+async function runClaudeTurn() {
+  let res = null;
+  try {
+    res = await ClaudeBot.turn(state, OPP, {
+      apiKey: (localStorage.getItem("arena.apiKey") || "").trim(),
+      lang: I18N.lang,
+      playerDesc: localStorage.getItem("arena.playerDesc") || "",
+      lastBattle: lastBattleNote,
+      onAction: (name, args) => GameLog.push(OPP, name, args),
+    });
+  } catch (e) {
+    console.warn("ClaudeBot zlyhal:", e);
+  }
+  if (!res) {
+    log(t(L.claudeFallback));
+    GameLog.push(OPP, "botTurn", ["hard"]);
+    await playOppEvents(Bot.botTurn(state, OPP, "hard"));
+    return;
+  }
+  if (res.taunt) showTauntBubble(res.taunt, 6000);
+  await playOppEvents(res.events);
 }
 
 function oppEventMsg(ev) {
@@ -759,6 +841,9 @@ async function runBattle() {
         renderHero(chip, { ...state[ev.pid], hp: ev.hp });
         log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
         botTaunt(ev.pid === MY ? "win" : "lose", 0.8);
+        lastBattleNote = ev.pid === MY
+          ? `you WON the last battle, the human's hero took ${ev.dmg} damage (their HP: ${ev.hp})`
+          : `you LOST the last battle, your hero took ${ev.dmg} damage (your HP: ${ev.hp})`;
         await sleep(700);
         break;
       }

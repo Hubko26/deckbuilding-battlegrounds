@@ -247,6 +247,22 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   undead – horda malé vílie telá zožerie; je to vedomý counter (kruh sa
   uzatvára cez elementálov, ktorí hordu kosia).
 
+### Claude súper (obtiažnosť „🧠 Claude“)
+
+- Ťah bota hrá **Claude (model claude-opus-5)** cez Messages API priamo
+  z prehliadača (`anthropic-dangerous-direct-browser-access`). **BYO key**:
+  hráč vloží vlastný Anthropic API kľúč, žije len v localStorage – nikdy
+  v repozitári ani na serveri.
+- Jeden request na ťah: kompaktný stav (len legálne viditeľné info) +
+  pravidlá; Claude vráti JSON `{actions, taunt}`. Akcie sa vykonajú cez
+  Engine API, nelegálne sa ticho preskočia; každá úspešná sa loguje
+  jednotlivo → `tools/replay.mjs` prehrá hru presne bez API.
+- **Trash-talk bublina = reálna Claudova hláška** – šitá na profil hráča
+  (voliteľné pole na pick obrazovke, tiež len localStorage). Detsky
+  štipľavá, jazyk podľa UI. Konzervované hlášky sa v Claude móde nepoužívajú.
+- Zlyhanie API (zlý kľúč, offline, rate limit) → ťah dohrá hard
+  heuristický bot + správa v logu; hra nikdy nezamrzne.
+
 ### Plánované rasové mechaniky
 
 Návrhy pre ďalšie art sady (zatiaľ neimplementované).
