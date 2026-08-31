@@ -64,6 +64,9 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - Príšerky sa hrajú z ruky na plochu **zadarmo** (peniaze sú len na obchod). Max
   **5 príšeriek** na ploche.
 - Na konci nákupnej fázy idú **nezahrané karty z ruky do discard pile**.
+- **Manuálne odhodenie**: kartu z ruky aj z plochy môžeš potiahnuť na kôpku –
+  odhodí sa bez peňazí a ostáva v cykle balíčka (na rozdiel od predaja).
+  Hodí sa pre karty hrané len kvôli battlecry, ktoré by v boji zavadzali.
 - Po boji idú **všetky príšerky z plochy do discard pile** – padlé aj preživšie
   (vrátia sa cyklom balíčka). Plocha sa každé kolo stavia nanovo z ruky.
   Tokeny vyvolané v boji miznú z hry.

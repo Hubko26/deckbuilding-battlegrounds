@@ -275,6 +275,23 @@ test("sell: +1 peniaz, karta zmizne", () => {
   assert.equal(state.p1.money, money + 1);
 });
 
+test("discardCard: odhodenie z ruky aj plochy do kôpky, bez peňazí, stupeň sa zachová", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "B001", 2)];
+  p.board = [E.makeInst(state, "B002", 1)];
+  p.discard = [];
+  const money = p.money;
+  E.discardCard(state, "p1", "hand", 0);
+  E.discardCard(state, "p1", "board", 0);
+  assert.equal(p.hand.length, 0);
+  assert.equal(p.board.length, 0);
+  assert.equal(p.money, money);
+  assert.equal(JSON.stringify(p.discard),
+    JSON.stringify([{ defId: "B001", rank: 2 }, { defId: "B002", rank: 1 }]));
+});
+
 test("toggleFreezeAll: zmrazí celú súkromnú ponuku, druhé stlačenie odmrazí", () => {
   const { state, E } = fresh();
   E.startRound(state);

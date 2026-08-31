@@ -42,7 +42,27 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .langsw button.active { background: #2f7cff; color: #fff; }
 
 /* ---------- Výber obtiažnosti ---------- */
+#pickScreen { display: flex; flex-direction: column; align-items: center; width: 100%; }
 .pick-box { background: rgba(255,255,255,.7); border-radius: 18px; padding: 18px 22px; text-align: center; max-width: 560px; }
+
+/* Pravidlá: tmavý panel pod výberom hry, biely text, farebné zvýraznenia. */
+.rules-box {
+  margin-top: 16px; width: min(94vw, 680px);
+  background: rgba(8, 13, 20, .92); color: #f2f6fa;
+  border-radius: 18px; padding: 14px 20px 16px; text-align: left;
+  font-size: .95rem; line-height: 1.5;
+  box-shadow: 0 6px 18px rgba(0, 20, 40, .35);
+}
+.rules-box h3 { margin: 2px 0 10px; text-align: center; font-size: 1.1rem; letter-spacing: .03em; }
+.rules-box ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.rules-box i { font-style: normal; font-weight: 700; }
+.rules-box .hl-g { color: #ffd33d; }  /* peniaze */
+.rules-box .hl-r { color: #ff8f8f; }  /* životy, boj */
+.rules-box .hl-b { color: #7cc4ff; }  /* tier, obchod, freeze */
+.rules-box .hl-e { color: #7ee787; }  /* evolve, zadarmo */
+@media (orientation: portrait) {
+  .rules-box { font-size: .85rem; padding: 12px 14px 14px; }
+}
 .pick-box h2 { font-size: 1.1rem; margin: 10px 0; }
 .diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .diff-pick button.active { background: #ffd33d; font-weight: 700; }

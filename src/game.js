@@ -80,16 +80,61 @@ const L = {
   drawGame: { sk: "🤝 Remíza!", cs: "🤝 Remíza!", en: "🤝 It's a draw!" },
   again: { sk: "Hrať znova", cs: "Hrát znovu", en: "Play again" },
   footNote: {
-    sk: "Ťahaj karty prstom alebo myšou: obchod → ruka = kúpa, ruka → plocha = vyloženie, karta → obchod = predaj.",
-    cs: "Táhni karty prstem nebo myší: obchod → ruka = koupě, ruka → plocha = vyložení, karta → obchod = prodej.",
-    en: "Drag cards: shop → hand = buy, hand → board = play, card → shop = sell.",
+    sk: "Ťahaj karty prstom alebo myšou: obchod → ruka = kúpa, ruka → plocha = vyloženie, karta → obchod = predaj, karta → kôpka 🗂 = odhodenie.",
+    cs: "Táhni karty prstem nebo myší: obchod → ruka = koupě, ruka → plocha = vyložení, karta → obchod = prodej, karta → hromádka 🗂 = odhození.",
+    en: "Drag cards: shop → hand = buy, hand → board = play, card → shop = sell, card → discard 🗂 = toss it.",
   },
+  rulesTitle: { sk: "📜 Ako sa hrá", cs: "📜 Jak se hraje", en: "📜 How to play" },
+  // Texty obsahujú zvýrazňovacie spany – kreslia sa cez innerHTML v renderRules.
+  rules: [
+    {
+      sk: `🎯 Cieľ: zober súperovmu hrdinovi všetkých <i class="hl-r">35 ❤️</i> – príšerky bojujú samy.`,
+      cs: `🎯 Cíl: seber soupeřovu hrdinovi všech <i class="hl-r">35 ❤️</i> – příšerky bojují samy.`,
+      en: `🎯 Goal: bring the enemy hero's <i class="hl-r">35 ❤️</i> to zero – your minions fight on their own.`,
+    },
+    {
+      sk: `🪙 Každé kolo dostaneš <i class="hl-g">mince</i> (3, každé kolo +1, max 10). Neminuté <i class="hl-g">prepadnú</i>.`,
+      cs: `🪙 Každé kolo dostaneš <i class="hl-g">mince</i> (3, každé kolo +1, max 10). Neutracené <i class="hl-g">propadnou</i>.`,
+      en: `🪙 You get <i class="hl-g">coins</i> every round (3, +1 each round, max 10). Unspent coins <i class="hl-g">are lost</i>.`,
+    },
+    {
+      sk: `🛒 Príšera stojí <i class="hl-g">3 🪙</i>, kúzla <i class="hl-g">1–3 🪙</i>. Kúpená karta ide <i class="hl-b">do balíčka</i>.`,
+      cs: `🛒 Příšera stojí <i class="hl-g">3 🪙</i>, kouzla <i class="hl-g">1–3 🪙</i>. Koupená karta jde <i class="hl-b">do balíčku</i>.`,
+      en: `🛒 A minion costs <i class="hl-g">3 🪙</i>, spells <i class="hl-g">1–3 🪙</i>. Bought cards go <i class="hl-b">into your deck</i>.`,
+    },
+    {
+      sk: `🃏 Na začiatku ťahu si potiahneš <i class="hl-b">5 kariet</i>; vykladanie na plochu je <i class="hl-e">zadarmo</i> (max 5). Nezahrané karty idú do kôpky a vrátia sa.`,
+      cs: `🃏 Na začátku tahu si lízneš <i class="hl-b">5 karet</i>; vykládání na plochu je <i class="hl-e">zdarma</i> (max 5). Nezahrané karty jdou do hromádky a vrátí se.`,
+      en: `🃏 You draw <i class="hl-b">5 cards</i> each turn; playing minions is <i class="hl-e">free</i> (max 5 on board). Unplayed cards go to the discard pile and cycle back.`,
+    },
+    {
+      sk: `✨ <i class="hl-e">Evolve</i>: 3 rovnaké karty (aj v balíčku) sa samy spoja: bronz → <i class="hl-e">strieborná ×2</i> → <i class="hl-e">zlatá ×4</i>.`,
+      cs: `✨ <i class="hl-e">Evolve</i>: 3 stejné karty (i v balíčku) se samy spojí: bronz → <i class="hl-e">stříbrná ×2</i> → <i class="hl-e">zlatá ×4</i>.`,
+      en: `✨ <i class="hl-e">Evolve</i>: 3 copies of a card (even in your deck) merge on their own: bronze → <i class="hl-e">silver ×2</i> → <i class="hl-e">gold ×4</i>.`,
+    },
+    {
+      sk: `⬆️ <i class="hl-b">Upgrade tieru</i> odomkne silnejšie príšery (tier 1–6). Cena klesá každým kolom.`,
+      cs: `⬆️ <i class="hl-b">Upgrade tieru</i> odemkne silnější příšery (tier 1–6). Cena klesá každým kolem.`,
+      en: `⬆️ <i class="hl-b">Upgrade your tier</i> to unlock stronger minions (tiers 1–6). The price drops every round.`,
+    },
+    {
+      sk: `🔄 Refresh (<i class="hl-g">1 🪙</i>) vymení ponuku; ❄️ <i class="hl-b">Freeze</i> podrží tvoju súkromnú ponuku do ďalšieho kola. Po každom boji je obchod <i class="hl-b">nový</i>.`,
+      cs: `🔄 Refresh (<i class="hl-g">1 🪙</i>) vymění nabídku; ❄️ <i class="hl-b">Freeze</i> podrží tvou soukromou nabídku do dalšího kola. Po každém boji je obchod <i class="hl-b">nový</i>.`,
+      en: `🔄 Refresh (<i class="hl-g">1 🪙</i>) rerolls the shop; ❄️ <i class="hl-b">Freeze</i> keeps your private offer for the next round. After every fight the shop is <i class="hl-b">fresh</i>.`,
+    },
+    {
+      sk: `⚔️ V boji sa útočí zľava doprava; <i class="hl-r">Obrancovia 🛡️</i> musia byť napadnutí prví. Preživšie príšery uberú <i class="hl-r">❤️</i> súperovmu hrdinovi.`,
+      cs: `⚔️ V boji se útočí zleva doprava; <i class="hl-r">Obránci 🛡️</i> musí být napadeni první. Přeživší příšery uberou <i class="hl-r">❤️</i> soupeřovu hrdinovi.`,
+      en: `⚔️ Minions attack left to right; <i class="hl-r">Defenders 🛡️</i> must be attacked first. Survivors damage the enemy hero's <i class="hl-r">❤️</i>.`,
+    },
+  ],
   deck: { sk: "Balíček", cs: "Balíček", en: "Deck" },
   discardPile: { sk: "Kôpka", cs: "Hromádka", en: "Discard" },
   botBought: { sk: "🤖 kúpil", cs: "🤖 koupil", en: "🤖 bought" },
   botPlayed: { sk: "🤖 vyložil", cs: "🤖 vyložil", en: "🤖 played" },
   botSpell: { sk: "🤖 zahral", cs: "🤖 zahrál", en: "🤖 cast" },
   botTier: { sk: "🤖 zvýšil tier na", cs: "🤖 zvýšil tier na", en: "🤖 upgraded tier to" },
+  botDiscard: { sk: "🤖 odhodil", cs: "🤖 odhodil", en: "🤖 discarded" },
   botEvolve: { sk: "🤖 evolvol", cs: "🤖 evolvoval", en: "🤖 evolved" },
   youEvolve: { sk: "✨ Evolve!", cs: "✨ Evolve!", en: "✨ Evolve!" },
   pulledCopies: {
@@ -143,6 +188,14 @@ function applyI18n() {
   $("discoverTitle").textContent = t(L.discoverTitle);
   $("overAgain").textContent = t(L.again);
   $("footNote").textContent = t(L.footNote);
+}
+
+// ---------- Pravidlá na úvodnej obrazovke ----------
+function renderRules() {
+  $("rulesBox").innerHTML =
+    `<h3>${t(L.rulesTitle)}</h3><ul>` +
+    L.rules.map(r => `<li>${t(r)}</li>`).join("") +
+    `</ul>`;
 }
 
 // ---------- Výber obtiažnosti ----------
@@ -310,6 +363,7 @@ function oppEventMsg(ev) {
     case "buy": msg = `${t(L.botBought)} ${emoji}${name}`; break;
     case "play": msg = `${t(L.botPlayed)} ${emoji}${name}`; break;
     case "spell": msg = `${t(L.botSpell)} ${emoji}${name}`; break;
+    case "discard": msg = `${t(L.botDiscard)} ${emoji}${name}`; break;
     case "tierUp": msg = `${t(L.botTier)} ${ev.tier}`; break;
     case "evolve": msg = `${t(L.botEvolve)} ${emoji}${name}!`; break;
     default: return null;
@@ -321,15 +375,27 @@ function oppEventMsg(ev) {
 // ---------- Boj ----------
 async function runBattle() {
   busy = true;
-  // Snímka plôch pred bojom – doBattle stav zmení, animuje sa nad snímkou.
+  // Snímka plôch a počítadiel pred bojom – doBattle stav zmení naraz
+  // (kôpky, nové kolo, dotiahnutá ruka), animácia beží nad snímkou,
+  // inak by čísla skákali dopredu už na začiatku boja.
   const snap = {
     p1: state.p1.board.map(x => ({ ...x })),
     p2: state.p2.board.map(x => ({ ...x })),
+  };
+  const pre = {
+    p1: { deck: state.p1.deck.length, discard: state.p1.discard.length, hp: state.p1.hp },
+    p2: { deck: state.p2.deck.length, discard: state.p2.discard.length, hp: state.p2.hp },
   };
   const events = Engine.doBattle(state);
   renderAll();
   renderBoardList($("oppBoard"), snap[OPP], false);
   renderBoardList($("myBoard"), snap[MY], false);
+  renderHero($("oppHero"), { ...state[OPP], hp: pre[OPP].hp });
+  renderHero($("myHero"), { ...state[MY], hp: pre[MY].hp });
+  renderCorner($("oppDeckBox"), "🂠", t(L.deck), pre[OPP].deck);
+  renderCorner($("oppDiscardBox"), "🗂", t(L.discardPile), pre[OPP].discard);
+  renderCorner($("myDiscardBox"), "🗂", t(L.discardPile), pre[MY].discard);
+  renderCorner($("myDeckBox"), "🂠", t(L.deck), pre[MY].deck);
   // Boj: skry obchod, ukáž veľký nápis v strede.
   $("stage").classList.add("battle");
   const fb = $("fightBanner");
@@ -446,10 +512,18 @@ async function runBattle() {
         await sleep(450);
         break;
       }
+      case "toDiscard": {
+        // Karty z plochy padajú do kôpky – priebežne dvíhaj počítadlo.
+        const box = ev.pid === MY ? $("myDiscardBox") : $("oppDiscardBox");
+        const ct = box.querySelector(".ct");
+        if (ct) ct.textContent = String((parseInt(ct.textContent, 10) || 0) + 1);
+        break;
+      }
       case "heroDmg": {
         const chip = ev.pid === MY ? $("myHero") : $("oppHero");
         Sfx.hero();
         floatText(chip, `-${ev.dmg}`);
+        renderHero(chip, { ...state[ev.pid], hp: ev.hp });
         log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
         await sleep(700);
         break;
@@ -532,7 +606,8 @@ function renderHero(el, p) {
     : mode === "net"
       ? { emoji: "🧑", name: t(L.heroFriend) }
       : { emoji: "🤖", name: t(L.heroBot) };
-  const gold = p.id === MY && state.active === MY ? ` · 🪙 ${p.money}` : "";
+  // Počas animácie boja active už ukazuje na nové kolo – peniaze ešte neukazuj.
+  const gold = p.id === MY && state.active === MY && !busy ? ` · 🪙 ${p.money}` : "";
   el.innerHTML = `<span class="who">${hero.emoji} ${hero.name}</span>` +
     `<span class="tier-shield">${p.tier}</span>` +
     `<span class="nums">❤️ ${Math.max(0, p.hp)}${gold}</span>`;
@@ -808,12 +883,14 @@ function markZones(src, on) {
   }
   if (src.type === "board") {
     set($("shopPanel"), "drop-sell");
+    set($("myDiscardBox"), "drop-ok"); // odhodenie do kôpky
     set($("myBoard"), "drop-ok"); // presun na iný slot
     return;
   }
   const inst = state[MY].hand[src.idx];
   if (!inst) return;
   set($("shopPanel"), "drop-sell");
+  set($("myDiscardBox"), "drop-ok"); // odhodenie do kôpky
   if (inst.spell && Cards.byId[inst.defId].fx.type === "buffTarget") {
     $("myBoard").querySelectorAll(".card").forEach(c => set(c, "target-ok"));
   } else {
@@ -842,6 +919,7 @@ function endDrag(e) {
 
   if (src.type === "board") {
     if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
+    if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "board", src.idx)); return; }
     if (inRect(e, $("myBoard"))) {
       // Presun na slot podľa miesta dropu (poradie útoku = zľava doprava).
       const r = $("myBoard").getBoundingClientRect();
@@ -857,6 +935,7 @@ function endDrag(e) {
   const inst = p.hand[src.idx];
   if (!inst) { renderAll(); return; }
   if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
+  if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "hand", src.idx)); return; }
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
     if (fx.type === "buffTarget") {
@@ -972,4 +1051,5 @@ document.addEventListener("contextmenu", e => {
 });
 
 applyI18n();
+renderRules();
 renderPick();

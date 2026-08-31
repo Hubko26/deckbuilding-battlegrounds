@@ -72,6 +72,8 @@ akcie za hráča `pid` – vracajú events alebo `null` pri nelegálnom ťahu:
 - `Engine.castSpell(state, pid, handIdx, targetUid?)` +
   `Engine.pickDiscover(state, pid, choiceIdx)`
 - `Engine.sellCard(state, pid, "hand"|"board", idx)`
+- `Engine.discardCard(state, pid, "hand"|"board", idx)` – do kôpky bez
+  peňazí (karta ostáva v balíčku; napr. battlecry telo pred bojom)
 - `Engine.moveOnBoard(state, pid, boardIdx, slot)`
 - `Engine.endShopTurn(state, pid)` – povinný záver ťahu
 

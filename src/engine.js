@@ -412,6 +412,19 @@ const Engine = (() => {
     return [{ type: "reorder", pid }];
   }
 
+  // Manuálne odhodenie: karta ide z ruky/plochy do kôpky (bez peňazí)
+  // a ostáva v cykle balíčka – na rozdiel od predaja. Pre karty hrané len
+  // kvôli battlecry, ktoré by v boji zavadzali.
+  function discardCard(state, pid, zone, idx) {
+    const p = state[pid];
+    if (zone !== "hand" && zone !== "board") return null;
+    const inst = p[zone][idx];
+    if (!inst) return null;
+    p[zone].splice(idx, 1);
+    p.discard.push({ defId: inst.defId, rank: inst.rank || 1 });
+    return [{ type: "discard", pid, defId: inst.defId }];
+  }
+
   function sellCard(state, pid, zone, idx) {
     const p = state[pid];
     if (zone !== "hand" && zone !== "board") return null;
@@ -691,7 +704,7 @@ const Engine = (() => {
     TIER_MAX, privateCount, income, seededRng, cardCost,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
-    sellCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
+    sellCard, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
   };
 })();
 
