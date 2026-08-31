@@ -72,6 +72,15 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   border-radius: 10px; font-family: inherit; width: 100%;
 }
 .claude-note { font-size: .75rem; color: #567; line-height: 1.35; }
+/* Chat s Claudom pod doskou (len Claude mód). */
+.chat-row { display: flex; gap: 6px; width: min(98vw, 480px); margin-top: 4px; }
+.chat-row input {
+  flex: 1; font-size: .9rem; padding: 6px 10px; border: 2px solid #9bc;
+  border-radius: 10px; font-family: inherit;
+}
+.chat-row button { padding: 6px 12px; }
+/* Claudov záverečný výsmech v okne konca hry. */
+.over-roast { margin-top: 10px; font-style: italic; color: #a33; max-width: 420px; }
 .diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
 .diff-pick button.active { background: #ffd33d; font-weight: 700; }
 .big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }

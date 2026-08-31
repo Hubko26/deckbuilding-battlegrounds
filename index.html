@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Zvieracia aréna</title>
-  <link rel="stylesheet" href="style.css?v=claude1">
+  <link rel="stylesheet" href="style.css?v=claude4">
 </head>
 <body>
   <header>
@@ -91,6 +91,11 @@
         <div class="hand" id="handEl"></div>
         <div class="hero-plate bottom" id="myHero"></div>
       </div>
+      <!-- Chat s Claudom (len Claude mód) – odpoveď príde bublinou -->
+      <div id="chatRow" class="chat-row hidden">
+        <input id="chatInput" type="text" maxlength="200" autocomplete="off">
+        <button id="chatSend">💬</button>
+      </div>
     </section>
 
     <!-- Discover overlay -->
@@ -129,7 +134,7 @@
   <script src="src/cards.js?v=fairy5"></script>
   <script src="src/engine.js?v=fairy5"></script>
   <script src="src/bot.js?v=fairy5"></script>
-  <script src="src/claude-bot.js?v=claude3"></script>
-  <script src="src/game.js?v=claude2"></script>
+  <script src="src/claude-bot.js?v=claude4"></script>
+  <script src="src/game.js?v=claude4"></script>
 </body>
 </html>

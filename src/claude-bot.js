@@ -17,7 +17,7 @@ const ClaudeBot = (() => {
   // obrazovke). Hodnota = voľný text pre Clauda: kto to je, ako hráva,
   // na čom si ho doberať. Neznáme meno = generický (ale vtipný) roast.
   const PLAYER_PROFILES = {
-    adam: "Dospelý kamoš – plne povolený ABSURDNÝ friendly banter pre dospelého, žiadne detské rukavičky. Lenivý a VŽDY mešká – roastuj meškanie a lenivosť neúnavne a kreatívne. Dota nick: Paprika_Smrdi (zlatá baňa, používaj). Support dev vo firme Universal Allocations, aktuálne robí PM alokácií; neadekvátne ohodnotený, večne čaká na povýšenie a vyšší plat – doberaj si ho, že aj to povýšenie mešká, lebo ho má doniesť on sám. Kamoši: Dano, Stefy, Marek, Ado, Kubo; najlepší kamarát David (ten, čo mu tohto bota nastražil – pozdravuj ho). Manželku Lioru a ročnú dcérku Emily spomínaj LEN láskavo alebo absurdne v JEHO neprospech (napr. Emily má lepšie APM a lepší dochádzkový rekord) – nikdy si neuťahuj z nich samotných. Štýl: absurdné hyperboly, kancelársky a Dota humor. Aj tak platí: žiadna etnicita, náboženstvo, vzhľad, nič skutočne zraňujúce.",
+    adam: "Dospelý kamoš – plne povolený ABSURDNÝ friendly banter pre dospelého, žiadne detské rukavičky. Lenivý a VŽDY mešká – roastuj meškanie a lenivosť neúnavne a kreatívne. Dota nick: Paprika_Smrdi (zlatá baňa, používaj). Support dev vo firme Universal Allocations, aktuálne robí PM alokácií; neadekvátne ohodnotený, večne čaká na povýšenie a vyšší plat – doberaj si ho, že aj to povýšenie mešká, lebo ho má doniesť on sám. Kamoši: Dano, Stefy, Marek, Ado, Kubo; najlepší kamarát David mu tohto bota nastražil – Davida spomeň LEN výnimočne (raz za hru, nie v každej hláške), inak sa sústreď na Adama. Manželku Lioru a ročnú dcérku Emily spomínaj LEN láskavo alebo absurdne v JEHO neprospech (napr. Emily má lepšie APM a lepší dochádzkový rekord) – nikdy si neuťahuj z nich samotných. Štýl: absurdné hyperboly, kancelársky a Dota humor. Aj tak platí: žiadna etnicita, náboženstvo, vzhľad, nič skutočne zraňujúce.",
     // "david": "…",
   };
 
@@ -53,7 +53,7 @@ Action objects (executed in order; illegal ones are skipped):
 
 STRATEGY: complete triples > buy synergy with your dominant race > spend ALL money (refresh with leftovers to hunt triples) > upgrade tier when affordable mid-game. Play all minions you can. Cast buff spells on your strongest minion.
 
-TAUNT: one short playful trash-talk line (max 120 chars) addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
+TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
 
   // Kompaktný pohľad na stav – len to, čo súper legálne vidí.
   function snapshot(state, pid, Cards, Engine) {
@@ -98,13 +98,15 @@ TAUNT: one short playful trash-talk line (max 120 chars) addressed to the human 
   // Vykoná jeden Claudov ťah. onAction(name, args) loguje pre replay.
   // Vracia { events, taunt } alebo hodí chybu (volajúci má fallback na Bot).
   async function turn(state, pid, opts) {
-    const { apiKey, lang, playerName, lastBattle, onAction } = opts;
+    const { apiKey, lang, playerName, lastBattle, humanLastRound, recentChat, onAction } = opts;
     const langName = { sk: "Slovak", cs: "Czech", en: "English" }[lang] || "Slovak";
     const name = (playerName || "").trim();
 
     const userMsg = JSON.stringify({
       state: snapshot(state, pid, Cards, Engine),
       lastBattleFromYourView: lastBattle || "first round",
+      humanLastRound: humanLastRound && humanLastRound.length ? humanLastRound : null,
+      recentChat: recentChat && recentChat.length ? recentChat : null,
       tauntLanguage: langName,
       playerName: name || null,
       playerProfile: PLAYER_PROFILES[name.toLowerCase()] || null,
@@ -203,7 +205,44 @@ TAUNT: one short playful trash-talk line (max 120 chars) addressed to the human 
     return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 140) : null };
   }
 
-  return { turn, isAllowed, MODEL };
+  // Odpoveď na hráčovu chatovú správu – samostatný lacný request (bez ťahu).
+  // gameSummary = krátky kontext hry, history = posledné výmeny.
+  async function chat(opts) {
+    const { apiKey, lang, playerName, text, history, gameSummary } = opts;
+    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[lang] || "Slovak";
+    const name = (playerName || "").trim();
+    const resp = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        max_tokens: 300,
+        output_config: { effort: "low" },
+        system: `You are the trash-talking robot opponent in the kids' autobattler "Animal Arena", mid-game. The human player just sent you a chat message. Reply with ONE short punchy line (max 160 chars) in ${langName} – witty friendly banter, react directly to what they said. Default kid-friendly; if a player profile is provided it sets the tone (e.g. absurd adult banter) and gives material. Hard limits regardless of profile: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves. Reply with the line only, no quotes, no JSON.`,
+        messages: [{
+          role: "user",
+          content: JSON.stringify({
+            playerName: name || null,
+            playerProfile: PLAYER_PROFILES[name.toLowerCase()] || null,
+            gameSummary: gameSummary || null,
+            recentChat: history || [],
+            playerSays: text,
+          }),
+        }],
+      }),
+    });
+    if (!resp.ok) throw new Error("API " + resp.status);
+    const data = await resp.json();
+    const out = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
+    return out.slice(0, 200);
+  }
+
+  return { turn, chat, isAllowed, MODEL };
 })();
 
 if (typeof module !== "undefined") module.exports = ClaudeBot;

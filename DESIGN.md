@@ -267,6 +267,12 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   dostane hlášku a hra nezačne.
 - Zlyhanie API (zlý kľúč, offline, rate limit) → ťah dohrá hard
   heuristický bot + správa v logu; hra nikdy nezamrzne.
+- **Banter navyše**: uvítacia bublina hneď po štarte („{meno}, zase
+  meškáš na náš súboj!“); chat políčko pod doskou – hráč odpíše, Claude
+  reaguje bublinou (samostatný lacný request, história ide aj do
+  ťahových promptov); Claude vidí hráčove akcie z minulého kola
+  (verejné info: nákupy, predaje, vyloženia) a vysmieva konkrétne
+  chyby; prehra hráča = záverečný výsmech v okne výsledku.
 
 ### Plánované rasové mechaniky
 

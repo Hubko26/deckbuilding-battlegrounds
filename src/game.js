@@ -82,6 +82,12 @@ const L = {
     cs: "Claude soupeř hraje jen proti vyvoleným. Napiš správné jméno. 😜",
     en: "The Claude opponent only plays the chosen ones. Enter the right name. 😜",
   },
+  claudeGreeting: {
+    sk: "{n}, zase meškáš na náš súboj! 🕐",
+    cs: "{n}, zase jdeš pozdě na náš souboj! 🕐",
+    en: "{n}, late to our duel again! 🕐",
+  },
+  chatPh: { sk: "Odkáž niečo Claudovi…", cs: "Vzkaž něco Claudovi…", en: "Say something to Claude…" },
   claudeFallback: {
     sk: "⚠️ Claude nedostupný (API zlyhalo) – ťah dohral ťažký bot.",
     cs: "⚠️ Claude nedostupný (API selhalo) – tah dohrál těžký bot.",
@@ -277,10 +283,37 @@ window.arenaLogSave = () => {
 
 // Lokálna akcia: vykoná sa v engine a v sieťovej hre sa pošle súperovi,
 // ktorý ju aplikuje na svojej (identickej, rovnako seedovanej) kópii stavu.
+// Čitateľný popis hráčovej akcie PRED vykonaním (stav ešte nezmenený) –
+// Claude z toho v ďalšom ťahu komentuje hráčove rozhodnutia. Len verejné
+// info: nákupy a predaje súper legálne vidí, board vidí v boji.
+function actionDesc(name, args) {
+  const p = state[MY];
+  try {
+    switch (name) {
+      case "buyCommon": return `bought ${state.commons[args[0]]}`;
+      case "buyPrivate": return `bought ${p.priv[args[0]].defId}`;
+      case "buySpell": return `bought spell ${p.spellShop.defId}`;
+      case "playMinion": return `played ${p.hand[args[0]].defId}`;
+      case "castSpell": return `cast ${p.hand[args[0]].defId}`;
+      case "sellCard": return `sold ${p[args[0]][args[1]].defId} (zone ${args[0]})`;
+      case "discardCard": return `discarded ${p[args[0]][args[1]].defId}`;
+      case "refreshShop": return "refreshed the shop";
+      case "upgradeTier": return `upgraded to tier ${p.tier + 1}`;
+      default: return null;
+    }
+  } catch { return null; }
+}
+
+// Akcie hráča v tomto kole – po boji sa stanú "minulým kolom" pre Clauda.
+let playerRoundActions = [];
+let lastPlayerRound = [];
+
 function doAction(name, ...args) {
+  const desc = actionDesc(name, args);
   const ev = Engine[name](state, MY, ...args);
   if (ev) GameLog.push(MY, name, args);
   if (ev && mode === "net") Net.sendAction(name, args);
+  if (ev && desc && playerRoundActions.length < 40) playerRoundActions.push(desc);
   // Trash-talk bota na hráčove rozhodnutia (len proti botovi).
   if (ev && name === "sellCard") botTaunt("sell", 0.5);
   if (ev && name === "refreshShop") botTaunt("refresh", 0.5);
@@ -356,6 +389,16 @@ function startGame() {
   mode = "bot";
   MY = "p1"; OPP = "p2";
   lastBattleNote = null;
+  chatHistory = [];
+  playerRoundActions = [];
+  lastPlayerRound = [];
+  // Chat políčko + uvítacia bublina („zase meškáš“) len v Claude móde.
+  $("chatRow").classList.toggle("hidden", difficulty !== "claude");
+  if (difficulty === "claude") {
+    $("chatInput").placeholder = t(L.chatPh);
+    const nm = (localStorage.getItem("arena.playerName") || "").trim();
+    setTimeout(() => showTauntBubble(t(L.claudeGreeting).replace("{n}", nm), 6000), 900);
+  }
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
@@ -544,6 +587,37 @@ function botTaunt(kind, chance) {
 // Výsledok posledného boja z pohľadu bota – kontext pre Claudov trash-talk.
 let lastBattleNote = null;
 
+// ---------- Chat s Claudom (len Claude mód) ----------
+// Hráč odpíše do políčka pod doskou, Claude reaguje bublinou – samostatný
+// lacný request mimo ťahu. História ide aj do ťahových promptov (banter drží niť).
+let chatHistory = []; // { who: "player" | "claude", text }
+let chatBusy = false;
+async function sendChat() {
+  const inp = $("chatInput");
+  const text = inp.value.trim();
+  if (!text || chatBusy || difficulty !== "claude" || mode !== "bot" || !state) return;
+  chatBusy = true;
+  inp.value = "";
+  $("chatSend").disabled = true;
+  chatHistory.push({ who: "player", text });
+  try {
+    const reply = await ClaudeBot.chat({
+      apiKey: (localStorage.getItem("arena.apiKey") || "").trim(),
+      lang: I18N.lang,
+      playerName: localStorage.getItem("arena.playerName") || "",
+      text,
+      history: chatHistory.slice(-6),
+      gameSummary: `round ${state.round}; your HP ${state[OPP].hp}, player's HP ${state[MY].hp}; ` +
+        `${lastBattleNote || "no battle yet"}; player's last round: ${lastPlayerRound.join(", ") || "-"}`,
+    });
+    if (reply) { chatHistory.push({ who: "claude", text: reply }); showTauntBubble(reply, 7000); }
+  } catch (e) {
+    console.warn("Chat s Claudom zlyhal:", e);
+  }
+  chatBusy = false;
+  $("chatSend").disabled = false;
+}
+
 async function runBotTurn() {
   busy = true;
   renderAll();
@@ -572,6 +646,8 @@ async function runClaudeTurn() {
       lang: I18N.lang,
       playerName: localStorage.getItem("arena.playerName") || "",
       lastBattle: lastBattleNote,
+      humanLastRound: lastPlayerRound,
+      recentChat: chatHistory.slice(-6),
       onAction: (name, args) => GameLog.push(OPP, name, args),
     });
   } catch (e) {
@@ -609,6 +685,8 @@ function oppEventMsg(ev) {
 // ---------- Boj ----------
 async function runBattle() {
   busy = true;
+  // Kolo hráča skončilo – jeho akcie sa stávajú materiálom pre Clauda.
+  lastPlayerRound = playerRoundActions.splice(0);
   // Snímka plôch a počítadiel pred bojom – doBattle stav zmení naraz
   // (kôpky, nové kolo, dotiahnutá ruka), animácia beží nad snímkou,
   // inak by čísla skákali dopredu už na začiatku boja.
@@ -1410,6 +1488,24 @@ function showOver() {
   if (w === MY) Sfx.win(); else if (w === OPP) Sfx.lose();
   $("overTitle").textContent = w === "draw" ? t(L.drawGame) : w === MY ? t(L.win) : t(L.lose);
   $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
+  // Claude mód: prehra hráča = záverečný výsmech priamo v okne výsledku.
+  if (mode === "bot" && difficulty === "claude" && w === OPP) {
+    ClaudeBot.chat({
+      apiKey: (localStorage.getItem("arena.apiKey") || "").trim(),
+      lang: I18N.lang,
+      playerName: localStorage.getItem("arena.playerName") || "",
+      text: "(system: the player just LOST the whole game to you – deliver your final victory gloat, rub it in)",
+      history: chatHistory.slice(-6),
+      gameSummary: `GAME OVER after round ${state.round}: YOU WON, the player's hero is at 0 HP (your HP: ${state[OPP].hp})`,
+    }).then(roast => {
+      if (roast && !$("overOverlay").classList.contains("hidden")) {
+        const d = document.createElement("div");
+        d.className = "over-roast";
+        d.textContent = `🤖 ${roast}`;
+        $("overMsg").appendChild(d);
+      }
+    }).catch(e => console.warn("Záverečný výsmech zlyhal:", e));
+  }
 }
 
 // ---------- Log ----------
@@ -1433,6 +1529,8 @@ $("newGameBtn").addEventListener("click", backToPick);
 $("endTurnBtn").addEventListener("click", onEndTurn);
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
+$("chatSend").addEventListener("click", sendChat);
+$("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 $("freezeBtn").addEventListener("click", () => act(doAction("toggleFreezeAll")));
 $("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
 $("overAgain").addEventListener("click", () => {
