@@ -26,6 +26,10 @@ const ClaudeBot = (() => {
   const ALLOWED_PLAYERS = ["adam", "david"];
   const isAllowed = name => ALLOWED_PLAYERS.includes((name || "").trim().toLowerCase());
 
+  // Jazyk hlášok per hráč – prebije jazyk UI (Adam dostáva vždy slovenčinu).
+  const PLAYER_LANG = { adam: "sk" };
+  const langFor = (name, fallback) => PLAYER_LANG[(name || "").trim().toLowerCase()] || fallback;
+
   // Pravidlá + formát odpovede. Po anglicky (menej tokenov, model presnejší),
   // taunt sa žiada v jazyku UI.
   const SYSTEM = `You are playing "Animal Arena", a kids' autobattler (Hearthstone Battlegrounds-like with a personal deck). You are the OPPONENT bot playing your shop turn.
@@ -99,8 +103,8 @@ TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human 
   // Vracia { events, taunt } alebo hodí chybu (volajúci má fallback na Bot).
   async function turn(state, pid, opts) {
     const { apiKey, lang, playerName, lastBattle, humanLastRound, recentChat, onAction } = opts;
-    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[lang] || "Slovak";
     const name = (playerName || "").trim();
+    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[langFor(name, lang)] || "Slovak";
 
     const userMsg = JSON.stringify({
       state: snapshot(state, pid, Cards, Engine),
@@ -209,8 +213,8 @@ TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human 
   // gameSummary = krátky kontext hry, history = posledné výmeny.
   async function chat(opts) {
     const { apiKey, lang, playerName, text, history, gameSummary } = opts;
-    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[lang] || "Slovak";
     const name = (playerName || "").trim();
+    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[langFor(name, lang)] || "Slovak";
     const resp = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -242,7 +246,7 @@ TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human 
     return out.slice(0, 200);
   }
 
-  return { turn, chat, isAllowed, MODEL };
+  return { turn, chat, isAllowed, langFor, MODEL };
 })();
 
 if (typeof module !== "undefined") module.exports = ClaudeBot;

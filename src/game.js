@@ -397,7 +397,9 @@ function startGame() {
   if (difficulty === "claude") {
     $("chatInput").placeholder = t(L.chatPh);
     const nm = (localStorage.getItem("arena.playerName") || "").trim();
-    setTimeout(() => showTauntBubble(t(L.claudeGreeting).replace("{n}", nm), 6000), 900);
+    // Jazyk pozdravu per hráč (Adam vždy po slovensky), inak podľa UI.
+    const gl = ClaudeBot.langFor(nm, I18N.lang);
+    setTimeout(() => showTauntBubble((L.claudeGreeting[gl] || L.claudeGreeting.sk).replace("{n}", nm), 6000), 900);
   }
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
