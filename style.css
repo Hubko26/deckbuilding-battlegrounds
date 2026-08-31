@@ -157,14 +157,15 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 }
 .head-btns button.frozen-on { background: #cdeeff; box-shadow: 0 .3cqh 0 #5aa7cc; }
 
-/* Súperov board: rovnaké miesto ako obchod – vidno ho LEN počas boja. */
+/* Súperov board: rovnaké miesto ako obchod – vidno ho LEN počas boja.
+   Karty sú vycentrované (flex); poradie útoku drží CSS order = slot. */
 .board {
   position: absolute; left: 24.64%; width: 50.3%;
-  display: grid; grid-template-columns: repeat(6, 1fr); column-gap: 1.37cqw;
-  justify-items: center; align-items: center;
+  display: flex; justify-content: center; align-items: center;
+  gap: 1.37cqw;
 }
 .board.opp { top: 15.9%; height: 14.9%; display: none; }
-#stage.battle .board.opp { display: grid; }
+#stage.battle .board.opp { display: flex; }
 #stage.battle .shop-panel, #stage.battle .end-turn { visibility: hidden; }
 
 /* Moje bojujúce karty: veľký rad v strede parchmentu. */
@@ -227,13 +228,13 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   pointer-events: none;
 }
 .card .atk, .card .hp {
-  position: absolute; top: 87%; transform: translate(-50%, -50%);
+  position: absolute; top: 88.2%; transform: translate(-50%, -50%);
   font-size: 1.45em; font-weight: 900; color: #fff; line-height: 1;
   text-shadow: 0 2px 0 #000, 0 -1px 0 #000, 2px 0 0 #000, -2px 0 0 #000, 0 3px 5px rgba(0,0,0,.5);
   pointer-events: none;
 }
-.card .atk { left: 14.5%; }
-.card .hp { left: 85.5%; }
+.card .atk { left: 15.2%; }
+.card .hp { left: 86%; }
 /* buffnuté staty (nad základ stupňa) svietia zelenou */
 .card .atk.buffed, .card .hp.buffed { color: #5cf07a; }
 /* Tier obchodu: veľká hviezda vľavo hore, nech ju vidno na prvý pohľad. */
@@ -423,7 +424,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .corner .lb { font-size: 1cqh; }
   .corner .ct { font-size: 2.1cqh; }
 
-  .board { left: 18.02%; width: 63.6%; grid-template-columns: repeat(5, 1fr); column-gap: 1.8cqw; }
+  .board { left: 18.02%; width: 63.6%; gap: 1.8cqw; }
   .board.opp { top: 12.3%; height: 10.9%; }
   .board.mine { top: 74.2%; height: 10.9%; background: none; border-radius: 0; }
 

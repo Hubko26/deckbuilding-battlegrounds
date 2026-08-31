@@ -538,8 +538,7 @@ async function runBattle() {
           atk: ev.atk ?? def.atk, hp: ev.hp ?? def.hp, maxHp: ev.hp ?? def.hp,
           taunt: !!def.taunt,
         }, {});
-        el.style.gridColumn = String((ev.slot ?? 0) + 1);
-        el.style.gridRow = "1";
+        el.style.order = String(ev.slot ?? 0);
         row.appendChild(el);
         Sfx.summon();
         await sleep(450);
@@ -656,9 +655,10 @@ function renderBoardList(el, list, mine) {
   for (let i = 0; i < list.length; i++) {
     const inst = list[i];
     const card = cardEl(inst, {});
-    // Karta drží svoj slot v šablóne – po smrti suseda sa nič neposúva.
-    card.style.gridColumn = String((inst.slot ?? i) + 1);
-    card.style.gridRow = "1";
+    // Rad je vycentrovaný (flex); poradie útoku zľava doprava drží CSS order.
+    const slot = inst.slot ?? i;
+    card.style.order = String(slot);
+    card.dataset.slot = String(slot);
     if (mine) attachDrag(card, { type: "board", idx: i });
     el.appendChild(card);
   }
@@ -974,11 +974,25 @@ function endDrag(e) {
     if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
     if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "board", src.idx)); return; }
     if (inRect(e, $("myBoard"))) {
-      // Presun na slot podľa miesta dropu (poradie útoku = zľava doprava).
-      const r = $("myBoard").getBoundingClientRect();
-      const cols = getComputedStyle($("myBoard")).gridTemplateColumns.split(" ").length;
-      let slot = Math.floor((e.clientX - r.left) / (r.width / cols));
-      slot = Math.max(0, Math.min(Engine.BOARD_MAX - 1, slot));
+      // Presun podľa miesta dropu: rad je vycentrovaný, tak sa slot určí
+      // z pozícií vykreslených kariet (na kartu = výmena, vedľa = posun na kraj).
+      const others = [...$("myBoard").querySelectorAll(".card")]
+        .filter(c => !c.classList.contains("drag-src"))
+        .map(c => {
+          const r = c.getBoundingClientRect();
+          return { x: r.left + r.width / 2, slot: Number(c.dataset.slot) };
+        })
+        .sort((a, b) => a.x - b.x);
+      let slot;
+      if (!others.length) slot = 0;
+      else if (e.clientX < others[0].x - 40) slot = Math.max(0, others[0].slot - 1);
+      else if (e.clientX > others[others.length - 1].x + 40) {
+        slot = Math.min(Engine.BOARD_MAX - 1, others[others.length - 1].slot + 1);
+      } else {
+        // najbližšia karta pod kurzorom = výmena miest
+        slot = others.reduce((best, o) =>
+          Math.abs(o.x - e.clientX) < Math.abs(best.x - e.clientX) ? o : best).slot;
+      }
       act(doAction("moveOnBoard", src.idx, slot));
     }
     return;
