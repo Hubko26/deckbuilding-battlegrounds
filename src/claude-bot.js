@@ -10,7 +10,8 @@
 
 const ClaudeBot = (() => {
   const API_URL = "https://api.anthropic.com/v1/messages";
-  const MODEL = "claude-opus-5";
+  const MODEL = "claude-opus-5";          // ťahy – kvalita hrania
+  const CHAT_MODEL = "claude-haiku-4-5";  // chat – lacný a rýchly, na banter stačí
 
   // Profily hráčov na trash-talk šitý na mieru (meme pre kamošov).
   // Kľúč = meno malými písmenami (tak, ako ho hráč napíše na úvodnej
@@ -224,9 +225,9 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         "anthropic-dangerous-direct-browser-access": "true",
       },
       body: JSON.stringify({
-        model: MODEL,
+        // Haiku 4.5 nepodporuje output_config.effort – neposielať.
+        model: CHAT_MODEL,
         max_tokens: 300,
-        output_config: { effort: "low" },
         system: `You are the trash-talking robot opponent in the kids' autobattler "Animal Arena", mid-game. The human player just sent you a chat message. Reply with ONE short punchy line (HARD LIMIT 130 characters – it renders in a small speech bubble) in ${langName} – witty friendly banter, react directly to what they said. Default kid-friendly; if a player profile is provided it sets the tone (e.g. absurd adult banter) and gives material. Hard limits regardless of profile: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves. Reply with the line only, no quotes, no JSON.`,
         messages: [{
           role: "user",
