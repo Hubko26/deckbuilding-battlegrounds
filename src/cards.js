@@ -105,6 +105,8 @@ const Cards = (() => {
       name: { sk: "Štít", cs: "Štít", en: "Shield" } },
     { id: "jablko", cost: 2, tier: 2, emoji: "🍎", spell: true, fx: { type: "buffTarget", a: 2, h: 2 },
       name: { sk: "Zázračné jablko", cs: "Zázračné jablko", en: "Magic Apple" } },
+    { id: "ticho", cost: 2, tier: 2, emoji: "🤫", spell: true, fx: { type: "silence", n: 1 },
+      name: { sk: "Umlčanie", cs: "Umlčení", en: "Silence" } },
     { id: "kniha", cost: 2, tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
       name: { sk: "Kniha prianí", cs: "Kniha přání", en: "Wish Book" } },
     { id: "koren", cost: 2, tier: 3, emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
@@ -244,6 +246,11 @@ const Cards = (() => {
       }
       return base;
     },
+    silence: () => ({
+      sk: "v najbližšom boji stratí náhodná súperova príšerka so schopnosťou svoj efekt aj Obrancu",
+      cs: "v nejbližším boji ztratí náhodná soupeřova příšerka se schopností svůj efekt i Obránce",
+      en: "next fight, a random enemy minion with an ability loses its effect and Taunt",
+    }),
     dmgBoost: (f, m) => ({
       sk: `všetky tvoje výboje a výbuchy (navždy) dávajú +${f.n * m} damage`,
       cs: `všechny tvé výboje a výbuchy (navždy) dávají +${f.n * m} damage`,

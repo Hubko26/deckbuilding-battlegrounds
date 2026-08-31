@@ -172,6 +172,8 @@ const Bot = (() => {
         push(Engine.castSpell(state, pid, i, target.uid));
       } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
         push(Engine.castSpell(state, pid, i));
+      } else if (fx.type === "silence" || fx.type === "dmgBoost") {
+        push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
       }
     }
 

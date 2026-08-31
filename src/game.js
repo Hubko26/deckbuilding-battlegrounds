@@ -477,6 +477,17 @@ async function runBattle() {
         }
         break;
       }
+      case "silence": {
+        // Umlčaná príšerka: 🤫 + preškrtnutý text schopnosti.
+        const el = cardById(ev.uid);
+        if (el) {
+          floatText(el, "🤫");
+          el.classList.add("silenced");
+          Sfx.zap();
+          await sleep(600);
+        }
+        break;
+      }
       case "aoeDmg": {
         // Veľká vlna: zasiahne všetkých nepriateľov NARAZ – žiadne projektily.
         const els = ev.hits.map(h => cardById(h.uid)).filter(Boolean);

@@ -20,7 +20,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
-  (Minca/Štít 1, Jablko/Kniha/Koreň/Vlna 2, Srdce/Iskra 3).
+  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna 2, Srdce/Iskra 3).
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -242,6 +242,13 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované).
 Sú v obchode (neutrálne aj classové). Hrajú sa v nákupnej fáze, potom idú do discard
 pile (vracajú sa cyklom balíčka). Typy: buff príšerky, Discover (vyber 1 z 3 kariet do
 ruky), peniaze navyše.
+
+- **Umlčanie** 🤫 (t2, cena 2): odložená kliatba – nabije sa (`p.silences`)
+  a spotrebuje na začiatku najbližšieho boja, PRED „Pred bojom" efektmi:
+  náhodná súperova príšerka **so schopnosťou alebo Obrancom** stratí efekt
+  aj Obrancu na celý boj (🤫, preškrtnutý text). Battlecry aury už prebehli,
+  tie nezruší – counter na Mláďa/deathrattle/Pred bojom motory. Stackuje sa
+  (viac kúziel = viac umlčaných).
 
 ## Bez class – superschopnosti (hero powers)
 

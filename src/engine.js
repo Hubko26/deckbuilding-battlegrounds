@@ -116,6 +116,7 @@ const Engine = (() => {
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
       tokenGrowth: {}, // trvalý rast tokenov: { mlada: {a, h} } – každé vyvolanie pridáva
       dmgBoost: 0, // trvalý bonus k damage výbojov a výbuchov (kúzlo Večná iskra)
+      silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
     };
   }
@@ -516,6 +517,12 @@ const Engine = (() => {
         p.dmgBoost += fx.n * m;
         events.push({ type: "dmgBoost", pid: p.id, n: fx.n * m, total: p.dmgBoost });
         break;
+      case "silence":
+        // Odložená kliatba: spotrebuje sa na začiatku najbližšieho boja –
+        // náhodná súperova príšerka so schopnosťou stratí efekt aj Obrancu.
+        p.silences += fx.n * m;
+        events.push({ type: "silencePending", pid: p.id, total: p.silences });
+        break;
       case "futureRace": {
         // Permanentná aura: VŠETKY príšerky danej rasy – aktuálne na ploche
         // a v ruke hneď, budúce inštancie (balíček, kôpka, tokeny) cez auru
@@ -583,10 +590,26 @@ const Engine = (() => {
 
     const alive = pid => sides[pid].filter(x => x.hp > 0);
 
+    // Umlčania (kúzlo Ticho) – pred všetkými schopnosťami, začínajúca strana
+    // prvá. Náhodná súperova príšerka SO SCHOPNOSŤOU stratí efekt aj Obrancu.
+    for (const pid of [attacker, other(attacker)]) {
+      const p = state[pid];
+      while (p.silences > 0) {
+        p.silences--;
+        const targets = sides[other(pid)].filter(x =>
+          x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || x.taunt));
+        if (!targets.length) continue;
+        const t = pick(targets, state.rng);
+        t.silenced = true;
+        t.taunt = false;
+        events.push({ type: "silence", pid: other(pid), uid: t.uid });
+      }
+    }
+
     // Pred bojom – začínajúca strana prvá.
     for (const pid of [attacker, other(attacker)]) {
       for (const inst of [...sides[pid]]) {
-        if (inst.hp <= 0) continue;
+        if (inst.hp <= 0 || inst.silenced) continue;
         const def = Cards.byId[inst.defId];
         if (def.power && def.power.kw === "startFight") {
           events.push({ type: "proc", pid, uid: inst.uid, kw: "startFight" });
@@ -608,7 +631,7 @@ const Engine = (() => {
       if (!a) break;
       // Pri útoku – dočasný boost (platí len počas tohto boja).
       const aDef = Cards.byId[a.defId];
-      if (aDef.power && aDef.power.kw === "onAttack") {
+      if (aDef.power && aDef.power.kw === "onAttack" && !a.silenced) {
         events.push({ type: "proc", pid: attacker, uid: a.uid, kw: "onAttack" });
         applyBattleFx(state, sides, attacker, a, aDef.power.fx, a.rank, events);
       }
@@ -791,7 +814,7 @@ const Engine = (() => {
         inst.dead = true;
         // Poradie pre UI: proc badge + efekt kým je karta ešte vidno, potom smrť.
         const def = Cards.byId[inst.defId];
-        if (def.power && def.power.kw === "deathrattle") {
+        if (def.power && def.power.kw === "deathrattle" && !inst.silenced) {
           events.push({ type: "proc", pid, uid: inst.uid, kw: "deathrattle" });
           applyBattleFx(state, sides, pid, inst, def.power.fx, inst.rank, events);
         }

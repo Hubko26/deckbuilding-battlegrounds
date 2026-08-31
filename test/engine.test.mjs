@@ -458,6 +458,30 @@ test("Večná iskra: trvalý +1 damage k výbojom aj výbuchom, stackuje sa", ()
   assert.equal(hit.n, fresh().C.byId["E001"].power.fx.n + 2);
 });
 
+test("Umlčanie: v najbližšom boji zruší schopnosť aj taunt náhodnej súperovej príšerky", () => {
+  const { state, E } = fresh(51);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "ticho", 1)];
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.silences, 1);
+  E.endShopTurn(state, "p1");
+  // Súperov board: jediný cieľ so schopnosťou je U001 (deathrattle) s tauntom.
+  const rattler = E.makeInst(state, "U001", 1); rattler.slot = 0; rattler.taunt = true;
+  state.p2.board = [rattler];
+  state.p1.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })]; // 4/5
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const sil = events.find(e => e.type === "silence");
+  assert.ok(sil);
+  assert.equal(sil.uid, rattler.uid);
+  // Umlčaný deathrattle nevyvolá kostíkov.
+  assert.ok(!events.some(e => e.type === "summon"));
+  assert.equal(state.p1.silences, 0); // nabité kúzlo sa spotrebovalo
+});
+
 test("kúzlo Štít: dá vybranej príšerke Obrancu bez statov", () => {
   const { state, E } = fresh();
   E.startRound(state);

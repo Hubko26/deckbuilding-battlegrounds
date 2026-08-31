@@ -271,6 +271,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   border-radius: 1cqh;
 }
 .card.frozen { filter: drop-shadow(0 0 .5cqh #4fc3f7); }
+/* Umlčaná príšerka (kúzlo Umlčanie) – schopnosť preškrtnutá a stlmená. */
+.card.silenced .tx { text-decoration: line-through; opacity: .45; }
 .card.frozen::after {
   content: "❄️"; position: absolute; top: 2%; left: 50%; transform: translateX(-50%);
   font-size: .7em;
