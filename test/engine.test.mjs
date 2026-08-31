@@ -239,6 +239,51 @@ test("evolve: 3 strieborné dajú zlatú so statmi ×4; zlatá sa už nespája",
   assert.equal(p.hand.length, 3); // zlaté ostávajú
 });
 
+test("evolve prenáša buffy DVOCH najsilnejších kópií (perma aj dočasné), aura sa neráta dvakrát", () => {
+  const { state, E, C } = fresh(85);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  const c1 = E.makeInst(state, "B001", 1); // +2/+2 dočasný buff
+  c1.atk += 2; c1.hp += 2; c1.maxHp += 2;
+  const c2 = E.makeInst(state, "B001", 1); // +1/+1 permanentný rast
+  c2.atk += 1; c2.hp += 1; c2.maxHp += 1; c2.pa = 1; c2.ph = 1;
+  const c3 = E.makeInst(state, "B001", 1); // čistá – jej (nulový) bonus prepadne
+  p.board = [Object.assign(c1, { slot: 0 }), Object.assign(c2, { slot: 1 })];
+  p.hand = [c3];
+  E.checkEvolve(state, p, []);
+  const s = p.board[0];
+  assert.equal(s.rank, 2);
+  assert.equal(s.atk, C.byId["B001"].atk * 2 + 2 + 1); // základ 4 + bonusy top 2 kópií
+  assert.equal(s.hp, C.byId["B001"].hp * 2 + 2 + 1);
+  assert.equal(s.pa, 1); // perma rast cestuje ďalej
+  assert.equal(s.ph, 1);
+
+  // Aura sa neduplikuje: kópie buffnuté aurou +1/+1 dajú evolvednutej
+  // presne 1× auru (z makeInst), žiadne bonusy navyše.
+  const q = state.p2;
+  q.deck = []; q.discard = [];
+  q.raceBuffs.beast = { a: 1, h: 1 };
+  q.board = [];
+  q.hand = [1, 2, 3].map(() => E.makeInst(state, "B001", 1, q)); // aura už v statoch
+  E.checkEvolve(state, q, []);
+  assert.equal(q.hand[0].rank, 2);
+  assert.equal(q.hand[0].atk, C.byId["B001"].atk * 2 + 1); // základ 4 + aura 1
+});
+
+test("drak evolveTarget prenáša buffy cieľa (nad základ, bez aury)", () => {
+  const { state, E, C } = fresh(86);
+  E.startRound(state);
+  const p = state.p1;
+  const bear = E.makeInst(state, "B001", 1); bear.slot = 0;
+  bear.atk += 2; bear.hp += 2; bear.maxHp += 2; // dočasný buff +2/+2
+  p.board = [bear];
+  p.hand = [E.makeInst(state, "D010", 1)];
+  E.playMinion(state, "p1", 0, bear.uid);
+  const up = p.board.find(x => x.defId === "B001");
+  assert.equal(up.rank, 2);
+  assert.equal(up.atk, C.byId["B001"].atk * 2 + 2); // základ 4 + prenesený buff
+});
+
 test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () => {
   const { state, E } = fresh();
   E.startRound(state);

@@ -229,45 +229,79 @@ const Engine = (() => {
       const defId = key.slice(0, key.lastIndexOf("|"));
       const rank = Number(key.slice(key.lastIndexOf("|") + 1));
 
+      // Bonusy spotrebovaných kópií NAD základ stupňa (bez aury – tú dostane
+      // evolvnutá karta znova pri vzniku). Kópie v balíčku/kôpke nesú len
+      // permanentný rast (pa/ph). Evolvnutá karta si nechá bonusy DVOCH
+      // najsilnejších kópií – tretia prepadne (inak by evolve staty len sčítal).
+      const def = Cards.byId[defId];
+      const aura = (def.race && p.raceBuffs[def.race]) || { a: 0, h: 0 };
+      const baseA = def.atk * Cards.STAT_MULT[rank] + aura.a;
+      const baseH = def.hp * Cards.STAT_MULT[rank] + aura.h;
+      const consumed = [];
+      const noteInst = inst => consumed.push({
+        a: Math.max(0, inst.atk - baseA), h: Math.max(0, inst.maxHp - baseH),
+        pa: inst.pa || 0, ph: inst.ph || 0,
+      });
+      const noteRef = c => consumed.push({ a: c.pa || 0, h: c.ph || 0, pa: c.pa || 0, ph: c.ph || 0 });
+
       let need = 3, boardSlot = null, hidden = false;
       while (need > 0 && v.board.length) {
         const inst = v.board.shift();
         if (boardSlot === null) boardSlot = inst.slot;
+        noteInst(inst);
         p.board.splice(p.board.indexOf(inst), 1);
         need--;
       }
       while (need > 0 && v.hand.length) {
         const inst = v.hand.shift();
+        noteInst(inst);
         p.hand.splice(p.hand.indexOf(inst), 1);
         need--;
       }
       for (const idx of v.deck.reverse()) { // od najvyššieho indexu
         if (need <= 0) break;
+        noteRef(p.deck[idx]);
         p.deck.splice(idx, 1);
         hidden = true;
         need--;
       }
       for (const idx of v.discard.reverse()) {
         if (need <= 0) break;
+        noteRef(p.discard[idx]);
         p.discard.splice(idx, 1);
         hidden = true;
         need--;
       }
 
+      // Dve najsilnejšie kópie (podľa celkového bonusu) dajú svoje buffy novej.
+      consumed.sort((x, y) => (y.a + y.h) - (x.a + x.h));
+      const keep = consumed.slice(0, 2);
+      const bonus = keep.reduce((s, c) => ({ a: s.a + c.a, h: s.h + c.h, pa: s.pa + c.pa, ph: s.ph + c.ph }),
+        { a: 0, h: 0, pa: 0, ph: 0 });
+
+      const applyBonus = evolved => {
+        evolved.atk += bonus.a;
+        evolved.hp += bonus.h;
+        evolved.maxHp += bonus.h;
+        if (bonus.pa || bonus.ph) { evolved.pa = bonus.pa; evolved.ph = bonus.ph; }
+      };
+
       let uid = null;
       if (boardSlot !== null) {
         const evolved = makeInst(state, defId, rank + 1, p);
+        applyBonus(evolved);
         evolved.slot = boardSlot;
         p.board.push(evolved);
         sortBoard(p);
         uid = evolved.uid;
       } else if (p.hand.length < HAND_MAX) {
         const evolved = makeInst(state, defId, rank + 1, p);
+        applyBonus(evolved);
         evolved.slot = freeSlot(p.hand, HAND_MAX);
         p.hand.push(evolved);
         uid = evolved.uid;
       } else {
-        addToDeckRef(state, p, defId, rank + 1);
+        addToDeckRef(state, p, defId, rank + 1, bonus.pa, bonus.ph);
       }
       events.push({ type: "evolve", pid: p.id, defId, rank: rank + 1, uid, hidden });
     }
@@ -325,9 +359,11 @@ const Engine = (() => {
     addToDeckRef(state, p, defId, 1);
   }
 
-  function addToDeckRef(state, p, defId, rank) {
+  function addToDeckRef(state, p, defId, rank, pa, ph) {
     const i = Math.floor(state.rng() * (p.deck.length + 1));
-    p.deck.splice(i, 0, { defId, rank });
+    const c = { defId, rank };
+    if (pa || ph) { c.pa = pa || 0; c.ph = ph || 0; }
+    p.deck.splice(i, 0, c);
   }
 
   function refreshShop(state, pid) {
@@ -561,10 +597,18 @@ const Engine = (() => {
       }
       case "evolveTarget": {
         // Drak t6: cieľ evolvne o stupeň (bronz→striebro→zlato); zlatú nezdvihne.
-        // Buffy cieľa sa stratia ako pri bežnom evolve, sloty ostávajú.
+        // Buffy cieľa NAD základ (bez aury) sa prenesú, perma rast tiež.
         const t = pickTarget();
         if (!t || t.rank >= 3 || Cards.byId[t.defId].token) break;
+        const tdef = Cards.byId[t.defId];
+        const aura = (tdef.race && p.raceBuffs[tdef.race]) || { a: 0, h: 0 };
+        const bonusA = Math.max(0, t.atk - tdef.atk * Cards.STAT_MULT[t.rank] - aura.a);
+        const bonusH = Math.max(0, t.maxHp - tdef.hp * Cards.STAT_MULT[t.rank] - aura.h);
         const up = makeInst(state, t.defId, t.rank + 1, p);
+        up.atk += bonusA;
+        up.hp += bonusH;
+        up.maxHp += bonusH;
+        if (t.pa || t.ph) { up.pa = t.pa; up.ph = t.ph; }
         up.slot = t.slot;
         p.board[p.board.indexOf(t)] = up;
         events.push({ type: "evolve", pid: p.id, uid: up.uid, defId: up.defId, rank: up.rank, replaced: t.uid });

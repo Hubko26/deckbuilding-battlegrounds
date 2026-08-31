@@ -91,7 +91,13 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
   **Výnimka – `dmgWeakEnemy`**: evolve škáluje POČET zásahov (1/2/3),
   nie silu – strieborný výboj dá 2× základný damage najslabším cieľom
   (counter na hordy malých tokenov, proti veľkým telám ostáva slabý).
-- Buffy z troch zlúčených kusov sa nezachovajú (v prototype; zjednodušenie).
+- **Buffy sa pri evolve prenášajú**: evolvnutá karta si nechá bonusy
+  (dočasné aj permanentný rast `pa/ph`) **dvoch najsilnejších** zo
+  spotrebovaných kópií; bonus tretej prepadne (evolve nie je čistý
+  súčet, inak by staty inflatovali). Bonus sa počíta NAD základ stupňa
+  bez aury – auru dostane nová inštancia znova, nedupluje sa. Kópie
+  v balíčku/kôpke nesú len perma rast. Rovnako Galaxy Dragon (D010):
+  cieľ si buffy berie so sebou.
 - Kúzla sa neevolvujú.
 
 ## Boj (automatický)
@@ -294,8 +300,8 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
   D010 (t6) battlecry **cieľ evolvne o stupeň** (`evolveTarget`,
-  bronz→striebro→zlato, zlatú nezdvihne; buffy cieľa sa stratia ako pri
-  bežnom evolve).
+  bronz→striebro→zlato, zlatú nezdvihne; buffy cieľa sa prenesú ako
+  pri bežnom evolve).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
 Návrhy pre ďalšie art sady (zatiaľ neimplementované):
