@@ -414,6 +414,120 @@ pravidla v logu); texty v `game.js` (`L.mutators`).
 Zemetrasenie (smrť najslabšej príšerky po boji) zamietnuté – plocha sa po
 boji aj tak vyprázdňuje.
 
+## Mobilné UI redesign + zrušenie spoločného obchodu (návrh, neimplementované)
+
+Analýza nápadu na vylepšenie mobilnej verzie. Štyri časti: dve sú čisté UI
+(nízke riziko), jedna je zmena karty (kozmetika s kolíziami) a jedna je
+**zmena herných pravidiel** (dotkne sa engine, botov, testov aj balance).
+Odporúčané poradie implementácie je preto UI najprv, pravidlá zvlášť.
+
+### 1. Boj: skryť ruku a balíček/kôpku, bojujúce karty veľké
+
+Počas automatického boja hráč nič nerobí – ruka, balíček aj kôpka sú len
+šum. Dnes to čiastočne rieši len landscape-mobile query (`#stage.battle
+.board.mine` sa zväčší na 24.5cqh); **portrait nemá žiadne battle
+overridy** a karty ostávajú 10.4cqh – na telefóne je boj prakticky
+nečitateľný.
+
+- Návrh: v `#stage.battle` skryť `.hand` a rohové rámiky (`.corner`),
+  oba boardy posunúť k stredu dosky a zdvojnásobiť výšku kariet
+  (portrait ~20cqh, s viditeľným `.tx` ak sa zmestí; inak aspoň staty).
+- Čisté CSS + trieda `battle`, ktorú `game.js` už nastavuje
+  (`$("stage").classList.add("battle")`). Engine sa nedotýka.
+- Pozor: proc badge (`.proc-badge`, top −14 %) a dmg floaty lietajú nad
+  kartou – pri väčších kartách a posunutých boardoch treba skontrolovať,
+  že nevytekajú mimo dosku; projektily používajú pozície elementov,
+  tie sa prispôsobia samy.
+
+### 2. Nákup: obchod veľký, v dvoch radoch, vrchný rad len obrázok
+
+Dnes je portrait obchod jeden pruh mini-kariet (10.2cqh) – pri tieri 5–6
+je to až 10 kariet (3 spoločné + 6 súkromných + kúzlo) vedľa seba, nedá
+sa na ne triafať prstom. Návrh:
+
+- Karty výrazne väčšie, v **dvoch radoch nad sebou**. Rady sa **vertikálne
+  prekrývajú**: spodný rad prekryje dolnú časť vrchného radu, takže z
+  vrchného radu vidno len **vrch karty = art** (žiadny popis, žiadne
+  staty). To je lacnejšie než orezávať karty cez `overflow: hidden`
+  wrapper a zachová existujúci drag & drop na viditeľnej ploche karty.
+- Identifikáciu karty z vrchného radu rieši existujúci **hover preview /
+  long-press** (`showPreview` + mobilný long-press už fungujú, netreba
+  nič nové) – podržanie ukáže celú čitateľnú kartu.
+- Vo viditeľnom vrchu karty ostávajú badge, ktoré tam už sú: tier
+  hviezda (vľavo hore), cena (vpravo hore), počítadlo kópií `n/3`.
+  Chýba tam **rasa** – rieši časť 4.
+- Ťukacia plocha vrchného radu je len odkrytá polovica karty – pri
+  veľkých kartách je to stále pohodlne nad 44 px, pre deti OK.
+- Po zrušení spoločného obchodu (časť 3) je maximum kariet 6 príšer +
+  1 kúzlo = **7 kariet → rady 4 + 3**, čo sa do dvoch veľkých radov
+  zmestí pohodlne. Bez zrušenia commons by to bolo až 10 kariet a
+  „veľké karty v dvoch radoch“ na portrait nevychádzajú – tieto dve
+  zmeny na seba nadväzujú.
+- Spodný (plne viditeľný) rad má byť ten akčnejší: súkromné karty
+  nižších indexov + spell slot; presné rozdelenie doladiť pri
+  implementácii.
+
+### 3. Zrušenie spoločného obchodu (LEN súkromná ponuka)
+
+Toto **nie je UI zmena, ale zmena pravidiel** – platí globálne (engine je
+jeden, multiplayer je deterministická replikácia akcií), nie len na
+mobile. Dôsledky:
+
+- **Zaniká pravidlo „tier spoločných = nižší z tierov“** aj celá
+  medzihráčska interakcia obchodu: vyfúknutie karty súperovi, dokupovanie
+  trojíc zo spoločnej ponuky, čítanie súperovho nákupu. Nákup sa stáva
+  čistým sólo draftom – pre cieľovku (deti 6+, hra s botom) je to
+  prijateľné zjednodušenie a odstráni najkomplikovanejšie pravidlo hry.
+- **Ekonomika ponuky**: hráč príde o 3 sloty ponuky. Kompenzácia:
+  zdvihnúť súkromné `min(tier + 1, 6)` na **`min(tier + 2, 7)`**
+  (t1 = 3 karty namiesto 2+3 dnes, strop 7). Presné číslo overiť cez
+  `npm run sim` – menšia ponuka spomalí evolve trojice a tým celé tempo.
+- **Dotknutý kód**: `engine.js` (`state.commons`, `buyCommon`,
+  `commonTierLimit`, refresh a `startRound` rolly), `bot.js` (options
+  s `kind: "common"`), `claude-bot.js` (serializácia stavu, prompt,
+  mapovanie akcie `buy` na commons), `game.js` + `index.html`
+  (`commonsRow`), testy (cca 15 asercií na `state.commons`),
+  `arena-ai/SKILL.md`, sekcia Obchod v tomto dokumente a pravidlá na
+  pick obrazovke (`rules-box`).
+- **Mutácia `plenty`** („+1 spoločná karta“) stráca zmysel → nahradiť
+  „+1 súkromná karta“ (id môže ostať).
+- **Replay kompatibilita**: staré nahrávky obsahujú akciu `buyCommon` –
+  `tools/replay.mjs` ich už neprehrá. Buď v engine nechať `buyCommon`
+  ako mŕtvu vetvu pre replay, alebo (jednoduchšie) zvýšiť verziu logu
+  a staré nahrávky vyhlásiť za nekompatibilné.
+- Multiplayeru zmena pomáha: commons boli jediný zdieľaný kus obchodu,
+  bez nich sa nákupné fázy oboch hráčov navzájom vôbec neovplyvňujú.
+
+### 4. Rasa na vrchný kraj karty
+
+Rasová pilulka je dnes dole (`bottom: 4.2%`, medzi útokom a životom).
+V orezanom vrchnom rade obchodu (časť 2) by nebola vidno – a rasa je
+pri nákupe kľúčová informácia (synergie). Presun na vrchný kraj:
+
+- Nový domov: **horný stred karty**, tesne pod okrajom rámu (medzi tier
+  hviezdou vľavo a cenou vpravo), cez vrch artu.
+- Kolízie na vrchu karty, ktoré treba vyriešiť: **frozen ❄** badge je
+  dnes top-center (presunúť k freeze tlačidlu do rohu alebo pod rasu),
+  badge kópií `n/3` je vpravo pod cenou, shield/revive badge vpravo hore
+  na boardových kartách (tam rasa počas boja nie je nutná – prípadne ju
+  na boardoch nechať dole a hore ju dať len v obchode; jednoduchšie je
+  ale jeden layout všade).
+- Zmena je čisto v `style.css` (`.card .race`), DOM sa nemení.
+
+### Odporúčaný postup
+
+1. **Fáza UI** (bez zmeny pravidiel): boj bez ruky/kôpok (1), rasa hore
+   (4) – malé, bezpečné, hneď zlepšia mobil.
+2. **Fáza pravidlá**: zrušenie commons (3) – engine + boty + testy +
+   sim + aktualizácia sekcie Obchod, mutácií a SKILL.md naraz.
+3. **Fáza obchod-layout** (2) až po zrušení commons – dvojradový layout
+   sa navrhuje na 7 kariet, nie 10.
+
+Otvorené otázky: presná kompenzácia počtu súkromných kariet (sim),
+či nechať spoločný obchod ako mutáciu/variant pre multiplayer medzi
+kamošmi, a či v boji na malom displeji ukazovať texty schopností alebo
+len staty + keyword badge.
+
 ## Technika
 
 - Čistý JS bez frameworku a bez buildu, `index.html` v koreňi repa → GitHub Pages.
