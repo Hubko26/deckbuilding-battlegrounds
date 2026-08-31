@@ -29,13 +29,17 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Obchod je vykreslený v **hornom rade slotov** dosky. Súperove karty počas
   nákupu NEVIDNO – jeho board sa ukáže až v boji (na mieste obchodu).
 - **3 spoločné karty** – vidia ich obaja hráči; kúpená je okamžite nahradená novou,
-  ktorú môže kúpiť aj súper. Tier spoločných kariet je obmedzený vyšším z tierov oboch
-  hráčov.
+  ktorú môže kúpiť aj súper. Tier spoločných kariet je obmedzený **nižším** z tierov
+  oboch hráčov – hráč s nižším tierom nesmie v spoločnej ponuke vidieť karty nad svoj
+  tier (ani cez súperov refresh).
 - **Súkromné karty** – každý hráč má vlastné, súper ich nevidí. Počet:
   `min(tier + 1, 6)` (na tieri 1 sú 2, každý upgrade pridá jednu, strop 6). Tier
-  obmedzený vlastným tierom.
+  obmedzený vlastným tierom – len tu hráč vidí karty svojho (vyššieho) tieru.
+- **Po každom boji sa obchod rolluje nanovo** – celá spoločná ponuka aj všetky
+  nezmrazené súkromné karty.
 - **Freeze** ❄ – len na vlastných súkromných kartách; zmrazená karta prežije refresh
-  aj koniec kola.
+  aj koniec kola. V novom kole sa automaticky rozmrazí (freeze platí jedno kolo,
+  štýl Battlegrounds).
 - **Refresh** – vymení 3 spoločné a všetky nezmrazené súkromné karty.
 - Hráči vidia, čo súper nakúpil (zoznam v logu po jeho ťahu) – dá sa podľa toho stavať
   stratégia.

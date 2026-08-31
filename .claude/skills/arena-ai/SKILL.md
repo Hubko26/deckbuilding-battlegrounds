@@ -12,8 +12,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   V nepárnom kole začína p1, v párnom p2.
 - Peniaze: `min(kolo + 2, 10)` na začiatku kola, neminuté prepadnú.
 - Obchod: 3 spoločné karty (zdieľané, kúpená sa hneď nahradí) + súkromné
-  (`min(tier+1, 6)`). Príšera stojí 3, kúzla majú vlastnú cenu (Minca 1,
-  Jablko/Kniha/Koreň/Vlna 2, Srdce 3). Refresh 1, freeze len súkromné.
+  (`min(tier+1, 6)`). Tier spoločných = NIŽŠÍ z tierov oboch hráčov;
+  súkromné idú podľa vlastného tieru. Príšera stojí 3, kúzla majú vlastnú
+  cenu (Minca 1, Jablko/Kniha/Koreň/Vlna 2, Srdce 3). Refresh 1, freeze
+  len súkromné. Po každom boji sa obchod rolluje nanovo; zmrazená karta
+  prežije do nového kola a rozmrazí sa (freeze platí jedno kolo).
 - Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/7/8/9/10,
   cena klesá o 1 každé kolo na aktuálnom tieri).
 - Kúpená karta ide do balíčka. Ruka sa doťahuje na 5 na začiatku vlastnej

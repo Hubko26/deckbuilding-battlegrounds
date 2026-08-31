@@ -590,6 +590,34 @@ test("determinizmus: rovnaký seed + rovnaké akcie = identický stav (multiplay
   assert.equal(play(), play());
 });
 
+test("po boji sa obchod refreshne: commons aj nezmrazené súkromné nanovo, zmrazená prežije a rozmrazí sa", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  state.commons = ["SENT", "SENT", "SENT"];
+  state.p1.priv = [{ defId: "SENT", frozen: true }, { defId: "SENT", frozen: false }];
+  E.endShopTurn(state, "p1");
+  E.endShopTurn(state, "p2");
+  E.doBattle(state); // prázdne plochy → remíza → startRound
+  assert.equal(state.round, 2);
+  assert.ok(state.commons.every(id => id !== "SENT"));
+  assert.equal(state.p1.priv[0].defId, "SENT");
+  assert.equal(state.p1.priv[0].frozen, false);
+  assert.ok(state.p1.priv.slice(1).every(s => s.defId !== "SENT"));
+});
+
+test("common ponuka je stropovaná nižším tierom hráčov, súkromná vlastným", () => {
+  const { state, E, C } = fresh();
+  E.startRound(state);
+  state.p1.tier = 4;
+  state.p2.tier = 2;
+  assert.equal(E.commonTierLimit(state), 2);
+  state.p1.money = 20;
+  E.refreshShop(state, "p1");
+  assert.ok(state.commons.every(id => C.byId[id].tier <= 2));
+  E.buyCommon(state, "p1", 0); // náhrada kúpenej karty drží rovnaký strop
+  assert.ok(state.commons.every(id => C.byId[id].tier <= 2));
+});
+
 test("striedanie: v párnom kole začína p2", () => {
   const { state, E } = fresh(9);
   E.startRound(state);

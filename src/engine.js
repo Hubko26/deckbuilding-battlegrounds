@@ -113,18 +113,29 @@ const Engine = (() => {
     }
   }
 
+  // Spoločná ponuka nesmie hráčovi s nižším tierom ukazovať (ani súperovým
+  // refreshom prezradiť) vyššie karty – strop je NIŽŠÍ z tierov oboch hráčov.
+  // Vlastný tier platí len v súkromnej ponuke.
   function commonTierLimit(state) {
-    return Math.max(state.p1.tier, state.p2.tier);
+    return Math.min(state.p1.tier, state.p2.tier);
   }
 
   // ---------- Kolo a nákupná fáza ----------
+  // Po každom boji sa obchod rolluje nanovo: celá spoločná ponuka aj
+  // nezmrazené súkromné karty. Zmrazená karta prežije do nového kola
+  // a rozmrazí sa – freeze platí jedno kolo (štýl Battlegrounds).
   function startRound(state) {
     state.round++;
     state.first = state.round % 2 === 1 ? "p1" : "p2";
+    for (let i = 0; i < state.commons.length; i++) {
+      state.commons[i] = rollCard(state, commonTierLimit(state));
+    }
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       p.money = income(state.round);
       p.bought = [];
+      p.priv = p.priv.filter(s => s.frozen);
+      for (const s of p.priv) s.frozen = false;
       fillPrivate(state, pid);
     }
     state.active = state.first;
