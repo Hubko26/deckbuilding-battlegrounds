@@ -57,7 +57,7 @@ Action objects (executed in order; illegal ones are skipped):
 
 STRATEGY: complete triples > buy synergy with your dominant race > spend ALL money (refresh with leftovers to hunt triples) > upgrade tier when affordable mid-game. Play all minions you can. Cast buff spells on your strongest minion.
 
-TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
+TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders in a small speech bubble – longer gets cut, so keep it a single snappy sentence), addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
 
   // Kompaktný pohľad na stav – len to, čo súper legálne vidí.
   function snapshot(state, pid, Cards, Engine) {
@@ -206,7 +206,7 @@ TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human 
       run("playMinion", [i]);
     }
     run("endShopTurn", []);
-    return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 140) : null };
+    return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 250) : null };
   }
 
   // Odpoveď na hráčovu chatovú správu – samostatný lacný request (bez ťahu).
@@ -227,7 +227,7 @@ TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human 
         model: MODEL,
         max_tokens: 300,
         output_config: { effort: "low" },
-        system: `You are the trash-talking robot opponent in the kids' autobattler "Animal Arena", mid-game. The human player just sent you a chat message. Reply with ONE short punchy line (max 160 chars) in ${langName} – witty friendly banter, react directly to what they said. Default kid-friendly; if a player profile is provided it sets the tone (e.g. absurd adult banter) and gives material. Hard limits regardless of profile: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves. Reply with the line only, no quotes, no JSON.`,
+        system: `You are the trash-talking robot opponent in the kids' autobattler "Animal Arena", mid-game. The human player just sent you a chat message. Reply with ONE short punchy line (HARD LIMIT 130 characters – it renders in a small speech bubble) in ${langName} – witty friendly banter, react directly to what they said. Default kid-friendly; if a player profile is provided it sets the tone (e.g. absurd adult banter) and gives material. Hard limits regardless of profile: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves. Reply with the line only, no quotes, no JSON.`,
         messages: [{
           role: "user",
           content: JSON.stringify({
@@ -243,7 +243,7 @@ TAUNT: one short playful trash-talk line (max 160 chars) addressed to the human 
     if (!resp.ok) throw new Error("API " + resp.status);
     const data = await resp.json();
     const out = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("").trim();
-    return out.slice(0, 200);
+    return out.slice(0, 250);
   }
 
   return { turn, chat, isAllowed, langFor, MODEL };
