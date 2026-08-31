@@ -130,6 +130,50 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 Ďalšie rasy (Dragon, Fairy, Human, Ogre) sa pridajú s ďalšími art sadami –
 dátový model je pripravený (pole `race` na karte).
 
+### Plánované rasové mechaniky
+
+Návrhy pre ďalšie art sady a rework existujúcich rás (zatiaľ neimplementované).
+
+**🧚 Fairy (Víla) – nová rasa: mágia a kúzla**
+
+- Víly sú orientované na kúzla: ich schopnosti sa spúšťajú **zoslaním kúzla**.
+  Kúzla zaberajú miesto v ruke a v balíčku na úkor príšer (doťah 5, ruka max 8) –
+  to je prirodzená cena hrania „spell" archetypu a víly ju premieňajú na výhodu.
+- Nový keyword **„Po kúzle"** – spustí sa vždy, keď zošleš kúzlo, kým je víla
+  na ploche (obdoba battlecry, ale opakovateľná):
+  - „Po kúzle: **potiahni kartu**." – vlajková synergia; kompenzuje ruku
+    preplnenú kúzlami a roztáča deckbuilding motor,
+  - „Po kúzle: +1/+1 tejto víle" – rast počas nákupnej fázy,
+  - „Po kúzle: buffni náhodnú vílu / vyvolaj slabý token",
+  - vyššie tiery: „Po kúzle: vráť si 1 🪙" alebo „ďalšie kúzlo v tomto
+    kole stojí o 1 menej".
+- Kúzla samotné ostávajú bez rasy – víly reagujú na zoslanie, nie na
+  vlastníctvo. Fairy aury (`futureRace`) fungujú štandardne.
+
+**💀 Undead – rework: horda kostríkov + Pretečenie**
+
+- Téma rasy sa vyhrocuje: **veľa slabých tiel**. Viac deathrattle kariet
+  vyvoláva kostríkov a vo väčších počtoch (2–3 naraz, na vyšších tieroch viac);
+  jednotlivé nemŕtve telá ostávajú štatovo podpriemerné.
+- Nová pasívna mechanika **Pretečenie**: keď sa vyvolávaný nemŕtvy (typicky
+  kostrík) nezmestí na plnú plochu (max 5), nezmizne naprázdno – jeho staty
+  sa **prerozdelia medzi ostatné žijúce vlastné príšery** (rovným dielom,
+  zvyšok náhodne). Plná plocha tak premieňa ďalšie tokeny na buffy a undead
+  „wide" stratégia škáluje aj po zaplnení dosky.
+  - Platí v boji a je dočasná ako všetky bojové buffy (po boji idú karty do
+    kôpky ako čisté kópie). Implementačne: vetva „board plný" v `summon`
+    efekte namiesto ticheho zahodenia tokenu.
+
+**🐾 Beast – deathrattle s rastúcou príšerou**
+
+- Nová beast karta: „Pri smrti: vyvolaj Mláďa." – Mláďa je **zakaždým
+  silnejšie**: každé ďalšie vyvolanie počas hry má o +2/+2 viac. Počítadlo
+  rastu je trvalé pre hráča na celú hru (obdoba permanentných aur,
+  `raceBuffs`), takže karta prirodzene škáluje do late game.
+- Evolve zvyšuje **krok rastu** (strieborná +4/+4, zlatá +6/+6 za vyvolanie),
+  nie počet vyvolaných – drží líniu „beast = jedno silnejúce telo",
+  kontrast k undead horde.
+
 ### Synergie
 
 - **Rasové buffy** sú viazané na rasu: Zvieratá boostujú Zvieratá, Nemŕtvi
