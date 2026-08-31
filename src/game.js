@@ -459,7 +459,10 @@ async function runBattle() {
         const el = cardById(ev.uid);
         if (el) {
           const hpEl = el.querySelector(".hp");
-          if (hpEl) hpEl.textContent = String(Math.max(0, ev.hp));
+          if (hpEl) {
+            hpEl.textContent = String(Math.max(0, ev.hp));
+            hpEl.classList.toggle("hurt", ev.hp < Number(el.dataset.maxhp || Infinity));
+          }
         }
         break;
       }
@@ -499,7 +502,10 @@ async function runBattle() {
         for (const h of ev.hits) {
           const el = cardById(h.uid);
           const hpEl = el && el.querySelector(".hp");
-          if (hpEl) hpEl.textContent = String(Math.max(0, h.hp));
+          if (hpEl) {
+            hpEl.textContent = String(Math.max(0, h.hp));
+            hpEl.classList.toggle("hurt", h.hp < Number(el.dataset.maxhp || Infinity));
+          }
         }
         await sleep(650);
         for (const el of els) el.classList.remove("hit");
@@ -514,6 +520,8 @@ async function runBattle() {
           const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
           if (atkEl && ev.a) { atkEl.textContent = String((parseInt(atkEl.textContent, 10) || 0) + ev.a); atkEl.classList.add("buffed"); }
           if (hpEl && ev.h) { hpEl.textContent = String((parseInt(hpEl.textContent, 10) || 0) + ev.h); hpEl.classList.add("buffed"); }
+          // Buff dvíha aj maxHp – zranenie (červená) sa nezamaskuje.
+          if (ev.h) el.dataset.maxhp = String(Number(el.dataset.maxhp || 0) + ev.h);
           el.classList.add("evolving");
           await sleep(500);
           el.classList.remove("evolving");
@@ -788,10 +796,14 @@ function cardEl(instOrId, opts) {
     const atk = isInst ? instOrId.atk : def.atk;
     const hp = isInst ? instOrId.hp : def.hp;
     // Buffnuté staty zelenou – vidno rozdiel oproti základu daného stupňa.
+    // Zranená príšerka (hp < maxHp) má život červený; červená vyhráva.
     const baseAtk = def.atk * Cards.STAT_MULT[rank];
     const baseHp = def.hp * Cards.STAT_MULT[rank];
+    const maxHp = isInst ? (instOrId.maxHp ?? hp) : def.hp;
+    const hurt = isInst && hp < maxHp;
+    el.dataset.maxhp = String(maxHp);
     inner += `<span class="atk${atk > baseAtk ? " buffed" : ""}">${atk}</span>` +
-      `<span class="hp${hp > baseHp ? " buffed" : ""}">${hp}</span>`;
+      `<span class="hp${hurt ? " hurt" : hp > baseHp ? " buffed" : ""}">${hp}</span>`;
   }
   el.innerHTML = inner;
   if (!opts.big) {

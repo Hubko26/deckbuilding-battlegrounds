@@ -237,6 +237,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .card .hp { left: 86%; }
 /* buffnuté staty (nad základ stupňa) svietia zelenou */
 .card .atk.buffed, .card .hp.buffed { color: #5cf07a; }
+/* zranená príšerka (hp < maxHp) má život červený – červená vyhráva nad zelenou */
+.card .hp.hurt { color: #ff5252; }
 /* Tier obchodu: veľká hviezda vľavo hore, nech ju vidno na prvý pohľad. */
 .card .tier-tag {
   position: absolute; top: 1%; left: 2.5%; font-size: 1.1em; font-weight: 900;
