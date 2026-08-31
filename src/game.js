@@ -165,6 +165,21 @@ const L = {
     cs: "🤫 Umlčení nenašlo cíl (soupeř nemá příšerku se schopností)",
     en: "🤫 Silence found no target (no enemy minion with an ability)",
   },
+  chargeDmgMsg: {
+    sk: "⚡ Nabité: tvoj ďalší výboj alebo výbuch dá +{n} damage",
+    cs: "⚡ Nabito: tvůj další výboj nebo výbuch dá +{n} damage",
+    en: "⚡ Charged: your next zap or explosion deals +{n} damage",
+  },
+  chargeSummonMsg: {
+    sk: "🧟 Nabité: tvoje ďalšie vyvolanie v boji vyvolá o {n} viac",
+    cs: "🧟 Nabito: tvé další vyvolání v boji vyvolá o {n} víc",
+    en: "🧟 Charged: your next summon in battle summons {n} extra",
+  },
+  silencePendingMsg: {
+    sk: "🤫 Nabité: v najbližšom boji bude umlčaná súperova príšerka",
+    cs: "🤫 Nabito: v nejbližším boji bude umlčena soupeřova příšerka",
+    en: "🤫 Charged: an enemy minion will be silenced next fight",
+  },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
   you: { sk: "Ty", cs: "Ty", en: "You" },
   opp: { sk: "Súper", cs: "Soupeř", en: "Opponent" },
@@ -1120,6 +1135,39 @@ function act(events) {
       const el = cardById(ev.uid);
       if (el) el.classList.add("evolving");
     }
+  }
+  // Efekty schopností v nákupnej fáze (battlecry, Po nákupe, kúzla) – nech
+  // hráč VIDÍ, že sa niečo stalo: proc badge, +a/+h nad kartou, log chárg.
+  for (const ev of events) {
+    if (ev.pid !== MY) continue;
+    if (ev.type === "play") {
+      const def = Cards.byId[ev.defId];
+      if (def.power && def.power.kw === "battlecry") {
+        const el = cardById(ev.uid);
+        if (el) {
+          el.classList.add("proc");
+          const badge = document.createElement("div");
+          badge.className = "proc-badge";
+          badge.textContent = Cards.KW_LABEL.battlecry[I18N.lang] + "!";
+          el.appendChild(badge);
+          Sfx.buff();
+          setTimeout(() => { el.classList.remove("proc"); badge.remove(); }, 900);
+        }
+      }
+    }
+    if (ev.type === "buff" && ev.uid) {
+      const el = cardById(ev.uid);
+      if (el) {
+        floatText(el, `+${ev.a}/+${ev.h}`, true);
+        el.classList.add("evolving");
+        setTimeout(() => el.classList.remove("evolving"), 600);
+      }
+    }
+    if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
+    if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);
+    if (ev.type === "dmgCharge") log(t(L.chargeDmgMsg).replace("{n}", ev.n));
+    if (ev.type === "summonCharge") log(t(L.chargeSummonMsg).replace("{n}", ev.n));
+    if (ev.type === "silencePending") log(t(L.silencePendingMsg));
   }
   // Trojica zo skrytých kópií (balíček/kôpka) – ohlás popupom.
   if (hiddenEvolves.length) {
