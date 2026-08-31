@@ -1,0 +1,13 @@
+{
+  "name": "Zvieracia aréna",
+  "short_name": "Aréna",
+  "description": "Detský autobattler + deckbuilding so zvieratkami.",
+  "start_url": ".",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#7ec8ff",
+  "theme_color": "#7ec8ff",
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

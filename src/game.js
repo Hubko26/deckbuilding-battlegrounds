@@ -1281,6 +1281,72 @@ function onPressUp(e) {
   if (drag) endDrag(e);
 }
 
+// Zruš rozbehnuté ťahanie bez vykonania akcie (druhý prst = pinch zoom).
+function cancelDrag() {
+  window.removeEventListener("pointermove", onPressMove);
+  if (press) { clearTimeout(press.longTimer); press = null; }
+  hidePreview();
+  if (drag) {
+    drag.ghost.remove();
+    drag.card.classList.remove("drag-src");
+    markZones(drag.src, false);
+    drag = null;
+  }
+}
+
+// ---------- Pinch zoom: 2 prsty zväčšia a posúvajú dosku ----------
+// Jeden prst ďalej normálne ťahá karty; položenie druhého prsta ťahanie
+// zruší a začne zoom. Stiahnutie prstov späť pod 1× zoom celý resetne.
+const zoomSt = { s: 1, tx: 0, ty: 0 };
+const zoomPts = new Map(); // pointerId -> posledná poloha prsta
+let pinch = null; // { d0, s0, c0x, c0y, ux, uy } – stred štipca drží miesto
+
+function applyZoom() {
+  const st = $("stage");
+  if (zoomSt.s <= 1.02) {
+    zoomSt.s = 1; zoomSt.tx = 0; zoomSt.ty = 0;
+    st.style.transform = "";
+  } else {
+    st.style.transform = `translate(${zoomSt.tx}px, ${zoomSt.ty}px) scale(${zoomSt.s})`;
+  }
+}
+
+$("gameScreen").addEventListener("pointerdown", e => {
+  if (e.pointerType !== "touch") return;
+  zoomPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (zoomPts.size !== 2) return;
+  cancelDrag();
+  const [a, b] = [...zoomPts.values()];
+  const r = $("stage").getBoundingClientRect();
+  // Stred dosky bez transformu (translate posúva aj stred rectu).
+  const c0x = (r.left + r.right) / 2 - zoomSt.tx;
+  const c0y = (r.top + r.bottom) / 2 - zoomSt.ty;
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  pinch = {
+    d0: Math.hypot(a.x - b.x, a.y - b.y) || 1,
+    s0: zoomSt.s, c0x, c0y,
+    ux: (mx - c0x - zoomSt.tx) / zoomSt.s,
+    uy: (my - c0y - zoomSt.ty) / zoomSt.s,
+  };
+});
+window.addEventListener("pointermove", e => {
+  if (!zoomPts.has(e.pointerId)) return;
+  zoomPts.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (!pinch || zoomPts.size < 2) return;
+  const [a, b] = [...zoomPts.values()];
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  zoomSt.s = Math.min(3, Math.max(1, pinch.s0 * (Math.hypot(a.x - b.x, a.y - b.y) / pinch.d0)));
+  zoomSt.tx = mx - pinch.c0x - zoomSt.s * pinch.ux;
+  zoomSt.ty = my - pinch.c0y - zoomSt.s * pinch.uy;
+  applyZoom();
+});
+function zoomPtUp(e) {
+  zoomPts.delete(e.pointerId);
+  if (zoomPts.size < 2) pinch = null;
+}
+window.addEventListener("pointerup", zoomPtUp);
+window.addEventListener("pointercancel", zoomPtUp);
+
 function beginDrag(e, card, src) {
   const r = card.getBoundingClientRect();
   const ghost = card.cloneNode(true);
@@ -1562,6 +1628,39 @@ $("muteBtn").textContent = Sfx.muted ? "🔇" : "🔊";
 $("muteBtn").addEventListener("click", () => {
   $("muteBtn").textContent = Sfx.toggleMute() ? "🔇" : "🔊";
 });
+
+// ---------- Celá obrazovka (⛶) ----------
+// Desktop + Android: Fullscreen API. iOS Safari API nemá – tlačidlo schováme
+// a fullscreen tam rieši PWA („Pridať na plochu“, viď manifest.json).
+// body.fs → CSS dá doske takmer celú výšku obrazovky.
+const fsRoot = document.documentElement;
+function fsActive() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement);
+}
+function updateFsUi() {
+  const standalone = navigator.standalone === true ||
+    matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches;
+  document.body.classList.toggle("fs", fsActive() || standalone);
+  $("fsBtn").textContent = fsActive() ? "🗗" : "⛶";
+}
+async function toggleFullscreen() {
+  try {
+    if (fsActive()) {
+      await (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    } else {
+      await (fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen).call(fsRoot);
+    }
+  } catch { /* prehliadač fullscreen odmietol – ostávame ako sme */ }
+  updateFsUi();
+}
+if (fsRoot.requestFullscreen || fsRoot.webkitRequestFullscreen) {
+  $("fsBtn").addEventListener("click", toggleFullscreen);
+} else {
+  $("fsBtn").classList.add("hidden");
+}
+document.addEventListener("fullscreenchange", updateFsUi);
+document.addEventListener("webkitfullscreenchange", updateFsUi);
+updateFsUi();
 
 // Dlhé podržanie na karte nesmie otvoriť natívne menu prehliadača
 // („stiahnuť obrázok“) – long-press ukazuje preview karty.

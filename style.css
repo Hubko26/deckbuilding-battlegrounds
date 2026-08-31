@@ -13,6 +13,8 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  /* dvh = skutočná viditeľná výška na mobile (reaguje na lištu prehliadača) */
+  min-height: 100dvh;
   touch-action: manipulation;
   user-select: none;
   -webkit-user-select: none;
@@ -99,6 +101,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 #stage {
   position: relative;
   width: min(98vw, calc(72vh * 1.783));
+  width: min(98vw, calc(72dvh * 1.783));
   aspect-ratio: 1676 / 940;
   background: url("PlayGround.png") center / 100% 100% no-repeat;
   container-type: size;
@@ -107,7 +110,9 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 
 /* Log: pruh NAD doskou (mimo obrázka). */
 .log {
-  width: min(98vw, calc(72vh * 1.783)); min-height: 1.3em;
+  width: min(98vw, calc(72vh * 1.783));
+  width: min(98vw, calc(72dvh * 1.783));
+  min-height: 1.3em;
   font-size: .85rem; color: #345; text-align: center; overflow: hidden;
   font-weight: 600; white-space: nowrap;
 }
@@ -151,8 +156,10 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    Horný rad slotov = OBCHOD počas nákupu; v boji tam hrá súperov board.
    Stred = moje bojujúce karty (veľké). Spodný rad slotov = moja ruka. */
 
-/* Obchod v hornom rade slotov (medzi vrchnými rámikmi). */
-.shop-panel { position: absolute; left: 20%; top: 14.8%; width: 60%; height: 22%; }
+/* Obchod v hornom rade slotov (medzi vrchnými rámikmi). Panel je širší než
+   rad slotov, aby sa v tieri 5–6 zmestilo aj 10 kariet (3+6+kúzlo) bez
+   pretečenia mimo dosku – karty sú centrované, tak sa rámikov nedotknú. */
+.shop-panel { position: absolute; left: 12%; top: 14.8%; width: 76%; height: 22%; }
 .shop-rows { display: flex; gap: 1cqw; justify-content: center; align-items: stretch; }
 .shop-row {
   display: flex; gap: .5cqw; justify-content: center; align-items: center;
@@ -461,13 +468,21 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    Rovnaká logika ako desktop (6+6 slotov, veľký stred), ale iné pomery:
    sloty hore y 101–228, dole y 611–738, x ~395–1410; rámiky balíčkov na
    bokoch (y 144–266 a 560–678), bannery hore/dole v strede. */
-@media (orientation: landscape) and (max-height: 600px) {
+@media (orientation: landscape) and (max-height: 600px),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
   #stage {
     width: min(98vw, calc(73vh * 1850 / 850));
+    width: min(98vw, calc(73dvh * 1850 / 850));
     aspect-ratio: 1850 / 850;
     background-image: url("PlayGround-mobile-wide.png");
+    /* dva prsty patria pinch zoomu hry, nie scrollu prehliadača */
+    touch-action: none;
   }
-  .log { width: min(98vw, calc(73vh * 1850 / 850)); font-size: .8rem; }
+  .log {
+    width: min(98vw, calc(73vh * 1850 / 850));
+    width: min(98vw, calc(73dvh * 1850 / 850));
+    font-size: .8rem;
+  }
 
   .hero-plate { left: 35.1%; width: 29.7%; grid-template-columns: 1fr 5cqw 1fr; font-size: 2.4cqh; }
   .hero-plate.top { top: 1.2%; height: 9.4%; }
@@ -482,10 +497,22 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 
   .board { left: 21.35%; width: 54.9%; }
   .board.opp { top: 11.9%; height: 14.9%; }
-  .board.mine { top: 34%; height: 30%; }
 
-  .shop-panel { left: 21%; top: 11.5%; width: 55.6%; height: 24%; }
-  .shop-row { min-height: 14.9cqh; }
+  /* Obchod na 2 riadky nad sebou (spoločné hore, súkromné + kúzlo dole) –
+     karty sú výrazne väčšie a ani 10 kariet nepretečie mimo dosku. */
+  .shop-panel { left: 8%; top: 10.8%; width: 84%; height: 45%; }
+  .shop-rows { flex-direction: column; align-items: center; gap: .6cqh; }
+  .shop-row { min-height: 19cqh; }
+  .shop-row .card { height: 19cqh; font-size: 1.75cqh; }
+
+  /* Počas nákupu je môj board nižšie a menší (obchod berie vrch dosky);
+     v boji sa obchod skryje a board sa vráti veľký do stredu. */
+  .board.mine { top: 55%; height: 16%; }
+  #stage .board.mine .card { height: 14.5cqh; font-size: 1.3cqh; }
+  #stage .board.mine .card .tx { display: none; }
+  #stage.battle .board.mine { top: 34%; height: 30%; }
+  #stage.battle .board.mine .card { height: 24.5cqh; font-size: 2.1cqh; }
+  #stage.battle .board.mine .card .tx { display: block; }
 
   #stage .hand { left: 21.7%; width: 53.7%; top: 71.9%; height: 14.9%; }
 
@@ -499,6 +526,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   #stage {
     /* 70vh výšky dosky + ~13vh ruka pod ňou = zmestí sa bez scrollovania */
     width: min(96vw, calc(70vh * 941 / 1672));
+    width: min(96vw, calc(70dvh * 941 / 1672));
     aspect-ratio: 941 / 1672;
     background-image: url("PlayGround-mobile.png");
     margin-bottom: 13vh;
@@ -547,4 +575,17 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   }
   #stage .hand .card { height: 11vh; font-size: 1.35vh; flex: 0 0 auto; }
   .preview-card { width: min(260px, 68vw); font-size: clamp(11px, 3.6vw, 15px); }
+}
+
+/* ---------- Celá obrazovka (⛶ tlačidlo alebo PWA z plochy) ----------
+   body.fs nastavuje game.js (Fullscreen API alebo display-mode standalone).
+   Bez lišty prehliadača si doska vezme takmer celú výšku obrazovky –
+   ~80px ostáva na hlavičku a log. Portrait škáluje cez dvh automaticky. */
+body.fs footer { display: none; }
+@media (orientation: landscape) {
+  body.fs #stage, body.fs .log { width: min(98vw, calc((100dvh - 80px) * 1676 / 940)); }
+}
+@media (orientation: landscape) and (max-height: 600px),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
+  body.fs #stage, body.fs .log { width: min(98vw, calc((100dvh - 74px) * 1850 / 850)); }
 }
