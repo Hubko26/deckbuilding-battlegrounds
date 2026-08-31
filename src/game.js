@@ -70,16 +70,17 @@ const L = {
     cs: "Klíč zůstává jen v tomto prohlížeči (localStorage) – nikam jinam se neposílá, platí se za něj Anthropic API.",
     en: "The key stays in this browser only (localStorage) – it goes nowhere else; Anthropic API usage is billed.",
   },
-  claudeDescLabel: { sk: "Profil hráča (na trash-talk na mieru):", cs: "Profil hráče (na trash-talk na míru):", en: "Player profile (for tailored trash-talk):" },
-  claudeDescPh: {
-    sk: "napr. Kubo, 8 rokov, vždy kupuje drahé karty a zabúda na trojice",
-    cs: "např. Kuba, 8 let, vždy kupuje drahé karty a zapomíná na trojice",
-    en: "e.g. Jake, 8, always buys expensive cards and forgets triples",
-  },
+  claudeNameLabel: { sk: "Tvoje meno:", cs: "Tvoje jméno:", en: "Your name:" },
+  claudeNamePh: { sk: "napr. Kubo", cs: "např. Kuba", en: "e.g. Jake" },
   claudeNeedKey: {
     sk: "Claude súper potrebuje API kľúč – vlož ho do políčka.",
     cs: "Claude soupeř potřebuje API klíč – vlož ho do políčka.",
     en: "The Claude opponent needs an API key – paste it in the field.",
+  },
+  claudeNameGate: {
+    sk: "Claude súper hrá len proti vyvoleným. Napíš správne meno. 😜",
+    cs: "Claude soupeř hraje jen proti vyvoleným. Napiš správné jméno. 😜",
+    en: "The Claude opponent only plays the chosen ones. Enter the right name. 😜",
   },
   claudeFallback: {
     sk: "⚠️ Claude nedostupný (API zlyhalo) – ťah dohral ťažký bot.",
@@ -329,14 +330,14 @@ function renderPick() {
   if (difficulty === "claude" && !cs.dataset.ready) {
     cs.dataset.ready = "1";
     $("claudeKey").value = localStorage.getItem("arena.apiKey") || "";
-    $("claudeDesc").value = localStorage.getItem("arena.playerDesc") || "";
+    $("claudeName").value = localStorage.getItem("arena.playerName") || "";
     $("claudeKey").addEventListener("input", e => localStorage.setItem("arena.apiKey", e.target.value.trim()));
-    $("claudeDesc").addEventListener("input", e => localStorage.setItem("arena.playerDesc", e.target.value));
+    $("claudeName").addEventListener("input", e => localStorage.setItem("arena.playerName", e.target.value));
   }
   if (difficulty === "claude") {
     $("claudeKeyLabel").textContent = t(L.claudeKeyLabel);
-    $("claudeDescLabel").textContent = t(L.claudeDescLabel);
-    $("claudeDesc").placeholder = t(L.claudeDescPh);
+    $("claudeNameLabel").textContent = t(L.claudeNameLabel);
+    $("claudeName").placeholder = t(L.claudeNamePh);
     $("claudeKeyNote").textContent = t(L.claudeKeyNote);
   }
 }
@@ -345,6 +346,11 @@ function startGame() {
   if (difficulty === "claude" && !(localStorage.getItem("arena.apiKey") || "").trim()) {
     alert(t(L.claudeNeedKey));
     $("claudeKey").focus();
+    return;
+  }
+  if (difficulty === "claude" && !ClaudeBot.isAllowed(localStorage.getItem("arena.playerName"))) {
+    alert(t(L.claudeNameGate));
+    $("claudeName").focus();
     return;
   }
   mode = "bot";
@@ -564,7 +570,7 @@ async function runClaudeTurn() {
     res = await ClaudeBot.turn(state, OPP, {
       apiKey: (localStorage.getItem("arena.apiKey") || "").trim(),
       lang: I18N.lang,
-      playerDesc: localStorage.getItem("arena.playerDesc") || "",
+      playerName: localStorage.getItem("arena.playerName") || "",
       lastBattle: lastBattleNote,
       onAction: (name, args) => GameLog.push(OPP, name, args),
     });

@@ -12,6 +12,20 @@ const ClaudeBot = (() => {
   const API_URL = "https://api.anthropic.com/v1/messages";
   const MODEL = "claude-opus-5";
 
+  // Profily hráčov na trash-talk šitý na mieru (meme pre kamošov).
+  // Kľúč = meno malými písmenami (tak, ako ho hráč napíše na úvodnej
+  // obrazovke). Hodnota = voľný text pre Clauda: kto to je, ako hráva,
+  // na čom si ho doberať. Neznáme meno = generický (ale vtipný) roast.
+  const PLAYER_PROFILES = {
+    // "adam": "…",
+    // "david": "…",
+  };
+
+  // Claude mód je len pre týchto hráčov (meno z úvodnej obrazovky,
+  // bez ohľadu na veľkosť písmen). Ostatní dostanú hlášku a nezačnú.
+  const ALLOWED_PLAYERS = ["adam", "david"];
+  const isAllowed = name => ALLOWED_PLAYERS.includes((name || "").trim().toLowerCase());
+
   // Pravidlá + formát odpovede. Po anglicky (menej tokenov, model presnejší),
   // taunt sa žiada v jazyku UI.
   const SYSTEM = `You are playing "Animal Arena", a kids' autobattler (Hearthstone Battlegrounds-like with a personal deck). You are the OPPONENT bot playing your shop turn.
@@ -84,14 +98,16 @@ TAUNT: one short playful trash-talk line (max 100 chars) addressed to the human 
   // Vykoná jeden Claudov ťah. onAction(name, args) loguje pre replay.
   // Vracia { events, taunt } alebo hodí chybu (volajúci má fallback na Bot).
   async function turn(state, pid, opts) {
-    const { apiKey, lang, playerDesc, lastBattle, onAction } = opts;
+    const { apiKey, lang, playerName, lastBattle, onAction } = opts;
     const langName = { sk: "Slovak", cs: "Czech", en: "English" }[lang] || "Slovak";
+    const name = (playerName || "").trim();
 
     const userMsg = JSON.stringify({
       state: snapshot(state, pid, Cards, Engine),
       lastBattleFromYourView: lastBattle || "first round",
       tauntLanguage: langName,
-      playerProfile: playerDesc || null,
+      playerName: name || null,
+      playerProfile: PLAYER_PROFILES[name.toLowerCase()] || null,
     });
 
     const controller = new AbortController();
@@ -187,7 +203,7 @@ TAUNT: one short playful trash-talk line (max 100 chars) addressed to the human 
     return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 140) : null };
   }
 
-  return { turn, MODEL };
+  return { turn, isAllowed, MODEL };
 })();
 
 if (typeof module !== "undefined") module.exports = ClaudeBot;

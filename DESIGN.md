@@ -257,9 +257,14 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   pravidlá; Claude vráti JSON `{actions, taunt}`. Akcie sa vykonajú cez
   Engine API, nelegálne sa ticho preskočia; každá úspešná sa loguje
   jednotlivo → `tools/replay.mjs` prehrá hru presne bez API.
-- **Trash-talk bublina = reálna Claudova hláška** – šitá na profil hráča
-  (voliteľné pole na pick obrazovke, tiež len localStorage). Detsky
-  štipľavá, jazyk podľa UI. Konzervované hlášky sa v Claude móde nepoužívajú.
+- **Trash-talk bublina = reálna Claudova hláška** – hráč na pick obrazovke
+  vyplní len MENO; profily hráčov (meme texty pre kamošov) sú natvrdo
+  v `PLAYER_PROFILES` v claude-bot.js (kľúč = meno malými písmenami).
+  Neznáme meno = generický roast. Detsky štipľavé, jazyk podľa UI.
+  Konzervované hlášky sa v Claude móde nepoužívajú.
+- **Whitelist mien**: Claude mód sa spustí len s menom zo zoznamu
+  `ALLOWED_PLAYERS` v claude-bot.js (teraz Adam a David); iné meno
+  dostane hlášku a hra nezačne.
 - Zlyhanie API (zlý kľúč, offline, rate limit) → ťah dohrá hard
   heuristický bot + správa v logu; hra nikdy nezamrzne.
 
