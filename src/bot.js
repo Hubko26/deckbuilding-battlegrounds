@@ -79,7 +79,7 @@ const Bot = (() => {
       score += (3 - Engine.cardCost(defId)) * 0.8;
       // kúzla nedávajú telá – priveľa kúziel riedi balíček (víly to vrátia)
       score -= Math.max(0, ownedSpellCount(p) - 3) * 0.6;
-      if (def.fx.type === "gold") score += 1.5;
+      if (def.fx.type === "gold" || def.fx.type === "goldLater") score += 1.5;
       // draw cykluje k príšerám – cennejší, čím viac kúziel balíček riedi
       if (def.fx.type === "draw") score += 1 + ownedSpellCount(p) * 0.2;
       // víly na kúzla reagujú („Po kúzle“) – kúzla sú s nimi hodnotnejšie
@@ -192,8 +192,18 @@ const Bot = (() => {
         push(Engine.castSpell(state, pid, i, target.uid));
       } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
         push(Engine.castSpell(state, pid, i));
-      } else if (fx.type === "silence" || fx.type === "dmgBoost" || fx.type === "hex") {
+      } else if (fx.type === "silence" || fx.type === "dmgBoost" || fx.type === "hex" || fx.type === "bolt") {
         push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
+      } else if (fx.type === "copyToDeck" && p.board.length) {
+        // Zrkadlo: kopíruj kartu najbližšie k trojici (tiebreak najsilnejšia).
+        const target = [...p.board]
+          .filter(x => !Cards.byId[x.defId].token)
+          .sort((a, b) => (ownedCount(p, b.defId) - ownedCount(p, a.defId)) || ((b.atk + b.hp) - (a.atk + a.hp)))[0];
+        if (target) push(Engine.castSpell(state, pid, i, target.uid));
+      } else if (fx.type === "transform" && p.board.length) {
+        // Klobúk: premeň najslabšiu príšerku – upgrade tela o tier.
+        const target = [...p.board].sort((a, b) => (a.atk + a.hp) - (b.atk + b.hp))[0];
+        push(Engine.castSpell(state, pid, i, target.uid));
       }
     }
 
@@ -241,7 +251,7 @@ const Bot = (() => {
       const inst = p.hand[i];
       if (!inst || !inst.spell) continue;
       const fxType = Cards.byId[inst.defId].fx.type;
-      if (fxType === "gold" || fxType === "draw") {
+      if (fxType === "gold" || fxType === "goldLater" || fxType === "draw") {
         push(Engine.castSpell(state, p.id, i));
       }
     }

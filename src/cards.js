@@ -216,6 +216,21 @@ const Cards = (() => {
       name: { sk: "Fénixovo pierko", cs: "Fénixovo pírko", en: "Phoenix Feather" } },
     { id: "kliatba", cost: 2, tier: 4, emoji: "🐸", spell: true, fx: { type: "hex", n: 1 },
       name: { sk: "Žabia kliatba", cs: "Žabí kletba", en: "Frog Curse" } },
+    // Blesk: prvé ofenzívne kúzlo – odložený výboj (štýl kliatby/umlčania),
+    // škáluje s Večnou iskrou (dmgBoost), synergia s vílami (lacný trigger).
+    { id: "blesk", cost: 2, tier: 3, emoji: "⛈️", spell: true, fx: { type: "bolt", n: 1 },
+      name: { sk: "Blesk", cs: "Blesk", en: "Lightning Bolt" } },
+    // Klobúk: chaos premena – vlastná príšerka sa zmení na náhodnú o tier
+    // vyššiu (stupeň 1). Pivot nástroj + zábava pre deti (ogre vibe).
+    { id: "klobuk", cost: 2, tier: 4, emoji: "🎩", spell: true, fx: { type: "transform" },
+      name: { sk: "Kúzelný klobúk", cs: "Kouzelný klobouk", en: "Magic Hat" } },
+    // Zrkadlo: akcelerátor trojíc pre late game (t5+ nemal žiadne kúzlo).
+    { id: "zrkadlo", cost: 3, tier: 5, emoji: "🪞", spell: true, fx: { type: "copyToDeck" },
+      name: { sk: "Zrkadlo", cs: "Zrcadlo", en: "Mirror" } },
+    // Poklad: greed ekonomika pre najvyššie tiery – polovica zlata hneď,
+    // polovica na začiatku ďalšieho kola (jediný spôsob, ako si preniesť zlato).
+    { id: "poklad", cost: 2, tier: 5, emoji: "💰", spell: true, fx: { type: "goldLater", n: 2 },
+      name: { sk: "Poklad škriatka", cs: "Poklad skřítka", en: "Goblin Treasure" } },
   ];
 
   // Tokeny – vyvolávané príšerky, nie sú v obchode ani v balíčku.
@@ -396,6 +411,26 @@ const Cards = (() => {
       sk: "vyber si 1 z 3 kariet do ruky",
       cs: "vyber si 1 ze 3 karet do ruky",
       en: "discover: pick 1 of 3 cards",
+    }),
+    bolt: () => ({
+      sk: "na začiatku najbližšieho boja zasiahne náhodnú súperovu príšerku výboj za 3",
+      cs: "na začátku nejbližšího boje zasáhne náhodnou soupeřovu příšerku výboj za 3",
+      en: "at the start of the next fight, a zap hits a random enemy minion for 3",
+    }),
+    transform: () => ({
+      sk: "premeň vlastnú príšerku na náhodnú o tier vyššiu",
+      cs: "proměň vlastní příšerku v náhodnou o tier vyšší",
+      en: "transform a friendly minion into a random one a tier higher",
+    }),
+    copyToDeck: () => ({
+      sk: "vlož kópiu vybranej vlastnej príšerky (1. stupňa) do balíčka",
+      cs: "vlož kopii vybrané vlastní příšerky (1. stupně) do balíčku",
+      en: "put a rank-1 copy of a friendly minion into your deck",
+    }),
+    goldLater: (f, m) => ({
+      sk: `+${f.n * m} peniaze hneď a +${f.n * m} na začiatku ďalšieho kola`,
+      cs: `+${f.n * m} peníze hned a +${f.n * m} na začátku dalšího kola`,
+      en: `+${f.n * m} gold now and +${f.n * m} at the start of next round`,
     }),
     // Draci: efekty viazané na RASU vybranej príšerky (cielený battlecry).
     buffRaceOf: (f, m) => ({

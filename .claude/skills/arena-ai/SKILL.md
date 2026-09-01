@@ -26,10 +26,16 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúpa: `Engine.buySpell(state, pid)`). Tier spoločných = NIŽŠÍ z tierov
   oboch hráčov; súkromné idú podľa vlastného tieru. Príšera stojí 3,
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
-  Vlna/Iskra 2, Srdce 3; Večná iskra = TRVALO všetky výboje/výbuchy
-  +1 damage, stackuje sa, kupuj pri elemental builde; Umlčanie =
-  v najbližšom boji náhodná súperova príšerka so schopnosťou stratí
-  efekt aj Obrancu – counter na deathrattle a Pred bojom motory). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
+  Vlna/Iskra/Blesk/Klobúk/Poklad 2, Srdce/Zrkadlo 3; Večná iskra =
+  TRVALO všetky výboje/výbuchy +1 damage, stackuje sa, kupuj pri
+  elemental builde; Umlčanie = v najbližšom boji náhodná súperova
+  príšerka so schopnosťou stratí efekt aj Obrancu – counter na
+  deathrattle a Pred bojom motory; Blesk (t3) = na začiatku boja výboj
+  za 3+dmgBoost na náhodného súpera; Kúzelný klobúk (t4) = premeň
+  vlastnú príšerku na náhodnú o tier vyššiu – hoď na najslabšie telo;
+  Zrkadlo (t5) = kópia 1. stupňa cieľa do balíčka – akcelerátor trojíc,
+  cieľ vždy karta, ktorej máš najviac kópií; Poklad škriatka (t5) =
+  +2 zlato hneď a +2 v ďalšom kole). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
 - Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/8/9/11/12,

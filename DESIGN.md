@@ -399,6 +399,22 @@ ruky), peniaze navyše.
   aj Obrancu na celý boj (🤫, preškrtnutý text). Battlecry aury už prebehli,
   tie nezruší – counter na Mláďa/deathrattle/Pred bojom motory. Stackuje sa
   (viac kúziel = viac umlčaných).
+- **Blesk** ⛈️ (t3, cena 2): odložený výboj (`p.bolts`, vzor Umlčania) – na
+  začiatku najbližšieho boja (po kliatbach, pred „Pred bojom") zasiahne
+  náhodnú súperovu príšerku za **3 + dmgBoost** (je to výboj – Večná iskra
+  ho zosilňuje). Stackuje sa, každý Blesk = samostatný zásah. Prvé
+  ofenzívne kúzlo v hre.
+- **Kúzelný klobúk** 🎩 (t4, cena 2): premení vlastnú cieľovú príšerku na
+  **náhodnú o tier vyššiu** (stupeň 1, permanentné aury sa aplikujú, slot
+  ostáva). Originál mizne z hry. Chaos/pivot nástroj v ogrom duchu.
+- **Zrkadlo** 🪞 (t5, cena 3): vloží **kópiu 1. stupňa** cieľovej vlastnej
+  príšerky do balíčka – akcelerátor trojíc pre late game. Tokeny sa
+  kopírovať nedajú.
+- **Poklad škriatka** 💰 (t5, cena 2): +2 peniaze hneď a +2 na začiatku
+  ďalšieho kola (`p.goldNext` – jediný spôsob prenosu zlata medzi kolami).
+- Kúzla t5 boli doplnené zámerne – dovtedy spell slot na t5/t6 ponúkal len
+  staré nízkotierové kúzla. Plošný buff t6 („Zlatý zvon") zámerne NEpridaný:
+  víly (Po kúzle) sú už na hrane OP a veľké kúzlo by ich prestrelilo.
 
 ## Bez class – superschopnosti (hero powers)
 

@@ -8,6 +8,7 @@ const Engine = (() => {
   const HAND_MAX = 8;
   const CARD_COST = 3;
   const SELL_GAIN = 1;
+  const BOLT_DMG = 3; // kúzlo Blesk: základný damage odloženého výboja
   const REFRESH_COST = 1;
   const COMMON_COUNT = 3;
   const TIER_MAX = 6;
@@ -154,6 +155,8 @@ const Engine = (() => {
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
       hexes: 0, // nabité Žabie kliatby – v najbližšom boji zmenia HP cieľa na 1
+      bolts: 0, // nabité Blesky – na začiatku najbližšieho boja výboj za 3 (+dmgBoost)
+      goldNext: 0, // Poklad škriatka: zlato navyše na začiatku ďalšieho kola
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
       giftRound: 0, // mutácia „gift": v ktorom kole hráč naposledy dostal kúzlo
@@ -186,7 +189,8 @@ const Engine = (() => {
     }
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
-      p.money = income(state.round);
+      p.money = income(state.round) + p.goldNext; // Poklad škriatka z minulého kola
+      p.goldNext = 0;
       p.bought = [];
       p.priv = p.priv.filter(s => s.frozen);
       for (const s of p.priv) s.frozen = false;
@@ -531,6 +535,40 @@ const Engine = (() => {
       afterSpellProcs(state, p, events);
       return events;
     }
+    if (fx.type === "copyToDeck") {
+      // Zrkadlo: kópia 1. stupňa vybranej vlastnej príšerky do balíčka –
+      // akcelerátor trojíc. Tokeny (kostík, Mláďa) kopírovať nejde.
+      const target = p.board.find(x => x.uid === targetUid);
+      if (!target || Cards.byId[target.defId].token) return null;
+      p.hand.splice(handIdx, 1);
+      p.spentSpells.push({ defId: inst.defId, rank: 1 });
+      addToDeck(state, p, target.defId);
+      const events = [{ type: "spell", pid, defId: inst.defId, targetUid }];
+      checkEvolve(state, p, events);
+      afterSpellProcs(state, p, events);
+      return events;
+    }
+    if (fx.type === "transform") {
+      // Kúzelný klobúk: vlastná príšerka sa zmení na NÁHODNÚ o tier vyššiu
+      // (stupeň 1, aury sa aplikujú). Originál zmizne z hry, slot ostáva.
+      const target = p.board.find(x => x.uid === targetUid);
+      if (!target) return null;
+      const newTier = Math.min(Cards.byId[target.defId].tier + 1, TIER_MAX);
+      const pool = Cards.DEFS.filter(d => d.tier === newTier && !d.spell);
+      if (!pool.length) return null;
+      p.hand.splice(handIdx, 1);
+      p.spentSpells.push({ defId: inst.defId, rank: 1 });
+      const fresh = makeInst(state, pick(pool, state.rng).id, 1, p);
+      fresh.slot = target.slot;
+      p.board[p.board.indexOf(target)] = fresh;
+      const events = [
+        { type: "spell", pid, defId: inst.defId, targetUid },
+        { type: "transform", pid, uid: targetUid, fromDefId: target.defId, toDefId: fresh.defId, newUid: fresh.uid },
+      ];
+      checkEvolve(state, p, events);
+      afterSpellProcs(state, p, events);
+      return events;
+    }
     if (fx.type === "discover") {
       p.hand.splice(handIdx, 1);
       if (!def.token) p.spentSpells.push({ defId: inst.defId, rank: 1 }); // jednorazové kúzla miznú
@@ -541,7 +579,7 @@ const Engine = (() => {
       afterSpellProcs(state, p, events);
       return events;
     }
-    // gold, buffAllFriends, dmgBoost, silence, hex, draw – bez cieľa
+    // gold, goldLater, buffAllFriends, dmgBoost, silence, hex, bolt, draw – bez cieľa
     p.hand.splice(handIdx, 1);
     p.spentSpells.push({ defId: inst.defId, rank: 1 });
     const events = [{ type: "spell", pid, defId: inst.defId }];
@@ -808,6 +846,19 @@ const Engine = (() => {
         p.silences += fx.n * m;
         events.push({ type: "silencePending", pid: p.id, total: p.silences });
         break;
+      case "bolt":
+        // Blesk: odložený výboj – na začiatku najbližšieho boja zasiahne
+        // náhodnú súperovu príšerku za BOLT_DMG (+dmgBoost). Stackuje sa.
+        p.bolts += fx.n * m;
+        events.push({ type: "boltPending", pid: p.id, total: p.bolts });
+        break;
+      case "goldLater":
+        // Poklad škriatka: polovica hneď, polovica na začiatku ďalšieho kola.
+        p.money += fx.n * m;
+        p.goldNext += fx.n * m;
+        events.push({ type: "gold", pid: p.id, n: fx.n * m });
+        events.push({ type: "goldLater", pid: p.id, n: fx.n * m });
+        break;
       case "hex":
         // Žabia kliatba: v najbližšom boji sa náhodnej súperovej príšerke
         // zmení život na 1 (nie je to damage – obchádza Božský štít).
@@ -932,6 +983,23 @@ const Engine = (() => {
         t.hp = 1;
         events.push({ type: "hex", pid: other(pid), uid: t.uid, defId: t.defId });
         events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+      }
+    }
+
+    // Blesky – výboj za BOLT_DMG (+dmgBoost, je to výboj) na náhodnú živú
+    // súperovu príšerku; každý nabitý Blesk = samostatný zásah.
+    for (const pid of [attacker, other(attacker)]) {
+      const p = state[pid];
+      while (p.bolts > 0) {
+        p.bolts--;
+        const targets = sides[other(pid)].filter(x => x.hp > 0);
+        if (!targets.length) continue;
+        const t = pick(targets, state.rng);
+        const dmg = BOLT_DMG + p.dmgBoost;
+        dealDmg(t, dmg, other(pid), events);
+        events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: dmg });
+        events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+        handleDeaths(state, sides, events);
       }
     }
 

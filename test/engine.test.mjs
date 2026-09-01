@@ -910,6 +910,88 @@ test("Žabia kliatba: v najbližšom boji zmení náhodnej súperovej príšerke
   assert.equal(state.p1.hexes, 0); // spotrebovaná
 });
 
+test("Blesk: na začiatku najbližšieho boja výboj za 3 (+dmgBoost) na náhodnú súperovu príšerku", () => {
+  const { state, E } = fresh(75);
+  E.startRound(state);
+  const p = state.p1;
+  p.dmgBoost = 1; // Večná iskra – Blesk je výboj, bonus platí
+  p.hand = [E.makeInst(state, "blesk", 1)];
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.bolts, 1);
+  E.endShopTurn(state, "p1");
+  const tank = E.makeInst(state, "U010", 1); tank.slot = 0; // 8/10
+  state.p2.board = [tank];
+  state.p1.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const hit = events.find(e => e.type === "powerDmg" && e.uid === tank.uid && e.n === 4);
+  assert.ok(hit, "blesk mal zasiahnuť tank za 3+1");
+  assert.equal(state.p1.bolts, 0); // spotrebovaný
+});
+
+test("Zrkadlo: vloží kópiu 1. stupňa cieľa do balíčka a vie dokončiť trojicu", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  const m = E.makeInst(state, "B001", 1); m.slot = 0;
+  p.board = [m];
+  p.deck = []; p.discard = []; p.hand = [E.makeInst(state, "zrkadlo", 1)];
+  E.castSpell(state, "p1", 0, m.uid);
+  assert.ok(p.deck.some(c => c.defId === "B001" && c.rank === 1));
+  // tretia kópia cez druhé Zrkadlo = evolve (board + deck + deck)
+  p.hand = [E.makeInst(state, "zrkadlo", 1)];
+  const events = E.castSpell(state, "p1", 0, m.uid);
+  assert.ok(events.some(e => e.type === "evolve"), "trojica sa mala spojiť");
+});
+
+test("Zrkadlo: token (kostík) sa nedá kopírovať", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  const tok = E.makeInst(state, "kostik", 1); tok.slot = 0;
+  p.board = [tok];
+  p.hand = [E.makeInst(state, "zrkadlo", 1)];
+  assert.equal(E.castSpell(state, "p1", 0, tok.uid), null);
+});
+
+test("Kúzelný klobúk: premení cieľ na náhodnú príšeru o tier vyššiu (stupeň 1, aury platia)", () => {
+  const { state, E, C } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.raceBuffs = { beast: { a: 1, h: 1 } }; // aura sa má aplikovať, ak vyjde beast
+  const m = E.makeInst(state, "B001", 1); m.slot = 2; // tier 1
+  p.board = [m];
+  p.hand = [E.makeInst(state, "klobuk", 1)];
+  const events = E.castSpell(state, "p1", 0, m.uid);
+  const tr = events.find(e => e.type === "transform");
+  assert.ok(tr);
+  assert.equal(p.board.length, 1);
+  const fresh2 = p.board[0];
+  assert.notEqual(fresh2.uid, m.uid);
+  assert.equal(C.byId[fresh2.defId].tier, 2); // presne o tier vyššie
+  assert.equal(fresh2.rank, 1);
+  assert.equal(fresh2.slot, 2); // slot ostáva
+  assert.ok(!p.discard.some(c => c.defId === "B001"), "originál zmizol z hry");
+});
+
+test("Poklad škriatka: +2 hneď a +2 na začiatku ďalšieho kola", () => {
+  const { state, E } = fresh();
+  E.startRound(state); // kolo 1, income 3
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "poklad", 1)];
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.money, 5);
+  assert.equal(p.goldNext, 2);
+  E.endShopTurn(state, "p1");
+  E.endShopTurn(state, "p2");
+  E.doBattle(state); // boj sám spustí nové kolo: income 4 + 2 z pokladu
+  assert.equal(state.round, 2);
+  assert.equal(p.money, 6);
+  assert.equal(p.goldNext, 0);
+});
+
 test("kúzlo Štít: dá vybranej príšerke Obrancu bez statov", () => {
   const { state, E } = fresh();
   E.startRound(state);

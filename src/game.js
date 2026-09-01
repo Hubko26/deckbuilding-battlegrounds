@@ -325,6 +325,21 @@ const L = {
     cs: "🐸 Nabito: v nejbližším boji se soupeřově příšerce změní život na 1",
     en: "🐸 Charged: an enemy minion's health becomes 1 next fight",
   },
+  boltPendingMsg: {
+    sk: "⛈️ Nabité: na začiatku najbližšieho boja udrie blesk súperovu príšerku",
+    cs: "⛈️ Nabito: na začátku nejbližšího boje udeří blesk soupeřovu příšerku",
+    en: "⛈️ Charged: lightning will strike an enemy minion next fight",
+  },
+  goldLaterMsg: {
+    sk: "💰 Poklad: +{n} peniaze dostaneš aj na začiatku ďalšieho kola",
+    cs: "💰 Poklad: +{n} peníze dostaneš i na začátku dalšího kola",
+    en: "💰 Treasure: +{n} gold also at the start of next round",
+  },
+  transformMsg: {
+    sk: "🎩 Klobúk premenil {a} na {b}!",
+    cs: "🎩 Klobouk proměnil {a} v {b}!",
+    en: "🎩 The hat turned {a} into {b}!",
+  },
   hexMsg: {
     sk: "dostal Žabiu kliatbu – život klesol na 1",
     cs: "dostal Žabí kletbu – život klesl na 1",
@@ -1614,7 +1629,7 @@ function markZones(src, on) {
   set($("shopPanel"), "drop-sell");
   set($("myDiscardBox"), "drop-ok"); // odhodenie do kôpky
   const def = Cards.byId[inst.defId];
-  if (inst.spell && def.fx.type === "buffTarget") {
+  if (inst.spell && TARGETED_SPELL.has(def.fx.type)) {
     $("myBoard").querySelectorAll(".card").forEach(c => set(c, "target-ok"));
   } else {
     set($("myBoard"), "drop-ok");
@@ -1628,6 +1643,8 @@ function markZones(src, on) {
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
 const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget", "reviveAs"]);
+// Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
+const TARGETED_SPELL = new Set(["buffTarget", "copyToDeck", "transform"]);
 
 function endDrag(e) {
   const d = drag;
@@ -1685,7 +1702,7 @@ function endDrag(e) {
   if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
-    if (fx.type === "buffTarget") {
+    if (TARGETED_SPELL.has(fx.type)) {
       const targetEl = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
       if (targetEl) act(doAction("castSpell", src.idx, Number(targetEl.dataset.uid)));
       return;
@@ -1781,6 +1798,13 @@ function act(events) {
     if (ev.type === "summonCharge") log(t(L.chargeSummonMsg).replace("{n}", ev.n));
     if (ev.type === "silencePending") log(t(L.silencePendingMsg));
     if (ev.type === "hexPending") log(t(L.hexPendingMsg));
+    if (ev.type === "boltPending") log(t(L.boltPendingMsg));
+    if (ev.type === "goldLater") log(t(L.goldLaterMsg).replace("{n}", ev.n));
+    if (ev.type === "transform") {
+      const a = Cards.nameOf(Cards.byId[ev.fromDefId], 1, I18N.lang);
+      const b = Cards.nameOf(Cards.byId[ev.toDefId], 1, I18N.lang);
+      log(t(L.transformMsg).replace("{a}", a).replace("{b}", b));
+    }
   }
   // Trojica zo skrytých kópií (balíček/kôpka) – ohlás popupom.
   if (hiddenEvolves.length) {
