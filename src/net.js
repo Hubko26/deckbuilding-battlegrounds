@@ -100,9 +100,52 @@ const Net = (() => {
   function wireConn(c) {
     conn = c;
     c.on("data", dispatch);
-    c.on("close", () => { if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
-    c.on("error", () => { if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
+    c.on("close", () => { stopPing(); if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
+    c.on("error", () => { stopPing(); if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
+    c.on("open", () => startPing(c));
     wireDiag(c);
+    watchIce(c);
+  }
+
+  // Keepalive: počas boja sa ~30+ s nič neposiela a NAT/firewall medzitým
+  // zahodí nečinný UDP mapping (bežný timeout 30–60 s) – spojenie potom
+  // „ticho" umrie presne po dlhšej animácii. Ping každých 5 s drží mapping
+  // (aj TURN alokáciu) živý. Druhá strana ping ignoruje (dispatch nepozná typ).
+  let pingTimer = null;
+  function startPing(c) {
+    stopPing();
+    pingTimer = setInterval(() => {
+      if (c !== conn || !c.open) { stopPing(); return; }
+      try { c.send({ type: "ping" }); } catch {}
+    }, 5000);
+  }
+  function stopPing() {
+    if (pingTimer) { clearInterval(pingTimer); pingTimer = null; }
+  }
+
+  // Mŕtve spojenie nesmie visieť ticho: DataChannel pri výpadku ICE neposiela
+  // close event – hráč by len čakal na súperov ťah donekonečna. "failed" =
+  // koniec hneď; "disconnected" dostane 8 s na samoopravu (ICE to bežne
+  // zvládne), potom hru ukončíme oznamom.
+  function watchIce(c) {
+    const pc = c.peerConnection;
+    if (!pc) return;
+    let deadTimer = null;
+    pc.addEventListener("iceconnectionstatechange", () => {
+      const st = pc.iceConnectionState;
+      if (st === "failed") {
+        if (c === conn && handlers.onPeerLeft) handlers.onPeerLeft({});
+      } else if (st === "disconnected") {
+        if (!deadTimer) deadTimer = setTimeout(() => {
+          deadTimer = null;
+          if (c === conn && pc.iceConnectionState === "disconnected" &&
+              handlers.onPeerLeft) handlers.onPeerLeft({});
+        }, 8000);
+      } else if (deadTimer) {
+        clearTimeout(deadTimer);
+        deadTimer = null;
+      }
+    });
   }
 
   // Diagnostika do konzoly: pri probléme so spojením presne ukáže, ktorý
@@ -205,6 +248,7 @@ const Net = (() => {
   }
 
   function destroyPeer() {
+    stopPing();
     if (conn) { try { conn.close(); } catch {} conn = null; }
     if (peer) { try { peer.destroy(); } catch {} peer = null; }
   }
