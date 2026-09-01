@@ -56,9 +56,9 @@ const L = {
     en: "Connection failed. Check the internet and try again.",
   },
   peerTimeout: {
-    sk: "Kamaráta sa nepodarilo nájsť. Nech vytvorí hru NANOVO a hneď zadaj nový kód (kód po chvíli čakania prestane platiť).",
-    cs: "Kamaráda se nepodařilo najít. Ať vytvoří hru ZNOVU a hned zadej nový kód (kód po chvíli čekání přestane platit).",
-    en: "Could not reach your friend. Have them create the game AGAIN and enter the new code right away (a code expires after waiting).",
+    sk: "Spojenie sa nepodarilo nadviazať. Nech kamarát vytvorí hru NANOVO a hneď zadaj nový kód. Ak to nepomôže, jeden z vás nech skúsi inú sieť (mobilné dáta) – niektoré wifi blokujú priame spojenie.",
+    cs: "Spojení se nepodařilo navázat. Ať kamarád vytvoří hru ZNOVU a hned zadej nový kód. Pokud to nepomůže, jeden z vás ať zkusí jinou síť (mobilní data) – některé wifi blokují přímé spojení.",
+    en: "Could not establish the connection. Have your friend create the game AGAIN and enter the new code right away. If that fails, one of you should try another network (mobile data) – some wifi blocks direct connections.",
   },
   cancel: { sk: "✖ Zruš", cs: "✖ Zruš", en: "✖ Cancel" },
   stageWord: { sk: "stupeň", cs: "stupeň", en: "Stage" },

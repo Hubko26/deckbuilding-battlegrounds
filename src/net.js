@@ -13,6 +13,28 @@ const Net = (() => {
 
   const PEER_PREFIX = "zvieracia-arena-";
 
+  // Bez TURN relayu WebRTC neprejde cez prísny NAT/firewall (školská či
+  // firemná sieť, časť mobilných operátorov) – spojenie sa ticho nenadviaže.
+  // PeerJS má vo východzom nastavení len STUN + TURN na UDP 3478, ktorý býva
+  // zablokovaný; pridávame verejný TURN aj cez TCP a port 443 (tvári sa ako
+  // bežný HTTPS, prejde skoro všade). Ak by verejný TURN prestal fungovať,
+  // stačí sem doplniť vlastný.
+  const PEER_OPTS = {
+    config: {
+      iceServers: [
+        { urls: "stun:stun.l.google.com:19302" },
+        { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"],
+          username: "peerjs", credential: "peerjsp" },
+        { urls: [
+            "turn:openrelay.metered.ca:80",
+            "turn:openrelay.metered.ca:443",
+            "turn:openrelay.metered.ca:443?transport=tcp",
+          ],
+          username: "openrelayproject", credential: "openrelayproject" },
+      ],
+    },
+  };
+
   function dispatch(msg) {
     if (typeof msg === "string") {
       try { msg = JSON.parse(msg); } catch { return; }
@@ -79,7 +101,7 @@ const Net = (() => {
     handlers = h;
     transport = "peer";
     destroyPeer();
-    peer = new Peer(PEER_PREFIX + code);
+    peer = new Peer(PEER_PREFIX + code, PEER_OPTS);
     keepAlive(peer);
     peer.on("open", () => { if (handlers.onWaiting) handlers.onWaiting({ code }); });
     peer.on("connection", c => {
@@ -100,21 +122,23 @@ const Net = (() => {
     handlers = h;
     transport = "peer";
     destroyPeer();
-    peer = new Peer();
+    peer = new Peer(PEER_OPTS);
     keepAlive(peer);
-    // Keď sa P2P kanál neotvorí do 20 s (prísny NAT/firewall blokuje WebRTC),
-    // nehlásime nič a UI visí na „Pripájam sa…" – radšej ohlás timeout.
-    let timer = null;
+    // Timeout na CELÝ handshake: keď sa nepodarí ani signalizácia (peer sa
+    // neotvorí), ani P2P kanál (firewall blokuje WebRTC), nepríde žiadna
+    // chyba a UI by ticho viselo na „Pripájam sa…".
+    let timer = setTimeout(() => {
+      timer = null;
+      if (!(conn && conn.open) && handlers.onPeerError) handlers.onPeerError("timeout");
+    }, 20000);
+    const done = () => { if (timer) { clearTimeout(timer); timer = null; } };
     peer.on("open", () => {
       const c = peer.connect(PEER_PREFIX + code, { reliable: true });
       wireConn(c);
-      timer = setTimeout(() => {
-        if (!c.open && handlers.onPeerError) handlers.onPeerError("timeout");
-      }, 20000);
-      c.on("open", () => { clearTimeout(timer); timer = null; });
+      c.on("open", done);
     });
     peer.on("error", err => {
-      if (timer) { clearTimeout(timer); timer = null; }
+      done();
       if (handlers.onPeerError) handlers.onPeerError(err && err.type);
     });
   }
