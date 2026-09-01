@@ -724,18 +724,30 @@ test("víly Po kúzle: každé kúzlo spustí schopnosti víl na ploche", () => 
   const { state, E } = fresh(71);
   E.startRound(state);
   const p = state.p1;
-  const dew = E.makeInst(state, "F001", 1); dew.slot = 0;   // Po kúzle: potiahni kartu
-  const cap = E.makeInst(state, "F002", 1); cap.slot = 1;   // Po kúzle: +1/+1 pre seba
-  p.board = [dew, cap];
+  const prank = E.makeInst(state, "F003", 1); prank.slot = 0; // Po kúzle: +1/+1 kamarátke
+  const cap = E.makeInst(state, "F002", 1); cap.slot = 1;     // Po kúzle: +1/+1 pre seba
+  p.board = [prank, cap];
   p.hand = [E.makeInst(state, "minca", 1)];
-  p.deck = [{ defId: "B001", rank: 1 }];
-  p.discard = [];
+  p.deck = []; p.discard = [];
   const before = p.money;
   E.castSpell(state, "p1", 0);
   assert.equal(p.money, before + 2);              // minca zafungovala
-  assert.ok(p.hand.some(x => x.defId === "B001")); // víla dotiahla kartu
-  assert.equal(cap.atk, 2);                       // víla narástla
-  assert.equal(cap.hp, 3);
+  assert.equal(cap.atk, 3);                       // +1/+1 od seba aj od F003
+  assert.equal(cap.hp, 4);
+});
+
+test("F001 battlecry: potiahne kartu pri vyložení, strieborný 2", () => {
+  const { state, E } = fresh(72);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "F001", 1)];
+  p.deck = [{ defId: "B001", rank: 1 }, { defId: "B002", rank: 1 }, { defId: "B006", rank: 1 }];
+  p.discard = [];
+  assert.ok(E.playMinion(state, "p1", 0));
+  assert.equal(p.hand.length, 1);                 // battlecry dotiahol 1
+  p.hand = [E.makeInst(state, "F001", 2)];
+  assert.ok(E.playMinion(state, "p1", 0));
+  assert.equal(p.hand.length, 2);                 // strieborný dotiahol 2
 });
 
 test("víly F002/F004: rast Po kúzle je trvalý – prežije boj aj cyklus balíčka", () => {
@@ -1049,7 +1061,7 @@ test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie 
   }
 });
 
-test("Pretečenie: undead token, čo sa nezmestí, rozdelí staty živým kamarátom", () => {
+test("Pretečenie: undead token, čo sa nezmestí, dá celé staty jednému kamarátovi", () => {
   const { state, E } = fresh(21);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -1071,13 +1083,12 @@ test("Pretečenie: undead token, čo sa nezmestí, rozdelí staty živým kamar�
   assert.equal(over.length, 1);
   assert.equal(over[0].atk, 2);
   assert.equal(over[0].hp, 1);
-  // 2/1 sa nedá deliť medzi 5 – zvyšky idú náhodným kamarátom (prvý v poradí
-  // dostane +1/+1, druhý +1/+0).
+  // Celé staty tokenu (2/1) dostane presne jeden náhodný kamarát.
   const idx = events.indexOf(over[0]);
   const buffs = events.slice(idx + 1).filter(e => e.type === "buff");
-  assert.ok(buffs.length >= 1);
-  assert.equal(buffs.reduce((s, b) => s + b.a, 0), 2); // celý atk rozdelený
-  assert.equal(buffs.reduce((s, b) => s + b.h, 0), 1); // celé hp rozdelené
+  assert.equal(buffs.length, 1);
+  assert.equal(buffs[0].a, 2); // celý atk jednému
+  assert.equal(buffs[0].h, 1); // celé hp jednému
 });
 
 test("Mláďa je fixný token: každé vyvolanie 1/1 (žiadny trvalý rast)", () => {

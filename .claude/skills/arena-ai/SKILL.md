@@ -61,13 +61,14 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     cyklus balíčka) – kupuj ich skoro a vykladaj každé kolo.
   - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
     U006 2×, U009 3× kostík (2/1); undead token, čo sa nezmestí na plnú
-    plochu, rozdelí svoje staty živým vlastným príšerkám. U007 battlecry
+    plochu, dá celé staty jednej náhodnej živej vlastnej príšerke. U007 battlecry
     charga: ďalšie vyvolanie v boji vyvolá +1 navyše (stackuje sa).
   - **Elemental = výboje**: `dmgWeakEnemy` mieri na NAJSLABŠIEHO
     nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
     Counter na undead hordu, slabé proti veľkým beast telám.
-  - **Fairy = Po kúzle motor**: F001 draw, F005 vracia zlato, F006
+  - **Fairy = Po kúzle motor**: F001 battlecry draw (1/2/3 podľa
+    stupňa, NIE Po kúzle), F005 vracia zlato, F006
     battlecry pridá Iskričku ✨ (jednorazové kúzlo +1 útok – nejde do
     balíčka, po ťahu zmizne; spúšťa Po kúzle), F009 vanilka 8/8,
     F008 (t6) +2/+2 všetkým. Self-rast F002/F004 je
