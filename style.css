@@ -84,6 +84,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* Claudov záverečný výsmech v okne konca hry. */
 .over-roast { margin-top: 10px; font-style: italic; color: #a33; max-width: 420px; }
 .diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.mut-toggle { display: block; margin-top: 12px; font-size: .9rem; color: #345; cursor: pointer; }
+.mut-toggle input { transform: scale(1.2); margin-right: 6px; vertical-align: -2px; }
 .diff-pick button.active { background: #ffd33d; font-weight: 700; }
 .big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }
 .net-row { margin-top: 12px; }

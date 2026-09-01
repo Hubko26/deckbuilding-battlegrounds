@@ -100,6 +100,11 @@ const L = {
   },
   play: { sk: "Hraj!", cs: "Hraj!", en: "Play!" },
   newGame: { sk: "Nová hra", cs: "Nová hra", en: "New game" },
+  mutToggle: {
+    sk: "🎲 Pravidlo dnešnej arény (náhodná mutácia)",
+    cs: "🎲 Pravidlo dnešní arény (náhodná mutace)",
+    en: "🎲 Rule of the day (random mutation)",
+  },
   yourTurn: { sk: "Tvoj ťah – nakupuj!", cs: "Tvůj tah – nakupuj!", en: "Your turn – go shopping!" },
   enemyTurn: { sk: "Súper nakupuje…", cs: "Soupeř nakupuje…", en: "Opponent is shopping…" },
   fight: { sk: "⚔️ Boj!", cs: "⚔️ Boj!", en: "⚔️ Fight!" },
@@ -322,6 +327,14 @@ const GameLog = (() => {
   return { start, push, dump };
 })();
 window.arenaLog = () => GameLog.dump();
+
+// Voľba „hrať bez mutácií" – checkbox na úvodnej obrazovke, pamätá sa
+// v localStorage. V hre po sieti rozhoduje zakladateľ (flag ide v "start").
+function mutsOn() { return $("mutToggle").checked; }
+try { $("mutToggle").checked = localStorage.getItem("arena.muts") !== "0"; } catch {}
+$("mutToggle").addEventListener("change", () => {
+  try { localStorage.setItem("arena.muts", mutsOn() ? "1" : "0"); } catch {}
+});
 window.arenaLogSave = () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([GameLog.dump()], { type: "application/json" }));
@@ -380,6 +393,7 @@ function applyI18n() {
   $("netBtn").textContent = t(L.netBtn);
   $("netCancel").textContent = t(L.cancel);
   $("peerHostBtn").textContent = t(L.peerHost);
+  $("mutToggleLbl").textContent = t(L.mutToggle);
   $("peerJoinBtn").textContent = t(L.peerJoin);
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);
@@ -453,8 +467,8 @@ function startGame() {
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
-  state = Engine.newGame(Engine.seededRng(seed));
-  GameLog.start(seed, { mode: "bot", difficulty });
+  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null);
+  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn() });
   enterGameScreen();
   act(Engine.startRound(state));
   driveFlow();
@@ -500,8 +514,8 @@ function netHandlers() {
     onStart: msg => {
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
-      state = Engine.newGame(Engine.seededRng(msg.seed));
-      GameLog.start(msg.seed, { mode: "net", you: msg.you });
+      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined);
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false });
       enterGameScreen();
       act(Engine.startRound(state));
       driveFlow();
@@ -538,7 +552,7 @@ function startNet() {
   $("netUrls").textContent = "";
   $("peerCode").textContent = "";
   $("netMsg").textContent = t(L.netConnecting);
-  Net.connect(netHandlers());
+  Net.connect(netHandlers(), { mut: mutsOn() });
 }
 
 // Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
@@ -554,7 +568,7 @@ function showPeerSetup() {
 function peerHost() {
   const code = String(1000 + Math.floor(Math.random() * 9000));
   $("peerCode").textContent = "…";
-  Net.hostPeer(code, netHandlers());
+  Net.hostPeer(code, netHandlers(), { mut: mutsOn() });
 }
 
 function peerJoin() {

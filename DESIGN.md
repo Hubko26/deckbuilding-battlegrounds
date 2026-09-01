@@ -395,7 +395,11 @@ Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 ## Mutácie – „Pravidlo dnešnej arény"
 
 Každá hra má **jednu náhodnú mutáciu** – globálne pravidlo, ktoré platí pre
-oboch hráčov a mení hru (novelita + adaptácia). Žrebuje sa **prvým ťahom
+oboch hráčov a mení hru (novelita + adaptácia). **Dá sa vypnúť** checkboxom
+na úvodnej obrazovke (voľba sa pamätá v localStorage); v hre po sieti
+rozhoduje zakladateľ – flag `mut` cestuje v `start` správe (PeerJS aj LAN
+server) a zapisuje sa do GameLog, takže replay hru zrekonštruuje správne
+(staré záznamy bez flagu = mutácia zo seedu ako doteraz). Žrebuje sa **prvým ťahom
 z `state.rng` v `newGame`**, takže multiplayer aj replay ju odvodia zo seedu
 bez extra synchronizácie. `newGame(rng, null)` = bez mutácie (testy, balance
 sim), `newGame(rng, "id")` = vynútená (testy konkrétnej mutácie). UI ukazuje

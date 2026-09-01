@@ -47,7 +47,7 @@ const Net = (() => {
   }
 
   // ---------- WebSocket (lokálny server) ----------
-  function connect(h) {
+  function connect(h, opts) {
     handlers = h;
     transport = "ws";
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
@@ -59,7 +59,11 @@ const Net = (() => {
       if (handlers.onPeerMode) handlers.onPeerMode();
       return;
     }
-    ws.addEventListener("open", () => { opened = true; });
+    ws.addEventListener("open", () => {
+      opened = true;
+      // Voľba mutácií – server ju vezme od hráča, ktorý čaká prvý (zakladateľ).
+      ws.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false) }));
+    });
     ws.addEventListener("message", e => dispatch(e.data));
     ws.addEventListener("close", () => {
       if (!opened) {
@@ -117,9 +121,10 @@ const Net = (() => {
 
   // Založí hru: čaká na kamaráta na kóde miestnosti. Hostiteľ je p1
   // a po pripojení pošle seed.
-  function hostPeer(code, h) {
+  function hostPeer(code, h, opts) {
     handlers = h;
     transport = "peer";
+    const mut = !(opts && opts.mut === false);
     destroyPeer();
     peer = new Peer(PEER_PREFIX + code, PEER_OPTS);
     keepAlive(peer);
@@ -131,8 +136,8 @@ const Net = (() => {
       wireConn(c);
       c.on("open", () => {
         const seed = Math.floor(Math.random() * 2 ** 31);
-        c.send({ type: "start", seed, you: "p2" });
-        dispatch({ type: "start", seed, you: "p1" });
+        c.send({ type: "start", seed, you: "p2", mut });
+        dispatch({ type: "start", seed, you: "p1", mut });
       });
     });
     peer.on("error", err => {

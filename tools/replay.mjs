@@ -55,7 +55,8 @@ const verbose = !!opts.verbose;
 
 const ctx = loadCtx();
 const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
-const s = E.newGame(E.seededRng(game.seed));
+// mut:false v zázname = hra bez mutácie; staré záznamy flag nemajú (= mutácia zo seedu)
+const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined);
 E.startRound(s);
 
 const boardStr = p => p.board.map(x =>
