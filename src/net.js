@@ -122,6 +122,8 @@ const Net = (() => {
     });
     pc.addEventListener("iceconnectionstatechange",
       () => console.info("[arena] ICE stav:", pc.iceConnectionState));
+    pc.addEventListener("icecandidateerror",
+      e => console.info("[arena] ICE chyba:", e.errorCode, e.url, e.errorText));
   }
 
   // PeerJS cloud pustí naše ID, keď signaling socket spadne (uspatá záložka
