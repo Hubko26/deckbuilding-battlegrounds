@@ -63,6 +63,7 @@ const Net = (() => {
   let role = null;   // "host" | "join" – kto obnovuje spojenie (joiner volá)
   let roomCode = null;
   let resuming = false;
+  let resumeUnavail = 0; // koľkokrát reconnect dostal peer-unavailable
 
   function resetSync() { sendSeq = 0; recvSeq = 0; sentBuf = []; resuming = false; }
 
@@ -105,6 +106,7 @@ const Net = (() => {
     if (c !== conn || resuming || transport !== "peer") return;
     console.info("[arena] spojenie vypadlo – skúšam obnoviť");
     resuming = true;
+    resumeUnavail = 0;
     stopPing();
     if (handlers.onReconnecting) handlers.onReconnecting();
     const deadline = Date.now() + 60000;
@@ -186,9 +188,11 @@ const Net = (() => {
   function wireConn(c) {
     conn = c;
     c.on("data", dispatch);
-    // close/error počas obnovy patrí starému spojeniu – nezabíjaj hru.
-    c.on("close", () => { if (c !== conn || resuming) return; stopPing(); if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
-    c.on("error", () => { if (c !== conn || resuming) return; stopPing(); if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
+    // Close/error NEZABÍJA hru – PeerJS zatvára DataConnection aj pri výpadku
+    // ICE (failed) a to isté vyzerá ako odchod súpera. Skúsime obnovu; keď
+    // súper naozaj odišiel, reconnect dostane peer-unavailable a hra skončí.
+    c.on("close", () => { if (c !== conn || resuming) return; linkDead(c); });
+    c.on("error", () => { if (c !== conn || resuming) return; linkDead(c); });
     c.on("open", () => startPing(c));
     wireDiag(c);
     watchIce(c);
@@ -305,6 +309,7 @@ const Net = (() => {
       });
     });
     peer.on("error", err => {
+      if (resuming) return; // počas obnovy čakáme na joinerov reconnect
       if (handlers.onPeerError) handlers.onPeerError(err && err.type);
     });
     });
@@ -336,8 +341,15 @@ const Net = (() => {
       c.on("open", done);
     });
     peer.on("error", err => {
+      const kind = err && err.type;
+      if (resuming) {
+        // Počas obnovy chyby rieši reconnect slučka; peer-unavailable = súper
+        // je preč (zavrel hru) – po pár pokusoch to vzdaj a ohlás odchod.
+        if (kind === "peer-unavailable" && ++resumeUnavail >= 4) giveUpResume();
+        return;
+      }
       done();
-      if (handlers.onPeerError) handlers.onPeerError(err && err.type);
+      if (handlers.onPeerError) handlers.onPeerError(kind);
     });
     });
   }
