@@ -404,7 +404,10 @@ function doAction(name, ...args) {
   const round = state.round; // kolo PRED akciou – súper ju aplikuje v rovnakom
   const ev = Engine[name](state, MY, ...args);
   if (ev) GameLog.push(MY, name, args);
-  if (ev && mode === "net") Net.sendAction(name, args, round);
+  if (ev && mode === "net") {
+    Net.sendAction(name, args, round);
+    console.info("[arena] →", name, "r" + round);
+  }
   if (ev && desc && playerRoundActions.length < 40) playerRoundActions.push(desc);
   // Trash-talk bota na hráčove rozhodnutia (len proti botovi).
   if (ev && name === "sellCard") botTaunt("sell", 0.5);
@@ -618,6 +621,7 @@ function peerJoin() {
 let remoteQueue = Promise.resolve();
 async function applyRemote(msg) {
   if (!state || state.phase === "over" || mode !== "net" || fatalShown) return;
+  console.info("[arena] ←", msg.name, "r" + msg.r, "(moje r" + state.round + ", fáza " + state.phase + ")");
   // Akcia súpera nesie číslo kola odosielateľa – nesúlad = stavy sa rozišli.
   if (msg.r != null && msg.r !== state.round) {
     showFatal(t(L.netDesync), `kolo súpera ${msg.r}, moje ${state.round}`);

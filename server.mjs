@@ -127,15 +127,24 @@ server.on("upgrade", (req, socket) => {
   socket.on("data", chunk => wsParse(client.parse, chunk, msg => {
     // relay: všetko od hráča preposli súperovi
     if (client.peer) { try { wsSend(client.peer.socket, msg); } catch {} return; }
-    // pred spárovaním: "hello" nesie voľbu mutácií (rozhoduje zakladateľ)
+    // pred spárovaním: "hello" nesie voľbu mutácií a verziu klienta.
+    // Párujeme AŽ PO hello – pri párovaní na upgrade by bola verzia joinera
+    // ešte undefined a kontrola verzií u hosta by hru okamžite zabila.
     try {
       const m = JSON.parse(msg);
-      if (m && m.type === "hello") { client.mut = m.mut !== false; client.v = m.v; }
+      if (m && m.type === "hello") {
+        client.mut = m.mut !== false;
+        client.v = m.v;
+        tryPair(client);
+      }
     } catch {}
   }, close));
   socket.on("error", close);
   socket.on("close", close);
+});
 
+function tryPair(client) {
+  if (client.peer || waiting === client) return;
   if (waiting && waiting.socket.writable) {
     // druhý hráč – spáruj a odštartuj hru s rovnakým seedom
     const host = waiting;
@@ -150,9 +159,9 @@ server.on("upgrade", (req, socket) => {
     console.log("Hráči spárovaní, seed", seed);
   } else {
     waiting = client;
-    wsSend(socket, JSON.stringify({ type: "waiting", urls: lanUrls() }));
+    wsSend(client.socket, JSON.stringify({ type: "waiting", urls: lanUrls() }));
   }
-});
+}
 
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`Zvieracia aréna beží:`);
