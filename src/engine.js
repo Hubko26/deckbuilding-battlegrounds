@@ -11,7 +11,10 @@ const Engine = (() => {
   const REFRESH_COST = 1;
   const COMMON_COUNT = 3;
   const TIER_MAX = 6;
-  const TIER_BASE_COST = { 2: 5, 3: 7, 4: 8, 5: 9, 6: 10 };
+  // Drahšie než HS Battlegrounds (5/7/8/11/10): trojice tu chodia zadarmo
+  // cyklom balíčka (netreba platiť refreshe), takže zlata zvyšuje viac.
+  const TIER_BASE_COST = { 2: 5, 3: 8, 4: 9, 5: 11, 6: 12 };
+  const TIER_MIN_COST = 2; // zľava za čakanie nikdy nezrazí cenu pod 2
   const BATTLE_CAP = 200; // poistka proti nekonečnému boju
 
   // Mutácie – „Pravidlo dnešnej arény": jedna na hru, platí pre oboch hráčov.
@@ -77,9 +80,9 @@ const Engine = (() => {
       atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m,
       taunt: !!def.taunt,
     };
-    // Tokeny aury nedostávajú – kostíky ostávajú malé (AoE ich zmetie),
-    // škálujú len stupňom rodiča (a Mláďa vlastným rastom).
-    const aura = p && def.race && !def.token && p.raceBuffs && p.raceBuffs[def.race];
+    // Permanentné rasové aury dostávajú AJ tokeny – kostíky s aurami
+    // škálujú do late game (bez toho undead scaling zaostával).
+    const aura = p && def.race && p.raceBuffs && p.raceBuffs[def.race];
     if (aura) {
       inst.atk += aura.a;
       inst.hp += aura.h;
@@ -105,7 +108,8 @@ const Engine = (() => {
   function other(pid) { return pid === "p1" ? "p2" : "p1"; }
 
   // ---------- Založenie hry ----------
-  // Štartovací balíček: 10 náhodných príšer tieru 1 (duplicity vítané – evolve).
+  // Štartovací balíček: 10 náhodných príšer tieru 1. Max 2 kópie jednej karty –
+  // trojica by sa hneď spojila (evolve) a lámala by early game.
   // mutatorId: undefined = vyžrebuj z rng (bežná hra), null = bez mutácie
   // (testy, balance sim), string = vynútená konkrétna mutácia.
   function newGame(rng, mutatorId) {
@@ -121,7 +125,12 @@ const Engine = (() => {
     const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell);
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
-      for (let i = 0; i < 10; i++) p.deck.push({ defId: pick(basics, rng).id, rank: 1 });
+      for (let i = 0; i < 10; i++) {
+        let id;
+        do { id = pick(basics, rng).id; }
+        while (p.deck.filter(c => c.defId === id).length >= 2);
+        p.deck.push({ defId: id, rank: 1 });
+      }
     }
     const commonCount = COMMON_COUNT + (mutator === "plenty" ? 1 : 0);
     for (let i = 0; i < commonCount; i++) state.commons.push(rollCard(state, 1));
@@ -439,7 +448,7 @@ const Engine = (() => {
     const p = state[pid];
     if (p.tier >= TIER_MAX) return null;
     const base = TIER_BASE_COST[p.tier + 1];
-    return Math.max(0, base - (state.round - p.reachedRound));
+    return Math.max(TIER_MIN_COST, base - (state.round - p.reachedRound));
   }
 
   function upgradeTier(state, pid) {
@@ -726,6 +735,50 @@ const Engine = (() => {
         }
         events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * m, h: fx.h * m });
         break;
+      case "reviveAs": {
+        // U004: cielený battlecry – označená príšerka po smrti vstane ako
+        // m/m (1/2/3 podľa stupňa). Aury sa aplikujú až pri vstávaní v boji.
+        // Fallback bez cieľa: najsilnejší VLASTNÝ deathrattler (dve smrti
+        // = dvojitý deathrattle), až potom najsilnejšia príšerka.
+        const drs = p.board.filter(x =>
+          x !== self && Cards.byId[x.defId].power?.kw === "deathrattle");
+        const t = (target && p.board.includes(target)) ? target
+          : drs.sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0] || pickTarget();
+        if (!t) break;
+        t.reviveAs = Math.max(t.reviveAs || 0, m);
+        events.push({ type: "reviveAsMark", pid: p.id, uid: t.uid, defId: t.defId, n: m });
+        break;
+      }
+      case "coinflip": {
+        // Ogr O001: hod mincou – 50 % veľký buff, 50 % postih (do konca boja).
+        // Postih nejde pod 0 útoku / 1 život.
+        const heads = state.rng() < 0.5;
+        const a = Math.max(heads ? fx.a * m : -(fx.da * m), -self.atk);
+        const h = Math.max(heads ? fx.h * m : -(fx.dh * m), 1 - self.hp);
+        self.atk += a;
+        self.hp += h;
+        self.maxHp = Math.max(1, self.maxHp + h);
+        events.push({ type: "coinflip", pid: p.id, uid: self.uid, heads });
+        events.push({ type: "buff", pid: p.id, uid: self.uid, a, h });
+        break;
+      }
+      case "eatNeighbor": {
+        // Ogr O002: zožerie náhodného SUSEDA (najbližší slot vľavo/vpravo).
+        // Jeho aktuálne staty získa NAVŽDY (pa/ph – cestujú s kópiou karty),
+        // zjedená karta zmizne z hry úplne (nejde do kôpky).
+        const others = p.board.filter(x => x !== self);
+        if (!others.length) break;
+        const left = others.filter(x => x.slot < self.slot).sort((a, b) => b.slot - a.slot)[0];
+        const right = others.filter(x => x.slot > self.slot).sort((a, b) => a.slot - b.slot)[0];
+        const eaten = left && right ? (state.rng() < 0.5 ? left : right) : (left || right);
+        p.board.splice(p.board.indexOf(eaten), 1);
+        buff(self, eaten.atk, eaten.maxHp);
+        self.pa = (self.pa || 0) + eaten.atk;
+        self.ph = (self.ph || 0) + eaten.maxHp;
+        events.push({ type: "eat", pid: p.id, uid: self.uid, eatenUid: eaten.uid, eatenDefId: eaten.defId, a: eaten.atk, h: eaten.maxHp });
+        events.push({ type: "buff", pid: p.id, uid: self.uid, a: eaten.atk, h: eaten.maxHp });
+        break;
+      }
       case "draw":
         drawCards(state, p, fx.n * m, events);
         checkEvolve(state, p, events);
@@ -910,8 +963,11 @@ const Engine = (() => {
       if (aDef.power && aDef.power.kw === "onAttack" && !a.silenced) {
         events.push({ type: "proc", pid: attacker, uid: a.uid, kw: "onAttack" });
         applyBattleFx(state, sides, attacker, a, aDef.power.fx, a.rank, events);
+        // Ožratý úder (drunkStrike) mohol útočníka zložiť – útok odpadá.
+        if (a.hp <= 0) { attacker = other(attacker); continue; }
       }
       const enemies = alive(other(attacker));
+      if (!enemies.length) break;
       const taunts = enemies.filter(x => x.taunt);
       const d = pick(taunts.length ? taunts : enemies, state.rng);
       events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
@@ -1018,6 +1074,74 @@ const Engine = (() => {
         handleDeaths(state, sides, events);
         break;
       }
+      case "dmgAllBoth": {
+        // Ogr O003: chaos výbuch – zasiahne VŠETKY živé príšerky na OBOCH
+        // stranách vrátane seba (friendly fire je súčasť zábavy).
+        const dmg = fx.n * m + state[pid].dmgBoost;
+        for (const side of ["p1", "p2"]) {
+          const hits = [];
+          for (const t of sides[side].filter(x => x.hp > 0)) {
+            if (t.shield) {
+              t.shield = false;
+              events.push({ type: "shieldPop", pid: side, uid: t.uid });
+              continue;
+            }
+            t.hp -= dmg;
+            hits.push({ uid: t.uid, hp: t.hp });
+          }
+          if (hits.length) events.push({ type: "aoeDmg", pid: side, n: dmg, from: self.uid, hits });
+        }
+        handleDeaths(state, sides, events);
+        break;
+      }
+      case "drunkStrike": {
+        // Ogr O006 (Pri útoku): 50 % šanca, že sa trafí sám za ½ svojho útoku.
+        if (state.rng() < 0.5) {
+          const dmg = Math.floor(self.atk / 2);
+          if (dmg > 0) {
+            dealDmg(self, dmg, pid, events);
+            events.push({ type: "drunkHit", pid, uid: self.uid, n: dmg });
+            events.push({ type: "hp", pid, uid: self.uid, hp: self.hp });
+            handleDeaths(state, sides, events);
+          }
+        }
+        break;
+      }
+      case "dmgRandomAny": {
+        // Ogr O007 (Pri smrti): veľký zásah ÚPLNE náhodnej živej príšerke –
+        // hocijakej na ploche, aj vlastnej (ruská ruleta).
+        const all = [
+          ...sides.p1.filter(x => x.hp > 0).map(t => ({ t, side: "p1" })),
+          ...sides.p2.filter(x => x.hp > 0).map(t => ({ t, side: "p2" })),
+        ];
+        if (!all.length) break;
+        const { t, side } = pick(all, state.rng);
+        const dmg = fx.n * m + state[pid].dmgBoost;
+        dealDmg(t, dmg, side, events);
+        events.push({ type: "powerDmg", pid: side, uid: t.uid, n: dmg, from: self.uid });
+        events.push({ type: "hp", pid: side, uid: t.uid, hp: t.hp });
+        handleDeaths(state, sides, events);
+        break;
+      }
+      case "confusedRevive": {
+        // Ogr O010 (Pri smrti): 50 % šanca, že vstane s 1 HP na NÁHODNEJ
+        // strane plochy (aj u súpera!). Raz za boj; pri plnej strane ostáva
+        // ležať. Technicky vstáva kópia – originál normálne zomrie.
+        if (self.confusedUsed) break;
+        self.confusedUsed = true;
+        if (state.rng() >= 0.5) break;
+        const side = state.rng() < 0.5 ? pid : other(pid);
+        const aliveThere = sides[side].filter(x => x.hp > 0);
+        if (aliveThere.length >= BOARD_MAX) break;
+        const copy = {
+          ...self, uid: ++state.uidSeq, hp: 1, dead: false, shield: false,
+          confusedUsed: true, slot: freeSlot(aliveThere, BOARD_MAX),
+        };
+        sides[side].push(copy);
+        events.push({ type: "confusedRevive", pid: side, fromPid: pid, uid: copy.uid, defId: copy.defId, swapped: side !== pid });
+        events.push({ type: "summon", pid: side, uid: copy.uid, defId: copy.defId, slot: copy.slot, rank: copy.rank, atk: copy.atk, hp: 1 });
+        break;
+      }
       case "growSelf":
         self.atk += fx.a * m;
         self.maxHp += fx.h * m;
@@ -1071,8 +1195,8 @@ const Engine = (() => {
         // ×2/×4), počet sa so stupňom neškáluje.
         // summonCharge (U007): jednorazovo pridá +n tokenov k ĎALŠIEMU
         // vyvolaniu, potom sa minie.
-        // Pretečenie (undead): token, čo sa nezmestí na plnú plochu, rozdelí
-        // svoje staty medzi živé vlastné príšerky (rovným dielom, zvyšok náhodne).
+        // Pretečenie (undead): token, čo sa nezmestí na plnú plochu, dá
+        // celé staty jednej náhodnej živej vlastnej príšerke.
         const board = sides[pid];
         const idx = board.indexOf(self);
         const p = state[pid];
@@ -1082,9 +1206,8 @@ const Engine = (() => {
           const alive = board.filter(x => x.hp > 0);
           const full = alive.length >= BOARD_MAX;
           if (full && Cards.byId[fx.token].race !== "undead") break;
-          const tok = makeInst(state, fx.token, Math.min(m, 3), p);
-          // Dračí buff „do konca boja" dostanú aj tokeny vyvolané počas boja
-          // (permanentné rasové aury tokeny neberú – toto je vedomá výnimka).
+          const tok = makeInst(state, fx.token, Math.min(m, 3), p); // aj s aurami (makeInst)
+          // Dračí buff „do konca boja" dostanú aj tokeny vyvolané počas boja.
           const fb = Cards.byId[fx.token].race && p.fightRaceBuffs[Cards.byId[fx.token].race];
           if (fb && (fb.a || fb.h)) {
             tok.atk += fb.a; tok.hp += fb.h; tok.maxHp += fb.h;
@@ -1102,25 +1225,18 @@ const Engine = (() => {
     }
   }
 
-  // Pretečenie: staty nezmestivšieho sa tokenu sa rozdelia medzi živé vlastné
-  // príšerky – rovným dielom, zvyšok dostanú náhodné (poradie z rng, aby bol
-  // multiplayer deterministický). Dočasné ako všetky bojové buffy.
+  // Pretečenie: celé staty nezmestivšieho sa tokenu dostane JEDNA náhodná
+  // živá vlastná príšerka (výber z rng, aby bol multiplayer deterministický).
+  // Dočasné ako všetky bojové buffy.
   function overflowStats(state, aliveList, tok, pid, events) {
     if (!aliveList.length) return;
-    const order = shuffle(aliveList.slice(), state.rng);
-    const n = order.length;
-    const baseA = Math.floor(tok.atk / n), remA = tok.atk % n;
-    const baseH = Math.floor(tok.hp / n), remH = tok.hp % n;
+    const f = aliveList[Math.floor(state.rng() * aliveList.length)];
     events.push({ type: "overflow", pid, defId: tok.defId, atk: tok.atk, hp: tok.hp });
-    order.forEach((f, i) => {
-      const a = baseA + (i < remA ? 1 : 0);
-      const h = baseH + (i < remH ? 1 : 0);
-      if (!a && !h) return;
-      f.atk += a;
-      f.maxHp += h;
-      f.hp += h;
-      events.push({ type: "buff", pid, uid: f.uid, a, h });
-    });
+    if (!tok.atk && !tok.hp) return;
+    f.atk += tok.atk;
+    f.maxHp += tok.hp;
+    f.hp += tok.hp;
+    events.push({ type: "buff", pid, uid: f.uid, a: tok.atk, h: tok.hp });
   }
 
   // Božský štít: prvé zranenie sa úplne zruší (štít praskne, staty ostávajú).
@@ -1166,6 +1282,28 @@ const Engine = (() => {
           if (fDef.power.fx.race !== def.race) continue;
           events.push({ type: "proc", pid, uid: f.uid, kw: "raceDeath" });
           applyBattleFx(state, sides, pid, f, fDef.power.fx, f.rank, events);
+        }
+        // U004 reviveAs: karta NAOZAJ zomrela (deathrattle aj scavengery
+        // prebehli – v tom je combo: kostíky už zaplnili plochu), ale vstane
+        // ako n/n. Aury sa aplikujú ako pri novej nemŕtvej inštancii –
+        // permanentná rasová aura aj dračí bojový buff. Pri plnej ploche
+        // ostáva ležať.
+        if (inst.reviveAs) {
+          const n = inst.reviveAs;
+          inst.reviveAs = 0;
+          const aliveNow = sides[pid].filter(x => x.hp > 0);
+          if (aliveNow.length < BOARD_MAX) {
+            const race = Cards.byId[inst.defId].race;
+            const aura = (race && state[pid].raceBuffs[race]) || { a: 0, h: 0 };
+            const fb = (race && state[pid].fightRaceBuffs[race]) || { a: 0, h: 0 };
+            inst.atk = n + aura.a + fb.a;
+            inst.hp = inst.maxHp = n + aura.h + fb.h;
+            inst.dead = false;
+            inst.slot = freeSlot(aliveNow, BOARD_MAX);
+            events.push({ type: "reviveAs", pid, uid: inst.uid, defId: inst.defId, atk: inst.atk, hp: inst.hp, slot: inst.slot });
+            events.push({ type: "hp", pid, uid: inst.uid, hp: inst.hp });
+            continue;
+          }
         }
         events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
       }

@@ -32,8 +32,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   efekt aj Obrancu – counter na deathrattle a Pred bojom motory). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
-- Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/7/8/9/10,
-  cena klesá o 1 každé kolo na aktuálnom tieri).
+- Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/8/9/11/12,
+  cena klesá o 1 každé kolo na aktuálnom tieri, minimum 2).
 - Kúpená karta ide do balíčka. Ruka sa doťahuje na 5 na začiatku vlastnej
   fázy; nezahrané karty idú na konci fázy do kôpky (discard). Prázdny
   balíček = kôpka sa zamieša. Vyloženie na plochu je zadarmo, max 5.
@@ -61,13 +61,19 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     cyklus balíčka) – kupuj ich skoro a vykladaj každé kolo.
   - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
     U006 2×, U009 3× kostík (2/1); undead token, čo sa nezmestí na plnú
-    plochu, rozdelí svoje staty živým vlastným príšerkám. U007 battlecry
+    plochu, dá celé staty jednej náhodnej živej vlastnej príšerke. U007 battlecry
     charga: ďalšie vyvolanie v boji vyvolá +1 navyše (stackuje sa).
+    U004 (t2, cielený battlecry): označená príšerka po smrti vstane ako
+    1/1 (stupeň 2/2, 3/3) – deathrattle prebehne PRED vstávaním, takže
+    revivnutý deathrattler zomrie dvakrát a druhá dávka kostíkov pri
+    plnej ploche pretečie do buffov. Ako bot cieľ VŽDY na U001/U006/U009
+    (akcia `play` s `target`); aury sa na vstávajúceho aplikujú.
   - **Elemental = výboje**: `dmgWeakEnemy` mieri na NAJSLABŠIEHO
     nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
     Counter na undead hordu, slabé proti veľkým beast telám.
-  - **Fairy = Po kúzle motor**: F001 draw, F005 vracia zlato, F006
+  - **Fairy = Po kúzle motor**: F001 battlecry draw (1/2/3 podľa
+    stupňa, NIE Po kúzle), F005 vracia zlato, F006
     battlecry pridá Iskričku ✨ (jednorazové kúzlo +1 útok – nejde do
     balíčka, po ťahu zmizne; spúšťa Po kúzle), F009 vanilka 8/8,
     F008 (t6) +2/+2 všetkým. Self-rast F002/F004 je
@@ -87,9 +93,18 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
     keď je telo nad krivkou alebo battlecry živí tvoju rasu.
-  - **Tokeny nedostávajú permanentné aury** (`futureRace`) – kostík aj
-    Mláďa škálujú len stupňom rodiča. Výnimka: dočasný dračí buff
-    (D002/D006/D008) tokeny v boji dostanú.
+  - **Ogre = veľké staty, chaos efekty** (môžu udrieť aj vlastníka):
+    O001 hod mincou (battlecry +4/+4 alebo −2/−2), O006 Pri útoku 50 %
+    sa trafí sám za ½ útoku, O002 battlecry zožerie NÁHODNÉHO suseda
+    (staty NAVŽDY, karta zmizne z hry – vykladaj ho na prázdnu plochu,
+    alebo vedľa karty, ktorú chceš obetovať), O003 Pred bojom 2 dmg
+    VŠETKÝM (aj tvojim – zlé so swarm buildmi, dobré proti nim),
+    O007 Pri smrti 5 dmg náhodnej príšerke (aj tvojej), O010 (t6 taunt)
+    Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
+    Vanilla telá nad krivkou: O004/O005/O008/O009 – bezpečný nákup.
+  - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
+    Mláďa s aurami škálujú; navyše škálujú stupňom rodiča. Dočasný dračí
+    buff (D002/D006/D008) tokeny v boji dostanú tiež.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 
@@ -108,7 +123,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
    buffery (buffRace/buffAllFriends/buffFriend/aury) – battlecry zasiahne
    plnú plochu. Kúzla na buff (Jablko, Srdce, Vlna, Koreň) až po vyložení,
    cieľ = najsilnejšia príšera (alebo Obranca pre Koreň).
-5. **Ekonomika**: Mincu (1g → +2g) kupuj takmer vždy. Upgrade tieru, keď
+5. **Ekonomika**: Mincu (1g → +2g, od tieru 2) kupuj takmer vždy. Upgrade tieru, keď
    cena klesne na ~2–3 a ostane aspoň na kartu; neupgraduj, keď vieš
    dokončiť trojicu. Refresh (1g) používaj pri zvyšných peniazoch,
    ktoré by prepadli.

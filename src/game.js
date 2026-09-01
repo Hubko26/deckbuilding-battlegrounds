@@ -28,6 +28,12 @@ const L = {
     en: "Server is not running. Start the game with: node server.mjs",
   },
   netLeft: { sk: "📴 Súper sa odpojil", cs: "📴 Soupeř se odpojil", en: "📴 Opponent disconnected" },
+  netReconnecting: {
+    sk: "📡 Spojenie vypadlo – obnovujem…",
+    cs: "📡 Spojení vypadlo – obnovuji…",
+    en: "📡 Connection lost – reconnecting…",
+  },
+  netResumed: { sk: "📡 Spojenie obnovené ✓", cs: "📡 Spojení obnoveno ✓", en: "📡 Connection restored ✓" },
   netDesync: {
     sk: "Hra sa rozsynchronizovala – stavy hráčov sa rozišli. Obaja obnovte stránku (Ctrl+F5) a založte novú hru.",
     cs: "Hra se rozsynchronizovala – stavy hráčů se rozešly. Oba obnovte stránku (Ctrl+F5) a založte novou hru.",
@@ -245,9 +251,49 @@ const L = {
   begins: { sk: "začína", cs: "začíná", en: "begins" },
   battleDraw: { sk: "Boj skončil remízou.", cs: "Boj skončil remízou.", en: "The fight was a draw." },
   overflowMsg: {
-    sk: "💀 Pretečenie: plocha plná, staty tokenu dostali kamaráti",
-    cs: "💀 Přetečení: plocha plná, staty tokenu dostali kamarádi",
-    en: "💀 Overflow: board full, friends got the token's stats",
+    sk: "💀 Pretečenie: plocha plná, celé staty tokenu dostal jeden kamarát",
+    cs: "💀 Přetečení: plocha plná, celé staty tokenu dostal jeden kamarád",
+    en: "💀 Overflow: board full, one friend got the token's full stats",
+  },
+  coinHeadsMsg: {
+    sk: "🪙 Hod mincou: VYHRAL",
+    cs: "🪙 Hod mincí: VYHRÁL",
+    en: "🪙 Coin flip: WON",
+  },
+  coinTailsMsg: {
+    sk: "🪙 Hod mincou: prehral",
+    cs: "🪙 Hod mincí: prohrál",
+    en: "🪙 Coin flip: lost",
+  },
+  eatMsg: {
+    sk: "👹 zožral suseda",
+    cs: "👹 sežral souseda",
+    en: "👹 ate its neighbor",
+  },
+  drunkMsg: {
+    sk: "🍺 Ožratý úder: trafil sám seba za",
+    cs: "🍺 Ožralý úder: trefil sám sebe za",
+    en: "🍺 Drunken swing: smacked itself for",
+  },
+  reviveAsMarkMsg: {
+    sk: "🦋 po smrti vstane ako",
+    cs: "🦋 po smrti vstane jako",
+    en: "🦋 will get back up after death as",
+  },
+  reviveAsMsg: {
+    sk: "🦋 vstal ako",
+    cs: "🦋 vstal jako",
+    en: "🦋 got back up as",
+  },
+  confusedOwnMsg: {
+    sk: "🎲 vstal s 1 životom na vlastnej strane",
+    cs: "🎲 vstal s 1 životem na vlastní straně",
+    en: "🎲 got up with 1 health on its own side",
+  },
+  confusedSwapMsg: {
+    sk: "🎲 vstal s 1 životom NA STRANE SÚPERA!",
+    cs: "🎲 vstal s 1 životem NA STRANĚ SOUPEŘE!",
+    en: "🎲 got up with 1 health ON THE ENEMY SIDE!",
   },
   silencedMsg: {
     sk: "je umlčaný – stratil schopnosť aj Obrancu",
@@ -404,7 +450,10 @@ function doAction(name, ...args) {
   const round = state.round; // kolo PRED akciou – súper ju aplikuje v rovnakom
   const ev = Engine[name](state, MY, ...args);
   if (ev) GameLog.push(MY, name, args);
-  if (ev && mode === "net") Net.sendAction(name, args, round);
+  if (ev && mode === "net") {
+    Net.sendAction(name, args, round);
+    console.info("[arena] →", name, "r" + round);
+  }
   if (ev && desc && playerRoundActions.length < 40) playerRoundActions.push(desc);
   // Trash-talk bota na hráčove rozhodnutia (len proti botovi).
   if (ev && name === "sellCard") botTaunt("sell", 0.5);
@@ -567,6 +616,9 @@ function netHandlers() {
         $("overMsg").textContent = "";
       }
     },
+    // Výpadok spojenia: hra beží ďalej (akcie sa bufferujú), len o tom vieš.
+    onReconnecting: () => { if (mode === "net") log(t(L.netReconnecting)); },
+    onResumed: () => { if (mode === "net") log(t(L.netResumed)); },
     onPeerMode: showPeerSetup,
     onPeerError: kind => {
       console.warn("[arena] peer error:", kind); // typ chyby na diagnostiku
@@ -618,6 +670,7 @@ function peerJoin() {
 let remoteQueue = Promise.resolve();
 async function applyRemote(msg) {
   if (!state || state.phase === "over" || mode !== "net" || fatalShown) return;
+  console.info("[arena] ←", msg.name, "r" + msg.r, "(moje r" + state.round + ", fáza " + state.phase + ")");
   // Akcia súpera nesie číslo kola odosielateľa – nesúlad = stavy sa rozišli.
   if (msg.r != null && msg.r !== state.round) {
     showFatal(t(L.netDesync), `kolo súpera ${msg.r}, moje ${state.round}`);
@@ -830,8 +883,8 @@ async function runBattle() {
   GameLog.push("_", "doBattle", []);
   const events = Engine.doBattle(state);
   renderAll();
-  renderBoardList($("oppBoard"), snap[OPP], false);
-  renderBoardList($("myBoard"), snap[MY], false);
+  renderBoardList($("oppBoard"), snap[OPP], false, OPP);
+  renderBoardList($("myBoard"), snap[MY], false, MY);
   renderHero($("oppHero"), { ...state[OPP], hp: pre[OPP].hp });
   renderHero($("myHero"), { ...state[MY], hp: pre[MY].hp });
   renderCorner($("oppDeckBox"), "🂠", t(L.deck), pre[OPP].deck);
@@ -998,7 +1051,7 @@ async function runBattle() {
         const el = cardById(ev.uid);
         if (el) {
           Sfx.buff();
-          floatText(el, `+${ev.a}/+${ev.h}`, true);
+          floatText(el, fmtBuff(ev.a, ev.h), true);
           // Prepíš čísla na karte, nech buff reálne vidno.
           const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
           if (atkEl && ev.a) { atkEl.textContent = String((parseInt(atkEl.textContent, 10) || 0) + ev.a); atkEl.classList.add("buffed"); }
@@ -1038,6 +1091,40 @@ async function runBattle() {
       case "overflow": {
         // Token sa nezmestil – buff eventy hneď za ním ukážu, kto čo dostal.
         log(`${t(L.overflowMsg)} (+${ev.atk}/+${ev.hp})`);
+        break;
+      }
+      case "reviveAs": {
+        // U004: príšerka vstala ako n/n – prepíš staty na karte.
+        const el = cardById(ev.uid);
+        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+        log(`${name} ${t(L.reviveAsMsg)} ${ev.atk}/${ev.hp}`);
+        if (el) {
+          const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
+          if (atkEl) atkEl.textContent = String(ev.atk);
+          if (hpEl) { hpEl.textContent = String(ev.hp); hpEl.classList.remove("hurt"); }
+          el.dataset.maxhp = String(ev.hp);
+          floatText(el, "🦋✨", true);
+          Sfx.evolve();
+          await sleep(800);
+        }
+        break;
+      }
+      case "drunkHit": {
+        // Ogr sa ožratým úderom trafil sám – nápadný chaos moment.
+        const el = cardById(ev.uid);
+        log(`${t(L.drunkMsg)} ${ev.n} 💥`);
+        if (el) {
+          floatText(el, `🍺 -${ev.n}`);
+          Sfx.zap();
+          await sleep(600);
+        }
+        break;
+      }
+      case "confusedRevive": {
+        // Zmätený obranca vstal – summon event hneď za tým kartu vykreslí.
+        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+        log(`${name} ${t(ev.swapped ? L.confusedSwapMsg : L.confusedOwnMsg)}`);
+        await sleep(400);
         break;
       }
       case "toDiscard": {
@@ -1102,6 +1189,12 @@ function shootProjectile(fromEl, toEl) {
   });
 }
 
+// Formát buff čísel so znamienkom – ogrí hod mincou môže byť aj záporný.
+function fmtBuff(a, h) {
+  const s = n => (n >= 0 ? `+${n}` : String(n));
+  return `${s(a)}/${s(h)}`;
+}
+
 function floatText(el, text, heal) {
   const f = document.createElement("div");
   f.className = "dmg-float" + (heal ? " heal" : "");
@@ -1145,11 +1238,14 @@ function renderHero(el, p) {
     `<span class="nums">❤️ ${Math.max(0, p.hp)}${gold}</span>`;
 }
 
-function renderBoardList(el, list, mine) {
+// mine = drag&drop; ownerPid (voliteľné) = koho boost/aury popisok ukáže.
+// V boji je mine=false aj pre vlastnú plochu – owner treba poslať explicitne,
+// inak by moje karty ukazovali súperov dmgBoost (Večná iskra) zeleno.
+function renderBoardList(el, list, mine, ownerPid) {
   el.innerHTML = "";
   for (let i = 0; i < list.length; i++) {
     const inst = list[i];
-    const card = cardEl(inst, mine ? {} : { owner: OPP });
+    const card = cardEl(inst, { owner: ownerPid || (mine ? MY : OPP) });
     // Rad je vycentrovaný (flex); poradie útoku zľava doprava drží CSS order.
     const slot = inst.slot ?? i;
     card.style.order = String(slot);
@@ -1531,7 +1627,7 @@ function markZones(src, on) {
 }
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
-const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget"]);
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget", "reviveAs"]);
 
 function endDrag(e) {
   const d = drag;
@@ -1553,8 +1649,10 @@ function endDrag(e) {
   }
 
   if (src.type === "board") {
-    if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
+    // Kôpka pred obchodom – jej menší rect sa prekrýva s rectom obchodu,
+    // špecifickejší cieľ musí vyhrať (inak drop na kôpku omylom predá).
     if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "board", src.idx)); return; }
+    if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
     if (inRect(e, $("myBoard"))) {
       // Presun podľa miesta dropu: rad je vycentrovaný, tak sa slot určí
       // z pozícií vykreslených kariet (na kartu = výmena, vedľa = posun na kraj).
@@ -1583,8 +1681,8 @@ function endDrag(e) {
   // src.type === "hand"
   const inst = p.hand[src.idx];
   if (!inst) { renderAll(); return; }
-  if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
   if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "hand", src.idx)); return; }
+  if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
     if (fx.type === "buffTarget") {
@@ -1654,10 +1752,28 @@ function act(events) {
     if (ev.type === "buff" && ev.uid) {
       const el = cardById(ev.uid);
       if (el) {
-        floatText(el, `+${ev.a}/+${ev.h}`, true);
+        floatText(el, fmtBuff(ev.a, ev.h), true);
         el.classList.add("evolving");
         setTimeout(() => el.classList.remove("evolving"), 600);
       }
+    }
+    if (ev.type === "reviveAsMark") {
+      const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+      log(`${name} ${t(L.reviveAsMarkMsg)} ${ev.n}/${ev.n}`);
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "🦋", true);
+    }
+    // Ogrie chaos momenty – nápadne do logu (🪙/👹), nech je derp vidno.
+    if (ev.type === "coinflip") {
+      log(t(ev.heads ? L.coinHeadsMsg : L.coinTailsMsg));
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "🪙", true);
+    }
+    if (ev.type === "eat") {
+      const name = Cards.nameOf(Cards.byId[ev.eatenDefId], 1, I18N.lang);
+      log(`${t(L.eatMsg)}: ${name} (+${ev.a}/+${ev.h})`);
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "👹🍴", true);
     }
     if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
     if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);

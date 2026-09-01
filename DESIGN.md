@@ -21,7 +21,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
   (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra/Svätožiara/
-  Pierko/Kliatba/Zvitok 2, Srdce 3).
+  Pierko/Kliatba/Zvitok 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
+  automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -52,11 +53,15 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 ## Tier obchodu
 
 Tiery 1–6 v štýle Battlegrounds. Cena upgradu klesá o 1 každé kolo strávené na aktuálnom
-tieri (minimum 0):
+tieri, ale **minimum je 2** – upgrade nikdy nie je (skoro) zadarmo:
 
 | na tier | 2 | 3 | 4 | 5 | 6 |
 |---------|---|---|---|---|---|
-| základná cena | 5 | 7 | 8 | 9 | 10 |
+| základná cena | 5 | 8 | 9 | 11 | 12 |
+
+Drahšie než HS Battlegrounds (5/7/8/11/10), lebo trojice tu chodia zadarmo
+cyklom balíčka – hráč neplatí refreshe na ich hľadanie, takže zlata zvyšuje
+viac a lacný upgrade by šiel stihnúť každé kolo.
 
 Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obchodu.
 
@@ -144,8 +149,9 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 | undead | Nemŕtvy | horda kostíkov + Pretečenie |
 | fairy | Víla | Po kúzle – schopnosti spúšťané zoslaním kúzla |
 | dragon | Drak | žoldnieri – cielené battlecry zosilňujú rasu cieľa |
+| ogre | Ogr | derpy chaos – veľké staty, efekt sa môže obrátiť proti tebe |
 
-Roster: **50 príšer z art sád** (5 rás × 10). Ďalšie rasy (Human, Ogre)
+Roster: **60 príšer z art sád** (6 rás × 10). Ďalšie rasy (Human)
 sa pridajú s ďalšími art sadami – dátový model je pripravený
 (pole `race` na karte).
 
@@ -179,20 +185,27 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   (t5, Pri smrti) 3×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
   U009 5/4). Kostík je **2/1** – bije tvrdo (páka na veľké beast telá),
   ale padne na jediný ping (elemental counter).
+- **U004 (t2, Pri vyložení, cielené)**: označená príšerka po smrti vstane
+  ako 1/1 (stupeň 2/2, 3/3). Karta NAOZAJ zomrie – deathrattle aj
+  scavengery prebehnú PRED vstávaním (kostíky zaplnia plochu, druhá smrť
+  ich pretečie do buffov). Aury (permanentná rasová aj dračia bojová) sa
+  na vstávajúcu aplikujú; pri plnej ploche ostáva ležať. Nahradila tretiu
+  undead auru (+0/+1) – undead boli slabí a aura bola redundantná
+  k U008/U010.
 - U007 (t4, Pri vyložení) dáva jednorazovú chargu (`summonCharge`):
   „tvoje ďalšie vyvolanie v boji vyvolá o 1 viac". Chargy sa stackujú
   a minú sa prvým vyvolaním. Strieborný dáva +2, zlatý +3 (čísla ×stupeň).
   **Chargy (aj Iskra) platia len najbližší boj** – nevyužité po boji
   prepadnú, nech sa nehromadia naprieč kolami.
 - **Pretečenie**: keď sa vyvolávaný nemŕtvy token nezmestí na plnú plochu
-  (max 5), nezmizne naprázdno – jeho staty sa rozdelia medzi živé vlastné
-  príšerky (rovným dielom, zvyšok náhodne cez `state.rng`). Platí len
+  (max 5), nezmizne naprázdno – jeho celé staty dostane jedna náhodná živá
+  vlastná príšerka (výber cez `state.rng`). Platí len
   v boji a je dočasné ako všetky bojové buffy. AoE výbuchy čistia plochu,
   čím tokenom uvoľňujú sloty – prirodzená anti-synergia s Pretečením.
 
 **✨ Elemental – explozívny archetyp**
 
-- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 2), E005 (t3, Pred bojom 2),
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E005 (t3, Pred bojom 3),
   E006 (t3, Pri smrti 3) – mieria na **najslabšieho** (najmenej HP)
   nepriateľa: kosia tokeny a nekŕmia zbytočne deathrattle telá (náhodný
   cieľ podľa simulácie undead paradoxne posilňoval). Evolve = **viac
@@ -201,9 +214,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: 2 všetkým).
   Jedna veľká vlna – engine pošle jeden `aoeDmg` event a UI zasiahne
   všetkých NARAZ, žiadne projektily po jednom.
-- **Tokeny nedostávajú aury** (`futureRace` sa na ne neaplikuje) – kostíky
-  ostávajú malé a AoE/výboje ich spoľahlivo čistia; bez toho undead
-  podľa simulácie bil elementálov 80:20. Kostík škáluje stupňom rodiča.
+- **Tokeny dostávajú permanentné aury** (`futureRace`) – kostíky aj mláďatá
+  s aurami škálujú do late game (predtým aury tokeny nebrali a undead
+  scaling zaostával). Kostík navyše škáluje stupňom rodiča.
 - Kúzlo **Večná iskra** ⚡ (t3, cena 2): trvalý bonus (`dmgBoost`) –
   „všetky tvoje výboje a výbuchy (navždy) dávajú +1 damage". Stackuje sa –
   elemental ekvivalent permanentných aur (malý krok +1, aby nesnowballoval).
@@ -217,7 +230,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   miesto v ruke a balíčku na úkor príšer – víly túto cenu premieňajú
   na výhodu.
 - Roster: F002 rast +1/+1 **NAVŽDY**, F003 buff náhodného kamaráta,
-  F001 potiahni kartu, F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
+  F001 **Pri vyložení** potiahni kartu (evolve 1/2/3 – Po kúzle draw
+  tvoril s F005 nekonečný motor: kúzlo vrátilo zlato aj kartu),
+  F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
   F006 (4/4) **Pri vyložení: pridaj do ruky Iskričku** ✨, F009 vanilka
   8/8 bez schopnosti (nie každá víla musí mať ability – ako B001/E002),
   F007 taunt +1/+1 Vílam, F008 (t6) +2/+2 všetkým tvojim príšerkám.
@@ -312,31 +327,34 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   pri bežnom evolve).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
-Návrhy pre ďalšie art sady (zatiaľ neimplementované):
-
-**👹 Ogre (Ogr) – nová rasa: derpy chaos**
+**👹 Ogre (Ogr) – derpy chaos (implementované)**
 
 - Identita: **obrovské staty za cenu chaosu** – každý ogre má nadpriemerné
   čísla, ale jeho efekt sa môže obrátiť proti vlastníkovi. Všetka náhoda
   cez `state.rng` (multiplayer determinizmus platí ďalej).
-- Schválené schopnosti – všetkých 6 (implementácia čaká na art sadu),
-  rozložené cez keywordy ako pri ostatných rasách:
-  - **Ožratý úder** (Pri útoku): „50 % šanca, že sa trafí sám za polovicu
-    svojho útoku." Vlajkový derp – veľké telo, občas sa zmláti samo.
-  - **Zožer kamaráta** (Pri vyložení): „Zožerie suseda a získa jeho staty."
-    Silný battlecry so skutočnou cenou; combo s lacnými tokenmi.
-  - **Chaos výbuch** (Pred bojom): „2 damage VŠETKÝM príšerkám – aj tvojim."
-    Ogri s veľkým HP vlastný výbuch prežijú, malé tokeny nie – sekundárny
-    anti-swarm, friendly fire je súčasť zábavy.
-  - **Hod mincou** (Pri vyložení, t1): „Hoď mincou 🪙 – +4/+4 alebo −2/−2."
-    Lacný gambling filler, deťom čitateľné.
-  - **Divoká rana** (Pri smrti): „5 damage úplne náhodnej príšerke –
-    hocijakej, aj tvojej." Ruská ruleta s veľkým číslom.
-  - **Zmätený obranca** (t6 highlight): „Obranca. Pri smrti: 50 % šanca,
-    že vstane s 1 HP na NÁHODNEJ strane plochy." Môže vstať u súpera.
+- Roster (10 kariet, 6 schopností + 4 vanilla telá nad krivkou):
+  - **O001 Hod mincou** (t1, 2/3, Pri vyložení): „Hoď mincou 🪙 – +4/+4
+    alebo −2/−2." Postih nejde pod 0 útoku / 1 život. Lacný gambling filler.
+  - **O006 Ožratý úder** (t2, 5/5, Pri útoku): „50 % šanca, že sa trafí sám
+    za polovicu svojho útoku." Vlajkový derp; ak sa zloží sám, útok odpadá.
+  - **O002 Zožer suseda** (t3, 4/4, Pri vyložení): zožerie NÁHODNÉHO suseda
+    (najbližší slot) – jeho aktuálne staty získa **NAVŽDY** (pa/ph cestujú
+    s kópiou), zjedená karta **zmizne z hry** (nejde do kôpky).
+  - **O003 Chaos výbuch** (t4, 7/8, Pred bojom): „2 damage VŠETKÝM
+    príšerkám – aj tvojim" (škáluje ×stupeň). Anti-swarm s friendly fire;
+    veľké ogrie HP vlastný výbuch prežije.
+  - **O007 Divoká rana** (t5, 9/7, Pri smrti): „5 damage úplne náhodnej
+    príšerke – hocijakej, aj tvojej." Ruská ruleta s veľkým číslom.
+  - **O010 Zmätený obranca** (t6, 10/10): „Obranca. Pri smrti: 50 % šanca,
+    že vstane s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Raz za boj,
+    pri plnej strane ostáva ležať (technicky vstáva bojová kópia).
+  - Vanilla: O004 (t1, 3/4), O005 (t2, 4/5), O008 (t3, 5/7), O009 (t4, 7/7).
 - Balance: očakávaná hodnota efektov mierne záporná/neutrálna, kompenzujú
   ju staty nad krivkou – hráč platí rozptylom, nie silou. UI: chaos
-  momenty hlásiť nápadne (🎲/🪙 popup + log), nech je derp vidno.
+  momenty hlási log (🪙 hod mincou, 👹 zožratie, 🍺 vlastný zásah,
+  🎲 vstávanie) + floaty nad kartami.
+
+Návrhy pre ďalšie art sady (zatiaľ neimplementované):
 
 **🙋 Human (Človek) – nová rasa: Božský štít (Divine Shield)**
 
@@ -358,7 +376,7 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   +1/+0 všetkým) buffujú naprieč rasami – to je priestor na cross-race combá.
 - **Permanentné aury** (`futureRace`): „Pri vyložení: VŠETKY tvoje Zvieratá
   (aj v balíčku, navždy) dostanú +1/+1.“ Platí do konca hry na každú novú
-  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú; tokeny NIE) – keďže sa
+  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú aj tokeny) – keďže sa
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
@@ -387,8 +405,9 @@ ruky), peniaze navyše.
 Classy nie sú: **každý hráč hrá z rovnakého poolu kariet**, aby sa nemusel
 riešiť balance counterpickov. Namiesto class si hráč pri spustení hry vyberie
 **superschopnosť** (hero power) – zatiaľ nie je žiadna implementovaná, výber
-príde neskôr. Štartovací balíček = **10 náhodných príšer tieru 1** (duplicity
-vítané, rozbiehajú evolve).
+príde neskôr. Štartovací balíček = **10 náhodných príšer tieru 1**, pričom
+**žiadna karta nie je viac než 2×** – dvojice rozbiehajú evolve, ale hotová
+trojica hneď na štarte by rozbila early game.
 
 Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 

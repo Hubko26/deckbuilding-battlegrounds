@@ -1,4 +1,4 @@
-// Dáta kariet. Roster = 30 príšer z art sady (assets/cards), 3 rasy × 10,
+// Dáta kariet. Roster = 60 príšer z art sád (assets/cards), 6 rás × 10,
 // každá príšera má vlastné meno a obrázok pre každý evolučný stupeň
 // (bronz → striebro → zlato). Texty schopností sa generujú zo šablón.
 //
@@ -9,7 +9,7 @@
 // fx = { type, a?, h?, n?, race?, token?, taunt? } – čísla sa násobia stupňom (×1/×2/×3).
 //
 // Classy nie sú – každý hráč hrá z rovnakého poolu. Štartovací balíček je
-// 10 náhodných kariet tieru 1 (skladá ho engine).
+// 10 náhodných kariet tieru 1, max 2 kópie jednej karty (skladá ho engine).
 
 const Cards = (() => {
   const RACES = {
@@ -18,6 +18,7 @@ const Cards = (() => {
     undead: { sk: "Nemŕtvy", cs: "Nemrtvý", en: "Undead" },
     fairy: { sk: "Víla", cs: "Víla", en: "Fairy" },
     dragon: { sk: "Drak", cs: "Drak", en: "Dragon" },
+    ogre: { sk: "Ogr", cs: "Zlobr", en: "Ogre" },
   };
   const RACES_PL = { // datív množného čísla („+2/+2 všetkým Zvieratám“)
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
@@ -25,6 +26,7 @@ const Cards = (() => {
     undead: { sk: "Nemŕtvym", cs: "Nemrtvým", en: "Undead" },
     fairy: { sk: "Vílam", cs: "Vílám", en: "Fairies" },
     dragon: { sk: "Drakom", cs: "Drakům", en: "Dragons" },
+    ogre: { sk: "Ogrom", cs: "Zlobrům", en: "Ogres" },
   };
   const RACES_NOM = { // nominatív množného čísla („všetky budúce Zvieratá“)
     beast: { sk: "Zvieratá", cs: "Zvířata", en: "Beasts" },
@@ -32,8 +34,9 @@ const Cards = (() => {
     undead: { sk: "Nemŕtvi", cs: "Nemrtví", en: "Undead" },
     fairy: { sk: "Víly", cs: "Víly", en: "Fairies" },
     dragon: { sk: "Draky", cs: "Draci", en: "Dragons" },
+    ogre: { sk: "Ogri", cs: "Zlobři", en: "Ogres" },
   };
-  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲" };
+  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲", ogre: "👹" };
 
   const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
     ({ id, tier, race, stageNames, atk, hp, ...extra });
@@ -62,15 +65,17 @@ const Cards = (() => {
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } } }),
 
     // ---------- Živly (Elemental) ----------
+    // Výboje 3 dmg (bolo 2): kostíky s aurami prežívali 2-ky a undead
+    // prestal byť elemental korisť; na veľké beast telá je 3 stále nič.
     M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 1, 2,
-      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 0, h: 1 } } }),
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 3,
       { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 0 } } }),
     M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 4,
-      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 3,
       { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 7,
@@ -87,10 +92,15 @@ const Cards = (() => {
       { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 2 } } }),
     M("U002", 1, "undead", ["Candlejaw", "Wickgrin", "Hearthhaunt"], 2, 1,
       { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 1 } } }),
+    // U003: prevzal skorú undead auru po U004 (ten dostal reviveAs) –
+    // bez t2 aury sa undead scaling zosypal (beast > undead 74 % v sime).
     M("U003", 2, "undead", ["Gravebloom", "Thornwraith", "Mausoleum Hart"], 2, 4,
-      { power: { kw: "deathrattle", fx: { type: "buffRace", race: "undead", a: 1, h: 1 } } }),
-    M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 2, 3,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 0, h: 1 } } }),
+    // U004: cielený battlecry – označená príšerka po smrti vstane ako 1/1
+    // (stupeň 2/2, 3/3). Aury sa na vstávajúcu aplikujú; combo s deathrattle
+    // summonmi na plnej ploche (Pretečenie = buffy).
+    M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 4, 5,
+      { power: { kw: "battlecry", fx: { type: "reviveAs" } } }),
     M("U005", 3, "undead", ["Cryptcub", "Sarcoclaw", "Tombsphinx"], 3, 4,
       { power: { kw: "startFight", fx: { type: "summon", token: "kostik", n: 2 } } }),
     M("U006", 3, "undead", ["Bonebell", "Knellhorn", "Cathedral Ram"], 2, 6,
@@ -109,8 +119,10 @@ const Cards = (() => {
       { power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 1, perm: true } } }),
     M("F003", 1, "fairy", ["Petalprank", "Briarwink", "Rosethorn Duchess"], 2, 1,
       { power: { kw: "afterSpell", fx: { type: "buffFriend", a: 1, h: 1 } } }),
+    // F001: battlecry draw namiesto Po kúzle – opakované ťahanie kŕmilo
+    // nekonečný motor s F005 (gold za kúzlo). Evolve škáluje počet (1/2/3).
     M("F001", 2, "fairy", ["Dewwhistle", "Bloomtrill", "Garden Empress"], 2, 3,
-      { power: { kw: "afterSpell", fx: { type: "draw", n: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "draw", n: 1 } } }),
     M("F004", 2, "fairy", ["Thistletick", "Burrbounce", "Thornball Titan"], 2, 5,
       { taunt: true, power: { kw: "afterSpell", fx: { type: "growSelf", a: 1, h: 2, perm: true } } }),
     M("F005", 3, "fairy", ["Moonlace", "Silversilk", "Celestial Weaver"], 3, 5,
@@ -150,8 +162,33 @@ const Cards = (() => {
     M("D010", 6, "dragon", ["Specklestar", "Cometcoil", "Galaxy Dragon"], 8, 8,
       { power: { kw: "battlecry", fx: { type: "evolveTarget" } } }),
 
+    // ---------- Ogri (Ogre) – derpy chaos: veľké staty, efekt sa môže
+    // obrátiť proti vlastníkovi. Všetka náhoda cez state.rng. ----------
+    M("O001", 1, "ogre", ["Pebblenose", "Boulderbelly", "Mountain King"], 2, 3,
+      { power: { kw: "battlecry", fx: { type: "coinflip", a: 4, h: 4, da: 2, dh: 2 } } }),
+    M("O004", 1, "ogre", ["Mossbelly", "Rootcrusher", "Ancient Grove Guardian"], 3, 4),
+    // O006: Ožratý úder – pri útoku 50 % šanca, že sa trafí sám za ½ útoku.
+    M("O006", 2, "ogre", ["Nibblepot", "Kegcrusher", "Grand Feastkeeper"], 5, 5,
+      { power: { kw: "onAttack", fx: { type: "drunkStrike" } } }),
+    M("O005", 2, "ogre", ["Snowgulp", "Glaciergrip", "Winter Titan"], 4, 5),
+    // O002: zožerie náhodného suseda – jeho staty získa NAVŽDY (pa/ph),
+    // zjedená karta zmizne z hry (skutočná cena).
+    M("O002", 3, "ogre", ["Mudmunch", "Bogstomper", "Marsh Colossus"], 4, 4,
+      { power: { kw: "battlecry", fx: { type: "eatNeighbor" } } }),
+    M("O008", 3, "ogre", ["Bubbletusk", "Reefstomper", "Tidal Sovereign"], 5, 7),
+    M("O003", 4, "ogre", ["Emberknuckle", "Cindermaul", "Volcano Chieftain"], 7, 8,
+      { power: { kw: "startFight", fx: { type: "dmgAllBoth", n: 2 } } }),
+    M("O009", 4, "ogre", ["Dustnose", "Dunehammer", "Sunstone Guardian"], 7, 7),
+    M("O007", 5, "ogre", ["Rumbletuft", "Thundermaul", "Tempest Chieftain"], 9, 7,
+      { power: { kw: "deathrattle", fx: { type: "dmgRandomAny", n: 5 } } }),
+    // O010: Obranca; pri smrti 50 % šanca, že vstane s 1 HP na NÁHODNEJ
+    // strane plochy (aj u súpera). Raz za boj.
+    M("O010", 6, "ogre", ["Twinklebrow", "Moonmaul", "Celestial Titan"], 10, 10,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "confusedRevive" } } }),
+
     // ---------- Kúzla (spoločné pre všetkých) ----------
-    { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
+    // Minca od t2 – na t1 bola automatická kúpa a rozbiehala snowball.
+    { id: "minca", cost: 1, tier: 2, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
       name: { sk: "Zlatá minca", cs: "Zlatá mince", en: "Gold Coin" } },
     { id: "stit", cost: 1, tier: 1, emoji: "🛡️", spell: true, fx: { type: "buffTarget", a: 0, h: 0, taunt: true },
       name: { sk: "Štít", cs: "Štít", en: "Shield" } },
@@ -315,9 +352,9 @@ const Cards = (() => {
         en: `summon ${f.n}× ${byId[f.token].name.en} (${a}/${h})`,
       };
       if (byId[f.token].race === "undead") {
-        base.sk += `; ak sa nezmestí, jeho staty dostanú kamaráti`;
-        base.cs += `; když se nevejde, jeho staty dostanou kamarádi`;
-        base.en += `; if it doesn't fit, friends get its stats`;
+        base.sk += `; ak sa nezmestí, jeho staty dostane jeden kamarát`;
+        base.cs += `; když se nevejde, jeho staty dostane jeden kamarád`;
+        base.en += `; if it doesn't fit, one friend gets its stats`;
       }
       return base;
     },
@@ -390,6 +427,42 @@ const Cards = (() => {
       sk: `náhodná tvoja rasa na ploche dostane +${f.a * m}/+${f.h * m}`,
       cs: `náhodná tvá rasa na ploše dostane +${f.a * m}/+${f.h * m}`,
       en: `a random race of yours on the board gets +${f.a * m}/+${f.h * m}`,
+    }),
+    // Ogri: chaos efekty – náhoda môže udrieť aj vlastníka.
+    coinflip: (f, m) => ({
+      sk: `hoď mincou 🪙 – +${f.a * m}/+${f.h * m} alebo −${f.da * m}/−${f.dh * m}`,
+      cs: `hoď mincí 🪙 – +${f.a * m}/+${f.h * m} nebo −${f.da * m}/−${f.dh * m}`,
+      en: `flip a coin 🪙 – +${f.a * m}/+${f.h * m} or −${f.da * m}/−${f.dh * m}`,
+    }),
+    drunkStrike: () => ({
+      sk: `50 % šanca, že sa trafí sám za polovicu svojho útoku`,
+      cs: `50% šance, že se trefí sám za polovinu svého útoku`,
+      en: `50% chance to smack itself for half its attack`,
+    }),
+    eatNeighbor: () => ({
+      sk: `zožerie náhodného suseda – NAVŽDY získa jeho staty (karta zmizne z hry)`,
+      cs: `sežere náhodného souseda – NAVŽDY získá jeho staty (karta zmizí ze hry)`,
+      en: `eats a random neighbor – gains its stats FOREVER (the card is gone for good)`,
+    }),
+    dmgAllBoth: (f, m, hl) => ({
+      sk: `chaos výbuch: ${hl(f.n * m)} damage VŠETKÝM príšerkám – aj tvojim`,
+      cs: `chaos výbuch: ${hl(f.n * m)} damage VŠEM příšerkám – i tvým`,
+      en: `chaos blast: ${hl(f.n * m)} damage to ALL minions – yours too`,
+    }),
+    dmgRandomAny: (f, m, hl) => ({
+      sk: `${hl(f.n * m)} damage úplne náhodnej príšerke – hocijakej, aj tvojej`,
+      cs: `${hl(f.n * m)} damage úplně náhodné příšerce – jakékoli, i tvé`,
+      en: `deal ${hl(f.n * m)} damage to a totally random minion – any, even yours`,
+    }),
+    reviveAs: (f, m) => ({
+      sk: `vyber príšerku – po smrti vstane ako ${m}/${m} (aury sa pridajú)`,
+      cs: `vyber příšerku – po smrti vstane jako ${m}/${m} (aury se přidají)`,
+      en: `pick a minion – after it dies it gets back up as a ${m}/${m} (auras apply)`,
+    }),
+    confusedRevive: () => ({
+      sk: `50 % šanca, že vstane s 1 životom na NÁHODNEJ strane plochy`,
+      cs: `50% šance, že vstane s 1 životem na NÁHODNÉ straně plochy`,
+      en: `50% chance to get up with 1 health on a RANDOM side of the board`,
     }),
   };
 
