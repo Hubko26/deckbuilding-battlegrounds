@@ -21,7 +21,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
   (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra/Svätožiara/
-  Pierko/Kliatba/Zvitok 2, Srdce 3).
+  Pierko/Kliatba/Zvitok 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
+  automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
 
@@ -52,11 +53,15 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 ## Tier obchodu
 
 Tiery 1–6 v štýle Battlegrounds. Cena upgradu klesá o 1 každé kolo strávené na aktuálnom
-tieri (minimum 0):
+tieri, ale **minimum je 2** – upgrade nikdy nie je (skoro) zadarmo:
 
 | na tier | 2 | 3 | 4 | 5 | 6 |
 |---------|---|---|---|---|---|
-| základná cena | 5 | 7 | 8 | 9 | 10 |
+| základná cena | 5 | 8 | 9 | 11 | 12 |
+
+Drahšie než HS Battlegrounds (5/7/8/11/10), lebo trojice tu chodia zadarmo
+cyklom balíčka – hráč neplatí refreshe na ich hľadanie, takže zlata zvyšuje
+viac a lacný upgrade by šiel stihnúť každé kolo.
 
 Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obchodu.
 
@@ -180,6 +185,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   (t5, Pri smrti) 3×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
   U009 5/4). Kostík je **2/1** – bije tvrdo (páka na veľké beast telá),
   ale padne na jediný ping (elemental counter).
+- **U004 (t2, Pri vyložení, cielené)**: označená príšerka po smrti vstane
+  ako 1/1 (stupeň 2/2, 3/3). Karta NAOZAJ zomrie – deathrattle aj
+  scavengery prebehnú PRED vstávaním (kostíky zaplnia plochu, druhá smrť
+  ich pretečie do buffov). Aury (permanentná rasová aj dračia bojová) sa
+  na vstávajúcu aplikujú; pri plnej ploche ostáva ležať. Nahradila tretiu
+  undead auru (+0/+1) – undead boli slabí a aura bola redundantná
+  k U008/U010.
 - U007 (t4, Pri vyložení) dáva jednorazovú chargu (`summonCharge`):
   „tvoje ďalšie vyvolanie v boji vyvolá o 1 viac". Chargy sa stackujú
   a minú sa prvým vyvolaním. Strieborný dáva +2, zlatý +3 (čísla ×stupeň).
@@ -193,7 +205,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **✨ Elemental – explozívny archetyp**
 
-- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 2), E005 (t3, Pred bojom 2),
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E005 (t3, Pred bojom 3),
   E006 (t3, Pri smrti 3) – mieria na **najslabšieho** (najmenej HP)
   nepriateľa: kosia tokeny a nekŕmia zbytočne deathrattle telá (náhodný
   cieľ podľa simulácie undead paradoxne posilňoval). Evolve = **viac
@@ -202,9 +214,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: 2 všetkým).
   Jedna veľká vlna – engine pošle jeden `aoeDmg` event a UI zasiahne
   všetkých NARAZ, žiadne projektily po jednom.
-- **Tokeny nedostávajú aury** (`futureRace` sa na ne neaplikuje) – kostíky
-  ostávajú malé a AoE/výboje ich spoľahlivo čistia; bez toho undead
-  podľa simulácie bil elementálov 80:20. Kostík škáluje stupňom rodiča.
+- **Tokeny dostávajú permanentné aury** (`futureRace`) – kostíky aj mláďatá
+  s aurami škálujú do late game (predtým aury tokeny nebrali a undead
+  scaling zaostával). Kostík navyše škáluje stupňom rodiča.
 - Kúzlo **Večná iskra** ⚡ (t3, cena 2): trvalý bonus (`dmgBoost`) –
   „všetky tvoje výboje a výbuchy (navždy) dávajú +1 damage". Stackuje sa –
   elemental ekvivalent permanentných aur (malý krok +1, aby nesnowballoval).
@@ -364,7 +376,7 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   +1/+0 všetkým) buffujú naprieč rasami – to je priestor na cross-race combá.
 - **Permanentné aury** (`futureRace`): „Pri vyložení: VŠETKY tvoje Zvieratá
   (aj v balíčku, navždy) dostanú +1/+1.“ Platí do konca hry na každú novú
-  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú; tokeny NIE) – keďže sa
+  inštanciu danej rasy (dotiahnutú, kúpenú, evolvnutú aj tokeny) – keďže sa
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):

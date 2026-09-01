@@ -275,6 +275,16 @@ const L = {
     cs: "🍺 Ožralý úder: trefil sám sebe za",
     en: "🍺 Drunken swing: smacked itself for",
   },
+  reviveAsMarkMsg: {
+    sk: "🦋 po smrti vstane ako",
+    cs: "🦋 po smrti vstane jako",
+    en: "🦋 will get back up after death as",
+  },
+  reviveAsMsg: {
+    sk: "🦋 vstal ako",
+    cs: "🦋 vstal jako",
+    en: "🦋 got back up as",
+  },
   confusedOwnMsg: {
     sk: "🎲 vstal s 1 životom na vlastnej strane",
     cs: "🎲 vstal s 1 životem na vlastní straně",
@@ -873,8 +883,8 @@ async function runBattle() {
   GameLog.push("_", "doBattle", []);
   const events = Engine.doBattle(state);
   renderAll();
-  renderBoardList($("oppBoard"), snap[OPP], false);
-  renderBoardList($("myBoard"), snap[MY], false);
+  renderBoardList($("oppBoard"), snap[OPP], false, OPP);
+  renderBoardList($("myBoard"), snap[MY], false, MY);
   renderHero($("oppHero"), { ...state[OPP], hp: pre[OPP].hp });
   renderHero($("myHero"), { ...state[MY], hp: pre[MY].hp });
   renderCorner($("oppDeckBox"), "🂠", t(L.deck), pre[OPP].deck);
@@ -1083,6 +1093,22 @@ async function runBattle() {
         log(`${t(L.overflowMsg)} (+${ev.atk}/+${ev.hp})`);
         break;
       }
+      case "reviveAs": {
+        // U004: príšerka vstala ako n/n – prepíš staty na karte.
+        const el = cardById(ev.uid);
+        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+        log(`${name} ${t(L.reviveAsMsg)} ${ev.atk}/${ev.hp}`);
+        if (el) {
+          const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
+          if (atkEl) atkEl.textContent = String(ev.atk);
+          if (hpEl) { hpEl.textContent = String(ev.hp); hpEl.classList.remove("hurt"); }
+          el.dataset.maxhp = String(ev.hp);
+          floatText(el, "🦋✨", true);
+          Sfx.evolve();
+          await sleep(800);
+        }
+        break;
+      }
       case "drunkHit": {
         // Ogr sa ožratým úderom trafil sám – nápadný chaos moment.
         const el = cardById(ev.uid);
@@ -1212,11 +1238,14 @@ function renderHero(el, p) {
     `<span class="nums">❤️ ${Math.max(0, p.hp)}${gold}</span>`;
 }
 
-function renderBoardList(el, list, mine) {
+// mine = drag&drop; ownerPid (voliteľné) = koho boost/aury popisok ukáže.
+// V boji je mine=false aj pre vlastnú plochu – owner treba poslať explicitne,
+// inak by moje karty ukazovali súperov dmgBoost (Večná iskra) zeleno.
+function renderBoardList(el, list, mine, ownerPid) {
   el.innerHTML = "";
   for (let i = 0; i < list.length; i++) {
     const inst = list[i];
-    const card = cardEl(inst, mine ? {} : { owner: OPP });
+    const card = cardEl(inst, { owner: ownerPid || (mine ? MY : OPP) });
     // Rad je vycentrovaný (flex); poradie útoku zľava doprava drží CSS order.
     const slot = inst.slot ?? i;
     card.style.order = String(slot);
@@ -1598,7 +1627,7 @@ function markZones(src, on) {
 }
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
-const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget"]);
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget", "reviveAs"]);
 
 function endDrag(e) {
   const d = drag;
@@ -1727,6 +1756,12 @@ function act(events) {
         el.classList.add("evolving");
         setTimeout(() => el.classList.remove("evolving"), 600);
       }
+    }
+    if (ev.type === "reviveAsMark") {
+      const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+      log(`${name} ${t(L.reviveAsMarkMsg)} ${ev.n}/${ev.n}`);
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "🦋", true);
     }
     // Ogrie chaos momenty – nápadne do logu (🪙/👹), nech je derp vidno.
     if (ev.type === "coinflip") {

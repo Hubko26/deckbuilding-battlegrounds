@@ -65,15 +65,17 @@ const Cards = (() => {
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } } }),
 
     // ---------- Živly (Elemental) ----------
+    // Výboje 3 dmg (bolo 2): kostíky s aurami prežívali 2-ky a undead
+    // prestal byť elemental korisť; na veľké beast telá je 3 stále nič.
     M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 1, 2,
-      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 0, h: 1 } } }),
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 3,
       { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 0 } } }),
     M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 4,
-      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 2 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 3,
       { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 7,
@@ -90,10 +92,15 @@ const Cards = (() => {
       { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 2 } } }),
     M("U002", 1, "undead", ["Candlejaw", "Wickgrin", "Hearthhaunt"], 2, 1,
       { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 1 } } }),
+    // U003: prevzal skorú undead auru po U004 (ten dostal reviveAs) –
+    // bez t2 aury sa undead scaling zosypal (beast > undead 74 % v sime).
     M("U003", 2, "undead", ["Gravebloom", "Thornwraith", "Mausoleum Hart"], 2, 4,
-      { power: { kw: "deathrattle", fx: { type: "buffRace", race: "undead", a: 1, h: 1 } } }),
-    M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 2, 3,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 0, h: 1 } } }),
+    // U004: cielený battlecry – označená príšerka po smrti vstane ako 1/1
+    // (stupeň 2/2, 3/3). Aury sa na vstávajúcu aplikujú; combo s deathrattle
+    // summonmi na plnej ploche (Pretečenie = buffy).
+    M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 4, 5,
+      { power: { kw: "battlecry", fx: { type: "reviveAs" } } }),
     M("U005", 3, "undead", ["Cryptcub", "Sarcoclaw", "Tombsphinx"], 3, 4,
       { power: { kw: "startFight", fx: { type: "summon", token: "kostik", n: 2 } } }),
     M("U006", 3, "undead", ["Bonebell", "Knellhorn", "Cathedral Ram"], 2, 6,
@@ -180,7 +187,8 @@ const Cards = (() => {
       { taunt: true, power: { kw: "deathrattle", fx: { type: "confusedRevive" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
-    { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
+    // Minca od t2 – na t1 bola automatická kúpa a rozbiehala snowball.
+    { id: "minca", cost: 1, tier: 2, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
       name: { sk: "Zlatá minca", cs: "Zlatá mince", en: "Gold Coin" } },
     { id: "stit", cost: 1, tier: 1, emoji: "🛡️", spell: true, fx: { type: "buffTarget", a: 0, h: 0, taunt: true },
       name: { sk: "Štít", cs: "Štít", en: "Shield" } },
@@ -445,6 +453,11 @@ const Cards = (() => {
       sk: `${hl(f.n * m)} damage úplne náhodnej príšerke – hocijakej, aj tvojej`,
       cs: `${hl(f.n * m)} damage úplně náhodné příšerce – jakékoli, i tvé`,
       en: `deal ${hl(f.n * m)} damage to a totally random minion – any, even yours`,
+    }),
+    reviveAs: (f, m) => ({
+      sk: `vyber príšerku – po smrti vstane ako ${m}/${m} (aury sa pridajú)`,
+      cs: `vyber příšerku – po smrti vstane jako ${m}/${m} (aury se přidají)`,
+      en: `pick a minion – after it dies it gets back up as a ${m}/${m} (auras apply)`,
     }),
     confusedRevive: () => ({
       sk: `50 % šanca, že vstane s 1 životom na NÁHODNEJ strane plochy`,

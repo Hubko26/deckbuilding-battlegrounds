@@ -32,8 +32,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   efekt aj Obrancu – counter na deathrattle a Pred bojom motory). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
-- Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/7/8/9/10,
-  cena klesá o 1 každé kolo na aktuálnom tieri).
+- Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/8/9/11/12,
+  cena klesá o 1 každé kolo na aktuálnom tieri, minimum 2).
 - Kúpená karta ide do balíčka. Ruka sa doťahuje na 5 na začiatku vlastnej
   fázy; nezahrané karty idú na konci fázy do kôpky (discard). Prázdny
   balíček = kôpka sa zamieša. Vyloženie na plochu je zadarmo, max 5.
@@ -63,6 +63,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     U006 2×, U009 3× kostík (2/1); undead token, čo sa nezmestí na plnú
     plochu, dá celé staty jednej náhodnej živej vlastnej príšerke. U007 battlecry
     charga: ďalšie vyvolanie v boji vyvolá +1 navyše (stackuje sa).
+    U004 (t2, cielený battlecry): označená príšerka po smrti vstane ako
+    1/1 (stupeň 2/2, 3/3) – deathrattle prebehne PRED vstávaním, takže
+    revivnutý deathrattler zomrie dvakrát a druhá dávka kostíkov pri
+    plnej ploche pretečie do buffov. Ako bot cieľ VŽDY na U001/U006/U009
+    (akcia `play` s `target`); aury sa na vstávajúceho aplikujú.
   - **Elemental = výboje**: `dmgWeakEnemy` mieri na NAJSLABŠIEHO
     nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
@@ -97,9 +102,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     O007 Pri smrti 5 dmg náhodnej príšerke (aj tvojej), O010 (t6 taunt)
     Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
     Vanilla telá nad krivkou: O004/O005/O008/O009 – bezpečný nákup.
-  - **Tokeny nedostávajú permanentné aury** (`futureRace`) – kostík aj
-    Mláďa škálujú len stupňom rodiča. Výnimka: dočasný dračí buff
-    (D002/D006/D008) tokeny v boji dostanú.
+  - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
+    Mláďa s aurami škálujú; navyše škálujú stupňom rodiča. Dočasný dračí
+    buff (D002/D006/D008) tokeny v boji dostanú tiež.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 
@@ -118,7 +123,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
    buffery (buffRace/buffAllFriends/buffFriend/aury) – battlecry zasiahne
    plnú plochu. Kúzla na buff (Jablko, Srdce, Vlna, Koreň) až po vyložení,
    cieľ = najsilnejšia príšera (alebo Obranca pre Koreň).
-5. **Ekonomika**: Mincu (1g → +2g) kupuj takmer vždy. Upgrade tieru, keď
+5. **Ekonomika**: Mincu (1g → +2g, od tieru 2) kupuj takmer vždy. Upgrade tieru, keď
    cena klesne na ~2–3 a ostane aspoň na kartu; neupgraduj, keď vieš
    dokončiť trojicu. Refresh (1g) používaj pri zvyšných peniazoch,
    ktoré by prepadli.

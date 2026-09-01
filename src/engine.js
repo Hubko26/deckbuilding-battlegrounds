@@ -11,7 +11,10 @@ const Engine = (() => {
   const REFRESH_COST = 1;
   const COMMON_COUNT = 3;
   const TIER_MAX = 6;
-  const TIER_BASE_COST = { 2: 5, 3: 7, 4: 8, 5: 9, 6: 10 };
+  // Drahšie než HS Battlegrounds (5/7/8/11/10): trojice tu chodia zadarmo
+  // cyklom balíčka (netreba platiť refreshe), takže zlata zvyšuje viac.
+  const TIER_BASE_COST = { 2: 5, 3: 8, 4: 9, 5: 11, 6: 12 };
+  const TIER_MIN_COST = 2; // zľava za čakanie nikdy nezrazí cenu pod 2
   const BATTLE_CAP = 200; // poistka proti nekonečnému boju
 
   // Mutácie – „Pravidlo dnešnej arény": jedna na hru, platí pre oboch hráčov.
@@ -77,9 +80,9 @@ const Engine = (() => {
       atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m,
       taunt: !!def.taunt,
     };
-    // Tokeny aury nedostávajú – kostíky ostávajú malé (AoE ich zmetie),
-    // škálujú len stupňom rodiča (a Mláďa vlastným rastom).
-    const aura = p && def.race && !def.token && p.raceBuffs && p.raceBuffs[def.race];
+    // Permanentné rasové aury dostávajú AJ tokeny – kostíky s aurami
+    // škálujú do late game (bez toho undead scaling zaostával).
+    const aura = p && def.race && p.raceBuffs && p.raceBuffs[def.race];
     if (aura) {
       inst.atk += aura.a;
       inst.hp += aura.h;
@@ -445,7 +448,7 @@ const Engine = (() => {
     const p = state[pid];
     if (p.tier >= TIER_MAX) return null;
     const base = TIER_BASE_COST[p.tier + 1];
-    return Math.max(0, base - (state.round - p.reachedRound));
+    return Math.max(TIER_MIN_COST, base - (state.round - p.reachedRound));
   }
 
   function upgradeTier(state, pid) {
@@ -732,6 +735,20 @@ const Engine = (() => {
         }
         events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * m, h: fx.h * m });
         break;
+      case "reviveAs": {
+        // U004: cielený battlecry – označená príšerka po smrti vstane ako
+        // m/m (1/2/3 podľa stupňa). Aury sa aplikujú až pri vstávaní v boji.
+        // Fallback bez cieľa: najsilnejší VLASTNÝ deathrattler (dve smrti
+        // = dvojitý deathrattle), až potom najsilnejšia príšerka.
+        const drs = p.board.filter(x =>
+          x !== self && Cards.byId[x.defId].power?.kw === "deathrattle");
+        const t = (target && p.board.includes(target)) ? target
+          : drs.sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0] || pickTarget();
+        if (!t) break;
+        t.reviveAs = Math.max(t.reviveAs || 0, m);
+        events.push({ type: "reviveAsMark", pid: p.id, uid: t.uid, defId: t.defId, n: m });
+        break;
+      }
       case "coinflip": {
         // Ogr O001: hod mincou – 50 % veľký buff, 50 % postih (do konca boja).
         // Postih nejde pod 0 útoku / 1 život.
@@ -1189,9 +1206,8 @@ const Engine = (() => {
           const alive = board.filter(x => x.hp > 0);
           const full = alive.length >= BOARD_MAX;
           if (full && Cards.byId[fx.token].race !== "undead") break;
-          const tok = makeInst(state, fx.token, Math.min(m, 3), p);
-          // Dračí buff „do konca boja" dostanú aj tokeny vyvolané počas boja
-          // (permanentné rasové aury tokeny neberú – toto je vedomá výnimka).
+          const tok = makeInst(state, fx.token, Math.min(m, 3), p); // aj s aurami (makeInst)
+          // Dračí buff „do konca boja" dostanú aj tokeny vyvolané počas boja.
           const fb = Cards.byId[fx.token].race && p.fightRaceBuffs[Cards.byId[fx.token].race];
           if (fb && (fb.a || fb.h)) {
             tok.atk += fb.a; tok.hp += fb.h; tok.maxHp += fb.h;
@@ -1266,6 +1282,28 @@ const Engine = (() => {
           if (fDef.power.fx.race !== def.race) continue;
           events.push({ type: "proc", pid, uid: f.uid, kw: "raceDeath" });
           applyBattleFx(state, sides, pid, f, fDef.power.fx, f.rank, events);
+        }
+        // U004 reviveAs: karta NAOZAJ zomrela (deathrattle aj scavengery
+        // prebehli – v tom je combo: kostíky už zaplnili plochu), ale vstane
+        // ako n/n. Aury sa aplikujú ako pri novej nemŕtvej inštancii –
+        // permanentná rasová aura aj dračí bojový buff. Pri plnej ploche
+        // ostáva ležať.
+        if (inst.reviveAs) {
+          const n = inst.reviveAs;
+          inst.reviveAs = 0;
+          const aliveNow = sides[pid].filter(x => x.hp > 0);
+          if (aliveNow.length < BOARD_MAX) {
+            const race = Cards.byId[inst.defId].race;
+            const aura = (race && state[pid].raceBuffs[race]) || { a: 0, h: 0 };
+            const fb = (race && state[pid].fightRaceBuffs[race]) || { a: 0, h: 0 };
+            inst.atk = n + aura.a + fb.a;
+            inst.hp = inst.maxHp = n + aura.h + fb.h;
+            inst.dead = false;
+            inst.slot = freeSlot(aliveNow, BOARD_MAX);
+            events.push({ type: "reviveAs", pid, uid: inst.uid, defId: inst.defId, atk: inst.atk, hp: inst.hp, slot: inst.slot });
+            events.push({ type: "hp", pid, uid: inst.uid, hp: inst.hp });
+            continue;
+          }
         }
         events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
       }
