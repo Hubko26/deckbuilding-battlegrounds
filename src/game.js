@@ -251,9 +251,9 @@ const L = {
   begins: { sk: "začína", cs: "začíná", en: "begins" },
   battleDraw: { sk: "Boj skončil remízou.", cs: "Boj skončil remízou.", en: "The fight was a draw." },
   overflowMsg: {
-    sk: "💀 Pretečenie: plocha plná, staty tokenu dostali kamaráti",
-    cs: "💀 Přetečení: plocha plná, staty tokenu dostali kamarádi",
-    en: "💀 Overflow: board full, friends got the token's stats",
+    sk: "💀 Pretečenie: plocha plná, celé staty tokenu dostal jeden kamarát",
+    cs: "💀 Přetečení: plocha plná, celé staty tokenu dostal jeden kamarád",
+    en: "💀 Overflow: board full, one friend got the token's full stats",
   },
   silencedMsg: {
     sk: "je umlčaný – stratil schopnosť aj Obrancu",
@@ -1566,8 +1566,10 @@ function endDrag(e) {
   }
 
   if (src.type === "board") {
-    if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
+    // Kôpka pred obchodom – jej menší rect sa prekrýva s rectom obchodu,
+    // špecifickejší cieľ musí vyhrať (inak drop na kôpku omylom predá).
     if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "board", src.idx)); return; }
+    if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
     if (inRect(e, $("myBoard"))) {
       // Presun podľa miesta dropu: rad je vycentrovaný, tak sa slot určí
       // z pozícií vykreslených kariet (na kartu = výmena, vedľa = posun na kraj).
@@ -1596,8 +1598,8 @@ function endDrag(e) {
   // src.type === "hand"
   const inst = p.hand[src.idx];
   if (!inst) { renderAll(); return; }
-  if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
   if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "hand", src.idx)); return; }
+  if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
     if (fx.type === "buffTarget") {
