@@ -55,6 +55,11 @@ const L = {
     cs: "Spojení selhalo. Zkontroluj internet a zkus znovu.",
     en: "Connection failed. Check the internet and try again.",
   },
+  peerTimeout: {
+    sk: "Kamaráta sa nepodarilo nájsť. Nech vytvorí hru NANOVO a hneď zadaj nový kód (kód po chvíli čakania prestane platiť).",
+    cs: "Kamaráda se nepodařilo najít. Ať vytvoří hru ZNOVU a hned zadej nový kód (kód po chvíli čekání přestane platit).",
+    en: "Could not reach your friend. Have them create the game AGAIN and enter the new code right away (a code expires after waiting).",
+  },
   cancel: { sk: "✖ Zruš", cs: "✖ Zruš", en: "✖ Cancel" },
   stageWord: { sk: "stupeň", cs: "stupeň", en: "Stage" },
   spellWord: { sk: "Kúzlo", cs: "Kouzlo", en: "Spell" },
@@ -513,9 +518,14 @@ function netHandlers() {
     },
     onPeerMode: showPeerSetup,
     onPeerError: kind => {
-      if (kind === "peer-unavailable") $("netMsg").textContent = t(L.peerNotFound);
-      else if (kind === "unavailable-id") $("netMsg").textContent = t(L.peerCodeTaken);
-      else $("netMsg").textContent = t(L.peerError);
+      console.warn("[arena] peer error:", kind); // typ chyby na diagnostiku
+      if (kind === "peer-unavailable" || kind === "timeout") {
+        $("netMsg").textContent = t(kind === "timeout" ? L.peerTimeout : L.peerNotFound);
+      } else if (kind === "unavailable-id") {
+        $("netMsg").textContent = t(L.peerCodeTaken);
+      } else {
+        $("netMsg").textContent = `${t(L.peerError)} (${kind || "?"})`;
+      }
     },
     onError: () => { $("netMsg").textContent = t(L.netError); },
   };

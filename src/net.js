@@ -63,6 +63,16 @@ const Net = (() => {
     c.on("error", () => { if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
   }
 
+  // PeerJS cloud pustí naše ID, keď signaling socket spadne (uspatá záložka
+  // na mobile, výpadok siete, idle timeout). Hostiteľ potom stále ukazuje kód,
+  // ale kamarát dostane „peer-unavailable". Preto sa vždy skúsime pripojiť späť.
+  function keepAlive(pr) {
+    pr.on("disconnected", () => {
+      if (pr.destroyed) return;
+      try { pr.reconnect(); } catch {}
+    });
+  }
+
   // Založí hru: čaká na kamaráta na kóde miestnosti. Hostiteľ je p1
   // a po pripojení pošle seed.
   function hostPeer(code, h) {
@@ -70,6 +80,7 @@ const Net = (() => {
     transport = "peer";
     destroyPeer();
     peer = new Peer(PEER_PREFIX + code);
+    keepAlive(peer);
     peer.on("open", () => { if (handlers.onWaiting) handlers.onWaiting({ code }); });
     peer.on("connection", c => {
       wireConn(c);
@@ -90,11 +101,20 @@ const Net = (() => {
     transport = "peer";
     destroyPeer();
     peer = new Peer();
+    keepAlive(peer);
+    // Keď sa P2P kanál neotvorí do 20 s (prísny NAT/firewall blokuje WebRTC),
+    // nehlásime nič a UI visí na „Pripájam sa…" – radšej ohlás timeout.
+    let timer = null;
     peer.on("open", () => {
       const c = peer.connect(PEER_PREFIX + code, { reliable: true });
       wireConn(c);
+      timer = setTimeout(() => {
+        if (!c.open && handlers.onPeerError) handlers.onPeerError("timeout");
+      }, 20000);
+      c.on("open", () => { clearTimeout(timer); timer = null; });
     });
     peer.on("error", err => {
+      if (timer) { clearTimeout(timer); timer = null; }
       if (handlers.onPeerError) handlers.onPeerError(err && err.type);
     });
   }
