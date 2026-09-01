@@ -1077,8 +1077,8 @@ const Engine = (() => {
         // ×2/×4), počet sa so stupňom neškáluje.
         // summonCharge (U007): jednorazovo pridá +n tokenov k ĎALŠIEMU
         // vyvolaniu, potom sa minie.
-        // Pretečenie (undead): token, čo sa nezmestí na plnú plochu, rozdelí
-        // svoje staty medzi živé vlastné príšerky (rovným dielom, zvyšok náhodne).
+        // Pretečenie (undead): token, čo sa nezmestí na plnú plochu, dá
+        // celé staty jednej náhodnej živej vlastnej príšerke.
         const board = sides[pid];
         const idx = board.indexOf(self);
         const p = state[pid];
@@ -1108,25 +1108,18 @@ const Engine = (() => {
     }
   }
 
-  // Pretečenie: staty nezmestivšieho sa tokenu sa rozdelia medzi živé vlastné
-  // príšerky – rovným dielom, zvyšok dostanú náhodné (poradie z rng, aby bol
-  // multiplayer deterministický). Dočasné ako všetky bojové buffy.
+  // Pretečenie: celé staty nezmestivšieho sa tokenu dostane JEDNA náhodná
+  // živá vlastná príšerka (výber z rng, aby bol multiplayer deterministický).
+  // Dočasné ako všetky bojové buffy.
   function overflowStats(state, aliveList, tok, pid, events) {
     if (!aliveList.length) return;
-    const order = shuffle(aliveList.slice(), state.rng);
-    const n = order.length;
-    const baseA = Math.floor(tok.atk / n), remA = tok.atk % n;
-    const baseH = Math.floor(tok.hp / n), remH = tok.hp % n;
+    const f = aliveList[Math.floor(state.rng() * aliveList.length)];
     events.push({ type: "overflow", pid, defId: tok.defId, atk: tok.atk, hp: tok.hp });
-    order.forEach((f, i) => {
-      const a = baseA + (i < remA ? 1 : 0);
-      const h = baseH + (i < remH ? 1 : 0);
-      if (!a && !h) return;
-      f.atk += a;
-      f.maxHp += h;
-      f.hp += h;
-      events.push({ type: "buff", pid, uid: f.uid, a, h });
-    });
+    if (!tok.atk && !tok.hp) return;
+    f.atk += tok.atk;
+    f.maxHp += tok.hp;
+    f.hp += tok.hp;
+    events.push({ type: "buff", pid, uid: f.uid, a: tok.atk, h: tok.hp });
   }
 
   // Božský štít: prvé zranenie sa úplne zruší (štít praskne, staty ostávajú).

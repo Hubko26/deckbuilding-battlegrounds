@@ -185,8 +185,8 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   **Chargy (aj Iskra) platia len najbližší boj** – nevyužité po boji
   prepadnú, nech sa nehromadia naprieč kolami.
 - **Pretečenie**: keď sa vyvolávaný nemŕtvy token nezmestí na plnú plochu
-  (max 5), nezmizne naprázdno – jeho staty sa rozdelia medzi živé vlastné
-  príšerky (rovným dielom, zvyšok náhodne cez `state.rng`). Platí len
+  (max 5), nezmizne naprázdno – jeho celé staty dostane jedna náhodná živá
+  vlastná príšerka (výber cez `state.rng`). Platí len
   v boji a je dočasné ako všetky bojové buffy. AoE výbuchy čistia plochu,
   čím tokenom uvoľňujú sloty – prirodzená anti-synergia s Pretečením.
 
@@ -217,7 +217,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   miesto v ruke a balíčku na úkor príšer – víly túto cenu premieňajú
   na výhodu.
 - Roster: F002 rast +1/+1 **NAVŽDY**, F003 buff náhodného kamaráta,
-  F001 potiahni kartu, F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
+  F001 **Pri vyložení** potiahni kartu (evolve 1/2/3 – Po kúzle draw
+  tvoril s F005 nekonečný motor: kúzlo vrátilo zlato aj kartu),
+  F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
   F006 (4/4) **Pri vyložení: pridaj do ruky Iskričku** ✨, F009 vanilka
   8/8 bez schopnosti (nie každá víla musí mať ability – ako B001/E002),
   F007 taunt +1/+1 Vílam, F008 (t6) +2/+2 všetkým tvojim príšerkám.
