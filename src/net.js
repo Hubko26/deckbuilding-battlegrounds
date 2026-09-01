@@ -83,6 +83,26 @@ const Net = (() => {
     c.on("data", dispatch);
     c.on("close", () => { if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
     c.on("error", () => { if (handlers.onPeerLeft) handlers.onPeerLeft({}); });
+    wireDiag(c);
+  }
+
+  // Diagnostika do konzoly: pri probléme so spojením presne ukáže, ktorý
+  // krok zlyhal – signalizácia (peer open), ICE stav a či sa vôbec našiel
+  // "relay" kandidát (bez neho TURN nefunguje a prísny NAT spojenie zarezne).
+  function wireDiag(c) {
+    c.on("open", () => console.info("[arena] P2P kanál otvorený ✓"));
+    const pc = c.peerConnection;
+    if (!pc) return;
+    const types = new Set();
+    pc.addEventListener("icecandidate", e => {
+      const t = e.candidate && (e.candidate.type ||
+        (e.candidate.candidate.match(/ typ (\w+)/) || [])[1]);
+      if (t && !types.has(t)) { types.add(t); console.info("[arena] ICE kandidát:", t); }
+      if (!e.candidate) console.info("[arena] ICE gathering hotový; kandidáti:",
+        [...types].join(", ") || "ŽIADNI", types.has("relay") ? "" : "(relay CHÝBA – TURN nefunguje/blokovaný)");
+    });
+    pc.addEventListener("iceconnectionstatechange",
+      () => console.info("[arena] ICE stav:", pc.iceConnectionState));
   }
 
   // PeerJS cloud pustí naše ID, keď signaling socket spadne (uspatá záložka
@@ -103,7 +123,10 @@ const Net = (() => {
     destroyPeer();
     peer = new Peer(PEER_PREFIX + code, PEER_OPTS);
     keepAlive(peer);
-    peer.on("open", () => { if (handlers.onWaiting) handlers.onWaiting({ code }); });
+    peer.on("open", () => {
+      console.info("[arena] signalizácia OK (host, kód " + code + ")");
+      if (handlers.onWaiting) handlers.onWaiting({ code });
+    });
     peer.on("connection", c => {
       wireConn(c);
       c.on("open", () => {
@@ -133,6 +156,7 @@ const Net = (() => {
     }, 20000);
     const done = () => { if (timer) { clearTimeout(timer); timer = null; } };
     peer.on("open", () => {
+      console.info("[arena] signalizácia OK (join, kód " + code + ")");
       const c = peer.connect(PEER_PREFIX + code, { reliable: true });
       wireConn(c);
       c.on("open", done);
