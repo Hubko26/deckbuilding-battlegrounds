@@ -80,8 +80,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
     battlecry na RASU vybranej príšerky – D002/D008 buff do boja
-    (aura do konca boja: dostanú ju aj neskôr vyložené karty a tokeny
-    vyvolané v boji – kombuje so summon buildmi),
+    (VŠETKY ne-aurové dračie staty platia celé kolo: dostanú ich aj
+    neskôr vyložené karty a tokeny vyvolané v boji – kombuje so summon
+    buildmi; rovnako D005 Pred bojom aj D006 Po nákupe),
     D003/D009 permanentná aura +1/+1, D004 discover rasy, D010 (t6)
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,

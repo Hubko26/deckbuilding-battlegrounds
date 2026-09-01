@@ -291,15 +291,19 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   drop mimo príšerky = fallback (najsilnejšia vlastná príšerka), takže
   efekt nikdy nevyhorí naprázdno. Bot/Claude hrá cez rovnaký fallback,
   Claude vie posielať `target` v akcii `play`.
-- Dočasné rasové buffy (`buffRaceOf`, `buffRandomRace`) sú **aura do konca
+- **Všetky ne-aurové dračie staty platia celé aktuálne kolo**: dočasné rasové
+  buffy (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) sú **aura do konca
   najbližšieho boja** (`p.fightRaceBuffs`): dostanú ju aj karty vyložené po
   drakovi a tokeny vyvolané počas boja (vedomá výnimka – permanentné rasové
-  aury tokeny neberú). Po boji sa nuluje.
+  aury tokeny neberú). Po boji sa nuluje. Platí to aj pre `buffTopRace`
+  (D005, Pred bojom) – hoci sa spúšťa až v boji, tokeny vyvolané po ňom
+  buff dostanú rovnako ako pri battlecry drakoch.
 - Roster: D001 3/2 a D007 2/4 vanilky (t1, telá nad krivkou);
   D002 (t2) battlecry rasa cieľa +1/+1 do boja (`buffRaceOf`);
   D006 (t2, Po nákupe) náhodná tvoja rasa +1/+1 (`buffRandomRace`);
   D004 (t3) battlecry **Discover karta rasy cieľa** (`discoverRace`);
-  D005 (t3, Pred bojom) najpočetnejšia rasa +1/+1 (`buffTopRace`);
+  D005 (t3, Pred bojom) najpočetnejšia rasa +1/+1 (`buffTopRace`, drží
+  celý boj – aj pre neskoršie tokeny);
   D003 (t4) a D009 (t5) battlecry **permanentná aura rasy cieľa** +1/+1
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;

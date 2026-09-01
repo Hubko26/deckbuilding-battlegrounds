@@ -532,6 +532,25 @@ test("dračí buff rasy (D002): dostanú ho aj neskôr vyložené karty a tokeny
   assert.equal(Object.keys(state.p1.fightRaceBuffs).length, 0); // po boji buff končí
 });
 
+test("dračí buff D005 (Pred bojom) platí celé kolo: dostane ho aj token vyvolaný neskôr", () => {
+  const { state, E } = fresh(21);
+  E.startRound(state);
+  const p = state.p1;
+  const b = E.makeInst(state, "B005", 1); b.slot = 0; // beast 3/2, Pri smrti 2× mláďa
+  const b2 = E.makeInst(state, "B001", 1); b2.slot = 1; // beast 2/2
+  const drak = E.makeInst(state, "D005", 1); drak.slot = 2; // Pred bojom: top rasa +1/+1
+  p.board = [b, b2, drak]; // beast 2× > dragon 1× → top rasa = beast
+  p.hand = [];
+  state.p2.board = [E.makeInst(state, "B010", 1)]; // 6/10 taunt – B005 zabije
+  state.p2.hand = [];
+  const events = E.doBattle(state);
+  const sum = events.find(e => e.type === "summon" && e.defId === "mlada");
+  assert.ok(sum, "mláďa sa má vyvolať");
+  assert.equal(sum.atk, 2); // 1+1 – dračí buff dostal aj token vyvolaný po ňom
+  assert.equal(sum.hp, 2);
+  assert.equal(Object.keys(state.p1.fightRaceBuffs).length, 0); // po boji buff končí
+});
+
 test("deathrattle buffRace: buffne živých kamarátov rovnakej rasy v boji", () => {
   const { state, E } = fresh(13);
   E.startRound(state);

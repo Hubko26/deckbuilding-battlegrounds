@@ -1031,6 +1031,8 @@ const Engine = (() => {
         break;
       case "buffTopRace": {
         // Drak (Pred bojom): tvoja NAJPOČETNEJŠIA rasa na ploche +a/+h.
+        // Ako všetky dračie ne-aura buffy platí na CELÉ kolo: zapíše sa do
+        // fightRaceBuffs, takže ho dostanú aj tokeny vyvolané neskôr v boji.
         const counts = {};
         for (const f of sides[pid]) {
           if (f.hp <= 0) continue;
@@ -1046,6 +1048,8 @@ const Engine = (() => {
           f.hp += fx.h * m;
           events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
+        const fb = (state[pid].fightRaceBuffs[top[0]] ||= { a: 0, h: 0 });
+        fb.a += fx.a * m; fb.h += fx.h * m;
         break;
       }
       case "buffRace":
