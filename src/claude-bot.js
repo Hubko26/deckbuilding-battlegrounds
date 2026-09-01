@@ -54,13 +54,19 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"refresh"}                          reroll shop (1 gold)
 - {"a":"play","id":"<cardId>","target":"<own board cardId, optional>"}  play minion from hand to board; target only matters for dragons with targeted battlecries (the effect applies to the TARGET's race – target a minion of your dominant race!)
 - {"a":"cast","id":"<spellId>","target":"<own board cardId, optional>"}  cast spell
-- {"a":"sell","zone":"hand"|"board","id":"<cardId>"}  sell for 1 gold
+- {"a":"sell","zone":"hand"|"board","id":"<cardId>"}  sell for 1 gold (card leaves the game)
+- {"a":"discard","zone":"hand"|"board","id":"<cardId>"}  put card into your discard pile – NO gold, card STAYS in your deck cycle and comes back in a later hand
+- {"a":"move","id":"<own board cardId>","slot":0-4}  reposition minion on board (0 = leftmost = attacks first; swaps with occupant)
+- {"a":"freeze","id":"<cardId in your private shop>"}  freeze that private-shop card so it survives into next round
 
 STRATEGY (in priority order):
-1. COMMIT TO ONE RACE. The state gives you raceCounts and dominantRace – from round 3 on, buy ONLY minions of your dominant race (exceptions: completing a triple of anything you own 2 copies of, or a clearly stronger higher-tier play). Mixed-race boards lose.
+1. COMMIT TO ONE RACE. The state gives you raceCounts and dominantRace – from round 3 on, buy ONLY minions of your dominant race (exceptions: completing a triple of anything you own 2 copies of, a dragon whose targeted battlecry feeds your race, or a clearly stronger higher-tier play). Mixed-race boards lose.
 2. Complete triples – strongest play in the game. Track copiesOwnedTowardTriple.
-3. Spend all money on BUYS. Refresh ONLY when you will still have >= 3 gold to buy afterwards, and NEVER as your last action – the shop rerolls itself after the battle, an end-of-turn refresh burns gold for nothing.
-4. Upgrade tier when affordable mid-game (round >= 2x your tier).
+3. THIN YOUR DECK by selling, starting round 1: sell starter cards and off-race minions from hand as soon as you commit to a race (even 2-3 sells per round – each sell also gives +1 gold). Every dead card left in your deck weakens every future hand. Winning players do this relentlessly.
+4. Spend all money on BUYS. Refresh ONLY when you will still have >= 3 gold to buy afterwards, and NEVER as your last action – the shop rerolls itself after the battle, an end-of-turn refresh burns gold for nothing. If the shop holds a card you want but cannot afford, "freeze" it instead.
+5. Upgrade tier when affordable mid-game (round >= 2x your tier).
+6. Fight with a FULL board (5 minions) – every empty slot is a lost attacker. Then ORDER the board with "move": slot 0 attacks first, so put "onAttack" minions leftmost, Taunts where they shield your deathrattle/engine minions, fragile scalers rightmost.
+7. Recycle battlecry bodies: before the battle, "discard" (NOT sell) a board minion whose value was its battlecry/aura and whose body is weak – you will draw and replay its effect in a later round.
 Play all minions you can. Cast buff spells on your strongest minion. Remember your plan executes blindly in order – you will NOT see what a refresh rolls, so put refreshes early and follow them with generic "buy best" intent via specific ids you already see, or skip refreshing.
 
 TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders in a small speech bubble – longer gets cut, so keep it a single snappy sentence), addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
@@ -96,7 +102,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       you: { hp: p.hp, tier: p.tier, money: p.money, upgradeCost: Engine.upgradeCost(state, pid), dmgBoost: p.dmgBoost, raceAuras: p.raceBuffs, spellsCastTotal: p.spellsCast },
       humanOpponent: { hp: foe.hp, tier: foe.tier, boughtThisRound: foe.bought },
       hand: p.hand.map(inst),
-      board: p.board.map(inst),
+      board: p.board.map(x => ({ ...inst(x), slot: x.slot })),
       deckAndDiscard: [...p.deck, ...p.discard].map(c => c.defId),
       copiesOwnedTowardTriple: ownedCounts,
       raceCounts, dominantRace,
@@ -206,6 +212,23 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
           const zone = act.zone === "board" ? "board" : "hand";
           const i = p[zone].findIndex(x => x && x.defId === act.id);
           if (i >= 0) run("sellCard", [zone, i]);
+          break;
+        }
+        case "discard": {
+          const zone = act.zone === "board" ? "board" : "hand";
+          const i = p[zone].findIndex(x => x && x.defId === act.id);
+          if (i >= 0) run("discardCard", [zone, i]);
+          break;
+        }
+        case "move": {
+          const i = p.board.findIndex(x => x && x.defId === act.id);
+          const slot = Number(act.slot);
+          if (i >= 0 && Number.isInteger(slot)) run("moveOnBoard", [i, slot]);
+          break;
+        }
+        case "freeze": {
+          const vi = p.priv.findIndex(s => s.defId === act.id && !s.frozen);
+          if (vi >= 0) run("toggleFreeze", [vi]);
           break;
         }
       }

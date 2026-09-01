@@ -110,29 +110,49 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 
 ## Odporúčaná stratégia (v poradí dôležitosti)
 
+Overené z logov reálnych hier: hráči, čo vyhrávajú, robia VŠETKY body
+1–3 a 6–8; boti prehrávajú hlavne na miešaní rás, mŕtvych kartách
+v balíčku a neusporiadanej ploche.
+
 1. **Trojice sú najsilnejšia mena.** Kúpa, ktorá kompletizuje trojicu
    (rátaj VŠETKY vlastnené kópie vrátane balíčka a kôpky), má prednosť
    takmer pred všetkým – zdvojnásobuje staty a zosilňuje efekt.
 2. **Vyber si dominantnú rasu čo najskôr** (podľa toho, čoho vlastníš
-   najviac) a kupuj hlavne ju. Rasové buffy (`buffRace`) a aury škálujú
-   s počtom kariet rasy.
-3. **Aury (`futureRace`) kupuj a hraj vždy, keď patria tvojej rase** –
+   najviac) a od ~3. kola kupuj TAKMER VÝHRADNE ju. Rasové buffy
+   (`buffRace`) a aury škálujú s počtom kariet rasy; miešaná plocha
+   prehráva so synergiou aj pri rovnakých statoch. Výnimky: dokončenie
+   trojice, drak ako žoldnier (battlecry cieli na TVOJU rasu), jasne
+   nadkrivkové telo o tier vyššie.
+3. **Riedenie balíčka predajom – OD KOLA 1.** Štartové a cudzorasové
+   karty predávaj hneď, ako sa rozhodneš pre rasu (aj 2–3 karty v jednom
+   kole; predaj = +1 zlato navyše k tempu). Každá mŕtva karta v balíčku
+   = horšia ruka každé ďalšie kolo. V neskorej hre predávaj aj slabé
+   tier-1 karty vlastnej rasy, ktoré už nič nebuffujú.
+4. **Aury (`futureRace`) kupuj a hraj vždy, keď patria tvojej rase** –
    permanentne zväčšujú celý balíček; čím skôr, tým viac kôl sa sčítavajú.
    Aury cudzej rasy kupuj, len ak plánuješ prechod.
-4. **Poradie vykladania**: najprv obyčajné príšery, POTOM battlecry
+5. **Poradie vykladania**: najprv obyčajné príšery, POTOM battlecry
    buffery (buffRace/buffAllFriends/buffFriend/aury) – battlecry zasiahne
    plnú plochu. Kúzla na buff (Jablko, Srdce, Vlna, Koreň) až po vyložení,
-   cieľ = najsilnejšia príšera (alebo Obranca pre Koreň).
-5. **Ekonomika**: Mincu (1g → +2g, od tieru 2) kupuj takmer vždy. Upgrade tieru, keď
-   cena klesne na ~2–3 a ostane aspoň na kartu; neupgraduj, keď vieš
-   dokončiť trojicu. Refresh (1g) používaj pri zvyšných peniazoch,
-   ktoré by prepadli.
-6. **Boj**: poradie zľava doprava = poradie útoku. Obrancov (taunt) dávaj
-   tak, aby chránili deathrattle karty; „Pri útoku" karty čo najviac
-   doľava (útočia skôr, buff platí dlhšie).
-7. **Predaj** používaj na riedenie balíčka od slabých tier-1 kariet
-   v neskorej hre – zvyšuje šancu dotiahnuť silné karty.
-8. **Counterpick podľa súperovho nákupu** (vidíš ho v logu): proti undead
+   cieľ = najsilnejšia príšera (alebo Obranca pre Koreň). Dračí cielený
+   battlecry VŽDY na príšeru dominantnej rasy. Bojuj s PLNOU plochou
+   (5) – každá prázdna pozícia je stratený útok aj HP.
+6. **Usporiadaj plochu KAŽDÉ kolo** (`moveOnBoard`): poradie zľava
+   doprava = poradie útoku. „Pri útoku" karty čo najviac doľava (útočia
+   skôr, buff platí dlhšie); Obrancov (taunt) rozmiestni tak, aby kryli
+   deathrattle a motorové karty; krehké scaling karty (B009, víly)
+   doprava.
+7. **Recykluj battlecry telá** (`discardCard`): battlecry/aura karta,
+   ktorá už na ploche nič nerobí, ide pred bojom discardom do kôpky –
+   o pár kôl ju zahráš znova aj s efektom. Nepredávaj ju, ak efekt
+   stále živí build.
+8. **Ekonomika**: Mincu (1g → +2g, od tieru 2) kupuj takmer vždy. Upgrade
+   tieru, keď cena klesne na ~2–3 a ostane aspoň na kartu; neupgraduj,
+   keď vieš dokončiť trojicu. Refresh (1g) len so zvyšným zlatom, ktoré
+   by prepadlo, a NIKDY ako posledná akcia ťahu – obchod sa po boji
+   rolluje sám zadarmo. Freeze (`toggleFreeze`) použi, keď v ponuke
+   ostáva karta, ktorú chceš, ale už na ňu nemáš – prežije do nového kola.
+9. **Counterpick podľa súperovho nákupu** (vidíš ho v logu): proti undead
    horde kupuj elementálov (multi-hit/AoE), proti elementálom veľké beast
    telá a aury, proti beastom undead hordu. Mláďa karty (B007/B008) kupuj
    čo najskôr – zdieľané počítadlo rastie celú hru. S plnou undead plochou
