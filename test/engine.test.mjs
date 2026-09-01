@@ -23,6 +23,19 @@ test("newGame: 10 náhodných kariet tieru 1 v balíčku, 35 HP, tier 1, 2 súkr
   assert.equal(state.commons.length, 3);
 });
 
+test("newGame: v štartovacom balíčku nikdy nie je trojica (max 2 kópie karty)", () => {
+  for (let seed = 1; seed <= 50; seed++) {
+    const { state } = fresh(seed);
+    for (const pid of ["p1", "p2"]) {
+      const counts = {};
+      for (const c of state[pid].deck) counts[c.defId] = (counts[c.defId] || 0) + 1;
+      for (const [defId, n] of Object.entries(counts)) {
+        assert.ok(n <= 2, `seed ${seed}: ${pid} má ${n}× ${defId} v štartovacom balíčku`);
+      }
+    }
+  }
+});
+
 test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", () => {
   const { C } = fresh();
   let minions = 0;
@@ -392,6 +405,7 @@ test("kúpa druhej kópie ide normálne do balíčka", () => {
 test("evolve: rôzne stupne sa nemiešajú", () => {
   const { state, E } = fresh();
   const p = state.p1;
+  p.deck = []; // štartovací balíček môže obsahovať B001 – trojica by sa spojila cez balíček
   p.hand = [E.makeInst(state, "B001", 1), E.makeInst(state, "B001", 1), E.makeInst(state, "B001", 2)];
   E.checkEvolve(state, p, []);
   assert.equal(p.hand.length, 3);

@@ -105,7 +105,8 @@ const Engine = (() => {
   function other(pid) { return pid === "p1" ? "p2" : "p1"; }
 
   // ---------- Založenie hry ----------
-  // Štartovací balíček: 10 náhodných príšer tieru 1 (duplicity vítané – evolve).
+  // Štartovací balíček: 10 náhodných príšer tieru 1. Max 2 kópie jednej karty –
+  // trojica by sa hneď spojila (evolve) a lámala by early game.
   // mutatorId: undefined = vyžrebuj z rng (bežná hra), null = bez mutácie
   // (testy, balance sim), string = vynútená konkrétna mutácia.
   function newGame(rng, mutatorId) {
@@ -121,7 +122,12 @@ const Engine = (() => {
     const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell);
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
-      for (let i = 0; i < 10; i++) p.deck.push({ defId: pick(basics, rng).id, rank: 1 });
+      for (let i = 0; i < 10; i++) {
+        let id;
+        do { id = pick(basics, rng).id; }
+        while (p.deck.filter(c => c.defId === id).length >= 2);
+        p.deck.push({ defId: id, rank: 1 });
+      }
     }
     const commonCount = COMMON_COUNT + (mutator === "plenty" ? 1 : 0);
     for (let i = 0; i < commonCount; i++) state.commons.push(rollCard(state, 1));

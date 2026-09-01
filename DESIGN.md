@@ -387,8 +387,9 @@ ruky), peniaze navyše.
 Classy nie sú: **každý hráč hrá z rovnakého poolu kariet**, aby sa nemusel
 riešiť balance counterpickov. Namiesto class si hráč pri spustení hry vyberie
 **superschopnosť** (hero power) – zatiaľ nie je žiadna implementovaná, výber
-príde neskôr. Štartovací balíček = **10 náhodných príšer tieru 1** (duplicity
-vítané, rozbiehajú evolve).
+príde neskôr. Štartovací balíček = **10 náhodných príšer tieru 1**, pričom
+**žiadna karta nie je viac než 2×** – dvojice rozbiehajú evolve, ale hotová
+trojica hneď na štarte by rozbila early game.
 
 Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 

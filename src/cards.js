@@ -9,7 +9,7 @@
 // fx = { type, a?, h?, n?, race?, token?, taunt? } – čísla sa násobia stupňom (×1/×2/×3).
 //
 // Classy nie sú – každý hráč hrá z rovnakého poolu. Štartovací balíček je
-// 10 náhodných kariet tieru 1 (skladá ho engine).
+// 10 náhodných kariet tieru 1, max 2 kópie jednej karty (skladá ho engine).
 
 const Cards = (() => {
   const RACES = {
