@@ -105,7 +105,10 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   width: min(98vw, calc(72vh * 1.783));
   width: min(98vw, calc(72dvh * 1.783));
   aspect-ratio: 1676 / 940;
-  background: url("PlayGround.png") center / 100% 100% no-repeat;
+  /* webp ~90 KB namiesto 2 MB PNG – načíta sa aj na pomalej/firemnej sieti;
+     hnedá pod ním je fallback, nech doska nie je „neviditeľná", kým obrázok
+     príde (alebo keď ho sieť zablokuje). */
+  background: #b5854f url("PlayGround.webp") center / 100% 100% no-repeat;
   container-type: size;
   border-radius: 12px;
 }
@@ -491,7 +494,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
     width: min(98vw, calc(73vh * 1850 / 850));
     width: min(98vw, calc(73dvh * 1850 / 850));
     aspect-ratio: 1850 / 850;
-    background-image: url("PlayGround-mobile-wide.png");
+    background-image: url("PlayGround-mobile-wide.webp");
     /* dva prsty patria pinch zoomu hry, nie scrollu prehliadača */
     touch-action: none;
   }
@@ -548,7 +551,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
     width: min(96vw, calc(70vh * 941 / 1672));
     width: min(96vw, calc(70dvh * 941 / 1672));
     aspect-ratio: 941 / 1672;
-    background-image: url("PlayGround-mobile.png");
+    background-image: url("PlayGround-mobile.webp");
     margin-bottom: 13vh;
   }
   .log { width: 98vw; font-size: .8rem; }
