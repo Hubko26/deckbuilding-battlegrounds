@@ -28,6 +28,12 @@ const L = {
     en: "Server is not running. Start the game with: node server.mjs",
   },
   netLeft: { sk: "📴 Súper sa odpojil", cs: "📴 Soupeř se odpojil", en: "📴 Opponent disconnected" },
+  netReconnecting: {
+    sk: "📡 Spojenie vypadlo – obnovujem…",
+    cs: "📡 Spojení vypadlo – obnovuji…",
+    en: "📡 Connection lost – reconnecting…",
+  },
+  netResumed: { sk: "📡 Spojenie obnovené ✓", cs: "📡 Spojení obnoveno ✓", en: "📡 Connection restored ✓" },
   netDesync: {
     sk: "Hra sa rozsynchronizovala – stavy hráčov sa rozišli. Obaja obnovte stránku (Ctrl+F5) a založte novú hru.",
     cs: "Hra se rozsynchronizovala – stavy hráčů se rozešly. Oba obnovte stránku (Ctrl+F5) a založte novou hru.",
@@ -570,6 +576,9 @@ function netHandlers() {
         $("overMsg").textContent = "";
       }
     },
+    // Výpadok spojenia: hra beží ďalej (akcie sa bufferujú), len o tom vieš.
+    onReconnecting: () => { if (mode === "net") log(t(L.netReconnecting)); },
+    onResumed: () => { if (mode === "net") log(t(L.netResumed)); },
     onPeerMode: showPeerSetup,
     onPeerError: kind => {
       console.warn("[arena] peer error:", kind); // typ chyby na diagnostiku
