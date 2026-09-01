@@ -395,8 +395,8 @@ Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 ## Mutácie – „Pravidlo dnešnej arény"
 
 Každá hra má **jednu náhodnú mutáciu** – globálne pravidlo, ktoré platí pre
-oboch hráčov a mení hru (novelita + adaptácia). **Dá sa vypnúť** checkboxom
-na úvodnej obrazovke (voľba sa pamätá v localStorage); v hre po sieti
+oboch hráčov a mení hru (novelita + adaptácia). **Default sú VYPNUTÉ** – zapínajú sa
+checkboxom na úvodnej obrazovke (voľba sa pamätá v localStorage); v hre po sieti
 rozhoduje zakladateľ – flag `mut` cestuje v `start` správe (PeerJS aj LAN
 server) a zapisuje sa do GameLog, takže replay hru zrekonštruuje správne
 (staré záznamy bez flagu = mutácia zo seedu ako doteraz). Žrebuje sa **prvým ťahom
@@ -554,6 +554,12 @@ len staty + keyword badge.
 - `src/game.js` – UI, animácie boja prehrávajú event log z enginu.
 - Grafika: emoji príšerky + farebné rámy podľa stupňa (bronz/striebro/zlato). Neskôr
   vymeniteľné za vlastné obrázky.
+- Ochrana multiplayeru proti desyncu: každá akcia nesie číslo kola
+  odosielateľa a nelegálna akcia súpera sa nepreskakuje ticho – oboje ukončí
+  hru oznamom „hra sa rozsynchronizovala". Pri štarte si klienti porovnajú
+  verzie (`?v=` hashe skriptov z index.html) – rozdielna keš = okamžité
+  varovanie namiesto rozídenej hry. Fronta remote akcií má catch, takže
+  jedna chybná akcia nezablokuje všetky ďalšie.
 - Multiplayer po LAN: `node server.mjs` servíruje hru + WebSocket relay
   (bez závislostí). Klienti replikujú akcie: oba behy dostanú rovnaký seed
   a aplikujú rovnaké Engine volania, stav je deterministicky identický

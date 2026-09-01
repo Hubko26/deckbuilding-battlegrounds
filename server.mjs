@@ -130,7 +130,7 @@ server.on("upgrade", (req, socket) => {
     // pred spárovaním: "hello" nesie voľbu mutácií (rozhoduje zakladateľ)
     try {
       const m = JSON.parse(msg);
-      if (m && m.type === "hello") client.mut = m.mut !== false;
+      if (m && m.type === "hello") { client.mut = m.mut !== false; client.v = m.v; }
     } catch {}
   }, close));
   socket.on("error", close);
@@ -144,8 +144,9 @@ server.on("upgrade", (req, socket) => {
     host.peer = client;
     const seed = Math.floor(Math.random() * 2 ** 31);
     const mut = host.mut !== false; // zakladateľ = prvý čakajúci hráč
-    wsSend(host.socket, JSON.stringify({ type: "start", seed, you: "p1", mut }));
-    wsSend(client.socket, JSON.stringify({ type: "start", seed, you: "p2", mut }));
+    // v = verzia druhej strany (klient si ju porovná so svojou)
+    wsSend(host.socket, JSON.stringify({ type: "start", seed, you: "p1", mut, v: client.v }));
+    wsSend(client.socket, JSON.stringify({ type: "start", seed, you: "p2", mut, v: host.v }));
     console.log("Hráči spárovaní, seed", seed);
   } else {
     waiting = client;

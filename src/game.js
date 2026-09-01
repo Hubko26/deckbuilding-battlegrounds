@@ -28,6 +28,16 @@ const L = {
     en: "Server is not running. Start the game with: node server.mjs",
   },
   netLeft: { sk: "📴 Súper sa odpojil", cs: "📴 Soupeř se odpojil", en: "📴 Opponent disconnected" },
+  netDesync: {
+    sk: "Hra sa rozsynchronizovala – stavy hráčov sa rozišli. Obaja obnovte stránku (Ctrl+F5) a založte novú hru.",
+    cs: "Hra se rozsynchronizovala – stavy hráčů se rozešly. Oba obnovte stránku (Ctrl+F5) a založte novou hru.",
+    en: "The game desynced – player states diverged. Both refresh the page (Ctrl+F5) and start a new game.",
+  },
+  verWarn: {
+    sk: "Máte rozdielne verzie hry! Obaja stlačte Ctrl+F5 (obnoviť stránku) a založte novú hru – inak sa hra rozíde.",
+    cs: "Máte rozdílné verze hry! Oba stiskněte Ctrl+F5 (obnovit stránku) a založte novou hru – jinak se hra rozejde.",
+    en: "You are running different game versions! Both press Ctrl+F5 (refresh) and start a new game – otherwise the game will desync.",
+  },
   peerIntro: {
     sk: "Hraj cez kód miestnosti (cez internet):",
     cs: "Hraj přes kód místnosti (přes internet):",
@@ -331,10 +341,29 @@ window.arenaLog = () => GameLog.dump();
 // Voľba „hrať bez mutácií" – checkbox na úvodnej obrazovke, pamätá sa
 // v localStorage. V hre po sieti rozhoduje zakladateľ (flag ide v "start").
 function mutsOn() { return $("mutToggle").checked; }
-try { $("mutToggle").checked = localStorage.getItem("arena.muts") !== "0"; } catch {}
+// Default VYPNUTÉ – mutácia je opt-in („1" v localStorage = hráč si ju zapol).
+try { $("mutToggle").checked = localStorage.getItem("arena.muts") === "1"; } catch { $("mutToggle").checked = false; }
 $("mutToggle").addEventListener("change", () => {
   try { localStorage.setItem("arena.muts", mutsOn() ? "1" : "0"); } catch {}
 });
+
+// Verzia klienta = ?v= hashe skriptov z index.html. Keď sa hráčom líšia
+// (zastaraná keš), determinizmus je stratený a hra by sa ticho rozišla.
+const APP_V = [...document.querySelectorAll('script[src^="src/"]')]
+  .map(el => (el.src.split("?v=")[1] || "")).join(".");
+
+// Tvrdá chyba siete (desync / rozdielne verzie): oznám a ukonči hru,
+// tiché pokračovanie by len prehlbovalo rozídený stav.
+let fatalShown = false;
+function showFatal(text, detail) {
+  console.error("[arena] FATAL:", text, detail || "");
+  if (fatalShown) return;
+  fatalShown = true;
+  Net.disconnect();
+  $("overOverlay").classList.remove("hidden");
+  $("overTitle").textContent = "⚠️";
+  $("overMsg").textContent = text;
+}
 window.arenaLogSave = () => {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([GameLog.dump()], { type: "application/json" }));
@@ -372,9 +401,10 @@ let lastPlayerRound = [];
 
 function doAction(name, ...args) {
   const desc = actionDesc(name, args);
+  const round = state.round; // kolo PRED akciou – súper ju aplikuje v rovnakom
   const ev = Engine[name](state, MY, ...args);
   if (ev) GameLog.push(MY, name, args);
-  if (ev && mode === "net") Net.sendAction(name, args);
+  if (ev && mode === "net") Net.sendAction(name, args, round);
   if (ev && desc && playerRoundActions.length < 40) playerRoundActions.push(desc);
   // Trash-talk bota na hráčove rozhodnutia (len proti botovi).
   if (ev && name === "sellCard") botTaunt("sell", 0.5);
@@ -512,6 +542,7 @@ function netHandlers() {
       }
     },
     onStart: msg => {
+      fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined);
@@ -519,8 +550,14 @@ function netHandlers() {
       enterGameScreen();
       act(Engine.startRound(state));
       driveFlow();
+      // msg.v = verzia druhej strany (od hostiteľa/servera); rozdiel = istý desync
+      if (msg.v !== APP_V) showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`);
     },
-    onAction: msg => { remoteQueue = remoteQueue.then(() => applyRemote(msg)); },
+    // catch drží frontu živú – jedna chybná akcia nesmie umlčať všetky ďalšie
+    onAction: msg => {
+      remoteQueue = remoteQueue.then(() => applyRemote(msg))
+        .catch(err => showFatal(t(L.netDesync), err));
+    },
     onPeerLeft: () => {
       if (mode !== "net") return;
       if (state && state.phase !== "over") {
@@ -552,7 +589,7 @@ function startNet() {
   $("netUrls").textContent = "";
   $("peerCode").textContent = "";
   $("netMsg").textContent = t(L.netConnecting);
-  Net.connect(netHandlers(), { mut: mutsOn() });
+  Net.connect(netHandlers(), { mut: mutsOn(), v: APP_V });
 }
 
 // Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
@@ -568,25 +605,33 @@ function showPeerSetup() {
 function peerHost() {
   const code = String(1000 + Math.floor(Math.random() * 9000));
   $("peerCode").textContent = "…";
-  Net.hostPeer(code, netHandlers(), { mut: mutsOn() });
+  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), v: APP_V });
 }
 
 function peerJoin() {
   const code = $("peerCodeInput").value.trim();
   if (!code) return;
   $("netMsg").textContent = t(L.netConnecting);
-  Net.joinPeer(code, netHandlers());
+  Net.joinPeer(code, netHandlers(), { v: APP_V });
 }
 
 let remoteQueue = Promise.resolve();
 async function applyRemote(msg) {
-  if (!state || state.phase === "over" || mode !== "net") return;
-  const ev = Engine[msg.name](state, OPP, ...(msg.args || []));
-  if (ev) GameLog.push(OPP, msg.name, msg.args || []);
-  if (ev) {
-    for (const e of ev) { const m = oppEventMsg(e); if (m) log(m); }
-    renderAll();
+  if (!state || state.phase === "over" || mode !== "net" || fatalShown) return;
+  // Akcia súpera nesie číslo kola odosielateľa – nesúlad = stavy sa rozišli.
+  if (msg.r != null && msg.r !== state.round) {
+    showFatal(t(L.netDesync), `kolo súpera ${msg.r}, moje ${state.round}`);
+    return;
   }
+  const ev = Engine[msg.name](state, OPP, ...(msg.args || []));
+  if (!ev) {
+    // V zosynchronizovanej hre je každá akcia súpera legálna – null = desync.
+    showFatal(t(L.netDesync), `nelegálna akcia súpera: ${msg.name}`);
+    return;
+  }
+  GameLog.push(OPP, msg.name, msg.args || []);
+  for (const e of ev) { const m = oppEventMsg(e); if (m) log(m); }
+  renderAll();
   await driveFlow();
 }
 

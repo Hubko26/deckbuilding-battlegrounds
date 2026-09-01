@@ -532,6 +532,17 @@ test("dračí buff rasy (D002): dostanú ho aj neskôr vyložené karty a tokeny
   assert.equal(Object.keys(state.p1.fightRaceBuffs).length, 0); // po boji buff končí
 });
 
+test("endShopTurn: duplicitné/oneskorené ukončenie ťahu je nelegálne (null)", () => {
+  const { state, E } = fresh(5);
+  E.startRound(state);
+  const first = state.active;
+  assert.ok(E.endShopTurn(state, first));            // legálne – je na ťahu
+  assert.equal(E.endShopTurn(state, first), null);   // duplicita – už nie je na ťahu
+  assert.ok(E.endShopTurn(state, state.active));     // druhý hráč → battle
+  assert.equal(state.phase, "battle");
+  assert.equal(E.endShopTurn(state, "p1"), null);    // v boji sa ťah ukončiť nedá
+});
+
 test("dračí buff D005 (Pred bojom) platí celé kolo: dostane ho aj token vyvolaný neskôr", () => {
   const { state, E } = fresh(21);
   E.startRound(state);

@@ -801,6 +801,10 @@ const Engine = (() => {
 
   // ---------- Koniec nákupnej fázy ----------
   function endShopTurn(state, pid) {
+    // Nelegálne ukončenie (nie je nákupná fáza / nie je na ťahu) = null,
+    // ako pri každej inej akcii – duplicitná či oneskorená správa v sieti
+    // nesmie preskočiť súperovi ťah.
+    if (state.phase !== "shop" || state.active !== pid) return null;
     const p = state[pid];
     const events = [];
     // Po nákupe (end of turn) schopnosti príšeriek na ploche.

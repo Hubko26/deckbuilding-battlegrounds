@@ -62,7 +62,7 @@ const Net = (() => {
     ws.addEventListener("open", () => {
       opened = true;
       // Voľba mutácií – server ju vezme od hráča, ktorý čaká prvý (zakladateľ).
-      ws.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false) }));
+      ws.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), v: opts && opts.v }));
     });
     ws.addEventListener("message", e => dispatch(e.data));
     ws.addEventListener("close", () => {
@@ -125,6 +125,7 @@ const Net = (() => {
     handlers = h;
     transport = "peer";
     const mut = !(opts && opts.mut === false);
+    const myV = opts && opts.v;
     destroyPeer();
     peer = new Peer(PEER_PREFIX + code, PEER_OPTS);
     keepAlive(peer);
@@ -136,8 +137,10 @@ const Net = (() => {
       wireConn(c);
       c.on("open", () => {
         const seed = Math.floor(Math.random() * 2 ** 31);
-        c.send({ type: "start", seed, you: "p2", mut });
-        dispatch({ type: "start", seed, you: "p1", mut });
+        // v = verzia DRUHEJ strany: každý klient si ju porovná so svojou.
+        const joinerV = (c.metadata || {}).v;
+        c.send({ type: "start", seed, you: "p2", mut, v: myV });
+        dispatch({ type: "start", seed, you: "p1", mut, v: joinerV });
       });
     });
     peer.on("error", err => {
@@ -146,7 +149,7 @@ const Net = (() => {
   }
 
   // Pripojí sa na hru s daným kódom.
-  function joinPeer(code, h) {
+  function joinPeer(code, h, opts) {
     handlers = h;
     transport = "peer";
     destroyPeer();
@@ -162,7 +165,7 @@ const Net = (() => {
     const done = () => { if (timer) { clearTimeout(timer); timer = null; } };
     peer.on("open", () => {
       console.info("[arena] signalizácia OK (join, kód " + code + ")");
-      const c = peer.connect(PEER_PREFIX + code, { reliable: true });
+      const c = peer.connect(PEER_PREFIX + code, { reliable: true, metadata: { v: opts && opts.v } });
       wireConn(c);
       c.on("open", done);
     });
@@ -172,8 +175,8 @@ const Net = (() => {
     });
   }
 
-  function sendAction(name, args) {
-    const msg = { type: "action", name, args };
+  function sendAction(name, args, round) {
+    const msg = { type: "action", name, args, r: round };
     if (transport === "ws" && ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
     if (transport === "peer" && conn && conn.open) conn.send(msg);
   }
