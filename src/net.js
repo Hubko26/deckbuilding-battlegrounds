@@ -15,22 +15,24 @@ const Net = (() => {
 
   // Bez TURN relayu WebRTC neprejde cez prísny NAT/firewall (školská či
   // firemná sieť, časť mobilných operátorov) – spojenie sa ticho nenadviaže.
-  // PeerJS má vo východzom nastavení len STUN + TURN na UDP 3478, ktorý býva
-  // zablokovaný; pridávame verejný TURN aj cez TCP a port 443 (tvári sa ako
-  // bežný HTTPS, prejde skoro všade). Ak by verejný TURN prestal fungovať,
-  // stačí sem doplniť vlastný.
+  // Relay beží na Metered.ca (free tier; kvóta ~500 MB/mes., hra prenáša
+  // pár KB za kolo a relay sa použije len keď priame spojenie nejde).
+  // Kredencie sú zámerne verejné – sú kvótované a viažu sa len na TURN.
+  // Kľúčový je `turns:...443` (TLS): vyzerá ako bežné HTTPS, prejde aj
+  // firemnou sieťou. PeerJS default TURN (UDP 3478) ostáva ako záloha.
+  const TURN_USER = "4d442c97aca135373578360c";
+  const TURN_PASS = "Yz5RNpA738dMf0zA";
   const PEER_OPTS = {
     config: {
       iceServers: [
         { urls: "stun:stun.l.google.com:19302" },
+        { urls: "stun:stun.relay.metered.ca:80" },
+        { urls: "turn:global.relay.metered.ca:80", username: TURN_USER, credential: TURN_PASS },
+        { urls: "turn:global.relay.metered.ca:80?transport=tcp", username: TURN_USER, credential: TURN_PASS },
+        { urls: "turn:global.relay.metered.ca:443", username: TURN_USER, credential: TURN_PASS },
+        { urls: "turns:global.relay.metered.ca:443?transport=tcp", username: TURN_USER, credential: TURN_PASS },
         { urls: ["turn:eu-0.turn.peerjs.com:3478", "turn:us-0.turn.peerjs.com:3478"],
           username: "peerjs", credential: "peerjsp" },
-        { urls: [
-            "turn:openrelay.metered.ca:80",
-            "turn:openrelay.metered.ca:443",
-            "turn:openrelay.metered.ca:443?transport=tcp",
-          ],
-          username: "openrelayproject", credential: "openrelayproject" },
       ],
     },
   };
