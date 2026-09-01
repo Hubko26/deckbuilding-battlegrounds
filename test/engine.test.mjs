@@ -53,7 +53,7 @@ test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", ()
     }
     for (const lang of ["sk", "cs", "en"]) C.cardText(d, 2, lang); // nesmie spadnúť
   }
-  assert.equal(minions, 50); // 5 rás × 10 príšer
+  assert.equal(minions, 60); // 6 rás × 10 príšer
 });
 
 test("drak buffRaceOf: cielený battlecry buffne rasu cieľa; bez cieľa fallback na najsilnejšiu", () => {
@@ -1089,6 +1089,127 @@ test("Pretečenie: undead token, čo sa nezmestí, dá celé staty jednému kama
   assert.equal(buffs.length, 1);
   assert.equal(buffs[0].a, 2); // celý atk jednému
   assert.equal(buffs[0].h, 1); // celé hp jednému
+});
+
+test("ogr O002: zožerie suseda – staty NAVŽDY (pa/ph), karta zmizne z hry", () => {
+  const { state, E } = fresh(90);
+  E.startRound(state);
+  const p = state.p1;
+  const pal = E.makeInst(state, "B002", 1); pal.slot = 0; // 4/5
+  p.board = [pal];
+  p.hand = [E.makeInst(state, "O002", 1)];
+  p.deck = []; p.discard = [];
+  assert.ok(E.playMinion(state, "p1", 0));
+  const ogre = p.board.find(x => x.defId === "O002");
+  assert.equal(p.board.length, 1);                 // sused zjedený
+  assert.ok(!p.board.includes(pal));
+  assert.ok(!p.discard.some(c => c.defId === "B002")); // zmizol z hry, nie do kôpky
+  assert.equal(ogre.atk, 4 + 4);
+  assert.equal(ogre.hp, 4 + 5);
+  assert.equal(ogre.pa, 4);                        // trvalý rast cestuje s kópiou
+  assert.equal(ogre.ph, 5);
+});
+
+test("ogr O001 hod mincou: +4/+4 alebo −2/−2 (clamp na 0 atk / 1 hp)", () => {
+  const outcomes = new Set();
+  for (let seed = 1; seed <= 40; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    const p = state.p1;
+    p.board = [];
+    p.hand = [E.makeInst(state, "O001", 1)]; // 2/3
+    p.deck = []; p.discard = [];
+    assert.ok(E.playMinion(state, "p1", 0));
+    const o = p.board[0];
+    assert.ok((o.atk === 6 && o.hp === 7) || (o.atk === 0 && o.hp === 1),
+      `nečakané staty ${o.atk}/${o.hp}`);
+    outcomes.add(o.atk === 6 ? "heads" : "tails");
+  }
+  assert.equal(outcomes.size, 2); // obe strany mince padli
+});
+
+test("ogr O003 chaos výbuch: 2 dmg VŠETKÝM – aj vlastným", () => {
+  const { state, E } = fresh(91);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const ogre = E.makeInst(state, "O003", 1); ogre.slot = 0;  // 7/8, Pred bojom
+  const pal = E.makeInst(state, "B001", 1); pal.slot = 1;    // 2/2 – výbuch ho zabije
+  state.p1.board = [ogre, pal];
+  state.p2.board = [Object.assign(E.makeInst(state, "U001", 1), { slot: 0 })]; // 1/1
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const aoe = events.filter(e => e.type === "aoeDmg");
+  assert.equal(aoe.length, 2);                       // obe strany
+  assert.ok(aoe.some(e => e.pid === "p1") && aoe.some(e => e.pid === "p2"));
+  const dead = events.filter(e => e.type === "die");
+  assert.ok(dead.some(e => e.defId === "B001"));     // friendly fire
+  assert.ok(dead.some(e => e.defId === "U001"));
+});
+
+test("ogr O006 ožratý úder: 50 % sa trafí sám za polovicu útoku", () => {
+  let drunkSeen = false, soberSeen = false;
+  for (let seed = 1; seed <= 40 && !(drunkSeen && soberSeen); seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [Object.assign(E.makeInst(state, "O006", 1), { slot: 0 })]; // 5/5
+    state.p2.board = [Object.assign(E.makeInst(state, "U008", 2), { slot: 0 })]; // 6/16 taunt
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    const hits = events.filter(e => e.type === "drunkHit");
+    if (hits.length) { drunkSeen = true; assert.equal(hits[0].n, 2); } // floor(5/2)
+    else soberSeen = true;
+  }
+  assert.ok(drunkSeen && soberSeen);
+});
+
+test("ogr O007 divoká rana: pri smrti 5 dmg náhodnej príšerke", () => {
+  const { state, E } = fresh(92);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  state.p1.board = [Object.assign(E.makeInst(state, "O007", 1), { slot: 0 })]; // 9/7 deathrattle
+  state.p2.board = [Object.assign(E.makeInst(state, "B002", 2), { slot: 0 })]; // 8/10
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  // Prvý útok (hocikto začne): O007 padne (8 >= 7), B002 ostane s 1 HP,
+  // divoká rana má jediný živý cieľ – dorazí ho 5 damage.
+  const idx = events.findIndex(e => e.type === "die" && e.defId === "O007");
+  assert.ok(idx >= 0);
+  const shot = events.find(e => e.type === "powerDmg" && e.n === 5);
+  assert.ok(shot);
+  assert.ok(events.some(e => e.type === "die" && e.defId === "B002"));
+  assert.ok(events.some(e => e.type === "battleDraw")); // obe plochy prázdne
+});
+
+test("ogr O010 zmätený obranca: 50 % vstane s 1 HP na náhodnej strane, raz za boj", () => {
+  const sides = new Set();
+  let none = false;
+  for (let seed = 1; seed <= 60; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10
+    state.p2.board = [Object.assign(E.makeInst(state, "E010", 2), { slot: 0 })]; // 18/18
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    const rev = events.filter(e => e.type === "confusedRevive");
+    assert.ok(rev.length <= 1, "vstal viac než raz");
+    if (!rev.length) { none = true; continue; }
+    sides.add(rev[0].swapped ? "enemy" : "own");
+    // Hneď za tým summon kópie s 1 HP na ohlásenej strane.
+    const s = events.find(e => e.type === "summon" && e.uid === rev[0].uid);
+    assert.ok(s && s.hp === 1 && s.pid === rev[0].pid);
+  }
+  assert.ok(none);                 // niekedy nevstane
+  assert.equal(sides.size, 2);     // vstal aj doma, aj u súpera
 });
 
 test("Mláďa je fixný token: každé vyvolanie 1/1 (žiadny trvalý rast)", () => {

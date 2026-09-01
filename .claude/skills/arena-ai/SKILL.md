@@ -88,6 +88,15 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
     keď je telo nad krivkou alebo battlecry živí tvoju rasu.
+  - **Ogre = veľké staty, chaos efekty** (môžu udrieť aj vlastníka):
+    O001 hod mincou (battlecry +4/+4 alebo −2/−2), O006 Pri útoku 50 %
+    sa trafí sám za ½ útoku, O002 battlecry zožerie NÁHODNÉHO suseda
+    (staty NAVŽDY, karta zmizne z hry – vykladaj ho na prázdnu plochu,
+    alebo vedľa karty, ktorú chceš obetovať), O003 Pred bojom 2 dmg
+    VŠETKÝM (aj tvojim – zlé so swarm buildmi, dobré proti nim),
+    O007 Pri smrti 5 dmg náhodnej príšerke (aj tvojej), O010 (t6 taunt)
+    Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
+    Vanilla telá nad krivkou: O004/O005/O008/O009 – bezpečný nákup.
   - **Tokeny nedostávajú permanentné aury** (`futureRace`) – kostík aj
     Mláďa škálujú len stupňom rodiča. Výnimka: dočasný dračí buff
     (D002/D006/D008) tokeny v boji dostanú.

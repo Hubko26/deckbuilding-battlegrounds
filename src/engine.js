@@ -732,6 +732,36 @@ const Engine = (() => {
         }
         events.push({ type: "buff", pid: p.id, uid: self.uid, a: fx.a * m, h: fx.h * m });
         break;
+      case "coinflip": {
+        // Ogr O001: hod mincou – 50 % veľký buff, 50 % postih (do konca boja).
+        // Postih nejde pod 0 útoku / 1 život.
+        const heads = state.rng() < 0.5;
+        const a = Math.max(heads ? fx.a * m : -(fx.da * m), -self.atk);
+        const h = Math.max(heads ? fx.h * m : -(fx.dh * m), 1 - self.hp);
+        self.atk += a;
+        self.hp += h;
+        self.maxHp = Math.max(1, self.maxHp + h);
+        events.push({ type: "coinflip", pid: p.id, uid: self.uid, heads });
+        events.push({ type: "buff", pid: p.id, uid: self.uid, a, h });
+        break;
+      }
+      case "eatNeighbor": {
+        // Ogr O002: zožerie náhodného SUSEDA (najbližší slot vľavo/vpravo).
+        // Jeho aktuálne staty získa NAVŽDY (pa/ph – cestujú s kópiou karty),
+        // zjedená karta zmizne z hry úplne (nejde do kôpky).
+        const others = p.board.filter(x => x !== self);
+        if (!others.length) break;
+        const left = others.filter(x => x.slot < self.slot).sort((a, b) => b.slot - a.slot)[0];
+        const right = others.filter(x => x.slot > self.slot).sort((a, b) => a.slot - b.slot)[0];
+        const eaten = left && right ? (state.rng() < 0.5 ? left : right) : (left || right);
+        p.board.splice(p.board.indexOf(eaten), 1);
+        buff(self, eaten.atk, eaten.maxHp);
+        self.pa = (self.pa || 0) + eaten.atk;
+        self.ph = (self.ph || 0) + eaten.maxHp;
+        events.push({ type: "eat", pid: p.id, uid: self.uid, eatenUid: eaten.uid, eatenDefId: eaten.defId, a: eaten.atk, h: eaten.maxHp });
+        events.push({ type: "buff", pid: p.id, uid: self.uid, a: eaten.atk, h: eaten.maxHp });
+        break;
+      }
       case "draw":
         drawCards(state, p, fx.n * m, events);
         checkEvolve(state, p, events);
@@ -916,8 +946,11 @@ const Engine = (() => {
       if (aDef.power && aDef.power.kw === "onAttack" && !a.silenced) {
         events.push({ type: "proc", pid: attacker, uid: a.uid, kw: "onAttack" });
         applyBattleFx(state, sides, attacker, a, aDef.power.fx, a.rank, events);
+        // Ožratý úder (drunkStrike) mohol útočníka zložiť – útok odpadá.
+        if (a.hp <= 0) { attacker = other(attacker); continue; }
       }
       const enemies = alive(other(attacker));
+      if (!enemies.length) break;
       const taunts = enemies.filter(x => x.taunt);
       const d = pick(taunts.length ? taunts : enemies, state.rng);
       events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
@@ -1022,6 +1055,74 @@ const Engine = (() => {
         }
         if (hits.length) events.push({ type: "aoeDmg", pid: other(pid), n: dmg, from: self.uid, hits });
         handleDeaths(state, sides, events);
+        break;
+      }
+      case "dmgAllBoth": {
+        // Ogr O003: chaos výbuch – zasiahne VŠETKY živé príšerky na OBOCH
+        // stranách vrátane seba (friendly fire je súčasť zábavy).
+        const dmg = fx.n * m + state[pid].dmgBoost;
+        for (const side of ["p1", "p2"]) {
+          const hits = [];
+          for (const t of sides[side].filter(x => x.hp > 0)) {
+            if (t.shield) {
+              t.shield = false;
+              events.push({ type: "shieldPop", pid: side, uid: t.uid });
+              continue;
+            }
+            t.hp -= dmg;
+            hits.push({ uid: t.uid, hp: t.hp });
+          }
+          if (hits.length) events.push({ type: "aoeDmg", pid: side, n: dmg, from: self.uid, hits });
+        }
+        handleDeaths(state, sides, events);
+        break;
+      }
+      case "drunkStrike": {
+        // Ogr O006 (Pri útoku): 50 % šanca, že sa trafí sám za ½ svojho útoku.
+        if (state.rng() < 0.5) {
+          const dmg = Math.floor(self.atk / 2);
+          if (dmg > 0) {
+            dealDmg(self, dmg, pid, events);
+            events.push({ type: "drunkHit", pid, uid: self.uid, n: dmg });
+            events.push({ type: "hp", pid, uid: self.uid, hp: self.hp });
+            handleDeaths(state, sides, events);
+          }
+        }
+        break;
+      }
+      case "dmgRandomAny": {
+        // Ogr O007 (Pri smrti): veľký zásah ÚPLNE náhodnej živej príšerke –
+        // hocijakej na ploche, aj vlastnej (ruská ruleta).
+        const all = [
+          ...sides.p1.filter(x => x.hp > 0).map(t => ({ t, side: "p1" })),
+          ...sides.p2.filter(x => x.hp > 0).map(t => ({ t, side: "p2" })),
+        ];
+        if (!all.length) break;
+        const { t, side } = pick(all, state.rng);
+        const dmg = fx.n * m + state[pid].dmgBoost;
+        dealDmg(t, dmg, side, events);
+        events.push({ type: "powerDmg", pid: side, uid: t.uid, n: dmg, from: self.uid });
+        events.push({ type: "hp", pid: side, uid: t.uid, hp: t.hp });
+        handleDeaths(state, sides, events);
+        break;
+      }
+      case "confusedRevive": {
+        // Ogr O010 (Pri smrti): 50 % šanca, že vstane s 1 HP na NÁHODNEJ
+        // strane plochy (aj u súpera!). Raz za boj; pri plnej strane ostáva
+        // ležať. Technicky vstáva kópia – originál normálne zomrie.
+        if (self.confusedUsed) break;
+        self.confusedUsed = true;
+        if (state.rng() >= 0.5) break;
+        const side = state.rng() < 0.5 ? pid : other(pid);
+        const aliveThere = sides[side].filter(x => x.hp > 0);
+        if (aliveThere.length >= BOARD_MAX) break;
+        const copy = {
+          ...self, uid: ++state.uidSeq, hp: 1, dead: false, shield: false,
+          confusedUsed: true, slot: freeSlot(aliveThere, BOARD_MAX),
+        };
+        sides[side].push(copy);
+        events.push({ type: "confusedRevive", pid: side, fromPid: pid, uid: copy.uid, defId: copy.defId, swapped: side !== pid });
+        events.push({ type: "summon", pid: side, uid: copy.uid, defId: copy.defId, slot: copy.slot, rank: copy.rank, atk: copy.atk, hp: 1 });
         break;
       }
       case "growSelf":

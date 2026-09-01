@@ -255,6 +255,36 @@ const L = {
     cs: "💀 Přetečení: plocha plná, celé staty tokenu dostal jeden kamarád",
     en: "💀 Overflow: board full, one friend got the token's full stats",
   },
+  coinHeadsMsg: {
+    sk: "🪙 Hod mincou: VYHRAL",
+    cs: "🪙 Hod mincí: VYHRÁL",
+    en: "🪙 Coin flip: WON",
+  },
+  coinTailsMsg: {
+    sk: "🪙 Hod mincou: prehral",
+    cs: "🪙 Hod mincí: prohrál",
+    en: "🪙 Coin flip: lost",
+  },
+  eatMsg: {
+    sk: "👹 zožral suseda",
+    cs: "👹 sežral souseda",
+    en: "👹 ate its neighbor",
+  },
+  drunkMsg: {
+    sk: "🍺 Ožratý úder: trafil sám seba za",
+    cs: "🍺 Ožralý úder: trefil sám sebe za",
+    en: "🍺 Drunken swing: smacked itself for",
+  },
+  confusedOwnMsg: {
+    sk: "🎲 vstal s 1 životom na vlastnej strane",
+    cs: "🎲 vstal s 1 životem na vlastní straně",
+    en: "🎲 got up with 1 health on its own side",
+  },
+  confusedSwapMsg: {
+    sk: "🎲 vstal s 1 životom NA STRANE SÚPERA!",
+    cs: "🎲 vstal s 1 životem NA STRANĚ SOUPEŘE!",
+    en: "🎲 got up with 1 health ON THE ENEMY SIDE!",
+  },
   silencedMsg: {
     sk: "je umlčaný – stratil schopnosť aj Obrancu",
     cs: "je umlčen – ztratil schopnost i Obránce",
@@ -1011,7 +1041,7 @@ async function runBattle() {
         const el = cardById(ev.uid);
         if (el) {
           Sfx.buff();
-          floatText(el, `+${ev.a}/+${ev.h}`, true);
+          floatText(el, fmtBuff(ev.a, ev.h), true);
           // Prepíš čísla na karte, nech buff reálne vidno.
           const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
           if (atkEl && ev.a) { atkEl.textContent = String((parseInt(atkEl.textContent, 10) || 0) + ev.a); atkEl.classList.add("buffed"); }
@@ -1051,6 +1081,24 @@ async function runBattle() {
       case "overflow": {
         // Token sa nezmestil – buff eventy hneď za ním ukážu, kto čo dostal.
         log(`${t(L.overflowMsg)} (+${ev.atk}/+${ev.hp})`);
+        break;
+      }
+      case "drunkHit": {
+        // Ogr sa ožratým úderom trafil sám – nápadný chaos moment.
+        const el = cardById(ev.uid);
+        log(`${t(L.drunkMsg)} ${ev.n} 💥`);
+        if (el) {
+          floatText(el, `🍺 -${ev.n}`);
+          Sfx.zap();
+          await sleep(600);
+        }
+        break;
+      }
+      case "confusedRevive": {
+        // Zmätený obranca vstal – summon event hneď za tým kartu vykreslí.
+        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+        log(`${name} ${t(ev.swapped ? L.confusedSwapMsg : L.confusedOwnMsg)}`);
+        await sleep(400);
         break;
       }
       case "toDiscard": {
@@ -1113,6 +1161,12 @@ function shootProjectile(fromEl, toEl) {
     p.style.transform = `translate(${dx}px, ${dy}px)`;
     setTimeout(() => { p.remove(); resolve(); }, 420);
   });
+}
+
+// Formát buff čísel so znamienkom – ogrí hod mincou môže byť aj záporný.
+function fmtBuff(a, h) {
+  const s = n => (n >= 0 ? `+${n}` : String(n));
+  return `${s(a)}/${s(h)}`;
 }
 
 function floatText(el, text, heal) {
@@ -1669,10 +1723,22 @@ function act(events) {
     if (ev.type === "buff" && ev.uid) {
       const el = cardById(ev.uid);
       if (el) {
-        floatText(el, `+${ev.a}/+${ev.h}`, true);
+        floatText(el, fmtBuff(ev.a, ev.h), true);
         el.classList.add("evolving");
         setTimeout(() => el.classList.remove("evolving"), 600);
       }
+    }
+    // Ogrie chaos momenty – nápadne do logu (🪙/👹), nech je derp vidno.
+    if (ev.type === "coinflip") {
+      log(t(ev.heads ? L.coinHeadsMsg : L.coinTailsMsg));
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "🪙", true);
+    }
+    if (ev.type === "eat") {
+      const name = Cards.nameOf(Cards.byId[ev.eatenDefId], 1, I18N.lang);
+      log(`${t(L.eatMsg)}: ${name} (+${ev.a}/+${ev.h})`);
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "👹🍴", true);
     }
     if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
     if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);

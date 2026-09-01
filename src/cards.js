@@ -1,4 +1,4 @@
-// Dáta kariet. Roster = 30 príšer z art sady (assets/cards), 3 rasy × 10,
+// Dáta kariet. Roster = 60 príšer z art sád (assets/cards), 6 rás × 10,
 // každá príšera má vlastné meno a obrázok pre každý evolučný stupeň
 // (bronz → striebro → zlato). Texty schopností sa generujú zo šablón.
 //
@@ -18,6 +18,7 @@ const Cards = (() => {
     undead: { sk: "Nemŕtvy", cs: "Nemrtvý", en: "Undead" },
     fairy: { sk: "Víla", cs: "Víla", en: "Fairy" },
     dragon: { sk: "Drak", cs: "Drak", en: "Dragon" },
+    ogre: { sk: "Ogr", cs: "Zlobr", en: "Ogre" },
   };
   const RACES_PL = { // datív množného čísla („+2/+2 všetkým Zvieratám“)
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
@@ -25,6 +26,7 @@ const Cards = (() => {
     undead: { sk: "Nemŕtvym", cs: "Nemrtvým", en: "Undead" },
     fairy: { sk: "Vílam", cs: "Vílám", en: "Fairies" },
     dragon: { sk: "Drakom", cs: "Drakům", en: "Dragons" },
+    ogre: { sk: "Ogrom", cs: "Zlobrům", en: "Ogres" },
   };
   const RACES_NOM = { // nominatív množného čísla („všetky budúce Zvieratá“)
     beast: { sk: "Zvieratá", cs: "Zvířata", en: "Beasts" },
@@ -32,8 +34,9 @@ const Cards = (() => {
     undead: { sk: "Nemŕtvi", cs: "Nemrtví", en: "Undead" },
     fairy: { sk: "Víly", cs: "Víly", en: "Fairies" },
     dragon: { sk: "Draky", cs: "Draci", en: "Dragons" },
+    ogre: { sk: "Ogri", cs: "Zlobři", en: "Ogres" },
   };
-  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲" };
+  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲", ogre: "👹" };
 
   const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
     ({ id, tier, race, stageNames, atk, hp, ...extra });
@@ -151,6 +154,30 @@ const Cards = (() => {
       { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
     M("D010", 6, "dragon", ["Specklestar", "Cometcoil", "Galaxy Dragon"], 8, 8,
       { power: { kw: "battlecry", fx: { type: "evolveTarget" } } }),
+
+    // ---------- Ogri (Ogre) – derpy chaos: veľké staty, efekt sa môže
+    // obrátiť proti vlastníkovi. Všetka náhoda cez state.rng. ----------
+    M("O001", 1, "ogre", ["Pebblenose", "Boulderbelly", "Mountain King"], 2, 3,
+      { power: { kw: "battlecry", fx: { type: "coinflip", a: 4, h: 4, da: 2, dh: 2 } } }),
+    M("O004", 1, "ogre", ["Mossbelly", "Rootcrusher", "Ancient Grove Guardian"], 3, 4),
+    // O006: Ožratý úder – pri útoku 50 % šanca, že sa trafí sám za ½ útoku.
+    M("O006", 2, "ogre", ["Nibblepot", "Kegcrusher", "Grand Feastkeeper"], 5, 5,
+      { power: { kw: "onAttack", fx: { type: "drunkStrike" } } }),
+    M("O005", 2, "ogre", ["Snowgulp", "Glaciergrip", "Winter Titan"], 4, 5),
+    // O002: zožerie náhodného suseda – jeho staty získa NAVŽDY (pa/ph),
+    // zjedená karta zmizne z hry (skutočná cena).
+    M("O002", 3, "ogre", ["Mudmunch", "Bogstomper", "Marsh Colossus"], 4, 4,
+      { power: { kw: "battlecry", fx: { type: "eatNeighbor" } } }),
+    M("O008", 3, "ogre", ["Bubbletusk", "Reefstomper", "Tidal Sovereign"], 5, 7),
+    M("O003", 4, "ogre", ["Emberknuckle", "Cindermaul", "Volcano Chieftain"], 7, 8,
+      { power: { kw: "startFight", fx: { type: "dmgAllBoth", n: 2 } } }),
+    M("O009", 4, "ogre", ["Dustnose", "Dunehammer", "Sunstone Guardian"], 7, 7),
+    M("O007", 5, "ogre", ["Rumbletuft", "Thundermaul", "Tempest Chieftain"], 9, 7,
+      { power: { kw: "deathrattle", fx: { type: "dmgRandomAny", n: 5 } } }),
+    // O010: Obranca; pri smrti 50 % šanca, že vstane s 1 HP na NÁHODNEJ
+    // strane plochy (aj u súpera). Raz za boj.
+    M("O010", 6, "ogre", ["Twinklebrow", "Moonmaul", "Celestial Titan"], 10, 10,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "confusedRevive" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     { id: "minca", cost: 1, tier: 1, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 },
@@ -317,9 +344,9 @@ const Cards = (() => {
         en: `summon ${f.n}× ${byId[f.token].name.en} (${a}/${h})`,
       };
       if (byId[f.token].race === "undead") {
-        base.sk += `; ak sa nezmestí, jeho staty dostanú kamaráti`;
-        base.cs += `; když se nevejde, jeho staty dostanou kamarádi`;
-        base.en += `; if it doesn't fit, friends get its stats`;
+        base.sk += `; ak sa nezmestí, jeho staty dostane jeden kamarát`;
+        base.cs += `; když se nevejde, jeho staty dostane jeden kamarád`;
+        base.en += `; if it doesn't fit, one friend gets its stats`;
       }
       return base;
     },
@@ -392,6 +419,37 @@ const Cards = (() => {
       sk: `náhodná tvoja rasa na ploche dostane +${f.a * m}/+${f.h * m}`,
       cs: `náhodná tvá rasa na ploše dostane +${f.a * m}/+${f.h * m}`,
       en: `a random race of yours on the board gets +${f.a * m}/+${f.h * m}`,
+    }),
+    // Ogri: chaos efekty – náhoda môže udrieť aj vlastníka.
+    coinflip: (f, m) => ({
+      sk: `hoď mincou 🪙 – +${f.a * m}/+${f.h * m} alebo −${f.da * m}/−${f.dh * m}`,
+      cs: `hoď mincí 🪙 – +${f.a * m}/+${f.h * m} nebo −${f.da * m}/−${f.dh * m}`,
+      en: `flip a coin 🪙 – +${f.a * m}/+${f.h * m} or −${f.da * m}/−${f.dh * m}`,
+    }),
+    drunkStrike: () => ({
+      sk: `50 % šanca, že sa trafí sám za polovicu svojho útoku`,
+      cs: `50% šance, že se trefí sám za polovinu svého útoku`,
+      en: `50% chance to smack itself for half its attack`,
+    }),
+    eatNeighbor: () => ({
+      sk: `zožerie náhodného suseda – NAVŽDY získa jeho staty (karta zmizne z hry)`,
+      cs: `sežere náhodného souseda – NAVŽDY získá jeho staty (karta zmizí ze hry)`,
+      en: `eats a random neighbor – gains its stats FOREVER (the card is gone for good)`,
+    }),
+    dmgAllBoth: (f, m, hl) => ({
+      sk: `chaos výbuch: ${hl(f.n * m)} damage VŠETKÝM príšerkám – aj tvojim`,
+      cs: `chaos výbuch: ${hl(f.n * m)} damage VŠEM příšerkám – i tvým`,
+      en: `chaos blast: ${hl(f.n * m)} damage to ALL minions – yours too`,
+    }),
+    dmgRandomAny: (f, m, hl) => ({
+      sk: `${hl(f.n * m)} damage úplne náhodnej príšerke – hocijakej, aj tvojej`,
+      cs: `${hl(f.n * m)} damage úplně náhodné příšerce – jakékoli, i tvé`,
+      en: `deal ${hl(f.n * m)} damage to a totally random minion – any, even yours`,
+    }),
+    confusedRevive: () => ({
+      sk: `50 % šanca, že vstane s 1 životom na NÁHODNEJ strane plochy`,
+      cs: `50% šance, že vstane s 1 životem na NÁHODNÉ straně plochy`,
+      en: `50% chance to get up with 1 health on a RANDOM side of the board`,
     }),
   };
 

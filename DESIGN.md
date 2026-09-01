@@ -144,8 +144,9 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 | undead | Nemŕtvy | horda kostíkov + Pretečenie |
 | fairy | Víla | Po kúzle – schopnosti spúšťané zoslaním kúzla |
 | dragon | Drak | žoldnieri – cielené battlecry zosilňujú rasu cieľa |
+| ogre | Ogr | derpy chaos – veľké staty, efekt sa môže obrátiť proti tebe |
 
-Roster: **50 príšer z art sád** (5 rás × 10). Ďalšie rasy (Human, Ogre)
+Roster: **60 príšer z art sád** (6 rás × 10). Ďalšie rasy (Human)
 sa pridajú s ďalšími art sadami – dátový model je pripravený
 (pole `race` na karte).
 
@@ -314,31 +315,34 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   pri bežnom evolve).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
-Návrhy pre ďalšie art sady (zatiaľ neimplementované):
-
-**👹 Ogre (Ogr) – nová rasa: derpy chaos**
+**👹 Ogre (Ogr) – derpy chaos (implementované)**
 
 - Identita: **obrovské staty za cenu chaosu** – každý ogre má nadpriemerné
   čísla, ale jeho efekt sa môže obrátiť proti vlastníkovi. Všetka náhoda
   cez `state.rng` (multiplayer determinizmus platí ďalej).
-- Schválené schopnosti – všetkých 6 (implementácia čaká na art sadu),
-  rozložené cez keywordy ako pri ostatných rasách:
-  - **Ožratý úder** (Pri útoku): „50 % šanca, že sa trafí sám za polovicu
-    svojho útoku." Vlajkový derp – veľké telo, občas sa zmláti samo.
-  - **Zožer kamaráta** (Pri vyložení): „Zožerie suseda a získa jeho staty."
-    Silný battlecry so skutočnou cenou; combo s lacnými tokenmi.
-  - **Chaos výbuch** (Pred bojom): „2 damage VŠETKÝM príšerkám – aj tvojim."
-    Ogri s veľkým HP vlastný výbuch prežijú, malé tokeny nie – sekundárny
-    anti-swarm, friendly fire je súčasť zábavy.
-  - **Hod mincou** (Pri vyložení, t1): „Hoď mincou 🪙 – +4/+4 alebo −2/−2."
-    Lacný gambling filler, deťom čitateľné.
-  - **Divoká rana** (Pri smrti): „5 damage úplne náhodnej príšerke –
-    hocijakej, aj tvojej." Ruská ruleta s veľkým číslom.
-  - **Zmätený obranca** (t6 highlight): „Obranca. Pri smrti: 50 % šanca,
-    že vstane s 1 HP na NÁHODNEJ strane plochy." Môže vstať u súpera.
+- Roster (10 kariet, 6 schopností + 4 vanilla telá nad krivkou):
+  - **O001 Hod mincou** (t1, 2/3, Pri vyložení): „Hoď mincou 🪙 – +4/+4
+    alebo −2/−2." Postih nejde pod 0 útoku / 1 život. Lacný gambling filler.
+  - **O006 Ožratý úder** (t2, 5/5, Pri útoku): „50 % šanca, že sa trafí sám
+    za polovicu svojho útoku." Vlajkový derp; ak sa zloží sám, útok odpadá.
+  - **O002 Zožer suseda** (t3, 4/4, Pri vyložení): zožerie NÁHODNÉHO suseda
+    (najbližší slot) – jeho aktuálne staty získa **NAVŽDY** (pa/ph cestujú
+    s kópiou), zjedená karta **zmizne z hry** (nejde do kôpky).
+  - **O003 Chaos výbuch** (t4, 7/8, Pred bojom): „2 damage VŠETKÝM
+    príšerkám – aj tvojim" (škáluje ×stupeň). Anti-swarm s friendly fire;
+    veľké ogrie HP vlastný výbuch prežije.
+  - **O007 Divoká rana** (t5, 9/7, Pri smrti): „5 damage úplne náhodnej
+    príšerke – hocijakej, aj tvojej." Ruská ruleta s veľkým číslom.
+  - **O010 Zmätený obranca** (t6, 10/10): „Obranca. Pri smrti: 50 % šanca,
+    že vstane s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Raz za boj,
+    pri plnej strane ostáva ležať (technicky vstáva bojová kópia).
+  - Vanilla: O004 (t1, 3/4), O005 (t2, 4/5), O008 (t3, 5/7), O009 (t4, 7/7).
 - Balance: očakávaná hodnota efektov mierne záporná/neutrálna, kompenzujú
   ju staty nad krivkou – hráč platí rozptylom, nie silou. UI: chaos
-  momenty hlásiť nápadne (🎲/🪙 popup + log), nech je derp vidno.
+  momenty hlási log (🪙 hod mincou, 👹 zožratie, 🍺 vlastný zásah,
+  🎲 vstávanie) + floaty nad kartami.
+
+Návrhy pre ďalšie art sady (zatiaľ neimplementované):
 
 **🙋 Human (Človek) – nová rasa: Božský štít (Divine Shield)**
 
