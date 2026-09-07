@@ -106,8 +106,7 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
   zlatá ×3. Vyvolávané tokeny sa škálujú SILOU, nie počtom: strieborný
   deathrattle vyvolá tokeny stupňa 2 (2/2), zlatý stupňa 3 (4/4).
   **Výnimka – `dmgWeakEnemy`**: evolve škáluje POČET zásahov (1/2/3),
-  nie silu – strieborný výboj dá 2× základný damage najslabším cieľom
-  (counter na hordy malých tokenov, proti veľkým telám ostáva slabý).
+  nie silu – strieborný výboj dá 2× základný damage náhodným cieľom.
 - **Buffy sa pri evolve prenášajú**: evolvnutá karta si nechá bonusy
   (dočasné aj permanentný rast `pa/ph`) **dvoch najsilnejších** zo
   spotrebovaných kópií; bonus tretej prepadne (evolve nie je čistý
@@ -236,13 +235,26 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   Živelnou silou držať krok s undead aurami. Pretečenie (token mimo plochy)
   lovca nespustí – únik pre undead cez plnú plochu. Jediný navždy-rast
   živlov mimo aur; nahradil výboj 3, ktorý bol kópia E001.
-- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3),
-  E006 (t3, Pri smrti 3) – mieria na **najslabšieho** (najmenej HP)
-  nepriateľa: kosia tokeny a nekŕmia zbytočne deathrattle telá (náhodný
-  cieľ podľa simulácie undead paradoxne posilňoval). Evolve = **viac
-  zásahov po základnej sile** (1/2/3), nie väčší zásah. Čísla drž nízko
-  (2–3) – vyššie hodnoty v simulácii vyrábali uber karty.
-- AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: 2 všetkým).
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E006 (t3, Pri smrti
+  **4**), Bublina (token, Pri smrti 1) – mieria na **náhodného** živého
+  nepriateľa (predtým najslabší: spoľahlivé kosenie tokenov bolo nudné a
+  proti veľkým telám úplne mŕtve). Evolve = **viac zásahov po základnej
+  sile** (1/2/3), nie väčší zásah. Ladder t1 3 → t3 4 → t6 výbuch 3.
+- **E002 Bubbleskip** (t1, 1/3 Obranca): „Pri smrti: vyvolaj 2× Bublinu"
+  🫧 – Bublina 1/1 elemental token s „Pri smrti: výboj 1" (+Živelná
+  sila, stupeň rodiča = počet zásahov). Živly tak majú telá navyše aj
+  reťazové výbuchy; na plnú plochu sa Bublina nezmestí (Pretečenie je len
+  undead). Súperov Lovec tokenov (E005) Bubliny loví – a každá mu pri
+  smrti odpovie výbojom.
+- **E007 Sproutsnout** (t4, 4/7): „Po nákupe: Živelná sila +1" (navždy,
+  evolve +2/+3), kým je na ploche – motor identity, živly už nezávisia od
+  jediného spell slotu. Kúp-vylož-predaj = 2 zlata za +1, cena kúzla.
+- **E008 Prismite** (t4, 5/5): permanentná aura Živly +1/+1 (bola dočasná
+  +2/+2). Ladder aur živlov: E003 t2 +1/+1 → E008 t4 +1/+1 → **E009 t5
+  +2/+2** (vyšší tier = väčší skok, inak by E009 bola kópia E008).
+- Telá na krivku: E001 2/2, E004 4/4, E005 3/5, E006 4/4 (boli 1/2, 4/3,
+  3/4, 4/3 – živly platili za výboje telom aj číslom).
+- AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: **3** všetkým).
   Jedna veľká vlna – engine pošle jeden `aoeDmg` event a UI zasiahne
   všetkých NARAZ, žiadne projektily po jednom.
 - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostíky aj mláďatá
@@ -442,8 +454,8 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
-  Beast B006/B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/E009,
-  Undead U008/U010 – hra tak
+  Beast B006/B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/
+  E008/E009, Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
   všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez

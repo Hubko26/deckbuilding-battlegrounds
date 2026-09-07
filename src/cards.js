@@ -70,34 +70,45 @@ const Cards = (() => {
     // ---------- Živly (Elemental) ----------
     // Výboje 3 dmg (bolo 2): kostíky s aurami prežívali 2-ky a undead
     // prestal byť elemental korisť; na veľké beast telá je 3 stále nič.
-    M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 1, 2,
+    // Prekopanie živlov: telá na krivku (E001 2/2, E004 4/4, E005 3/5, E006
+    // 4/4), výboj ladder t1 3 → t3 4 → t6 výbuch 3, Bubliny ako telá +
+    // výbuchy, E007/E008 z dočasných buffov na trvalé škálovanie.
+    M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 2, 2,
       { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
-    M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
+    // E002: Pri smrti 2× Bublina 🫧 (1/1, Pri smrti: výboj 1 +Živelná sila) –
+    // živly konečne majú telá navyše a každá padnutá Bublina strieľa.
+    M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "summon", token: "bublina", n: 2 } } }),
     // E003: skorá živelná aura +1/+1 (bola +0/+1) – živly potrebujú útok,
     // nie len životy; ostatné rasy majú skorú auru +0/+1.
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
     // E004: útočný bonus škáluje so Živelnou silou (dmgBoost) a berú ho aj
     // tokeny na ploche; s Vichorom (2 útoky) sa spúšťa dvakrát.
-    M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 3,
+    M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 4,
       { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 0 } } }),
     // E005 Lovec tokenov: keď súper vyvolá token, zasiahne ho výbojom za 1
     // (+Živelná sila); ak token padne, E005 rastie +1/+1 NAVŽDY (pa/ph).
     // Čistý counter na hordu + jediný navždy-rast živlov mimo aur. Kostík
     // s U002 (2/2) alebo aurou prežije – živly musia kupovať Živelnú silu.
     // Evolve: výboj 1/2/3, rast ×stupeň. Bývalý výboj 3 bol kópia E001.
-    M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 4,
+    M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 5,
       { power: { kw: "onEnemySummon", fx: { type: "zapToken", n: 1, a: 1, h: 1 } } }),
-    M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 3,
-      { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 3 } } }),
+    M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 4,
+      { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 4 } } }),
+    // E007: motor identity – Po nákupe Živelná sila +1 navždy (evolve +2/+3),
+    // kým je na ploche. Živly už nezávisia od spell slotu; kúp-vylož-predaj
+    // stojí 2 zlata za +1 = cena kúzla, bez zneužitia.
     M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 7,
-      { power: { kw: "endTurn", fx: { type: "buffRace", race: "elemental", a: 1, h: 1 } } }),
+      { power: { kw: "endTurn", fx: { type: "dmgBoost", n: 1 } } }),
+    // E008: trvalá aura namiesto dočasného buffu – ladder E003 t2 +1/+1,
+    // E008 t4 +1/+1, E009 t5 +1/+1 (auru t4 majú aj beast/undead).
     M("E008", 4, "elemental", ["Prismite", "Shardmane", "Auroraclysm"], 5, 5,
-      { power: { kw: "battlecry", fx: { type: "buffRace", race: "elemental", a: 2, h: 2 } } }),
-    M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
+    M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
+      { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 2, h: 2 } } }),
     M("E010", 6, "elemental", ["Duskdrop", "Gloamstalker", "Eclipse Sovereign"], 9, 9,
-      { power: { kw: "startFight", fx: { type: "dmgAllEnemies", n: 2 } } }),
+      { power: { kw: "startFight", fx: { type: "dmgAllEnemies", n: 3 } } }),
 
     // ---------- Nemŕtvi (Undead) ----------
     M("U001", 1, "undead", ["Rattlewink", "Bonebound", "Ossuary Hound"], 1, 1,
@@ -278,8 +289,11 @@ const Cards = (() => {
     { id: "kostik", tier: 1, race: "undead", emoji: "💀", atk: 1, hp: 1, token: true,
       namePl: { sk: "Kostíky", cs: "Kůstky", en: "Bonelets" }, // množné číslo (U002 text)
       name: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" } },
+    // Bublina: elemental token z E002 – pri smrti výboj 1 (+Živelná sila,
+    // stupeň rodiča = počet zásahov). Nezmestí sa na plnú plochu (bez Pretečenia).
     { id: "bublina", tier: 1, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
       namePl: { sk: "Bubliny", cs: "Bubliny", en: "Bubbles" },
+      power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 1 } },
       name: { sk: "Bublina", cs: "Bublina", en: "Bubble" } },
     // Iskrička: jednorazové kúzlo z battlecry F006 – po zoslaní ZMIZNE
     // (nejde do kôpky ani balíčka), rovnako prepadne nezahraná na konci ťahu.
@@ -412,31 +426,38 @@ const Cards = (() => {
       en: `heal your hero for ${f.n * m}`,
     }),
     // Evolve škáluje počet zásahov (1/2/3), nie silu – text to ukazuje.
-    // Výboj mieri na najslabšieho nepriateľa (kosí tokeny, nekŕmi deathrattly).
+    // Výboj mieri na náhodného nepriateľa.
     // hl = číslo aj s trvalým bonusom Živelnej sily (dmgBoost), zvýraznené.
     dmgWeakEnemy: (f, m, hl) => (m === 1 ? {
-      sk: `${hl(f.n)} damage najslabšiemu nepriateľovi`,
-      cs: `${hl(f.n)} damage nejslabšímu nepříteli`,
-      en: `deal ${hl(f.n)} damage to the weakest enemy`,
+      sk: `${hl(f.n)} damage náhodnému nepriateľovi`,
+      cs: `${hl(f.n)} damage náhodnému nepříteli`,
+      en: `deal ${hl(f.n)} damage to a random enemy`,
     } : {
-      sk: `${m}× ${hl(f.n)} damage najslabším nepriateľom`,
-      cs: `${m}× ${hl(f.n)} damage nejslabším nepřátelům`,
-      en: `deal ${hl(f.n)} damage to the ${m} weakest enemies`,
+      sk: `${m}× ${hl(f.n)} damage náhodným nepriateľom`,
+      cs: `${m}× ${hl(f.n)} damage náhodným nepřátelům`,
+      en: `deal ${hl(f.n)} damage to ${m} random enemies`,
     }),
     dmgAllEnemies: (f, m, hl) => ({
       sk: `výbuch: ${hl(f.n * m)} damage VŠETKÝM nepriateľom`,
       cs: `výbuch: ${hl(f.n * m)} damage VŠEM nepřátelům`,
       en: `explosion: ${hl(f.n * m)} damage to ALL enemies`,
     }),
-    summon: (f, m) => {
-      const a = byId[f.token].atk * STAT_MULT[m];
-      const h = byId[f.token].hp * STAT_MULT[m];
+    summon: (f, m, hl) => {
+      const tok = byId[f.token];
+      const a = tok.atk * STAT_MULT[m];
+      const h = tok.hp * STAT_MULT[m];
       const base = {
-        sk: `vyvolaj ${f.n}× ${byId[f.token].name.sk} (${a}/${h})`,
-        cs: `vyvolej ${f.n}× ${byId[f.token].name.cs} (${a}/${h})`,
-        en: `summon ${f.n}× ${byId[f.token].name.en} (${a}/${h})`,
+        sk: `vyvolaj ${f.n}× ${tok.name.sk} (${a}/${h})`,
+        cs: `vyvolej ${f.n}× ${tok.name.cs} (${a}/${h})`,
+        en: `summon ${f.n}× ${tok.name.en} (${a}/${h})`,
       };
-      if (byId[f.token].race === "undead") {
+      if (tok.power) { // token so schopnosťou (Bublina: Pri smrti výboj)
+        const inner = FX_TEXT[tok.power.fx.type](tok.power.fx, m, hl);
+        base.sk += `; každá ${KW_LABEL[tok.power.kw].sk.toLowerCase()}: ${inner.sk}`;
+        base.cs += `; každá ${KW_LABEL[tok.power.kw].cs.toLowerCase()}: ${inner.cs}`;
+        base.en += `; each one ${KW_LABEL[tok.power.kw].en.toLowerCase()}: ${inner.en}`;
+      }
+      if (tok.race === "undead") {
         base.sk += `; ak sa nezmestí, jeho staty dostane jeden kamarát`;
         base.cs += `; když se nevejde, jeho staty dostane jeden kamarád`;
         base.en += `; if it doesn't fit, one friend gets its stats`;
@@ -474,7 +495,13 @@ const Cards = (() => {
       cs: `tvé další vyvolání v boji vyvolá o ${f.n * m} víc`,
       en: `your next summon in battle summons ${f.n * m} extra`,
     }),
-    dmgBoost: (f, m) => ({
+    // Na príšerke (E007 „Po nákupe") staví krátku formu – dlhá veta za
+    // dvojbodkou sa zle číta; kúzlo (bez kw) ostáva úplné.
+    dmgBoost: (f, m, hl, kw) => (kw ? {
+      sk: `Živelná sila +${f.n * m} (navždy: výboje, výbuchy a dočasné buffy Živlov)`,
+      cs: `Živelná síla +${f.n * m} (navždy: výboje, výbuchy a dočasné buffy Živlů)`,
+      en: `Elemental Power +${f.n * m} (forever: zaps, explosions and Elementals' temporary buffs)`,
+    } : {
       sk: `navždy: tvoje výboje a výbuchy +${f.n * m} damage, dočasné buffy Živlov +${f.n * m}`,
       cs: `navždy: tvé výboje a výbuchy +${f.n * m} damage, dočasné buffy Živlů +${f.n * m}`,
       en: `forever: your zaps and explosions +${f.n * m} damage, Elementals' temporary buffs +${f.n * m}`,

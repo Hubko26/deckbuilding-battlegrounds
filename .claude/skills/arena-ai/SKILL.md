@@ -88,9 +88,13 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     revivnutý deathrattler zomrie dvakrát a druhá dávka kostíkov pri
     plnej ploche pretečie do buffov. Ako bot cieľ VŽDY na U001/U006/U009
     (akcia `play` s `target`); aury sa na vstávajúceho aplikujú.
-  - **Elemental = výboje**: `dmgWeakEnemy` mieri na NAJSLABŠIEHO
-    nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
-    `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
+  - **Elemental = výboje + Živelná sila**: `dmgWeakEnemy` mieri na
+    NÁHODNÉHO nepriateľa a pri evolve škáluje POČET zásahov (1/2/3),
+    nie silu; E001 3, E006 (Pri smrti) 4, `dmgAllEnemies` E010 3 všetkým
+    jednou vlnou. E002 (t1) Pri smrti 2× Bublina 🫧 (1/1, pri smrti výboj
+    1) – lacné telá + reťaz výbojov. E007 (t4) Po nákupe Živelná sila +1
+    navždy – drž ho na ploche každé kolo, je to hlavný motor rasy.
+    Aury E003 t2 / E008 t4 / E009 t5 (+1/+1 navždy).
     Counter na undead hordu, slabé proti veľkým beast telám.
     E005 (t3) = keď súper vyvolá token, výboj za 1 (+Živelná sila) a ak
     token padne, +1/+1 NAVŽDY – proti undead/mláďatám vykladaj vždy,

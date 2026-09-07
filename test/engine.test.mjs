@@ -147,14 +147,14 @@ test("cardText s dmgBoost: výboj/výbuch ukáže navýšené číslo (Večná i
   const { C } = fresh();
   // E001: výboj 3 damage – s boostom 2 ukáže 5; HTML verzia zeleným spanom
   const e1 = C.byId["E001"];
-  assert.match(C.cardText(e1, 1, "sk", false, 2), /5 damage/);
+  assert.match(C.cardText(e1, 1, "sk", false, 2), /5 damage náhodnému/);
   assert.match(C.cardText(e1, 1, "sk", true, 2), /<span class="boosted">5<\/span> damage/);
   assert.match(C.cardText(e1, 1, "sk", false, 0), /3 damage/); // bez boostu základ
-  // E010: výbuch 2×rank – rank 2 = 4, s boostom 1 ukáže 5
+  // E010: výbuch 3×rank – rank 2 = 6, s boostom 1 ukáže 7
   const e10 = C.byId["E010"];
-  assert.match(C.cardText(e10, 2, "sk", false, 1), /5 damage/);
+  assert.match(C.cardText(e10, 2, "sk", false, 1), /7 damage/); // 3×2 + 1
   // viacnásobný výboj (rank 3): boost sa pripočíta ku KAŽDÉMU zásahu
-  assert.match(C.cardText(e1, 3, "sk", false, 2), /3× 5 damage/);
+  assert.match(C.cardText(e1, 3, "sk", false, 2), /3× 5 damage náhodným/);
 });
 
 test("art súbory existujú pre všetky príšery a stupne", async () => {
@@ -747,7 +747,7 @@ test("D007: battlecry Živelná sila +1 (navždy, ako kúzlo), strieborný +2, c
   E.doBattle(state);
   assert.equal(p.dmgBoost, 3);                                 // trvalé
   assert.ok(p.discard.some(c => c.defId === "D007"));          // vráti sa cyklom balíčka
-  assert.match(C.cardText(C.byId["D007"], 1, "sk", false, 0), /výboje a výbuchy \+1 damage/);
+  assert.match(C.cardText(C.byId["D007"], 1, "sk", false, 0), /Pri vyložení: Živelná sila \+1/);
 });
 
 test("D001 shrinkEnemy: v najbližšom boji náhodný súper −1/−1 (min 0 atk / 1 hp), stackuje sa", () => {
@@ -862,24 +862,21 @@ test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku
   assert.ok(!ev2.some(e => e.type === "proc" && e.uid === owl3.uid && e.kw === "tokenDeath"));
 });
 
-test("Živelná sila zosilňuje dočasné buffy Živlov (E008 battlecry, E007 Po nákupe), vílie buffRace nie", () => {
+test("E007 Po nákupe: Živelná sila +1 navždy (strieborný +2); vílie buffRace (F007) sa neboostuje", () => {
   const { state, E, C } = fresh(65);
   E.startRound(state);
   const p = state.p1;
   p.deck = []; p.discard = [];
-  p.dmgBoost = 1;
-  const elem = E.makeInst(state, "E001", 1); elem.slot = 0;   // 1/2 živel
-  const fairy = E.makeInst(state, "F002", 1); fairy.slot = 1; // 1/2 víla
-  p.board = [elem, fairy];
-  p.hand = [E.makeInst(state, "E008", 1)]; // +2/+2 Živlom → +3/+3
-  E.playMinion(state, "p1", 0);
-  assert.equal(elem.atk, 1 + 3); assert.equal(elem.maxHp, 2 + 3);
-  assert.equal(fairy.atk, 1);
-  const sprout = E.makeInst(state, "E007", 1); sprout.slot = 3; // Po nákupe: +1/+1 Živlom → +2/+2
-  p.board.push(sprout);
+  const sprout = E.makeInst(state, "E007", 1); sprout.slot = 0;
+  const sprout2 = E.makeInst(state, "E007", 2); sprout2.slot = 1;
+  p.board = [sprout, sprout2];
   p.hand = [];
   E.endShopTurn(state, "p1");
-  assert.equal(elem.atk, 4 + 2); assert.equal(elem.maxHp, 5 + 2);
+  assert.equal(p.dmgBoost, 3); // +1 bronz, +2 striebro
+  state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p2.hand = [];
+  E.doBattle(state);
+  assert.equal(p.dmgBoost, 3); // trvalé
   // F007 (víla, buffRace fairy) sa Živelnou silou neškáluje
   const { state: s2, E: E2 } = fresh(66);
   E2.startRound(s2);
@@ -890,9 +887,32 @@ test("Živelná sila zosilňuje dočasné buffy Živlov (E008 battlecry, E007 Po
   s2.p1.hand = [E2.makeInst(s2, "stit", 1)];
   E2.castSpell(s2, "p1", 0, oak.uid);
   assert.equal(f2.atk, 1 + 1 + 1); // +1 z F007 (bez boostu) +1 vlastný Po kúzle rast
-  // Popisok: E008 ukáže navýšené čísla, F007 nie
-  assert.match(C.cardText(C.byId["E008"], 1, "sk", false, 1), /\+3\/\+3 všetkým Živlom/);
+  // Popisok: F007 bez boostu, E007 text Živelnej sily
   assert.match(C.cardText(C.byId["F007"], 1, "sk", false, 1), /\+1\/\+1 všetkým Vílam/);
+  assert.match(C.cardText(C.byId["E007"], 1, "sk", false, 0), /Po nákupe: Živelná sila \+1/);
+  assert.match(C.cardText(C.byId["iskra"], 1, "sk", false, 0), /Navždy: tvoje výboje a výbuchy \+1 damage/);
+});
+
+test("E002 Bubbleskip: Pri smrti 2× Bublina; každá Bublina pri smrti dá výboj 1 (+Živelná sila)", () => {
+  const { state, E, C } = fresh(67);
+  E.startRound(state);
+  state.p1.dmgBoost = 1;
+  E.endShopTurn(state, "p1");
+  const bub = E.makeInst(state, "E002", 1); bub.slot = 0; // 1/3 taunt
+  state.p1.board = [bub];
+  const big = E.makeInst(state, "B010", 1); big.slot = 0;  // 6/10 – zabije E002 aj bubliny
+  const small = E.makeInst(state, "B001", 1); small.slot = 1; // 2/2 – najslabší cieľ výbojov
+  state.p2.board = [big, small];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const sums = events.filter(e => e.type === "summon" && e.pid === "p1" && e.defId === "bublina");
+  assert.equal(sums.length, 2);
+  const zaps = events.filter(e => e.type === "powerDmg" && sums.some(s => s.uid === e.from));
+  assert.ok(zaps.length >= 1);
+  assert.equal(zaps[0].n, 1 + 1); // výboj 1 + Živelná sila
+  assert.match(C.cardText(C.byId["E002"], 1, "sk", false, 1), /vyvolaj 2× Bublina \(1\/1\); každá pri smrti: 2 damage náhodnému/);
 });
 
 test("pooly: vlastný 6 / spoločný 3 na kartu; obchod a štartovací balíček z nich uberajú, refresh vracia", () => {
@@ -1972,16 +1992,17 @@ test("mutácia echoDeath: deathrattle sa spustí 2× (U001 vyvolá 4 kostíkov)"
   assert.equal(summons.length, 4);
 });
 
-test("mutácia echoCry: battlecry 2× (E008 buffne živly +4/+4 spolu)", () => {
+test("mutácia echoCry: battlecry 2× (E008 aura živlov +2/+2 spolu)", () => {
   const { state, E } = fresh(8, "echoCry");
   E.startRound(state);
   const p = state.p1;
   const pal = E.makeInst(state, "E002", 1); pal.slot = 0; // elemental 1/3
   p.board = [pal];
-  p.hand = [E.makeInst(state, "E008", 1)]; // battlecry: živly +2/+2
+  p.hand = [E.makeInst(state, "E008", 1)]; // battlecry: aura živlov +1/+1
   E.playMinion(state, "p1", 0);
-  assert.equal(pal.atk, 1 + 4);
-  assert.equal(pal.maxHp, 3 + 4);
+  assert.equal(pal.atk, 1 + 2);
+  assert.equal(pal.maxHp, 3 + 2);
+  assert.equal(p.raceBuffs.elemental.a, 2);
 });
 
 test("mutácia bloodMoon: preživší dostane +1/+1 navždy (pa/ph na kópii)", () => {

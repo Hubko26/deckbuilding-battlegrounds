@@ -1239,15 +1239,14 @@ const Engine = (() => {
     const m = rank;
     switch (fx.type) {
       case "dmgWeakEnemy": {
-        // Výboj mieri na NAJSLABŠIEHO (najmenej HP) nepriateľa – kosí tokeny
-        // a nekŕmi zbytočne deathrattle telá. Evolve škáluje POČET zásahov
-        // (1/2/3), nie silu; proti veľkým telám ostáva slabý (zámer).
+        // Výboj mieri na NÁHODNÉHO živého nepriateľa (predtým najslabší –
+        // bolo to príliš spoľahlivé kosenie tokenov a nudné). Evolve škáluje
+        // POČET zásahov (1/2/3), nie silu.
         const hitDmg = fx.n + state[pid].dmgBoost;
         for (let i = 0; i < m; i++) {
           const enemies = sides[other(pid)].filter(x => x.hp > 0);
           if (!enemies.length) break;
-          const minHp = Math.min(...enemies.map(x => x.hp));
-          const t = pick(enemies.filter(x => x.hp === minHp), state.rng);
+          const t = pick(enemies, state.rng);
           dealDmg(t, hitDmg, other(pid), events);
           events.push({ type: "powerDmg", pid: other(pid), uid: t.uid, n: hitDmg, from: self.uid });
           events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
