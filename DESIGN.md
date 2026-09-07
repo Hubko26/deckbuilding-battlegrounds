@@ -253,10 +253,12 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   bonusy Pri útoku +1 útok". Stackuje sa – elemental ekvivalent
   permanentných aur (malý krok +1, aby nesnowballoval). Zosilňuje výboje
   (`dmgWeakEnemy`), výbuchy (`dmgAllEnemies`, `dmgAllBoth`, `dmgRandomAny`),
-  Blesk aj **útočnú časť „Pri útoku" buffu** (E004 Whifflet: +1 útok
-  všetkým → +1+boost). Bonus sa nenásobí stupňom a platí pre všetky rasy
-  (aj ogrie výbuchy) – jedno pravidlo. Aury (`buffRace`, `futureRace`)
-  NEzosilňuje – permanentná aura +1 navždy by snowballovala.
+  Blesk aj **dočasné buffy Živlov**: E004 „Pri útoku" (+1 útok všetkým →
+  +1+boost), E007 „Po nákupe: +1/+1 Živlom" a E008 „Pri vyložení: +2/+2
+  Živlom" (`buffRace` z živelnej karty: +boost na útok, na život len ak
+  buff život dáva). Bonus sa nenásobí stupňom; výboje/výbuchy platia pre
+  všetky rasy, buffy len pre Živly (F007 buffRace víl nie). Permanentné
+  aury (`futureRace`) NEzosilňuje – aura +1 navždy by snowballovala.
   UI: popisky výbojov/výbuchov/Pri útoku ukazujú číslo aj s bonusom
   majiteľa a zvýrazňujú ho zelenou (trieda `.boosted`).
 - **E004 Whifflet** (t2, Pri útoku: +1 útok všetkým kamarátom): bonus
@@ -439,7 +441,8 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
-  Beast B006/B010, Elemental E003/E009, Undead U008/U010 – hra tak
+  Beast B006/B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/E009,
+  Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
   všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez

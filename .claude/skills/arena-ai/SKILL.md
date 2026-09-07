@@ -28,8 +28,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
   Vlna/Živelná sila/Blesk/Klobúk/Vichor/Poklad 2, Srdce/Zrkadlo 3;
   Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage a
-  „Pri útoku" bonusy +1 útok (E004), stackuje sa, kupuj pri elemental
-  builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
+  dočasné buffy Živlov +1 (E004 Pri útoku, E007 Po nákupe, E008 Pri
+  vyložení), stackuje sa, kupuj pri elemental builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
   pri každom útoku – hoď na E004/O006 alebo na najväčší útok, ideálne
   spolu so Svätožiarou; Umlčanie = v najbližšom boji náhodná súperova
   príšerka so schopnosťou stratí efekt aj Obrancu – counter na

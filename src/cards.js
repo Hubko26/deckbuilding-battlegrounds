@@ -73,8 +73,10 @@ const Cards = (() => {
     M("E001", 1, "elemental", ["Cinderglimp", "Cindercrest", "Crownflare"], 1, 2,
       { power: { kw: "startFight", fx: { type: "dmgWeakEnemy", n: 3 } } }),
     M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3, { taunt: true }),
+    // E003: skorá živelná aura +1/+1 (bola +0/+1) – živly potrebujú útok,
+    // nie len životy; ostatné rasy majú skorú auru +0/+1.
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
-      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 0, h: 1 } } }),
+      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
     // E004: útočný bonus škáluje so Živelnou silou (dmgBoost) a berú ho aj
     // tokeny na ploche; s Vichorom (2 útoky) sa spúšťa dvakrát.
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 3,
@@ -239,8 +241,9 @@ const Cards = (() => {
     { id: "srdce", cost: 3, tier: 4, emoji: "❤️‍🔥", spell: true, fx: { type: "buffTarget", a: 3, h: 3 },
       name: { sk: "Ohnivé srdce", cs: "Ohnivé srdce", en: "Fiery Heart" } },
     // Živelná sila (bývalá Večná iskra): trvalý „ability power" – výboje,
-    // výbuchy aj útočný bonus „Pri útoku" (E004) navždy +1. Platí pre všetky
-    // rasy (aj ogrie výbuchy, Blesk) – jedno pravidlo pre deti.
+    // výbuchy (všetky rasy, aj Blesk) a DOČASNÉ buffy Živlov (E004 Pri
+    // útoku, E007 Po nákupe, E008 Pri vyložení) navždy +1. Permanentné aury
+    // (E003/E009) nie – snowball.
     { id: "iskra", cost: 2, tier: 3, emoji: "⚡", spell: true, fx: { type: "dmgBoost", n: 1 },
       name: { sk: "Živelná sila", cs: "Živelná síla", en: "Elemental Power" } },
     { id: "svatoziara", cost: 2, tier: 3, emoji: "😇", spell: true, fx: { type: "buffTarget", a: 0, h: 0, shield: true },
@@ -347,11 +350,17 @@ const Cards = (() => {
       cs: `VŠECHNY tvé příšerky (každá rasa, i v balíčku, navždy) dostanou +${f.a * m}/+${f.h * m}`,
       en: `ALL your minions (every race, deck too, forever) get +${f.a * m}/+${f.h * m}`,
     }),
-    buffRace: (f, m) => ({
-      sk: `+${f.a * m}/+${f.h * m} všetkým ${RACES_PL[f.race].sk}`,
-      cs: `+${f.a * m}/+${f.h * m} všem ${RACES_PL[f.race].cs}`,
-      en: `+${f.a * m}/+${f.h * m} to all ${RACES_PL[f.race].en}`,
-    }),
+    // Dočasný buff Živla (E007/E008) ukazuje čísla aj so Živelnou silou.
+    buffRace: (f, m, hl, kw, def) => {
+      const el = def && def.race === "elemental";
+      const a = el ? hl(f.a * m) : String(f.a * m);
+      const h = el && f.h ? hl(f.h * m) : String(f.h * m);
+      return {
+        sk: `+${a}/+${h} všetkým ${RACES_PL[f.race].sk}`,
+        cs: `+${a}/+${h} všem ${RACES_PL[f.race].cs}`,
+        en: `+${a}/+${h} to all ${RACES_PL[f.race].en}`,
+      };
+    },
     // „Pri útoku" variant (E004): útok ukazuje aj bonus Živelnej sily.
     buffAllFriends: (f, m, hl, kw) => {
       const a = kw === "onAttack" && f.a ? hl(f.a * m) : String(f.a * m);
@@ -467,9 +476,9 @@ const Cards = (() => {
       en: `your next summon in battle summons ${f.n * m} extra`,
     }),
     dmgBoost: (f, m) => ({
-      sk: `navždy: tvoje výboje a výbuchy +${f.n * m} damage, bonusy „Pri útoku" +${f.n * m} útok`,
-      cs: `navždy: tvé výboje a výbuchy +${f.n * m} damage, bonusy „Při útoku" +${f.n * m} útok`,
-      en: `forever: your zaps and explosions +${f.n * m} damage, "On attack" bonuses +${f.n * m} attack`,
+      sk: `navždy: tvoje výboje a výbuchy +${f.n * m} damage, dočasné buffy Živlov +${f.n * m}`,
+      cs: `navždy: tvé výboje a výbuchy +${f.n * m} damage, dočasné buffy Živlů +${f.n * m}`,
+      en: `forever: your zaps and explosions +${f.n * m} damage, Elementals' temporary buffs +${f.n * m}`,
     }),
     // Bonus za kúzlo sa neškáluje stupňom – evolve rastie cez základné staty.
     spellScale: (f) => ({
@@ -588,7 +597,7 @@ const Cards = (() => {
       const v = base + boost;
       return html ? `<span class="boosted">${v}</span>` : String(v);
     };
-    const fxText = (fx, mult, kw) => FX_TEXT[fx.type](fx, mult, hl, kw)[lang];
+    const fxText = (fx, mult, kw) => FX_TEXT[fx.type](fx, mult, hl, kw, def)[lang];
     const parts = [];
     if (def.taunt) parts.push(b(TAUNT_LABEL[lang]) + ".");
     if (def.power && def.power.kw === "raceDeath") {

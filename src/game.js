@@ -306,9 +306,9 @@ const L = {
     en: "Forever: ALL your minions",
   },
   chargeDmgMsg: {
-    sk: "⚡ Navždy: výboje a výbuchy +{n} damage, bonusy Pri útoku +{n} útok (spolu +{t})",
-    cs: "⚡ Navždy: výboje a výbuchy +{n} damage, bonusy Při útoku +{n} útok (celkem +{t})",
-    en: "⚡ Forever: zaps and explosions +{n} damage, On attack bonuses +{n} attack (total +{t})",
+    sk: "⚡ Navždy: výboje a výbuchy +{n} damage, dočasné buffy Živlov +{n} (spolu +{t})",
+    cs: "⚡ Navždy: výboje a výbuchy +{n} damage, dočasné buffy Živlů +{n} (celkem +{t})",
+    en: "⚡ Forever: zaps and explosions +{n} damage, Elementals' temporary buffs +{n} (total +{t})",
   },
   chargeSummonMsg: {
     sk: "🧟 Nabité: tvoje ďalšie vyvolanie v boji vyvolá o {n} viac",

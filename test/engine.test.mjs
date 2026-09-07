@@ -862,6 +862,39 @@ test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku
   assert.ok(!ev2.some(e => e.type === "proc" && e.uid === owl3.uid && e.kw === "tokenDeath"));
 });
 
+test("Živelná sila zosilňuje dočasné buffy Živlov (E008 battlecry, E007 Po nákupe), vílie buffRace nie", () => {
+  const { state, E, C } = fresh(65);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  p.dmgBoost = 1;
+  const elem = E.makeInst(state, "E001", 1); elem.slot = 0;   // 1/2 živel
+  const fairy = E.makeInst(state, "F002", 1); fairy.slot = 1; // 1/2 víla
+  p.board = [elem, fairy];
+  p.hand = [E.makeInst(state, "E008", 1)]; // +2/+2 Živlom → +3/+3
+  E.playMinion(state, "p1", 0);
+  assert.equal(elem.atk, 1 + 3); assert.equal(elem.maxHp, 2 + 3);
+  assert.equal(fairy.atk, 1);
+  const sprout = E.makeInst(state, "E007", 1); sprout.slot = 3; // Po nákupe: +1/+1 Živlom → +2/+2
+  p.board.push(sprout);
+  p.hand = [];
+  E.endShopTurn(state, "p1");
+  assert.equal(elem.atk, 4 + 2); assert.equal(elem.maxHp, 5 + 2);
+  // F007 (víla, buffRace fairy) sa Živelnou silou neškáluje
+  const { state: s2, E: E2 } = fresh(66);
+  E2.startRound(s2);
+  s2.p1.dmgBoost = 2;
+  const f2 = E2.makeInst(s2, "F002", 1); f2.slot = 0;
+  const oak = E2.makeInst(s2, "F007", 1); oak.slot = 1; // Po kúzle: +1/+1 Vílam
+  s2.p1.board = [f2, oak];
+  s2.p1.hand = [E2.makeInst(s2, "stit", 1)];
+  E2.castSpell(s2, "p1", 0, oak.uid);
+  assert.equal(f2.atk, 1 + 1 + 1); // +1 z F007 (bez boostu) +1 vlastný Po kúzle rast
+  // Popisok: E008 ukáže navýšené čísla, F007 nie
+  assert.match(C.cardText(C.byId["E008"], 1, "sk", false, 1), /\+3\/\+3 všetkým Živlom/);
+  assert.match(C.cardText(C.byId["F007"], 1, "sk", false, 1), /\+1\/\+1 všetkým Vílam/);
+});
+
 test("pooly: vlastný 6 / spoločný 3 na kartu; obchod a štartovací balíček z nich uberajú, refresh vracia", () => {
   const { state, E, C } = fresh(60);
   const minions = C.DEFS.filter(d => !d.spell);

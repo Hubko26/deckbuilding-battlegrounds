@@ -836,14 +836,19 @@ const Engine = (() => {
           events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
         break;
-      case "buffRace":
+      case "buffRace": {
         // Rasová synergia: buffne všetky vlastné príšerky danej rasy (okrem seba).
+        // Dočasné buffy ŽIVLOV (E007 Po nákupe, E008 Pri vyložení) škáluje
+        // Živelná sila – +boost na útok, na život len ak buff život dáva.
+        const eb = self && Cards.byId[self.defId].race === "elemental" ? p.dmgBoost : 0;
+        const a = fx.a * m + eb, h = fx.h * m + (fx.h ? eb : 0);
         for (const f of p.board) {
           if (f === self || Cards.byId[f.defId].race !== fx.race) continue;
-          buff(f, fx.a * m, fx.h * m);
-          events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
+          buff(f, a, h);
+          events.push({ type: "buff", pid: p.id, uid: f.uid, a, h });
         }
         break;
+      }
       case "spellScale": {
         // +a/+h pre seba za KAŽDÉ kúzlo zahrané v tejto hre – prepočíta sa
         // pri každom vyložení, žiadny trvalý buff (nesnowballuje cez kópie).
@@ -1378,9 +1383,10 @@ const Engine = (() => {
         events.push({ type: "buff", pid, uid: self.uid, a: fx.a * m, h: fx.h * m });
         break;
       case "buffAllFriends": {
-        // „Pri útoku" bonus škáluje so Živelnou silou (dmgBoost) – len útok,
-        // rovnako ako výboje (bonus sa nenásobí stupňom).
-        const a = fx.a * m + (kw === "onAttack" && fx.a ? state[pid].dmgBoost : 0);
+        // Dočasný buff Živla (E004 Pri útoku) škáluje so Živelnou silou
+        // (dmgBoost) – bonus sa nenásobí stupňom, na život len ak buff život dáva.
+        const eb = kw === "onAttack" && Cards.byId[self.defId].race === "elemental" ? state[pid].dmgBoost : 0;
+        const a = fx.a * m + (fx.a ? eb : 0);
         for (const f of sides[pid]) {
           if (f === self || f.hp <= 0) continue;
           f.atk += a;
@@ -1430,16 +1436,20 @@ const Engine = (() => {
         fb.a += fx.a * m; fb.h += fx.h * m;
         break;
       }
-      case "buffRace":
+      case "buffRace": {
         // Rasová synergia v boji – buffne živé príšerky rovnakej rasy.
+        // Dočasné buffy Živlov škáluje Živelná sila (ako v nákupnej fáze).
+        const eb = Cards.byId[self.defId].race === "elemental" ? state[pid].dmgBoost : 0;
+        const a = fx.a * m + eb, h = fx.h * m + (fx.h ? eb : 0);
         for (const f of sides[pid]) {
           if (f === self || f.hp <= 0 || Cards.byId[f.defId].race !== fx.race) continue;
-          f.atk += fx.a * m;
-          f.maxHp += fx.h * m;
-          f.hp += fx.h * m;
-          events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
+          f.atk += a;
+          f.maxHp += h;
+          f.hp += h;
+          events.push({ type: "buff", pid, uid: f.uid, a, h });
         }
         break;
+      }
       case "summon": {
         // Evolvnutá karta vyvoláva SILNEJŠIE tokeny (stupeň rodiča: staty
         // ×2/×4), počet sa so stupňom neškáluje.
