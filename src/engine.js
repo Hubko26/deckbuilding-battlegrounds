@@ -587,7 +587,7 @@ const Engine = (() => {
   // target: uid príšerky na vlastnej ploche (len pre buffTarget).
   // Zahrané kúzlo NEJDE do kôpky hneď, ale do karantény (spentSpells) –
   // do kôpky padne až na konci ťahu. Inak by ho draw (reshuffle kôpky)
-  // mohol vrátiť do ruky a Zvitok + víly by točili nekonečný cyklus
+  // mohol vrátiť do ruky a draw + víly by točili nekonečný cyklus
   // permanentných buffov zadarmo v jednom ťahu.
   function castSpell(state, pid, handIdx, targetUid) {
     const p = state[pid];

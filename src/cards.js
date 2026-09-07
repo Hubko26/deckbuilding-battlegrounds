@@ -230,10 +230,9 @@ const Cards = (() => {
       name: { sk: "Umlčanie", cs: "Umlčení", en: "Silence" } },
     { id: "kniha", cost: 2, tier: 3, emoji: "📖", spell: true, fx: { type: "discover" },
       name: { sk: "Kniha prianí", cs: "Kniha přání", en: "Wish Book" } },
-    // Draw kúzlo: spell balíčky nemajú telá – Zvitok cykluje k príšerám
-    // a spúšťa víly („Po kúzle“); dotiahnuté karty sa dajú hneď zahrať.
-    { id: "zvitok", cost: 2, tier: 2, emoji: "📜", spell: true, fx: { type: "draw", n: 2 },
-      name: { sk: "Zvitok múdrosti", cs: "Svitek moudrosti", en: "Wisdom Scroll" } },
+    // Draw kúzlo (Zvitok múdrosti, draw 2) ODSTRÁNENÉ: víly s ním pretočili
+    // celý balíček a všetky kúzla každú hru – motor Po kúzle nemal strop.
+    // Jediný draw v hre je F001 (battlecry, 1/2/3 podľa stupňa).
     { id: "koren", cost: 2, tier: 3, emoji: "🌱", spell: true, fx: { type: "buffTarget", a: 0, h: 4, taunt: true },
       name: { sk: "Pevný koreň", cs: "Pevný kořen", en: "Sturdy Root" } },
     { id: "vlna", cost: 2, tier: 3, emoji: "🌊", spell: true, fx: { type: "buffAllFriends", a: 1, h: 1 },

@@ -21,7 +21,7 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
   (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Živelná sila/Svätožiara/
-  Pierko/Kliatba/Vichor/Zvitok 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
+  Pierko/Kliatba/Vichor 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
   automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
@@ -307,11 +307,12 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     s 1 životom (`inst.revive`; deathrattle sa pri návrate nespúšťa),
   - **Žabia kliatba** 🐸 (t4): odložená kliatba – v najbližšom boji sa
     náhodnej súperovej príšerke zmení život na 1 (anti-beast tech),
-  - **Zvitok múdrosti** 📜 (t2, cena 2): dotiahni 2 karty – spell balíčky
-    nemajú telá, Zvitok cykluje k príšerám a spúšťa víly.
+  - ~~Zvitok múdrosti~~ 📜 (draw 2) **odstránený**: víly s ním každú hru
+    pretočili celý balíček a všetky kúzla – motor Po kúzle nemal strop.
+    Jediný draw v hre je F001 (battlecry 1/2/3).
 - **Karanténa kúziel**: zahrané kúzlo ide do kôpky až NA KONCI ťahu
   (`p.spentSpells`). Bez toho by draw (reshuffle kôpky pri prázdnom
-  balíčku) vrátil Zvitok do ruky a zoslanie je zadarmo → nekonečný
+  balíčku) vrátil kúzlo do ruky a zoslanie je zadarmo → nekonečný
   cyklus draw → Po kúzle → permanentný rast v jednom ťahu.
 - Balance (simulácia): fairy build ~48 % vs beast aj elemental, ~30 % vs
   undead – horda malé vílie telá zožerie; je to vedomý counter (kruh sa

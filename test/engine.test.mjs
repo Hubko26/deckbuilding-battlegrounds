@@ -1134,36 +1134,22 @@ test("víly F002/F004: rast Po kúzle je trvalý – prežije boj aj cyklus bal�
   assert.equal(back.hp, C.byId["F002"].hp + 1);
 });
 
-test("Zvitok múdrosti: dotiahne 2 karty a spustí víly (Po kúzle)", () => {
-  const { state, E } = fresh(75);
-  E.startRound(state);
-  const p = state.p1;
-  const cap = E.makeInst(state, "F002", 1); cap.slot = 0;
-  p.board = [cap];
-  p.hand = [E.makeInst(state, "zvitok", 1)];
-  p.deck = [{ defId: "B001", rank: 1 }, { defId: "B002", rank: 1 }];
-  p.discard = [];
-  E.castSpell(state, "p1", 0);
-  assert.equal(p.hand.length, 2); // zvitok preč, 2 dotiahnuté
-  assert.equal(cap.atk, 2);       // víla zareagovala na kúzlo
-});
-
 test("zahrané kúzlo sa v tom istom ťahu nedá znova dotiahnuť (žiadny nekonečný cyklus)", () => {
   const { state, E } = fresh(77);
   E.startRound(state);
   const p = state.p1;
   p.board = [];
-  p.hand = [E.makeInst(state, "zvitok", 1)];
+  p.hand = [E.makeInst(state, "minca", 1)];
   p.deck = []; p.discard = [];
   E.castSpell(state, "p1", 0);
-  // zvitok je v karanténe – draw 2 nemá čo potiahnuť, cyklus sa zastaví
+  // kúzlo je v karanténe – nie je v kôpke, reshuffle by ho nevrátil
   assert.equal(p.hand.length, 0);
   assert.equal(p.discard.length, 0);
   assert.equal(p.spentSpells.length, 1);
   E.endShopTurn(state, "p1");
   // až koniec ťahu vráti kúzlo do kôpky
   assert.equal(p.spentSpells.length, 0);
-  assert.ok(p.discard.some(c => c.defId === "zvitok"));
+  assert.ok(p.discard.some(c => c.defId === "minca"));
 });
 
 test("spellScale F010: +1/+1 za každé kúzlo zahrané v tejto hre (pri vyložení)", () => {

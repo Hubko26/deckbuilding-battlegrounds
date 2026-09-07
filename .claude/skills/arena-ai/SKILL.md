@@ -109,8 +109,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     navždy. Kupuj kúzla húfne – každé kúzlo spustí všetky víly na
     ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský
     štít), Fénixovo pierko (revive 1 HP), Žabia kliatba (HP súperovej
-    príšerky na 1 – anti-beast), Zvitok múdrosti (draw 2 – cykluje
-    k telám). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
+    príšerky na 1 – anti-beast). Draw kúzlo v hre nie je (Zvitok
+    odstránený). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
     battlecry. t1: D007 = Živelná sila +1 pri každom vyložení (navždy,
