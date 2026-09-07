@@ -76,3 +76,82 @@ test("bot skóre: preferuje dokončenie trojice", () => {
   const freshScore = ctx.Bot.cardScore(state, p, "B004");
   assert.ok(pairScore > freshScore);
 });
+
+test("hard bot: balast z ruky predá (0 útoku, cudzia rasa po zafixovaní), plnú plochu nevyprázdni", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(31), null);
+  E.startRound(state); E.startRound(state); E.startRound(state); // kolo 3 = rasa zafixovaná
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0;
+  p.deck = [{ defId: "U001", rank: 1 }, { defId: "U003", rank: 1 }, { defId: "U005", rank: 1 }];
+  p.discard = [];
+  // plná plocha rôznych undead tiel (rovnaké kópie by sa evolvli a uvoľnili sloty)
+  p.board = ["U008", "U006", "U007", "U004", "U003"].map((id, i) => Object.assign(E.makeInst(state, id, 1), { slot: i }));
+  const junk = E.makeInst(state, "O001", 1); junk.atk = 0;      // prehratý hod mincou
+  const foreign = E.makeInst(state, "B001", 1);                 // cudzia rasa, t1, bez trojice
+  const keeper = E.makeInst(state, "U009", 1);                  // vlastná rasa – ostane (na výmenu je príliš slabá? 5/4+2 vs 3/8+2+1)
+  p.hand = [junk, foreign, keeper];
+  const events = ctx.Bot.botTurn(state, "p2", "hard");
+  const sold = events.filter(e => e.type === "sell").map(e => e.defId);
+  assert.ok(sold.includes("O001") && sold.includes("B001"), sold.join(","));
+  assert.ok(events.some(e => e.type === "tierUp")); // zlato z predaja išlo do upgradu (plná plocha)
+  assert.equal(p.board.length, 5);
+  assert.ok(!p.discard.some(c => c.defId === "O001"));  // predaný, nie odhodený
+  assert.ok(!p.discard.some(c => c.defId === "B001"));
+  assert.ok(p.discard.some(c => c.defId === "U009") || p.board.some(x => x.defId === "U009"));
+});
+
+test("hard bot: silnejšie telo z ruky vymení za najslabšie na plnej ploche", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(32), null);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0; p.deck = []; p.discard = [];
+  p.board = ["B002", "B008", "B006", "B009"].map((id, i) => Object.assign(E.makeInst(state, id, 1), { slot: i }));
+  const weak = E.makeInst(state, "B001", 1); weak.slot = 4; // 2/2
+  p.board.push(weak);
+  p.hand = [E.makeInst(state, "B010", 1)]; // 6/10 taunt
+  ctx.Bot.botTurn(state, "p2", "hard");
+  assert.ok(p.board.some(x => x.defId === "B010"));
+  assert.ok(!p.board.some(x => x.defId === "B001"));
+  assert.equal(p.board.length, 5);
+});
+
+test("hard bot: poradie útoku – Pri útoku vľavo, škálovač vpravo", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(33), null);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0; p.deck = []; p.discard = [];
+  const scaler = E.makeInst(state, "B009", 1);  // raceDeath – má prežiť
+  const wind = E.makeInst(state, "E004", 1);    // onAttack – prvý
+  const body = E.makeInst(state, "O005", 1);    // 4/5 vanilla
+  p.hand = [scaler, wind, body];
+  ctx.Bot.botTurn(state, "p2", "hard");
+  const order = [...p.board].sort((a, b) => a.slot - b.slot).map(x => x.defId);
+  assert.deepEqual(order, ["E004", "O005", "B009"]);
+});
+
+test("bot skóre: po zafixovaní rasy je cudzia karta rovnakého tieru horšia, kúzla nad strop trestané", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(34), null);
+  state.round = 3;
+  const p = state.p2;
+  p.deck = ["U001", "U002", "U003", "U005"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(ctx.Bot.dominantRace(state, p), "undead");
+  const own = ctx.Bot.cardScore(state, p, "U006");   // t3 undead
+  const other = ctx.Bot.cardScore(state, p, "B008"); // t3 beast
+  assert.ok(own > other + 4, `${own} vs ${other}`);
+  const noSpells = ctx.Bot.cardScore(state, p, "jablko");
+  p.deck.push({ defId: "jablko", rank: 1 }, { defId: "koren", rank: 1 }, { defId: "stit", rank: 1 });
+  const manySpells = ctx.Bot.cardScore(state, p, "jablko");
+  assert.ok(manySpells < noSpells - 2, `${manySpells} vs ${noSpells}`);
+});

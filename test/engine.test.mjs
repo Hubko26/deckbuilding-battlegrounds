@@ -1004,11 +1004,11 @@ test("Živelná sila zosilňuje aj Pri útoku bonus (E004): +1 útok +boost, tok
   state.p1.hand = []; state.p2.hand = [];
   const events = E.doBattle(state);
   const buffs = events.filter(e => e.type === "buff" && e.pid === "p1");
-  assert.ok(buffs.some(e => e.uid === pal.uid && e.a === 3)); // 1 + boost 2
-  assert.ok(buffs.some(e => e.uid === tok.uid && e.a === 3)); // token tiež
+  assert.ok(buffs.some(e => e.uid === pal.uid && e.a === 3 && e.h === 3)); // 1 + boost 2, obe čísla
+  assert.ok(buffs.some(e => e.uid === tok.uid && e.a === 3 && e.h === 3)); // token tiež
   // Popisok karty ukáže navýšené číslo len pri „Pri útoku"; Vlna (buffAllFriends kúzlo) nie.
   const C = fresh().C;
-  assert.match(C.cardText(C.byId["E004"], 1, "sk", false, 2), /\+3\/\+0/);
+  assert.match(C.cardText(C.byId["E004"], 1, "sk", false, 2), /\+3\/\+3/);
   assert.match(C.cardText(C.byId["vlna"], 1, "sk", false, 2), /\+1\/\+1/);
   assert.match(C.cardText(C.byId["F009"], 1, "sk", false, 2), /\+2\/\+2/); // Po kúzle bez boostu
 });

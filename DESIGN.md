@@ -273,9 +273,11 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   aury (`futureRace`) NEzosilňuje – aura +1 navždy by snowballovala.
   UI: popisky výbojov/výbuchov/Pri útoku ukazujú číslo aj s bonusom
   majiteľa a zvýrazňujú ho zelenou (trieda `.boosted`).
-- **E004 Whifflet** (t2, Pri útoku: +1 útok všetkým kamarátom): bonus
-  dostanú aj tokeny na ploche (kostíky, Bubliny); s Vichorom útočí dvakrát
-  a bonus rozdá dvakrát – „Pri útoku" karty sú hlavný cieľ Vichoru.
+- **E004 Whifflet** (t2, 4/4, Pri útoku: **+1/+1** všetkým kamarátom):
+  OBE čísla škáluje Živelná sila (⚡+2 → +3/+3 za útok), bonus dostanú aj
+  tokeny na ploche (kostíky, Bubliny); s Vichorom útočí dvakrát a rozdá ho
+  dvakrát. Nízkotierový dôvod kupovať ⚡ – „Pri útoku" karty sú zároveň
+  hlavný cieľ Vichoru.
 
 **🧚 Fairy – Po kúzle (implementované)**
 

@@ -1386,12 +1386,13 @@ const Engine = (() => {
         // (dmgBoost) – bonus sa nenásobí stupňom, na život len ak buff život dáva.
         const eb = kw === "onAttack" && Cards.byId[self.defId].race === "elemental" ? state[pid].dmgBoost : 0;
         const a = fx.a * m + (fx.a ? eb : 0);
+        const hh = fx.h * m + (fx.h ? eb : 0);
         for (const f of sides[pid]) {
           if (f === self || f.hp <= 0) continue;
           f.atk += a;
-          f.maxHp += fx.h * m;
-          f.hp += fx.h * m;
-          events.push({ type: "buff", pid, uid: f.uid, a, h: fx.h * m });
+          f.maxHp += hh;
+          f.hp += hh;
+          events.push({ type: "buff", pid, uid: f.uid, a, h: hh });
         }
         break;
       }

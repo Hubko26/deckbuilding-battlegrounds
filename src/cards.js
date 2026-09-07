@@ -83,10 +83,11 @@ const Cards = (() => {
     // nie len životy; ostatné rasy majú skorú auru +0/+1.
     M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
-    // E004: útočný bonus škáluje so Živelnou silou (dmgBoost) a berú ho aj
-    // tokeny na ploche; s Vichorom (2 útoky) sa spúšťa dvakrát.
+    // E004: bonus škáluje so Živelnou silou (dmgBoost) v OBOCH číslach a
+    // berú ho aj tokeny na ploche; s Vichorom (2 útoky) sa spúšťa dvakrát.
+    // Hlavný dôvod kupovať ⚡ v nízkych tieroch.
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 4,
-      { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 0 } } }),
+      { power: { kw: "onAttack", fx: { type: "buffAllFriends", a: 1, h: 1 } } }),
     // E005 Lovec tokenov: keď súper vyvolá token, zasiahne ho výbojom za 1
     // (+Živelná sila); ak token padne, E005 rastie +1/+1 NAVŽDY (pa/ph).
     // Čistý counter na hordu + jediný navždy-rast živlov mimo aur. Kostík
@@ -374,13 +375,15 @@ const Cards = (() => {
         en: `+${a}/+${h} to all ${RACES_PL[f.race].en}`,
       };
     },
-    // „Pri útoku" variant (E004): útok ukazuje aj bonus Živelnej sily.
+    // „Pri útoku" variant (E004): obe čísla ukazujú bonus Živelnej sily.
     buffAllFriends: (f, m, hl, kw) => {
-      const a = kw === "onAttack" && f.a ? hl(f.a * m) : String(f.a * m);
+      const el = kw === "onAttack";
+      const a = el && f.a ? hl(f.a * m) : String(f.a * m);
+      const h = el && f.h ? hl(f.h * m) : String(f.h * m);
       return {
-        sk: `+${a}/+${f.h * m} všetkým kamarátom`,
-        cs: `+${a}/+${f.h * m} všem kamarádům`,
-        en: `+${a}/+${f.h * m} to all friends`,
+        sk: `+${a}/+${h} všetkým kamarátom`,
+        cs: `+${a}/+${h} všem kamarádům`,
+        en: `+${a}/+${h} to all friends`,
       };
     },
     buffTarget: (f, m) => {

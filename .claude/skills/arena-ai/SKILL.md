@@ -99,8 +99,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     E005 (t3) = keď súper vyvolá token, výboj za 1 (+Živelná sila) a ak
     token padne, +1/+1 NAVŽDY – proti undead/mláďatám vykladaj vždy,
     kupuj k nemu Živelnú silu (kostíky s U002/aurou inak prežijú).
-    E004 Whifflet (Pri útoku: +1 útok všetkým vrátane tokenov) škáluje
-    so Živelnou silou – daj ho úplne doľava a s Vichorom rozdá bonus 2×.
+    E004 Whifflet (Pri útoku: +1/+1 všetkým vrátane tokenov) škáluje OBE
+    čísla so Živelnou silou – daj ho úplne doľava a s Vichorom rozdá 2×.
   - **Fairy = Po kúzle motor**: F001 battlecry draw (1/2/3 podľa
     stupňa, NIE Po kúzle), F005 vracia zlato, F006
     battlecry pridá Iskričku ✨ (jednorazové kúzlo +1 útok – nejde do

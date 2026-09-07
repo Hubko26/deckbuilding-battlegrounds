@@ -2,20 +2,29 @@
 // zoznam eventov, ktoré UI prehrá s pauzami, aby dieťa videlo, čo súper robí.
 //
 // Bot je vymeniteľný modul: UI volá len botTurn(state, pid, difficulty).
-// Neskôr pribudne "Claude bot" – driver, ktorý pošle stav hry na lokálny
-// server a vykoná akcie, ktoré vráti LLM (rovnaké Engine API).
+// "Claude bot" (src/claude-bot.js) je iný driver nad rovnakým Engine API.
 
 const Bot = (() => {
   // Nastavenie obtiažnosti heuristiky.
   // refreshHunt: koľkokrát za ťah smie bot refreshnúť obchod, keď mu po
-  // nákupoch ostávajú peniaze (lov trojíc). raceFocus: váha držania sa
-  // dominantnej rasy pri nákupe. buyBar: pod toto skóre hard nekupuje,
-  // kým môže refreshovať – ladené simuláciou (81 % vs normal bot).
+  // nákupoch ostávajú peniaze. raceFocus: váha držania sa dominantnej rasy.
+  // buyBar: hard nekupuje kartu so skóre pod (tier + buyBar), kým môže
+  // refreshovať – relatívne k tieru, nech nerefreshuje donekonečna.
+  // sellJunk / swapBoard / orderBoard / freeze: „ľudské" návyky z logov
+  // vyhraných hier (predaj balastu, výmena slabého tela, poradie útoku).
   const DIFF = {
     easy: { randomBuy: true, upgradeAggro: 0, smartSpells: false, refreshHunt: 0, raceFocus: 0.5, buyBar: 0 },
     normal: { randomBuy: false, upgradeAggro: 1, smartSpells: true, refreshHunt: 0, raceFocus: 0.5, buyBar: 0 },
-    hard: { randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 6, raceFocus: 1.0, buyBar: 10 },
+    hard: {
+      randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 2, raceFocus: 1.0, buyBar: 3,
+      sellJunk: true, swapBoard: true, orderBoard: true, freeze: true,
+    },
   };
+
+  // Od tohto kola sa bot zafixuje na dominantnú rasu (predtým skladá, čo príde).
+  const RACE_LOCK_ROUND = 3;
+  // Koľko kúziel v balíčku toleruje ne-vílový build – kúzla nedávajú telá.
+  const SPELL_CAP = 2;
 
   // Koľko kópií karty bot vlastní (všade) – kvôli skladaniu trojíc.
   function ownedCount(p, defId) {
@@ -28,18 +37,29 @@ const Bot = (() => {
   }
 
   // Počet vlastnených príšer podľa rasy – vo VŠETKÝCH zónach (plocha je po
-  // boji vždy prázdna, takže rátať len ju nedáva zmysel).
+  // boji vždy prázdna, takže rátať len ju nedáva zmysel). Draci sa nerátajú –
+  // sú žoldnieri pre každý build, nemajú tvoriť „dominantnú rasu".
   function ownedRaceCounts(p) {
     const counts = {};
     const add = defId => {
-      const r = Cards.byId[defId].race;
-      if (r) counts[r] = (counts[r] || 0) + 1;
+      const d = Cards.byId[defId];
+      if (d.race && !d.token) counts[d.race] = (counts[d.race] || 0) + 1;
     };
     for (const c of p.deck) add(c.defId);
     for (const c of p.discard) add(c.defId);
     for (const x of p.hand) if (!x.spell) add(x.defId);
     for (const x of p.board) add(x.defId);
     return counts;
+  }
+
+  // Dominantná rasa: od RACE_LOCK_ROUND najpočetnejšia ne-dračia rasa
+  // (aspoň 3 kusy), inak null – bot ešte len skladá.
+  function dominantRace(state, p) {
+    if (state.round < RACE_LOCK_ROUND) return null;
+    const counts = ownedRaceCounts(p);
+    delete counts.dragon;
+    const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+    return top && top[1] >= 3 ? top[0] : null;
   }
 
   // Počet kúziel vo všetkých zónach – kvôli hodnote víl („Po kúzle“).
@@ -60,9 +80,13 @@ const Bot = (() => {
       else if (owned === 1) score += 2; // rozbieha trojicu
     }
     const races = ownedRaceCounts(p);
+    const dom = dominantRace(state, p);
     if (def.race) {
       // drž sa dominantnej rasy (hard drží silnejšie)
       score += (races[def.race] || 0) * ((cfg && cfg.raceFocus) || 0.5);
+      // Po zafixovaní rasy: vlastná +3, cudzia −3 (draci sú neutrálni,
+      // trojica cudzej rasy sa stále oplatí – +6 vyššie to preváži).
+      if (dom && def.race !== "dragon") score += def.race === dom ? 3 : -3;
     }
     if (def.power) {
       const fx = def.power.fx;
@@ -71,11 +95,13 @@ const Bot = (() => {
       // F008: permanentná aura pre všetky rasy – vždy dobrá, s kúzlami lepšia
       if (fx.type === "futureAll") score += 3 + ownedSpellCount(p) * 0.4;
       if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
+      // draci, ktorí zosilňujú RASU cieľa – s dominantnou rasou majú do čoho
+      if (dom && (fx.type === "futureRaceOf" || fx.type === "buffRaceOf")) score += 2;
       // víly („Po kúzle“) rastú s počtom kúziel v balíčku
       if (def.power.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
       // Iskrička z battlecry kŕmi Po kúzle víly – hodnotnejšia s vílami
       if (def.power.fx.type === "addSpell") score += 1 + (races.fairy || 0) * 0.5;
-      // D007 (Živelná sila na tele) – ako kúzlo: cennejší s elementálmi
+      // D007 / E007 (Živelná sila na tele) – cennejší s elementálmi
       if (fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
       // U002 (kostíky +1/+1 v boji) – cenný s vyvolávačmi kostíkov
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
@@ -83,17 +109,18 @@ const Bot = (() => {
       if (def.power.kw === "tokenDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005")) * 0.8;
     }
     if (def.spell) {
+      const spells = ownedSpellCount(p);
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
       score += (3 - Engine.cardCost(defId)) * 0.8;
-      // kúzla nedávajú telá – priveľa kúziel riedi balíček (víly to vrátia)
-      score -= Math.max(0, ownedSpellCount(p) - 3) * 0.6;
       if (def.fx.type === "gold" || def.fx.type === "goldLater") score += 1.5;
       // draw cykluje k príšerám – cennejší, čím viac kúziel balíček riedi
-      if (def.fx.type === "draw") score += 1 + ownedSpellCount(p) * 0.2;
-      // víly na kúzla reagujú („Po kúzle“) – kúzla sú s nimi hodnotnejšie
-      score += (races.fairy || 0) * 0.5;
-      // Živelná sila škáluje s počtom vlastných elementálov (výboje/výbuchy/Pri útoku)
+      if (def.fx.type === "draw") score += 1 + spells * 0.2;
+      // Živelná sila škáluje s počtom vlastných elementálov
       if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
+      // Kúzla nedávajú telá: víly ich premieňajú na rast (bonus), ostatní
+      // majú strop – každé kúzlo nad SPELL_CAP vytláča z ruky príšerku.
+      if (dom === "fairy" || (!dom && races.fairy >= 2)) score += (races.fairy || 0) * 0.5;
+      else score -= Math.max(0, spells + 1 - SPELL_CAP) * 3;
     }
     return score;
   }
@@ -103,6 +130,24 @@ const Bot = (() => {
     const pw = Cards.byId[defId].power;
     return !!pw && pw.kw === "battlecry" &&
       ["buffRace", "buffAllFriends", "buffFriend", "futureRace"].includes(pw.fx.type);
+  }
+
+  // Hodnota tela na ploche/v ruke pre výmeny: staty + niečo za schopnosť.
+  function bodyValue(inst) {
+    const def = Cards.byId[inst.defId];
+    return inst.atk + inst.hp + (def.power ? 2 : 0) + (inst.taunt ? 1 : 0);
+  }
+
+  // „Balast": telo, ktoré sa neoplatí držať v cykle balíčka – 0 útoku
+  // (prehratý hod mincou), alebo po zafixovaní rasy cudzia nízka karta bez
+  // šance na trojicu. Trojice a draci nie sú balast.
+  function isJunk(state, p, inst) {
+    const def = Cards.byId[inst.defId];
+    if (def.token) return false;
+    if (inst.atk === 0) return true;
+    const dom = dominantRace(state, p);
+    return !!dom && def.race !== dom && def.race !== "dragon" && def.tier <= 2 &&
+      inst.rank === 1 && ownedCount(p, inst.defId) < 2;
   }
 
   function botTurn(state, pid, difficulty) {
@@ -115,26 +160,36 @@ const Bot = (() => {
     //    zo všetkých kúziel zahraných v tomto ťahu.
     deployMinions(state, p, cfg, push);
 
+    // 0b. Hard: čo ostalo v ruke po zaplnení plochy – silnejšie telo vymeň za
+    //     najslabšie na ploche (predaj + vylož), balast predaj (+1 zlato,
+    //     tenší balíček). Pred nákupmi, nech peniaze z predaja idú do obchodu.
+    if (cfg.swapBoard) swapWeakBodies(state, p, push);
+    if (cfg.sellJunk) sellJunk(state, p, push);
+
     // 1. Kúzla na peniaze zahraj hneď (viac na nákupy).
     playGoldSpells(state, p, push);
 
-    // 2. Upgrade tieru podľa agresivity.
+    // 2. Upgrade tieru podľa agresivity. Hard: aj celé zlato do upgradu, keď
+    //    je plocha už plná (tento boj nákup neovplyvní) – ako ľudský hráč.
     for (;;) {
       const cost = Engine.upgradeCost(state, pid);
       if (cost === null) break;
+      const onSchedule = state.round >= p.tier * 2 - 1;
       const worth =
         cfg.upgradeAggro === 0 ? cost === 0 :
         cfg.upgradeAggro === 1 ? (cost <= 1 || (p.money - cost >= Engine.CARD_COST && state.round >= p.tier * 2)) :
-        (cost <= 2 || (p.money - cost >= Engine.CARD_COST && state.round >= p.tier * 2 - 1));
+        (cost <= 2 || (onSchedule && (p.money - cost >= Engine.CARD_COST || p.board.length >= Engine.BOARD_MAX)));
       if (!worth || p.money < cost) break;
       push(Engine.upgradeTier(state, pid));
     }
 
     // 3. Nakupuj, kým sú peniaze. Easy kupuje náhodne, inak podľa skóre.
-    //    Hard: keď po vykúpení ponuky ostávajú peniaze na refresh + kartu,
-    //    refreshne obchod a nakupuje znova (lov trojíc a lepších kariet) –
-    //    neminuté peniaze aj tak na konci kola prepadnú.
+    //    Hard: keď je aj najlepšia ponuka pod latkou (tier + buyBar) a ostáva
+    //    na refresh + kartu, refreshne a hľadá lepšie – ale len refreshHunt-krát,
+    //    každý refresh je tretina príšerky.
+    const bar = cfg.buyBar ? p.tier + cfg.buyBar : 0;
     let rerolls = cfg.refreshHunt || 0;
+    let bestUnaffordable = null; // kandidát na freeze
     for (;;) {
       let guard = 20;
       while (guard-- > 0) {
@@ -142,20 +197,19 @@ const Bot = (() => {
         state.commons.forEach((defId, i) => options.push({ kind: "common", i, defId }));
         p.priv.forEach((s, i) => options.push({ kind: "priv", i, defId: s.defId }));
         if (p.spellShop) options.push({ kind: "spell", i: 0, defId: p.spellShop.defId });
+        if (!cfg.randomBuy) options.sort((a, b) => cardScore(state, p, b.defId, cfg) - cardScore(state, p, a.defId, cfg));
         const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
-        if (!affordable.length) break;
-        options.length = 0;
-        options.push(...affordable);
+        if (!affordable.length) {
+          bestUnaffordable = options.find(o => o.kind !== "common") || null;
+          break;
+        }
         let choice;
         if (cfg.randomBuy) {
-          choice = options[Math.floor(state.rng() * options.length)];
+          choice = affordable[Math.floor(state.rng() * affordable.length)];
         } else {
-          options.sort((a, b) => cardScore(state, p, b.defId, cfg) - cardScore(state, p, a.defId, cfg));
-          choice = options[0];
-          // Junk-skip: keď je aj najlepšia ponuka slabá a ostáva refresh
-          // + peniaze naň, nekupuj – rovno refreshni a hľadaj lepšie.
+          choice = affordable[0];
           if (rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST &&
-              cardScore(state, p, choice.defId, cfg) < (cfg.buyBar || 0)) break;
+              cardScore(state, p, choice.defId, cfg) < bar) break;
         }
         push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
           : choice.kind === "priv" ? Engine.buyPrivate(state, pid, choice.i)
@@ -164,6 +218,13 @@ const Bot = (() => {
       if (rerolls-- <= 0) break;
       if (p.money < Engine.refreshCost(state) + Engine.CARD_COST) break;
       push(Engine.refreshShop(state, pid));
+    }
+
+    // 3b. Hard: na dobrú súkromnú kartu (trojica, aura mojej rasy), na ktorú
+    //     nie je, zmraz ponuku – v novom kole ju dokúpi.
+    if (cfg.freeze && bestUnaffordable && p.priv.length && !p.priv.some(s => s.frozen) &&
+        cardScore(state, p, bestUnaffordable.defId, cfg) >= p.tier + 6) {
+      push(Engine.toggleFreezeAll(state, pid));
     }
 
     // 4a. Kúzla, ktoré dávajú zdroje/karty (pred vykladaním).
@@ -187,6 +248,7 @@ const Bot = (() => {
 
     // 4b. Príšerky dokúpené/dotiahnuté počas ťahu (zvyšok ruky).
     deployMinions(state, p, cfg, push);
+    if (cfg.swapBoard) swapWeakBodies(state, p, push);
 
     // 4c. Buff kúzla až po vyložení – cieľ = najsilnejšia príšera.
     for (let i = p.hand.length - 1; i >= 0; i--) {
@@ -218,6 +280,11 @@ const Bot = (() => {
         push(Engine.castSpell(state, pid, i, target.uid));
       }
     }
+
+    // 5. Hard: poradie útoku – „Pri útoku" buffery úplne vľavo, potom tvrdé
+    //    telá, pomalé škálovače (mrchožrúti, lovci, rast Po nákupe) vpravo,
+    //    nech útočia posledné a prežijú.
+    if (cfg.orderBoard) orderBoard(state, p, push);
 
     push(Engine.endShopTurn(state, pid));
     return events;
@@ -256,6 +323,56 @@ const Bot = (() => {
     }
   }
 
+  // Plná plocha + silnejšie telo v ruke: predaj najslabšie na ploche a vylož
+  // to z ruky (rozdiel aspoň 3, nech sa nepredáva za každú cenu).
+  function swapWeakBodies(state, p, push) {
+    let guard = 5;
+    while (p.board.length >= Engine.BOARD_MAX && guard-- > 0) {
+      const handBest = p.hand
+        .map((inst, i) => ({ inst, i }))
+        .filter(x => x.inst && !x.inst.spell)
+        .sort((a, b) => bodyValue(b.inst) - bodyValue(a.inst))[0];
+      if (!handBest) break;
+      const weakIdx = p.board
+        .map((inst, i) => ({ inst, i }))
+        .sort((a, b) => bodyValue(a.inst) - bodyValue(b.inst))[0];
+      if (bodyValue(handBest.inst) < bodyValue(weakIdx.inst) + 3) break;
+      push(Engine.sellCard(state, p.id, "board", weakIdx.i));
+      const handIdx = p.hand.indexOf(handBest.inst);
+      push(Engine.playMinion(state, p.id, handIdx));
+    }
+  }
+
+  // Balast z ruky predaj (nehrá sa, len by sa točil v balíčku).
+  function sellJunk(state, p, push) {
+    for (let i = p.hand.length - 1; i >= 0; i--) {
+      const inst = p.hand[i];
+      if (!inst || inst.spell) continue;
+      if (isJunk(state, p, inst)) push(Engine.sellCard(state, p.id, "hand", i));
+    }
+  }
+
+  // Poradie útoku (zľava doprava): 0 = Pri útoku buffery, 1 = tvrdé telá
+  // podľa útoku, 2 = škálovače, čo majú prežiť (mrchožrúti, lovec tokenov,
+  // rast Po nákupe / Po kúzle).
+  function attackPriority(inst) {
+    const pw = Cards.byId[inst.defId].power;
+    if (!pw) return 1;
+    if (pw.kw === "onAttack") return 0;
+    if (["raceDeath", "tokenDeath", "onEnemySummon", "endTurn", "afterSpell"].includes(pw.kw)) return 2;
+    return 1;
+  }
+
+  function orderBoard(state, p, push) {
+    const desired = [...p.board].sort((a, b) =>
+      (attackPriority(a) - attackPriority(b)) || (b.atk - a.atk) || (a.uid - b.uid));
+    for (let slot = 0; slot < desired.length; slot++) {
+      const inst = desired[slot];
+      if (inst.slot === slot) continue;
+      push(Engine.moveOnBoard(state, p.id, p.board.indexOf(inst), slot));
+    }
+  }
+
   // Zdrojové kúzla (peniaze + draw) hraj hneď – dotiahnuté karty a zlato
   // sa dajú v tom istom ťahu použiť.
   function playGoldSpells(state, p, push) {
@@ -269,7 +386,7 @@ const Bot = (() => {
     }
   }
 
-  return { botTurn, ownedCount, cardScore };
+  return { botTurn, ownedCount, cardScore, dominantRace };
 })();
 
 if (typeof module !== "undefined") module.exports = Bot;
