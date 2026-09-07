@@ -65,8 +65,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   z nákupnej fázy a AURY (`futureRace`: „VŠETKY tvoje X, aj v balíčku,
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
 - Rasové archetypy (trojuholník counterov):
-  - **Beast = telá a mrchožrút**: B007 vyvoláva fixné Mláďa 🐣 (1/1,
-    škáluje len evolvom), B005 (t2) pri smrti vyvolá 2× Mláďa.
+  - **Beast = telá a mrchožrút**: B007 (1×) a B005 (t2, 2×) vyvolávajú
+    Mláďa 🐣 s Obrancom (1/1, škáluje len evolvom) – Obranca ho nechá
+    padnúť skoro, combo s B004 (rast navždy) a B009 (chránený mrchožrút).
     B004 (t2) = „Keď zomrie tvoje Mláďa: +1/+1 NAVŽDY" (rast ostáva na
     kópii karty cez balíček) – vykladaj ho vedľa B007/B005 každé kolo.
     B009 = scavenger („Keď zomrie tvoje Zviera:

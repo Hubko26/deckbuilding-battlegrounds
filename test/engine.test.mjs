@@ -1491,6 +1491,27 @@ test("boj: deathrattle vyvolá token, padlé karty idú do discard", () => {
   assert.ok(state.p1.discard.some(c => c.defId === "U001"));
 });
 
+test("Mláďa má Obrancu (B007 aj B005) – súper ho musí biť, kŕmi sovu B004", () => {
+  const { state, E, C } = fresh(68);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const fin = E.makeInst(state, "B007", 1); fin.slot = 0;   // Pri smrti: Mláďa s Obrancom
+  const tuft = E.makeInst(state, "B005", 1); tuft.slot = 1; // Pri smrti: 2× Mláďa bez Obrancu
+  const owl = E.makeInst(state, "B004", 1); owl.slot = 2;   // Keď zomrie tvoje Mláďa: +1/+1
+  state.p1.board = [fin, tuft, owl];
+  state.p2.board = [Object.assign(E.makeInst(state, "O003", 1), { slot: 0 })]; // 7/8 – zabíja všetko po jednom
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const sums = events.filter(e => e.type === "summon" && e.defId === "mlada");
+  assert.ok(sums.length >= 1);
+  const cub = E.makeInst(state, "mlada", 1);
+  assert.equal(cub.taunt, true);
+  assert.match(C.cardText(C.byId["B007"], 1, "sk", false, 0), /vyvolaj 1× Mláďa \(1\/1\) s Obrancom/);
+  assert.match(C.cardText(C.byId["B005"], 1, "sk", false, 0), /vyvolaj 2× Mláďa \(1\/1\) s Obrancom/);
+});
+
 test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie viac", () => {
   const { state, E } = fresh(15);
   E.startRound(state);

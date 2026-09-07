@@ -177,8 +177,10 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **🐾 Beast – telá a mrchožrút**
 
-- B007 (t1, Pri smrti) vyvoláva **Mláďa** 🐣 – fixný token 1/1, škáluje
-  len evolvom rodiča (2/2, 4/4). Trvalé počítadlo rastu bolo odstránené:
+- B007 (t1, Pri smrti) a B005 (t2, 2×) vyvolávajú **Mláďa** 🐣 – fixný
+  token 1/1 **s Obrancom** (token má `taunt: true`), škáluje len evolvom
+  rodiča (2/2, 4/4). Obranca berie údery a padne skoro → kŕmi sovu B004
+  („Keď zomrie tvoje Mláďa") a chráni mrchožrúta B009. Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
 - B004 (t2) je **mláďací mrchožrút** (`tokenDeath`): „Keď zomrie tvoje
   Mláďa: +1/+1 pre seba NAVŽDY" (`perm: true`, evolve ×2/×3). Prvý

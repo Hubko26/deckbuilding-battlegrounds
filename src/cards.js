@@ -302,7 +302,9 @@ const Cards = (() => {
       fx: { type: "buffTarget", a: 1, h: 0 },
       name: { sk: "Iskrička", cs: "Jiskřička", en: "Sparkle" },
       nameAcc: { sk: "Iskričku", cs: "Jiskřičku", en: "Sparkle" } }, // akuzatív („pridaj Iskričku“)
-    { id: "mlada", tier: 1, race: "beast", emoji: "🐣", atk: 1, hp: 1, token: true,
+    // Mláďa má Obrancu: berie údery, padne skoro a kŕmi sovu B004 („Keď
+    // zomrie tvoje Mláďa"); chráni aj mrchožrúta B009.
+    { id: "mlada", tier: 1, race: "beast", emoji: "🐣", atk: 1, hp: 1, token: true, taunt: true,
       namePl: { sk: "Mláďatá", cs: "Mláďata", en: "Cubs" },
       name: { sk: "Mláďa", cs: "Mládě", en: "Cub" } },
   ];
@@ -459,6 +461,11 @@ const Cards = (() => {
         base.sk += `; každá ${KW_LABEL[tok.power.kw].sk.toLowerCase()}: ${inner.sk}`;
         base.cs += `; každá ${KW_LABEL[tok.power.kw].cs.toLowerCase()}: ${inner.cs}`;
         base.en += `; each one ${KW_LABEL[tok.power.kw].en.toLowerCase()}: ${inner.en}`;
+      }
+      if (tok.taunt) { // Mláďa má Obrancu
+        base.sk += " s Obrancom";
+        base.cs += " s Obráncem";
+        base.en += " with Taunt";
       }
       if (tok.race === "undead") {
         base.sk += `; ak sa nezmestí, jeho staty dostane jeden kamarát`;
