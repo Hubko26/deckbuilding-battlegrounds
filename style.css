@@ -138,11 +138,13 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* Tavern tier = veľké číslo na štíte s labkou uprostred bannera. */
 .hero-plate .tier-shield {
   text-align: center; font-size: 4.4cqh; font-weight: 900; color: #7a4c07;
+  font-variant-numeric: tabular-nums;
   text-shadow: 0 .2cqh .3cqh #ffe9b0, 0 0 .6cqh #fff;
 }
-/* Stred štítu v obrázku dosky: desktop hore 8.5 %, dole 88.5 % výšky dosky. */
-.hero-plate.top .tier-shield { transform: translateY(1.1cqh); }
-.hero-plate.bottom .tier-shield { transform: translateY(-.2cqh); }
+/* Optický stred štítu v obrázku dosky (desktop): hore ~9 %, dole ~89.2 %
+   výšky dosky – doladené podľa screenshotu, centroid zlata ťahá číslo hore. */
+.hero-plate.top .tier-shield { transform: translateY(1.6cqh); }
+.hero-plate.bottom .tier-shield { transform: translateY(.4cqh); }
 
 /* Rohové rámiky: balíček a kôpka. */
 .corner {
@@ -280,6 +282,10 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .card .atk, .card .hp {
   position: absolute; top: 87.2%; transform: translate(-50%, -50%);
   font-size: 1.45em; font-weight: 900; color: #fff; line-height: 1;
+  /* Tabuľkové číslice: „1" má inak veľký pravý okraj a vycentrovaná podľa
+     svojej šírky sedí opticky vľavo – v rovnakej bunke ako ostatné číslice
+     je v strede. */
+  font-variant-numeric: tabular-nums;
   /* Obrys symetrický a v em – pevné 2px dole/vpravo pri malom písme (mobil,
      ~10px) opticky tlačili číslo hore a doľava mimo stred kruhu/srdca. */
   text-shadow: 0 .08em 0 #000, 0 -.08em 0 #000, .08em 0 0 #000, -.08em 0 0 #000, 0 .12em .2em rgba(0,0,0,.5);
@@ -289,8 +295,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    (B002_1.webp) aj nad generickým rámom (card-frame.webp), oba rámy sedia:
    kruh (15 %, 87.2 %), srdce (83.8 %, 87.2 %). Predtým bol život na 86 %,
    t. j. ~2 % vpravo od stredu srdca. */
-.card .atk { left: 15%; }
-.card .hp { left: 83.8%; }
+.card .atk { left: 15.2%; }
+.card .hp { left: 84.3%; }
 /* buffnuté staty (nad základ stupňa) svietia zelenou */
 .card .atk.buffed, .card .hp.buffed { color: #5cf07a; }
 /* zranená príšerka (hp < maxHp) má život červený – červená vyhráva nad zelenou */
@@ -302,11 +308,11 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   pointer-events: none;
 }
 /* Karta s kompletným artom: tier číslo v modrom kryštáli vľavo hore.
-   Stred kryštálu je v arte na ~(12.3 %, 9.7 %) karty (odmerané mriežkou nad
-   B002_1.webp) – číslo sa centruje transformom presne naň. */
+   Stred kryštálu je v arte na ~(12.6 %, 9.2 %) karty (odmerané mriežkou nad
+   artom aj z preview karty) – číslo sa centruje transformom presne naň. */
 .card.full-art .tier-tag {
-  top: 9.7%; left: 12.3%; width: auto; transform: translate(-50%, -50%);
-  font-size: 1.2em; line-height: 1; color: #fff;
+  top: 9.2%; left: 12.6%; width: auto; transform: translate(-50%, -50%);
+  font-size: 1.2em; line-height: 1; color: #fff; font-variant-numeric: tabular-nums;
   text-shadow: 0 .06em .1em #013, 0 0 .2em #026;
 }
 .card .cost {
