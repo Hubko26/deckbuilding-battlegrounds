@@ -265,11 +265,6 @@ const L = {
     cs: "🪙 Hod mincí: prohrál",
     en: "🪙 Coin flip: lost",
   },
-  eatMsg: {
-    sk: "👹 zožral suseda",
-    cs: "👹 sežral souseda",
-    en: "👹 ate its neighbor",
-  },
   drunkMsg: {
     sk: "🍺 Ožratý úder: trafil sám seba za",
     cs: "🍺 Ožralý úder: trefil sám sebe za",
@@ -305,10 +300,15 @@ const L = {
     cs: "🤫 Umlčení nenašlo cíl (soupeř nemá příšerku se schopností)",
     en: "🤫 Silence found no target (no enemy minion with an ability)",
   },
+  allMinionsForever: {
+    sk: "Navždy: VŠETKY tvoje príšerky",
+    cs: "Navždy: VŠECHNY tvé příšerky",
+    en: "Forever: ALL your minions",
+  },
   chargeDmgMsg: {
-    sk: "⚡ Navždy: všetky tvoje výboje a výbuchy +{n} damage (spolu +{t})",
-    cs: "⚡ Navždy: všechny tvé výboje a výbuchy +{n} damage (celkem +{t})",
-    en: "⚡ Forever: all your zaps and explosions +{n} damage (total +{t})",
+    sk: "⚡ Navždy: výboje a výbuchy +{n} damage, bonusy Pri útoku +{n} útok (spolu +{t})",
+    cs: "⚡ Navždy: výboje a výbuchy +{n} damage, bonusy Při útoku +{n} útok (celkem +{t})",
+    en: "⚡ Forever: zaps and explosions +{n} damage, On attack bonuses +{n} attack (total +{t})",
   },
   chargeSummonMsg: {
     sk: "🧟 Nabité: tvoje ďalšie vyvolanie v boji vyvolá o {n} viac",
@@ -319,6 +319,21 @@ const L = {
     sk: "🤫 Nabité: v najbližšom boji bude umlčaná súperova príšerka",
     cs: "🤫 Nabito: v nejbližším boji bude umlčena soupeřova příšerka",
     en: "🤫 Charged: an enemy minion will be silenced next fight",
+  },
+  chaosTriggerMsg: {
+    sk: "🎲 Chaos! {a} spustil schopnosť: {b}",
+    cs: "🎲 Chaos! {a} spustil schopnost: {b}",
+    en: "🎲 Chaos! {a} triggered an ability: {b}",
+  },
+  shrinkPendingMsg: {
+    sk: "🐲 Oslabenie nabité – v najbližšom boji náhodná súperova príšerka −1/−1",
+    cs: "🐲 Oslabení nabito – v nejbližším boji náhodná soupeřova příšerka −1/−1",
+    en: "🐲 Weakening charged – next fight a random enemy minion gets −1/−1",
+  },
+  shrinkMsg: {
+    sk: "oslabená",
+    cs: "oslabena",
+    en: "weakened",
   },
   hexPendingMsg: {
     sk: "🐸 Nabité: v najbližšom boji sa súperovej príšerke zmení život na 1",
@@ -985,6 +1000,31 @@ async function runBattle() {
         }
         break;
       }
+      case "chaosTrigger": {
+        // O002: kocka nad ogrom + log, koho schopnosť spustil (aj súperovu).
+        const a = Cards.nameOf(Cards.byId["O002"], 1, I18N.lang);
+        const b = Cards.nameOf(Cards.byId[ev.targetDefId], 1, I18N.lang);
+        log(t(L.chaosTriggerMsg).replace("{a}", a).replace("{b}", `${b} (${Cards.KW_LABEL[ev.kw][I18N.lang]})`));
+        const el = cardById(ev.uid);
+        if (el) { floatText(el, "🎲", true); await sleep(400); }
+        break;
+      }
+      case "shrink": {
+        // Oslabenie (D001): −a/−h floatuje červeno, čísla na karte klesnú.
+        const el = cardById(ev.uid);
+        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
+        log(`🐲 ${name} ${t(L.shrinkMsg)} ${fmtBuff(ev.a, ev.h)}`);
+        if (el) {
+          floatText(el, fmtBuff(ev.a, ev.h), false);
+          const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
+          if (atkEl && ev.a) atkEl.textContent = String((parseInt(atkEl.textContent, 10) || 0) + ev.a);
+          if (hpEl && ev.h) hpEl.textContent = String((parseInt(hpEl.textContent, 10) || 0) + ev.h);
+          if (ev.h) el.dataset.maxhp = String(Math.max(1, Number(el.dataset.maxhp || 0) + ev.h));
+          Sfx.zap();
+          await sleep(500);
+        }
+        break;
+      }
       case "hex": {
         const el = cardById(ev.uid);
         const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
@@ -1060,6 +1100,12 @@ async function runBattle() {
         }
         await sleep(650);
         for (const el of els) el.classList.remove("hit");
+        break;
+      }
+      case "futureBuff": {
+        // Permanentná aura položená uprostred boja (U010 Pri smrti).
+        Sfx.evolve();
+        log(`${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]} +${ev.a}/+${ev.h}!`);
         break;
       }
       case "buff": {
@@ -1255,7 +1301,7 @@ function renderHero(el, p) {
 
 // mine = drag&drop; ownerPid (voliteľné) = koho boost/aury popisok ukáže.
 // V boji je mine=false aj pre vlastnú plochu – owner treba poslať explicitne,
-// inak by moje karty ukazovali súperov dmgBoost (Večná iskra) zeleno.
+// inak by moje karty ukazovali súperov dmgBoost (Živelná sila) zeleno.
 function renderBoardList(el, list, mine, ownerPid) {
   el.innerHTML = "";
   for (let i = 0; i < list.length; i++) {
@@ -1296,10 +1342,20 @@ function renderShop() {
   const p = state[MY];
   const myTurn = state.active === MY && !busy;
   $("moneyEl").textContent = `🪙 ${p.money}`;
-  // Aktívne permanentné aury („všetky budúce X…“).
-  $("auraEl").textContent = Object.entries(p.raceBuffs || {})
-    .map(([race, b]) => `${Cards.RACE_ICON[race]}+${b.a}/+${b.h}`)
-    .join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "") +
+  // Aktívne permanentné aury („všetky budúce X…“). Spoločný základ všetkých
+  // rás (F008 futureAll) sa ukáže raz ako ⭐, rasy len zvyšok nad ním.
+  const rb = p.raceBuffs || {};
+  const allRaces = Object.keys(Cards.RACES);
+  const common = allRaces.every(r => rb[r])
+    ? { a: Math.min(...allRaces.map(r => rb[r].a)), h: Math.min(...allRaces.map(r => rb[r].h)) }
+    : { a: 0, h: 0 };
+  const auraParts = [];
+  if (common.a || common.h) auraParts.push(`⭐+${common.a}/+${common.h}`);
+  for (const [race, b] of Object.entries(rb)) {
+    const a = b.a - common.a, h = b.h - common.h;
+    if (a || h) auraParts.push(`${Cards.RACE_ICON[race]}+${a}/+${h}`);
+  }
+  $("auraEl").textContent = auraParts.join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "") +
     (p.summonCharge ? ` 🧟+${p.summonCharge}` : "");
   const banner = $("turnBanner");
   if (state.active === MY) {
@@ -1370,8 +1426,8 @@ function cardEl(instOrId, opts) {
   el.className = "card" + ((isInst ? instOrId.taunt : def.taunt) ? " taunt" : "");
   el.dataset.rank = rank;
   if (isInst) el.dataset.uid = instOrId.uid;
-  // Trvalý bonus Večnej iskry majiteľa (opts.owner, default ja) – výboje
-  // a výbuchy ukážu v popisku navýšené číslo (zeleno).
+  // Trvalý bonus Živelnej sily majiteľa (opts.owner, default ja) – výboje,
+  // výbuchy a „Pri útoku" bonus ukážu v popisku navýšené číslo (zeleno).
   const owner = state ? state[opts.owner || MY] : null;
   const boost = (owner && owner.dmgBoost) || 0;
   const text = Cards.cardText(def, rank, I18N.lang, true, boost);
@@ -1394,6 +1450,7 @@ function cardEl(instOrId, opts) {
   // Božský štít / Fénixovo pierko – trvalé badge, kým efekt drží.
   if (isInst && instOrId.shield) inner += `<span class="shield-badge">😇</span>`;
   if (isInst && instOrId.revive) inner += `<span class="revive-badge">🪶</span>`;
+  if (isInst && instOrId.windfury) inner += `<span class="windfury-badge">🌪️</span>`;
   inner += `<div class="nm">${name}</div>`;
   inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
@@ -1737,6 +1794,10 @@ function act(events) {
       Sfx.evolve();
       log(`${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]} +${ev.a}/+${ev.h}!`);
     }
+    if (ev.type === "futureAllBuff" && ev.pid === MY) {
+      Sfx.evolve();
+      log(`⭐ ${t(L.allMinionsForever)} +${ev.a}/+${ev.h}!`);
+    }
   }
   renderAll();
   // Evolve animácia po prerenderi.
@@ -1786,18 +1847,13 @@ function act(events) {
       const el = cardById(ev.uid);
       if (el) floatText(el, "🪙", true);
     }
-    if (ev.type === "eat") {
-      const name = Cards.nameOf(Cards.byId[ev.eatenDefId], 1, I18N.lang);
-      log(`${t(L.eatMsg)}: ${name} (+${ev.a}/+${ev.h})`);
-      const el = cardById(ev.uid);
-      if (el) floatText(el, "👹🍴", true);
-    }
     if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
     if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);
     if (ev.type === "dmgBoost") log(t(L.chargeDmgMsg).replace("{n}", ev.n).replace("{t}", ev.total));
     if (ev.type === "summonCharge") log(t(L.chargeSummonMsg).replace("{n}", ev.n));
     if (ev.type === "silencePending") log(t(L.silencePendingMsg));
     if (ev.type === "hexPending") log(t(L.hexPendingMsg));
+    if (ev.type === "shrinkPending") log(t(L.shrinkPendingMsg));
     if (ev.type === "boltPending") log(t(L.boltPendingMsg));
     if (ev.type === "goldLater") log(t(L.goldLaterMsg).replace("{n}", ev.n));
     if (ev.type === "transform") {

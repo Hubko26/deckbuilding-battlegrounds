@@ -68,11 +68,19 @@ const Bot = (() => {
       const fx = def.power.fx;
       // aury permanentne zväčšujú celý balíček – kupuj skoro a rád
       if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;
+      // F008: permanentná aura pre všetky rasy – vždy dobrá, s kúzlami lepšia
+      if (fx.type === "futureAll") score += 3 + ownedSpellCount(p) * 0.4;
       if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
       // víly („Po kúzle“) rastú s počtom kúziel v balíčku
       if (def.power.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
       // Iskrička z battlecry kŕmi Po kúzle víly – hodnotnejšia s vílami
       if (def.power.fx.type === "addSpell") score += 1 + (races.fairy || 0) * 0.5;
+      // D007 (Živelná sila na tele) – ako kúzlo: cennejší s elementálmi
+      if (fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
+      // U002 (kostíky +1/+1 v boji) – cenný s vyvolávačmi kostíkov
+      if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
+      // Token scavenger (B004 „Keď zomrie tvoje Mláďa") – cenný len s vyvolávačmi Mláďaťa
+      if (def.power.kw === "tokenDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005")) * 0.8;
     }
     if (def.spell) {
       // lacné kúzla = dobrá hodnota; Minca (1g → +2g) je takmer vždy dobrá
@@ -84,7 +92,7 @@ const Bot = (() => {
       if (def.fx.type === "draw") score += 1 + ownedSpellCount(p) * 0.2;
       // víly na kúzla reagujú („Po kúzle“) – kúzla sú s nimi hodnotnejšie
       score += (races.fairy || 0) * 0.5;
-      // Večná iskra škáluje s počtom vlastných elementálov (výboje/výbuchy)
+      // Živelná sila škáluje s počtom vlastných elementálov (výboje/výbuchy/Pri útoku)
       if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
     }
     return score;
@@ -186,8 +194,12 @@ const Bot = (() => {
       if (!inst || !inst.spell) continue;
       const fx = Cards.byId[inst.defId].fx;
       if (fx.type === "buffTarget" && p.board.length) {
+        // Vichor (2 útoky): najlepšie na „Pri útoku" kartu, inak najväčší útok.
+        const score = fx.windfury
+          ? x => x.atk + (Cards.byId[x.defId].power?.kw === "onAttack" ? 10 : 0)
+          : x => x.atk + x.hp;
         const target = cfg.smartSpells
-          ? [...p.board].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0]
+          ? [...p.board].sort((a, b) => score(b) - score(a))[0]
           : p.board[Math.floor(state.rng() * p.board.length)];
         push(Engine.castSpell(state, pid, i, target.uid));
       } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {

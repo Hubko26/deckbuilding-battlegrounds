@@ -20,8 +20,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
 - Peniaze na začiatku kola: `min(číslo kola + 2, 10)` – t. j. 3 v prvom kole, +1 každé
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
-  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Iskra/Svätožiara/
-  Pierko/Kliatba/Zvitok 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
+  (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Živelná sila/Svätožiara/
+  Pierko/Kliatba/Vichor/Zvitok 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
   automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
 - Refresh obchodu: **1** peniaz.
@@ -131,6 +131,7 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 | On attack | **Pri útoku** | keď príšerka útočí (dočasný efekt, len v boji) |
 | After a spell | **Po kúzle** | keď zošleš kúzlo, kým je víla na ploche |
 | Divine Shield | **Božský štít** | prvé zranenie sa zruší (štít praskne); z kúzla Svätožiara |
+| Windfury | **Vichor** | príšerka útočí vo svojom ťahu dvakrát (druhý útok len ak prežila); z kúzla Vichor |
 
 Nie každá príšerka má schopnosť – niektoré majú len silu a život.
 
@@ -168,6 +169,11 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - B007 (t1, Pri smrti) vyvoláva **Mláďa** 🐣 – fixný token 1/1, škáluje
   len evolvom rodiča (2/2, 4/4). Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
+- B004 (t2) je **mláďací mrchožrút** (`tokenDeath`): „Keď zomrie tvoje
+  Mláďa: +1/+1 pre seba NAVŽDY" (`perm: true`, evolve ×2/×3). Prvý
+  permanentný rast z boja – bojuje kópia, engine zapíše `pa/ph` na originál
+  na ploche, ktorý ide po boji do kôpky. Kŕmia ho B007/B005; pôvodný
+  battlecry draw bol kópia F001 a mimo témy.
 - B009 (t4) je **mrchožrút** (`raceDeath`): „Keď zomrie tvoje Zviera:
   +2/+2 pre seba" – rast je bojový a dočasný, viazaný na padlé vlastné
   zvieratá (synergia s Mláďaťom a trade-ami), evolve ×2/×3.
@@ -183,8 +189,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - Viac kariet vyvoláva kostíkov a vo väčších počtoch: U001 (t1, Pri smrti)
   2×, U005 (t3, Pred bojom) 2×, U006 (t3, taunt, Pri smrti) 2×, U009
   (t5, Pri smrti) 3×. Nemŕtve telá sú štatovo podpriemerné (U005 3/4,
-  U009 5/4). Kostík je **2/1** – bije tvrdo (páka na veľké beast telá),
-  ale padne na jediný ping (elemental counter).
+  U009 5/4). Kostík je **1/1** (bol 2/1 – dvojica z U001 dávala t1 karte
+  4/2 za 3 zlata) a padne na jediný ping (elemental counter).
+- **U002 (t1, Pri vyložení)**: „v najbližšom boji všetky tvoje Kostíky
+  +1/+1" (`fightToken`, `p.fightTokenBuffs[kostik]`, evolve ×2/×3,
+  stackuje sa, po boji sa nuluje ako dračie `fightRaceBuffs`). Vracia
+  kostíkom úderný 2/2 – t1 undead stojí na U002 + U001. Navždy by bolo
+  prisilné (aury už kostíky berú). Pôvodný výboj bol elemental mechanika.
 - **U004 (t2, Pri vyložení, cielené)**: označená príšerka po smrti vstane
   ako 1/1 (stupeň 2/2, 3/3). Karta NAOZAJ zomrie – deathrattle aj
   scavengery prebehnú PRED vstávaním (kostíky zaplnia plochu, druhá smrť
@@ -205,7 +216,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **✨ Elemental – explozívny archetyp**
 
-- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E005 (t3, Pred bojom 3),
+- **E005 Lovec tokenov** (t3, 3/4, `onEnemySummon`): „Keď súper vyvolá
+  token: zasiahni ho výbojom za 1; ak zomrie, +1/+1 pre seba NAVŽDY."
+  Hook hneď po položení tokenu v boji (U001 2× kostík = 2 výboje), výboj
+  škáluje so Živelnou silou a stupňom (1/2/3), rast ×stupeň cez `pa/ph`.
+  Kostík 1/1 padne, kostík s U002 (2/2) alebo aurou prežije – živly musia
+  Živelnou silou držať krok s undead aurami. Pretečenie (token mimo plochy)
+  lovca nespustí – únik pre undead cez plnú plochu. Jediný navždy-rast
+  živlov mimo aur; nahradil výboj 3, ktorý bol kópia E001.
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3),
   E006 (t3, Pri smrti 3) – mieria na **najslabšieho** (najmenej HP)
   nepriateľa: kosia tokeny a nekŕmia zbytočne deathrattle telá (náhodný
   cieľ podľa simulácie undead paradoxne posilňoval). Evolve = **viac
@@ -217,11 +236,20 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostíky aj mláďatá
   s aurami škálujú do late game (predtým aury tokeny nebrali a undead
   scaling zaostával). Kostík navyše škáluje stupňom rodiča.
-- Kúzlo **Večná iskra** ⚡ (t3, cena 2): trvalý bonus (`dmgBoost`) –
-  „všetky tvoje výboje a výbuchy (navždy) dávajú +1 damage". Stackuje sa –
-  elemental ekvivalent permanentných aur (malý krok +1, aby nesnowballoval).
-  UI: popisky výbojov/výbuchov ukazujú číslo aj s bonusom majiteľa a
-  zvýrazňujú ho zelenou (trieda `.boosted`), nech hráč vidí reálny damage.
+- Kúzlo **Živelná sila** ⚡ (t3, cena 2, bývalá Večná iskra): trvalý
+  „ability power" (`dmgBoost`) – „navždy: tvoje výboje a výbuchy +1 damage,
+  bonusy Pri útoku +1 útok". Stackuje sa – elemental ekvivalent
+  permanentných aur (malý krok +1, aby nesnowballoval). Zosilňuje výboje
+  (`dmgWeakEnemy`), výbuchy (`dmgAllEnemies`, `dmgAllBoth`, `dmgRandomAny`),
+  Blesk aj **útočnú časť „Pri útoku" buffu** (E004 Whifflet: +1 útok
+  všetkým → +1+boost). Bonus sa nenásobí stupňom a platí pre všetky rasy
+  (aj ogrie výbuchy) – jedno pravidlo. Aury (`buffRace`, `futureRace`)
+  NEzosilňuje – permanentná aura +1 navždy by snowballovala.
+  UI: popisky výbojov/výbuchov/Pri útoku ukazujú číslo aj s bonusom
+  majiteľa a zvýrazňujú ho zelenou (trieda `.boosted`).
+- **E004 Whifflet** (t2, Pri útoku: +1 útok všetkým kamarátom): bonus
+  dostanú aj tokeny na ploche (kostíky, Bubliny); s Vichorom útočí dvakrát
+  a bonus rozdá dvakrát – „Pri útoku" karty sú hlavný cieľ Vichoru.
 
 **🧚 Fairy – Po kúzle (implementované)**
 
@@ -233,9 +261,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   F001 **Pri vyložení** potiahni kartu (evolve 1/2/3 – Po kúzle draw
   tvoril s F005 nekonečný motor: kúzlo vrátilo zlato aj kartu),
   F004 taunt +1/+2 **NAVŽDY**, F005 vráť 1 🪙,
-  F006 (4/4) **Pri vyložení: pridaj do ruky Iskričku** ✨, F009 vanilka
-  8/8 bez schopnosti (nie každá víla musí mať ability – ako B001/E002),
-  F007 taunt +1/+1 Vílam, F008 (t6) +2/+2 všetkým tvojim príšerkám.
+  F006 (4/4) **Pri vyložení: pridaj do ruky Iskričku** ✨,
+  F007 taunt +1/+1 Vílam, F009 (t5, 6/6) +2/+2 všetkým tvojim príšerkám
+  (dočasné, aj iné rasy – prebrala bývalú t6 schopnosť, vanilka 8/8
+  bola mimo vílej témy), **F008 (t6, 7/8) Po kúzle: VŠETKY tvoje
+  príšerky každej rasy +1/+1 NAVŽDY** (`futureAll` – zapíše sa do
+  `raceBuffs` všetkých rás naraz, takže ju berú aj tokeny, balíček,
+  evolve aj reviveAs; evolve ×2/×3). Finálna víla = endgame akcelerátor,
+  t6 musí rásť rýchlejšie než t5. Header obchodu ukáže spoločný základ
+  všetkých rás raz ako ⭐, rasové aury len zvyšok nad ním.
 - **Iskrička** ✨ (spell token z F006): +1/+0 vybranej príšerke.
   **Jednorazová** – NEJDE do balíčka: po zoslaní, odhodení aj na konci
   ťahu zmizne z hry (`token: true` na kúzle). Zoslanie spúšťa Po kúzle
@@ -313,7 +347,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   aury tokeny neberú). Po boji sa nuluje. Platí to aj pre `buffTopRace`
   (D005, Pred bojom) – hoci sa spúšťa až v boji, tokeny vyvolané po ňom
   buff dostanú rovnako ako pri battlecry drakoch.
-- Roster: D001 3/2 a D007 2/4 vanilky (t1, telá nad krivkou);
+- Roster: D001 (t1, 3/2) battlecry **odložené oslabenie** (`shrinkEnemy`,
+  `p.shrinks`): na začiatku najbližšieho boja náhodná súperova príšerka
+  −1/−1 (útok min 0, život min 1; nie je to damage – štít ani deathrattle
+  sa nespustia; odložené ako Kliatba, nech nezáleží na poradí nákupu);
+  D007 (t1, 2/4) battlecry **Živelná sila +1** (`dmgBoost` – to isté, čo
+  kúzlo ⚡: výboje, výbuchy a „Pri útoku" bonusy navždy +1, evolve +2/+3).
+  Dôvod: kúzlo má jediný spell slot, živly boost ťažko nachádzali; drak
+  cykluje balíčkom ako kúzlo a dáva +1 pri každom vyložení. Obe boli
+  vanilky – t1 draci teraz nesú dračiu identitu (žoldnier pre iný build);
   D002 (t2) battlecry rasa cieľa +1/+1 do boja (`buffRaceOf`);
   D006 (t2, Po nákupe) náhodná tvoja rasa +1/+1 (`buffRandomRace`);
   D004 (t3) battlecry **Discover karta rasy cieľa** (`discoverRace`);
@@ -337,9 +379,14 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     alebo −2/−2." Postih nejde pod 0 útoku / 1 život. Lacný gambling filler.
   - **O006 Ožratý úder** (t2, 5/5, Pri útoku): „50 % šanca, že sa trafí sám
     za polovicu svojho útoku." Vlajkový derp; ak sa zloží sám, útok odpadá.
-  - **O002 Zožer suseda** (t3, 4/4, Pri vyložení): zožerie NÁHODNÉHO suseda
-    (najbližší slot) – jeho aktuálne staty získa **NAVŽDY** (pa/ph cestujú
-    s kópiou), zjedená karta **zmizne z hry** (nejde do kôpky).
+  - **O002 Chaos spúšťač** (t3, 5/6, Pred bojom): „spusti schopnosť
+    náhodnej príšerky na bojisku – aj súperovej" (`triggerRandom`): vyberie
+    náhodnú živú príšerku z oboch strán s bojovou schopnosťou (Pri smrti,
+    Pred bojom, Pri útoku, mrchožrúti) a spustí ju hneď – deathrattle
+    **bez smrti**, Pred bojom druhýkrát. Keď trafí súperov deathrattle,
+    súper dostane tokeny zadarmo. Evolve = počet spustení (1/2/3). Seba
+    a iné spúšťače preskočí (žiadna rekurzia). Nahradil „Zožer suseda"
+    (4/4 bolo pod ogrou krivkou – O008 t3 má 5/7).
   - **O003 Chaos výbuch** (t4, 7/8, Pred bojom): „2 damage VŠETKÝM
     príšerkám – aj tvojim" (škáluje ×stupeň). Anti-swarm s friendly fire;
     veľké ogrie HP vlastný výbuch prežije.
@@ -381,7 +428,11 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
   Beast B006/B010, Elemental E003/E009, Undead U008/U010 – hra tak
-  prirodzene rastie do vyšších čísel.
+  prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
+  smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
+  všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez
+  `raceBuffs`). Combo s U004 (reviveAs), Fénixovým pierkom a mutáciou
+  echoDeath = aura dvakrát; endgame akcelerátor undead buildu.
 - **Dočasné boosty** – všetko, čo sa udeje v boji (Pri útoku, Pred bojom,
   Pri smrti buffy), platí len do konca boja: po boji idú karty do discard
   pile ako čisté kópie. Výnimka: trvalý rast `perm` kariet (B003/B008)
@@ -404,6 +455,11 @@ ruky), peniaze navyše.
   náhodnú súperovu príšerku za **3 + dmgBoost** (je to výboj – Večná iskra
   ho zosilňuje). Stackuje sa, každý Blesk = samostatný zásah. Prvé
   ofenzívne kúzlo v hre.
+- **Vichor** 🌪️ (t4, cena 2): vybraná príšerka získa **Windfury**
+  (`inst.windfury`) – vo svojom ťahu útočí dvakrát, druhý útok len ak
+  prežila prvý. Každý útok znova spustí „Pri útoku" (E004 buff, O006
+  Ožratý úder – aj riziko sa zdvojí). So Svätožiarou (Božský štít) prežije
+  aj prvý výmenný úder. Dočasné ako všetky bojové buffy. UI: badge 🌪️.
 - **Kúzelný klobúk** 🎩 (t4, cena 2): premení vlastnú cieľovú príšerku na
   **náhodnú o tier vyššiu** (stupeň 1, permanentné aury sa aplikujú, slot
   ostáva). Originál mizne z hry. Chaos/pivot nástroj v ogrom duchu.

@@ -332,13 +332,14 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   font-size: 1.9em; line-height: 1; pointer-events: none;
   filter: drop-shadow(0 2px 3px rgba(0,0,0,.7));
 }
-/* Božský štít a Fénixovo pierko – malé trvalé badge v rohoch artu. */
-.card .shield-badge, .card .revive-badge {
+/* Božský štít, Fénixovo pierko a Vichor – malé trvalé badge v rohoch artu. */
+.card .shield-badge, .card .revive-badge, .card .windfury-badge {
   position: absolute; top: 3%; font-size: 1.2em; line-height: 1;
   pointer-events: none; filter: drop-shadow(0 1px 2px rgba(0,0,0,.7));
 }
 .card .shield-badge { right: 5%; }
 .card .revive-badge { right: 22%; }
+.card .windfury-badge { right: 39%; }
 .card.frozen::after {
   content: "❄️"; position: absolute; top: 2%; left: 50%; transform: translateX(-50%);
   font-size: .7em;

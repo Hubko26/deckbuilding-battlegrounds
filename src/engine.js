@@ -148,13 +148,15 @@ const Engine = (() => {
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
+      fightTokenBuffs: {}, // bojové buffy tokenov podľa id (U002: kostík +1/+1) – po boji končia
       fightRaceBuffs: {}, // dočasné rasové buffy „do konca boja" (draci) – platia
       // aj pre neskôr vyložené karty a tokeny vyvolané POČAS boja
       spentSpells: [], // kúzla zahrané v tomto ťahu – do kôpky až na konci ťahu
-      dmgBoost: 0, // trvalo: všetky výboje/výbuchy +n damage (kúzlo Večná iskra)
+      dmgBoost: 0, // trvalo: výboje/výbuchy +n damage a „Pri útoku" bonus +n útok (kúzlo Živelná sila)
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
       hexes: 0, // nabité Žabie kliatby – v najbližšom boji zmenia HP cieľa na 1
+      shrinks: [], // nabité oslabenia (D001) – v najbližšom boji náhodný súper −a/−h
       bolts: 0, // nabité Blesky – na začiatku najbližšieho boja výboj za 3 (+dmgBoost)
       goldNext: 0, // Poklad škriatka: zlato navyše na začiatku ďalšieho kola
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
@@ -530,6 +532,7 @@ const Engine = (() => {
       if (fx.taunt) target.taunt = true;
       if (fx.shield) target.shield = true; // Božský štít: zablokuje prvé zranenie
       if (fx.revive) target.revive = true; // po smrti sa raz vráti s 1 HP
+      if (fx.windfury) target.windfury = true; // Vichor: útočí dvakrát
       if (!def.token) p.spentSpells.push({ defId: inst.defId, rank: 1 }); // jednorazové kúzla miznú
       const events = [{ type: "spell", pid, defId: inst.defId, targetUid }];
       afterSpellProcs(state, p, events);
@@ -728,6 +731,12 @@ const Engine = (() => {
         fb.a += fx.a * m; fb.h += fx.h * m;
         break;
       }
+      case "shrinkEnemy":
+        // D001: odložené oslabenie – na začiatku najbližšieho boja náhodná
+        // súperova príšerka −a/−h (útok min 0, život min 1). Stackuje sa.
+        p.shrinks.push({ a: fx.a * m, h: fx.h * m });
+        events.push({ type: "shrinkPending", pid: p.id, total: p.shrinks.length });
+        break;
       case "buffFriend": {
         const friends = p.board.filter(x => x !== self);
         if (friends.length) {
@@ -800,23 +809,6 @@ const Engine = (() => {
         events.push({ type: "buff", pid: p.id, uid: self.uid, a, h });
         break;
       }
-      case "eatNeighbor": {
-        // Ogr O002: zožerie náhodného SUSEDA (najbližší slot vľavo/vpravo).
-        // Jeho aktuálne staty získa NAVŽDY (pa/ph – cestujú s kópiou karty),
-        // zjedená karta zmizne z hry úplne (nejde do kôpky).
-        const others = p.board.filter(x => x !== self);
-        if (!others.length) break;
-        const left = others.filter(x => x.slot < self.slot).sort((a, b) => b.slot - a.slot)[0];
-        const right = others.filter(x => x.slot > self.slot).sort((a, b) => a.slot - b.slot)[0];
-        const eaten = left && right ? (state.rng() < 0.5 ? left : right) : (left || right);
-        p.board.splice(p.board.indexOf(eaten), 1);
-        buff(self, eaten.atk, eaten.maxHp);
-        self.pa = (self.pa || 0) + eaten.atk;
-        self.ph = (self.ph || 0) + eaten.maxHp;
-        events.push({ type: "eat", pid: p.id, uid: self.uid, eatenUid: eaten.uid, eatenDefId: eaten.defId, a: eaten.atk, h: eaten.maxHp });
-        events.push({ type: "buff", pid: p.id, uid: self.uid, a: eaten.atk, h: eaten.maxHp });
-        break;
-      }
       case "draw":
         drawCards(state, p, fx.n * m, events);
         checkEvolve(state, p, events);
@@ -835,6 +827,14 @@ const Engine = (() => {
         p.dmgBoost += fx.n * m;
         events.push({ type: "dmgBoost", pid: p.id, n: fx.n * m, total: p.dmgBoost });
         break;
+      case "fightToken": {
+        // U002: tokeny daného id vyvolané v najbližšom boji dostanú +a/+h.
+        // Stackuje sa; po boji sa nuluje (ako fightRaceBuffs).
+        const tb = (p.fightTokenBuffs[fx.token] ||= { a: 0, h: 0 });
+        tb.a += fx.a * m; tb.h += fx.h * m;
+        events.push({ type: "fightTokenBuff", pid: p.id, token: fx.token, a: fx.a * m, h: fx.h * m });
+        break;
+      }
       case "summonCharge":
         // Jednorazová charga: ĎALŠIE vyvolanie v boji vyvolá +n tokenov navyše.
         p.summonCharge += fx.n * m;
@@ -892,6 +892,24 @@ const Engine = (() => {
           }
         }
         events.push({ type: "futureBuff", pid: p.id, race: fx.race, a: fx.a * m, h: fx.h * m });
+        break;
+      }
+      case "futureAll": {
+        // F008: permanentná aura pre KAŽDÚ rasu naraz – zapíše sa do
+        // raceBuffs všetkých rás (makeInst, evolve, reviveAs ju čítajú
+        // odtiaľ), príšerky na ploche a v ruke dostanú buff hneď (raz).
+        for (const race of Object.keys(Cards.RACES)) {
+          const cur = p.raceBuffs[race] || { a: 0, h: 0 };
+          p.raceBuffs[race] = { a: cur.a + fx.a * m, h: cur.h + fx.h * m };
+        }
+        for (const zone of ["board", "hand"]) {
+          for (const f of p[zone]) {
+            if (f.spell || !Cards.byId[f.defId].race) continue;
+            buff(f, fx.a * m, fx.h * m);
+            events.push({ type: "buff", pid: p.id, uid: f.uid, a: fx.a * m, h: fx.h * m });
+          }
+        }
+        events.push({ type: "futureAllBuff", pid: p.id, a: fx.a * m, h: fx.h * m });
         break;
       }
     }
@@ -986,6 +1004,24 @@ const Engine = (() => {
       }
     }
 
+    // Oslabenia (D001) – náhodná súperova príšerka −a/−h (nie je to damage:
+    // Božský štít nepomôže, deathrattle sa nespustí – život min 1).
+    for (const pid of [attacker, other(attacker)]) {
+      const p = state[pid];
+      while (p.shrinks.length) {
+        const sh = p.shrinks.shift();
+        const targets = sides[other(pid)].filter(x => x.hp > 0);
+        if (!targets.length) continue;
+        const t = pick(targets, state.rng);
+        const da = Math.min(sh.a, t.atk);
+        const dh = Math.min(sh.h, t.hp - 1);
+        t.atk -= da;
+        t.hp -= dh; t.maxHp = Math.max(1, t.maxHp - dh);
+        events.push({ type: "shrink", pid: other(pid), uid: t.uid, defId: t.defId, a: 0 - da, h: 0 - dh });
+        events.push({ type: "hp", pid: other(pid), uid: t.uid, hp: t.hp });
+      }
+    }
+
     // Blesky – výboj za BOLT_DMG (+dmgBoost, je to výboj) na náhodnú živú
     // súperovu príšerku; každý nabitý Blesk = samostatný zásah.
     for (const pid of [attacker, other(attacker)]) {
@@ -1026,24 +1062,29 @@ const Engine = (() => {
         if (cand.hp > 0) { a = cand; ptr[attacker] = (mine.indexOf(cand) + 1) % mine.length; break; }
       }
       if (!a) break;
-      // Pri útoku – dočasný boost (platí len počas tohto boja).
-      const aDef = Cards.byId[a.defId];
-      if (aDef.power && aDef.power.kw === "onAttack" && !a.silenced) {
-        events.push({ type: "proc", pid: attacker, uid: a.uid, kw: "onAttack" });
-        applyBattleFx(state, sides, attacker, a, aDef.power.fx, a.rank, events);
-        // Ožratý úder (drunkStrike) mohol útočníka zložiť – útok odpadá.
-        if (a.hp <= 0) { attacker = other(attacker); continue; }
+      // Vichor (windfury): príšerka útočí dvakrát za svoj ťah – druhý útok
+      // len ak prežila prvý. Každý útok spúšťa „Pri útoku" znova (synergia).
+      const swings = a.windfury ? 2 : 1;
+      for (let s = 0; s < swings && a.hp > 0; s++) {
+        // Pri útoku – dočasný boost (platí len počas tohto boja).
+        const aDef = Cards.byId[a.defId];
+        if (aDef.power && aDef.power.kw === "onAttack" && !a.silenced) {
+          events.push({ type: "proc", pid: attacker, uid: a.uid, kw: "onAttack" });
+          applyBattleFx(state, sides, attacker, a, aDef.power.fx, a.rank, events, "onAttack");
+          // Ožratý úder (drunkStrike) mohol útočníka zložiť – útok odpadá.
+          if (a.hp <= 0) break;
+        }
+        const enemies = alive(other(attacker));
+        if (!enemies.length) break;
+        const taunts = enemies.filter(x => x.taunt);
+        const d = pick(taunts.length ? taunts : enemies, state.rng);
+        events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
+        dealDmg(a, d.atk, attacker, events);
+        dealDmg(d, a.atk, other(attacker), events);
+        events.push({ type: "hp", pid: attacker, uid: a.uid, hp: a.hp });
+        events.push({ type: "hp", pid: other(attacker), uid: d.uid, hp: d.hp });
+        handleDeaths(state, sides, events);
       }
-      const enemies = alive(other(attacker));
-      if (!enemies.length) break;
-      const taunts = enemies.filter(x => x.taunt);
-      const d = pick(taunts.length ? taunts : enemies, state.rng);
-      events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: other(attacker), dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
-      dealDmg(a, d.atk, attacker, events);
-      dealDmg(d, a.atk, other(attacker), events);
-      events.push({ type: "hp", pid: attacker, uid: a.uid, hp: a.hp });
-      events.push({ type: "hp", pid: other(attacker), uid: d.uid, hp: d.hp });
-      handleDeaths(state, sides, events);
       attacker = other(attacker);
     }
 
@@ -1064,11 +1105,12 @@ const Engine = (() => {
     // Po boji ide VŠETKO (padlé aj preživšie karty) do discard pile a plocha
     // sa vyprázdni – každé kolo sa bojisko stavia nanovo. Tokeny miznú z hry.
     // Nabitá summon charga (U007) platí len tento boj – nevyužitá prepadne,
-    // nech sa nehromadí naprieč kolami. dmgBoost (Večná iskra) je trvalý.
+    // nech sa nehromadí naprieč kolami. dmgBoost (Živelná sila) je trvalý.
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       p.summonCharge = 0;
       p.fightRaceBuffs = {}; // dračie buffy „do konca boja" po boji končia
+      p.fightTokenBuffs = {}; // bojové buffy tokenov (U002) tiež
       // Mutácia „bloodMoon": preživšie príšerky +1/+1 NAVŽDY (permanentný
       // rast pa/ph cestuje s kópiou karty cez balíček; tokeny aj tak miznú).
       if (state.mutator === "bloodMoon") {
@@ -1102,8 +1144,10 @@ const Engine = (() => {
     return events;
   }
 
-  // Efekty v boji (Pred bojom / Pri smrti).
-  function applyBattleFx(state, sides, pid, self, fx, rank, events) {
+  // Efekty v boji (Pred bojom / Pri smrti / Pri útoku).
+  // kw: keyword, ktorý efekt spustil – Živelná sila (dmgBoost) zosilňuje
+  // okrem výbojov a výbuchov aj útočný bonus „Pri útoku" (E004).
+  function applyBattleFx(state, sides, pid, self, fx, rank, events, kw) {
     const m = rank;
     switch (fx.type) {
       case "dmgWeakEnemy": {
@@ -1162,6 +1206,31 @@ const Engine = (() => {
         handleDeaths(state, sides, events);
         break;
       }
+      case "triggerRandom": {
+        // O002 (Pred bojom): n× vyber náhodnú živú príšerku z OBOCH strán
+        // s bojovou schopnosťou a spusti ju hneď – deathrattle bez smrti,
+        // Pred bojom druhýkrát, Pri útoku… Chaos: súperov deathrattle mu dá
+        // tokeny zadarmo. Iné chaos spúšťače (a seba) preskočí – žiadna rekurzia.
+        const BATTLE_KW = ["deathrattle", "startFight", "onAttack", "raceDeath", "tokenDeath"];
+        for (let i = 0; i < fx.n * m; i++) {
+          const pool = [];
+          for (const sp of ["p1", "p2"]) {
+            for (const x of sides[sp]) {
+              if (x === self || x.hp <= 0 || x.silenced) continue;
+              const pw = Cards.byId[x.defId].power;
+              if (!pw || !BATTLE_KW.includes(pw.kw) || pw.fx.type === "triggerRandom") continue;
+              pool.push({ x, sp, pw });
+            }
+          }
+          if (!pool.length) break;
+          const { x, sp, pw } = pick(pool, state.rng);
+          events.push({ type: "chaosTrigger", pid, uid: self.uid, targetPid: sp, targetUid: x.uid, targetDefId: x.defId, kw: pw.kw });
+          events.push({ type: "proc", pid: sp, uid: x.uid, kw: pw.kw });
+          applyBattleFx(state, sides, sp, x, pw.fx, x.rank, events, pw.kw);
+          handleDeaths(state, sides, events); // Ožratý úder / výboje mohli niekoho zložiť
+        }
+        break;
+      }
       case "drunkStrike": {
         // Ogr O006 (Pri útoku): 50 % šanca, že sa trafí sám za ½ svojho útoku.
         if (state.rng() < 0.5) {
@@ -1214,17 +1283,47 @@ const Engine = (() => {
         self.atk += fx.a * m;
         self.maxHp += fx.h * m;
         self.hp += fx.h * m;
+        // perm (B004): rast NAVŽDY aj z boja – bojuje kópia, tak pa/ph
+        // zapíš na originál na ploche; ten ide po boji do kôpky (pileCard).
+        if (fx.perm) {
+          const orig = state[pid].board.find(x => x.uid === self.uid);
+          if (orig) {
+            orig.pa = (orig.pa || 0) + fx.a * m;
+            orig.ph = (orig.ph || 0) + fx.h * m;
+          }
+        }
         events.push({ type: "buff", pid, uid: self.uid, a: fx.a * m, h: fx.h * m });
         break;
-      case "buffAllFriends":
+      case "buffAllFriends": {
+        // „Pri útoku" bonus škáluje so Živelnou silou (dmgBoost) – len útok,
+        // rovnako ako výboje (bonus sa nenásobí stupňom).
+        const a = fx.a * m + (kw === "onAttack" && fx.a ? state[pid].dmgBoost : 0);
         for (const f of sides[pid]) {
           if (f === self || f.hp <= 0) continue;
+          f.atk += a;
+          f.maxHp += fx.h * m;
+          f.hp += fx.h * m;
+          events.push({ type: "buff", pid, uid: f.uid, a, h: fx.h * m });
+        }
+        break;
+      }
+      case "futureRace": {
+        // Permanentná aura položená uprostred boja (U010, Pri smrti): živé
+        // príšerky rasy na ploche hneď, budúce inštancie (balíček, tokeny,
+        // vstávajúce) cez raceBuffs pri vzniku. Prežije boj – je to aura.
+        const p = state[pid];
+        const cur = p.raceBuffs[fx.race] || { a: 0, h: 0 };
+        p.raceBuffs[fx.race] = { a: cur.a + fx.a * m, h: cur.h + fx.h * m };
+        for (const f of sides[pid]) {
+          if (f.hp <= 0 || Cards.byId[f.defId].race !== fx.race) continue;
           f.atk += fx.a * m;
           f.maxHp += fx.h * m;
           f.hp += fx.h * m;
           events.push({ type: "buff", pid, uid: f.uid, a: fx.a * m, h: fx.h * m });
         }
+        events.push({ type: "futureBuff", pid, race: fx.race, a: fx.a * m, h: fx.h * m });
         break;
+      }
       case "buffTopRace": {
         // Drak (Pred bojom): tvoja NAJPOČETNEJŠIA rasa na ploche +a/+h.
         // Ako všetky dračie ne-aura buffy platí na CELÉ kolo: zapíše sa do
@@ -1280,6 +1379,11 @@ const Engine = (() => {
           if (fb && (fb.a || fb.h)) {
             tok.atk += fb.a; tok.hp += fb.h; tok.maxHp += fb.h;
           }
+          // Bojový buff tokenu (U002: kostíky +1/+1 v najbližšom boji).
+          const tb = p.fightTokenBuffs[fx.token];
+          if (tb && (tb.a || tb.h)) {
+            tok.atk += tb.a; tok.hp += tb.h; tok.maxHp += tb.h;
+          }
           if (full) {
             overflowStats(state, alive, tok, pid, events);
             continue;
@@ -1287,10 +1391,43 @@ const Engine = (() => {
           tok.slot = freeSlot(alive, BOARD_MAX);
           board.splice(idx + 1 + i, 0, tok);
           events.push({ type: "summon", pid, uid: tok.uid, defId: fx.token, slot: tok.slot, rank: tok.rank, atk: tok.atk, hp: tok.hp });
+          huntToken(state, sides, pid, tok, events);
         }
         break;
       }
     }
+  }
+
+  // Lovci tokenov (onEnemySummon, E005): súperove živé príšerky s týmto
+  // keywordom zasiahnu čerstvo vyvolaný token výbojom (n×stupeň + Živelná
+  // sila); ak token padne, lovec rastie NAVŽDY (pa/ph na origináli, ako
+  // B004). Pretečenie sem nejde – token, čo sa nezmestil, nie je na ploche.
+  function huntToken(state, sides, tokPid, tok, events) {
+    const hunterPid = other(tokPid);
+    let hit = false;
+    for (const h of sides[hunterPid]) {
+      if (tok.hp <= 0) break;
+      if (h.hp <= 0 || h.silenced) continue;
+      const pw = Cards.byId[h.defId].power;
+      if (!pw || pw.kw !== "onEnemySummon") continue;
+      const fx = pw.fx, m = h.rank;
+      const dmg = fx.n * m + state[hunterPid].dmgBoost;
+      events.push({ type: "proc", pid: hunterPid, uid: h.uid, kw: "onEnemySummon" });
+      dealDmg(tok, dmg, tokPid, events);
+      events.push({ type: "powerDmg", pid: tokPid, uid: tok.uid, n: dmg, from: h.uid });
+      events.push({ type: "hp", pid: tokPid, uid: tok.uid, hp: tok.hp });
+      hit = true;
+      if (tok.hp <= 0) {
+        h.atk += fx.a * m; h.maxHp += fx.h * m; h.hp += fx.h * m;
+        const orig = state[hunterPid].board.find(x => x.uid === h.uid);
+        if (orig) {
+          orig.pa = (orig.pa || 0) + fx.a * m;
+          orig.ph = (orig.ph || 0) + fx.h * m;
+        }
+        events.push({ type: "buff", pid: hunterPid, uid: h.uid, a: fx.a * m, h: fx.h * m });
+      }
+    }
+    if (hit) handleDeaths(state, sides, events);
   }
 
   // Pretečenie: celé staty nezmestivšieho sa tokenu dostane JEDNA náhodná
@@ -1349,6 +1486,16 @@ const Engine = (() => {
           if (!fDef.power || fDef.power.kw !== "raceDeath") continue;
           if (fDef.power.fx.race !== def.race) continue;
           events.push({ type: "proc", pid, uid: f.uid, kw: "raceDeath" });
+          applyBattleFx(state, sides, pid, f, fDef.power.fx, f.rank, events);
+        }
+        // Token scavenger (tokenDeath): rastie, keď padne VLASTNÝ token daného
+        // id (B004 „Keď zomrie tvoje Mláďa: +1/+1 navždy").
+        for (const f of sides[pid]) {
+          if (f === inst || f.hp <= 0 || f.silenced) continue;
+          const fDef = Cards.byId[f.defId];
+          if (!fDef.power || fDef.power.kw !== "tokenDeath") continue;
+          if (fDef.power.fx.token !== inst.defId) continue;
+          events.push({ type: "proc", pid, uid: f.uid, kw: "tokenDeath" });
           applyBattleFx(state, sides, pid, f, fDef.power.fx, f.rank, events);
         }
         // U004 reviveAs: karta NAOZAJ zomrela (deathrattle aj scavengery

@@ -675,7 +675,7 @@ test("Večná iskra: trvalý +1 damage k výbojom, stackuje sa a prežije boj", 
   E.castSpell(state, "p1", 0);
   assert.equal(p.dmgBoost, 2); // 2 iskry sa stacknú
   E.endShopTurn(state, "p1");
-  const zap = E.makeInst(state, "E005", 1); zap.slot = 0; // Pred bojom: výboj 2
+  const zap = E.makeInst(state, "E001", 1); zap.slot = 0; // Pred bojom: výboj 3
   state.p1.board = [zap];
   state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
   state.p1.hand = []; state.p2.hand = [];
@@ -684,8 +684,269 @@ test("Večná iskra: trvalý +1 damage k výbojom, stackuje sa a prežije boj", 
   const events = E.doBattle(state);
   const hit = events.find(e => e.type === "powerDmg" && e.from === zap.uid);
   assert.ok(hit);
-  assert.equal(hit.n, fresh().C.byId["E005"].power.fx.n + 2); // bonus pripočítaný
+  assert.equal(hit.n, fresh().C.byId["E001"].power.fx.n + 2); // bonus pripočítaný
   assert.equal(state.p1.dmgBoost, 2); // a TRVALÝ – prežil boj
+});
+
+test("E005 lovec tokenov: súperov token dostane výboj; ak padne, E005 +1/+1 NAVŽDY; buffnutý token prežije", () => {
+  const { state, E, C } = fresh(55);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const hunter = E.makeInst(state, "E005", 1); hunter.slot = 0; // 3/4
+  state.p1.board = [hunter];
+  const crypt = E.makeInst(state, "U005", 1); crypt.slot = 0;   // Pred bojom: 2× kostík
+  const pal = E.makeInst(state, "U008", 1); pal.slot = 1;       // p2 má 2 karty → začína, vyvolá pred útokmi
+  state.p2.board = [crypt, pal];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const procs = events.filter(e => e.type === "proc" && e.uid === hunter.uid && e.kw === "onEnemySummon");
+  assert.equal(procs.length, 2);                       // dva kostíky = dva výboje
+  const zaps = events.filter(e => e.type === "powerDmg" && e.from === hunter.uid);
+  assert.equal(zaps.length, 2);
+  assert.equal(zaps[0].n, 1);
+  const grow = events.filter(e => e.type === "buff" && e.uid === hunter.uid);
+  assert.equal(grow.length, 2);                        // oba 1/1 kostíky padli
+  const copy = state.p1.discard.find(c => c.defId === "E005");
+  assert.equal(copy.pa, 2); assert.equal(copy.ph, 2);  // rast NAVŽDY cez kôpku
+  assert.match(C.cardText(C.byId["E005"], 1, "sk", false, 0), /Keď súper vyvolá token: zasiahni ho výbojom za 1/);
+  assert.match(C.cardText(C.byId["E005"], 1, "sk", false, 1), /výbojom za 2/); // Živelná sila v texte
+
+  // Kostík s U002 (2/2) výboj za 1 prežije → žiadny rast; so Živelnou silou +1 padne.
+  for (const boost of [0, 1]) {
+    const { state: s2, E: E2 } = fresh(56 + boost);
+    E2.startRound(s2);
+    s2.p1.dmgBoost = boost;
+    E2.endShopTurn(s2, "p1");
+    const h2 = E2.makeInst(s2, "E005", 1); h2.slot = 0;
+    s2.p1.board = [h2];
+    s2.p2.fightTokenBuffs.kostik = { a: 1, h: 1 };
+    s2.p2.board = [Object.assign(E2.makeInst(s2, "U005", 1), { slot: 0 }), Object.assign(E2.makeInst(s2, "U008", 1), { slot: 1 })];
+    s2.p1.hand = []; s2.p2.hand = [];
+    s2.p1.deck = []; s2.p1.discard = []; s2.p2.deck = []; s2.p2.discard = [];
+    const ev2 = E2.doBattle(s2);
+    const g2 = ev2.filter(e => e.type === "buff" && e.uid === h2.uid).length;
+    assert.equal(g2, boost ? 2 : 0);
+  }
+});
+
+test("D007: battlecry Živelná sila +1 (navždy, ako kúzlo), strieborný +2, cykluje balíčkom", () => {
+  const { state, E, C } = fresh(53);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  p.hand = [E.makeInst(state, "D007", 1), E.makeInst(state, "D007", 2)];
+  E.playMinion(state, "p1", 0);
+  assert.equal(p.dmgBoost, 1);
+  E.playMinion(state, "p1", 0);
+  assert.equal(p.dmgBoost, 3); // +2 zo strieborného
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  E.doBattle(state);
+  assert.equal(p.dmgBoost, 3);                                 // trvalé
+  assert.ok(p.discard.some(c => c.defId === "D007"));          // vráti sa cyklom balíčka
+  assert.match(C.cardText(C.byId["D007"], 1, "sk", false, 0), /výboje a výbuchy \+1 damage/);
+});
+
+test("D001 shrinkEnemy: v najbližšom boji náhodný súper −1/−1 (min 0 atk / 1 hp), stackuje sa", () => {
+  const { state, E, C } = fresh(54);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "D001", 1), E.makeInst(state, "D001", 1)];
+  E.playMinion(state, "p1", 0);
+  E.playMinion(state, "p1", 0);
+  assert.equal(p.shrinks.length, 2);
+  E.endShopTurn(state, "p1");
+  const frail = E.makeInst(state, "U001", 1); frail.slot = 0; // 1/1 – nesmie zomrieť z oslabenia
+  state.p2.board = [frail];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const shr = events.filter(e => e.type === "shrink" && e.uid === frail.uid);
+  assert.equal(shr.length, 2);                 // obe nabité oslabenia
+  assert.equal(shr[0].a, -1); assert.equal(shr[0].h, 0); // hp min 1 → −0 životov
+  assert.equal(shr[1].a, 0);                   // atk už 0 → clamp
+  // Oslabenie nie je damage: kostíky (deathrattle U001) prídu až po prvom útoku, nie pred bojom.
+  const firstAttack = events.findIndex(e => e.type === "attack");
+  const firstSummon = events.findIndex(e => e.type === "summon");
+  assert.ok(firstSummon === -1 || firstSummon > firstAttack);
+  assert.equal(p.shrinks.length, 0);           // spotrebované
+  assert.match(C.cardText(C.byId["D001"], 1, "sk", false, 0), /náhodná súperova príšerka −1\/−1/);
+});
+
+test("F009 (t5) Po kúzle +2/+2 všetkým kamarátom aj iných rás; F008 (t6) Po kúzle permanentná aura pre každú rasu", () => {
+  const { state, E, C } = fresh(52);
+  E.startRound(state);
+  const p = state.p1;
+  const hive = E.makeInst(state, "F009", 1); hive.slot = 0;   // t5 víla 6/6
+  const bear = E.makeInst(state, "B002", 1); bear.slot = 1;   // beast 4/5
+  const star = E.makeInst(state, "F008", 2); star.slot = 2;   // t6 striebro: +2/+2 navždy
+  p.board = [hive, bear, star];
+  p.hand = [E.makeInst(state, "stit", 1)];
+  E.castSpell(state, "p1", 0, bear.uid);
+  // F009: +2/+2 kamarátom (nie sebe) – aj zvieraťu; F008: +2/+2 všetkým vrátane F009
+  assert.equal(bear.atk, 4 + 2 + 2);
+  assert.equal(hive.atk, 6 + 2);       // len z F008 (F009 seba nebuffuje)
+  assert.equal(star.atk, 14 + 2 + 2);  // z F009 aj z vlastnej aury
+  for (const r of Object.keys(C.RACES)) {
+    assert.equal(p.raceBuffs[r].a, 2); assert.equal(p.raceBuffs[r].h, 2);
+  }
+  // Budúce inštancie každej rasy aj tokeny auru nesú
+  assert.equal(E.makeInst(state, "O004", 1, p).atk, 3 + 2);
+  assert.equal(E.makeInst(state, "kostik", 1, p).hp, 1 + 2);
+  assert.ok(C.cardText(C.byId["F008"], 1, "sk", false, 0).includes("navždy"));
+});
+
+test("U002 fightToken: kostíky vyvolané v najbližšom boji +1/+1, stackuje sa, po boji končí", () => {
+  const { state, E, C } = fresh(49);
+  E.startRound(state);
+  const p = state.p1;
+  assert.equal(C.byId["kostik"].atk, 1); // kostík základ 1/1
+  p.hand = [E.makeInst(state, "U002", 1), E.makeInst(state, "U002", 2)]; // bronz +1/+1, striebro +2/+2
+  E.playMinion(state, "p1", 0);
+  E.playMinion(state, "p1", 0);
+  assert.deepEqual({ ...p.fightTokenBuffs.kostik }, { a: 3, h: 3 });
+  const rattle = E.makeInst(state, "U001", 1); rattle.slot = 2; // Pri smrti 2× kostík
+  p.board.push(rattle);
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "U008", 1), { slot: 0 })]; // 3/8 taunt
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const sum = events.find(e => e.type === "summon" && e.defId === "kostik");
+  assert.ok(sum);
+  assert.equal(sum.atk, 1 + 3); // 1/1 + bojový buff 3/3
+  assert.equal(sum.hp, 1 + 3);
+  assert.equal(Object.keys(p.fightTokenBuffs).length, 0); // po boji končí
+  assert.match(C.cardText(C.byId["U002"], 1, "sk", false, 0), /v najbližšom boji všetky tvoje Kostíky \+1\/\+1/);
+});
+
+test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku), strieborný +2/+2", () => {
+  const { state, E } = fresh(47);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const owl = E.makeInst(state, "B004", 1); owl.slot = 0;   // 2/3, Keď zomrie tvoje Mláďa
+  const cub = E.makeInst(state, "mlada", 1); cub.slot = 1;  // 1/1 token
+  const owl2 = E.makeInst(state, "B004", 2); owl2.slot = 2; // strieborný 4/6
+  state.p1.board = [cub, owl, owl2]; // mláďa útočí prvé a padne, sovy ešte žijú
+  state.p2.board = [Object.assign(E.makeInst(state, "U008", 1), { slot: 0 })]; // 3/8 taunt – zabije mláďa, prežije
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  assert.ok(events.some(e => e.type === "proc" && e.uid === owl.uid && e.kw === "tokenDeath"));
+  assert.ok(events.some(e => e.type === "buff" && e.uid === owl.uid && e.a === 1 && e.h === 1));
+  assert.ok(events.some(e => e.type === "buff" && e.uid === owl2.uid && e.a === 2 && e.h === 2)); // ×stupeň
+  // Rast je NAVŽDY: kópia v kôpke nesie pa/ph a ďalšia inštancia z nej má väčšie staty.
+  const pile = state.p1.discard.filter(c => c.defId === "B004");
+  assert.equal(pile.length, 2);
+  const c1 = pile.find(c => c.rank === 1), c2 = pile.find(c => c.rank === 2);
+  assert.equal(c1.pa, 1); assert.equal(c1.ph, 1);
+  assert.equal(c2.pa, 2); assert.equal(c2.ph, 2);
+  const cardTextSk = fresh().C.cardText(fresh().C.byId["B004"], 1, "sk", false, 0);
+  assert.match(cardTextSk, /Keď zomrie tvoje Mláďa: \+1\/\+1 pre seba \(NAVŽDY/);
+  // Cudzí token (kostík) B004 nekŕmi.
+  const { state: s2, E: E2 } = fresh(48);
+  E2.startRound(s2);
+  E2.endShopTurn(s2, "p1");
+  const owl3 = E2.makeInst(s2, "B004", 1); owl3.slot = 0;
+  const bone = E2.makeInst(s2, "kostik", 1); bone.slot = 1;
+  s2.p1.board = [bone, owl3];
+  s2.p2.board = [Object.assign(E2.makeInst(s2, "U008", 1), { slot: 0 })];
+  s2.p1.hand = []; s2.p2.hand = [];
+  const ev2 = E2.doBattle(s2);
+  assert.ok(!ev2.some(e => e.type === "proc" && e.uid === owl3.uid && e.kw === "tokenDeath"));
+});
+
+test("Živelná sila zosilňuje aj Pri útoku bonus (E004): +1 útok +boost, tokeny tiež", () => {
+  const { state, E } = fresh(43);
+  E.startRound(state);
+  state.p1.dmgBoost = 2;
+  E.endShopTurn(state, "p1");
+  const wf = E.makeInst(state, "E004", 1); wf.slot = 0;      // Pri útoku: +1/0 všetkým
+  const pal = E.makeInst(state, "B002", 1); pal.slot = 1;    // 4/5
+  const tok = E.makeInst(state, "kostik", 1); tok.slot = 2;  // token na ploche
+  state.p1.board = [wf, pal, tok];
+  state.p2.board = [Object.assign(E.makeInst(state, "U008", 1), { slot: 0 })]; // 3/8 taunt
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  const buffs = events.filter(e => e.type === "buff" && e.pid === "p1");
+  assert.ok(buffs.some(e => e.uid === pal.uid && e.a === 3)); // 1 + boost 2
+  assert.ok(buffs.some(e => e.uid === tok.uid && e.a === 3)); // token tiež
+  // Popisok karty ukáže navýšené číslo len pri „Pri útoku"; Vlna (buffAllFriends kúzlo) nie.
+  const C = fresh().C;
+  assert.match(C.cardText(C.byId["E004"], 1, "sk", false, 2), /\+3\/\+0/);
+  assert.match(C.cardText(C.byId["vlna"], 1, "sk", false, 2), /\+1\/\+1/);
+  assert.match(C.cardText(C.byId["F009"], 1, "sk", false, 2), /\+2\/\+2/); // Po kúzle bez boostu
+});
+
+test("U010: undead aura sa položí PRI SMRTI – živí nemŕtvi hneď, budúce inštancie cez raceBuffs", () => {
+  const { state, E } = fresh(44);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const tank = E.makeInst(state, "U010", 1); tank.slot = 0;   // 8/10 taunt, Pri smrti aura
+  const bone = E.makeInst(state, "kostik", 1); bone.slot = 1;  // 1/1 undead
+  state.p1.board = [tank, bone];
+  state.p2.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10 – zabije tank
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  assert.equal(Object.keys(state.p1.raceBuffs).length, 0); // pred bojom žiadna aura (nie je battlecry)
+  const events = E.doBattle(state);
+  const proc = events.find(e => e.type === "proc" && e.uid === tank.uid && e.kw === "deathrattle");
+  assert.ok(proc);
+  assert.ok(events.some(e => e.type === "futureBuff" && e.pid === "p1" && e.race === "undead" && e.a === 1 && e.h === 1));
+  assert.ok(events.some(e => e.type === "buff" && e.uid === bone.uid && e.a === 1 && e.h === 1)); // živý kostík hneď
+  assert.equal(state.p1.raceBuffs.undead.a, 1); assert.equal(state.p1.raceBuffs.undead.h, 1); // aura prežila boj
+  const later = E.makeInst(state, "U001", 1, state.p1);
+  assert.equal(later.atk, 2); // 1 + aura – budúce inštancie
+});
+
+test("Vichor: príšerka útočí dvakrát a Pri útoku sa spustí pri každom útoku", () => {
+  const { state, E } = fresh(45);
+  E.startRound(state);
+  const p = state.p1;
+  const wf = E.makeInst(state, "E004", 1); wf.slot = 0; // 4/3, Pri útoku
+  const pal = E.makeInst(state, "B002", 1); pal.slot = 1; // 2 karty > 1 – p1 začína, wf útočí prvý
+  p.board = [wf, pal];
+  p.hand = [E.makeInst(state, "vichor", 1)];
+  E.castSpell(state, "p1", 0, wf.uid);
+  assert.equal(wf.windfury, true);
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "F004", 1), { slot: 0 })]; // 2/5 taunt – prežije 1. úder, wf 2.
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  // Dva útoky wf tesne za sebou (bez súperovho útoku medzi nimi).
+  const seq = events.filter(e => e.type === "attack").map(e => e.aUid);
+  let doubled = false;
+  for (let i = 1; i < seq.length; i++) if (seq[i] === wf.uid && seq[i - 1] === wf.uid) doubled = true;
+  assert.ok(doubled, "Vichor útočí 2× za sebou");
+  const procs = events.filter(e => e.type === "proc" && e.uid === wf.uid && e.kw === "onAttack");
+  assert.ok(procs.length >= 2); // Pri útoku pri každom z dvoch útokov
+});
+
+test("Vichor: druhý útok odpadá, ak útočník padol pri prvom", () => {
+  const { state, E } = fresh(46);
+  E.startRound(state);
+  const p = state.p1;
+  const weak = E.makeInst(state, "B001", 1); weak.slot = 0; // 2/2
+  const tnt = E.makeInst(state, "E002", 1); tnt.slot = 1;   // 2 karty > 1 – p1 začína, weak útočí prvý
+  p.board = [weak, tnt];
+  p.hand = [E.makeInst(state, "vichor", 1)];
+  E.castSpell(state, "p1", 0, weak.uid);
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "U010", 1), { slot: 0 })]; // 8/10 – zabije 2/2 hneď
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  assert.equal(events.filter(e => e.type === "attack" && e.aUid === weak.uid).length, 1);
 });
 
 test("Umlčanie: v najbližšom boji zruší schopnosť aj taunt náhodnej súperovej príšerky", () => {
@@ -1130,7 +1391,7 @@ test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie 
   assert.equal(summons.length, 3);        // počet = základ (3), nie 3×2
   for (const s of summons) {
     assert.equal(s.rank, 2);              // stupeň rodiča
-    assert.equal(s.atk, 4);               // 2/1 → 4/2
+    assert.equal(s.atk, 2);               // 1/1 → 2/2
     assert.equal(s.hp, 2);
   }
 });
@@ -1155,13 +1416,13 @@ test("Pretečenie: undead token, čo sa nezmestí, dá celé staty jednému kama
   assert.equal(summons.length, 1);
   const over = events.filter(e => e.type === "overflow");
   assert.equal(over.length, 1);
-  assert.equal(over[0].atk, 2);
+  assert.equal(over[0].atk, 1);
   assert.equal(over[0].hp, 1);
-  // Celé staty tokenu (2/1) dostane presne jeden náhodný kamarát.
+  // Celé staty tokenu (1/1) dostane presne jeden náhodný kamarát.
   const idx = events.indexOf(over[0]);
   const buffs = events.slice(idx + 1).filter(e => e.type === "buff");
   assert.equal(buffs.length, 1);
-  assert.equal(buffs[0].a, 2); // celý atk jednému
+  assert.equal(buffs[0].a, 1); // celý atk jednému
   assert.equal(buffs[0].h, 1); // celé hp jednému
 });
 
@@ -1197,23 +1458,37 @@ test("U004 reviveAs: deathrattle prebehne, karta vstane ako 1/1 s aurami a zomri
   assert.ok(all >= 4, `len ${all} kostíkov/pretečení`);
 });
 
-test("ogr O002: zožerie suseda – staty NAVŽDY (pa/ph), karta zmizne z hry", () => {
-  const { state, E } = fresh(90);
+test("ogr O002 chaos: Pred bojom spustí schopnosť náhodnej príšerky – aj súperovej, deathrattle bez smrti", () => {
+  const { state, E, C } = fresh(91);
   E.startRound(state);
-  const p = state.p1;
-  const pal = E.makeInst(state, "B002", 1); pal.slot = 0; // 4/5
-  p.board = [pal];
-  p.hand = [E.makeInst(state, "O002", 1)];
-  p.deck = []; p.discard = [];
-  assert.ok(E.playMinion(state, "p1", 0));
-  const ogre = p.board.find(x => x.defId === "O002");
-  assert.equal(p.board.length, 1);                 // sused zjedený
-  assert.ok(!p.board.includes(pal));
-  assert.ok(!p.discard.some(c => c.defId === "B002")); // zmizol z hry, nie do kôpky
-  assert.equal(ogre.atk, 4 + 4);
-  assert.equal(ogre.hp, 4 + 5);
-  assert.equal(ogre.pa, 4);                        // trvalý rast cestuje s kópiou
-  assert.equal(ogre.ph, 5);
+  E.endShopTurn(state, "p1");
+  const chaos = E.makeInst(state, "O002", 1); chaos.slot = 0;   // 5/6, Pred bojom: triggerRandom
+  state.p1.board = [chaos];
+  const rattle = E.makeInst(state, "U001", 1); rattle.slot = 0;  // súperov deathrattle: 2× kostík
+  state.p2.board = [rattle];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const ct = events.find(e => e.type === "chaosTrigger");
+  assert.ok(ct);
+  assert.equal(ct.uid, chaos.uid);
+  assert.equal(ct.targetUid, rattle.uid); // jediný kandidát – súperova karta
+  assert.equal(ct.kw, "deathrattle");
+  // Kostíky súpera sa objavili PRED prvým útokom (deathrattle bez smrti).
+  const firstAttack = events.findIndex(e => e.type === "attack");
+  const firstSummon = events.findIndex(e => e.type === "summon" && e.pid === "p2" && e.defId === "kostik");
+  assert.ok(firstSummon !== -1 && firstSummon < firstAttack);
+  assert.equal(C.byId["O002"].atk, 5); assert.equal(C.byId["O002"].hp, 6);
+  assert.match(C.cardText(C.byId["O002"], 2, "sk", false, 0), /2 náhodných príšeriek/); // evolve = počet
+  // Bez kandidátov (vanilky) sa nič nestane a nespadne.
+  const { state: s2, E: E2 } = fresh(92);
+  E2.startRound(s2);
+  E2.endShopTurn(s2, "p1");
+  s2.p1.board = [Object.assign(E2.makeInst(s2, "O002", 1), { slot: 0 })];
+  s2.p2.board = [Object.assign(E2.makeInst(s2, "O004", 1), { slot: 0 })];
+  s2.p1.hand = []; s2.p2.hand = [];
+  assert.ok(!E2.doBattle(s2).some(e => e.type === "chaosTrigger"));
 });
 
 test("ogr O001 hod mincou: +4/+4 alebo −2/−2 (clamp na 0 atk / 1 hp)", () => {
@@ -1384,7 +1659,7 @@ test("multi-hit: strieborný dmgWeakEnemy zasiahne 2× po základnej sile", () =
   const { state, E } = fresh(23);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const zap = E.makeInst(state, "E005", 2); zap.slot = 0; // Pred bojom: 2× výboj
+  const zap = E.makeInst(state, "E001", 2); zap.slot = 0; // Pred bojom: 2× výboj
   state.p1.board = [zap];
   state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "B002", 1), { slot: i }));
   state.p1.hand = []; state.p2.hand = [];
@@ -1393,7 +1668,7 @@ test("multi-hit: strieborný dmgWeakEnemy zasiahne 2× po základnej sile", () =
   const events = E.doBattle(state);
   const hits = events.filter(e => e.type === "powerDmg" && e.from === zap.uid);
   assert.equal(hits.length, 2);
-  const base = fresh().C.byId["E005"].power.fx.n;
+  const base = fresh().C.byId["E001"].power.fx.n;
   for (const h of hits) assert.equal(h.n, base); // sila sa neškáluje, počet áno
 });
 

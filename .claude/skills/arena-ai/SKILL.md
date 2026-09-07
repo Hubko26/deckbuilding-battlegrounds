@@ -26,9 +26,12 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúpa: `Engine.buySpell(state, pid)`). Tier spoločných = NIŽŠÍ z tierov
   oboch hráčov; súkromné idú podľa vlastného tieru. Príšera stojí 3,
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
-  Vlna/Iskra/Blesk/Klobúk/Poklad 2, Srdce/Zrkadlo 3; Večná iskra =
-  TRVALO všetky výboje/výbuchy +1 damage, stackuje sa, kupuj pri
-  elemental builde; Umlčanie = v najbližšom boji náhodná súperova
+  Vlna/Živelná sila/Blesk/Klobúk/Vichor/Poklad 2, Srdce/Zrkadlo 3;
+  Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage a
+  „Pri útoku" bonusy +1 útok (E004), stackuje sa, kupuj pri elemental
+  builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
+  pri každom útoku – hoď na E004/O006 alebo na najväčší útok, ideálne
+  spolu so Svätožiarou; Umlčanie = v najbližšom boji náhodná súperova
   príšerka so schopnosťou stratí efekt aj Obrancu – counter na
   deathrattle a Pred bojom motory; Blesk (t3) = na začiatku boja výboj
   za 3+dmgBoost na náhodného súpera; Kúzelný klobúk (t4) = premeň
@@ -60,15 +63,22 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 - Rasové archetypy (trojuholník counterov):
   - **Beast = telá a mrchožrút**: B007 vyvoláva fixné Mláďa 🐣 (1/1,
     škáluje len evolvom), B005 (t2) pri smrti vyvolá 2× Mláďa.
+    B004 (t2) = „Keď zomrie tvoje Mláďa: +1/+1 NAVŽDY" (rast ostáva na
+    kópii karty cez balíček) – vykladaj ho vedľa B007/B005 každé kolo.
     B009 = scavenger („Keď zomrie tvoje Zviera:
     +2/+2 pre seba", bojové, dočasné) – chráň ho a kŕm smrťami zvierat
     (B005/B007 mláďatá = lacné smrti zvierat).
     B003/B008 rastú Po nákupe NAVŽDY (rast sa drží na kópii karty cez
     cyklus balíčka) – kupuj ich skoro a vykladaj každé kolo.
   - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
-    U006 2×, U009 3× kostík (2/1); undead token, čo sa nezmestí na plnú
+    U006 2×, U009 3× kostík (1/1); U002 (t1 battlecry) = v najbližšom
+    boji všetky kostíky +1/+1 (stackuje sa, každé kolo znova – vykladaj ho
+    pred bojom vždy, keď máš vyvolávačov); undead token, čo sa nezmestí na plnú
     plochu, dá celé staty jednej náhodnej živej vlastnej príšerke. U007 battlecry
     charga: ďalšie vyvolanie v boji vyvolá +1 navyše (stackuje sa).
+    U010 (t6, 8/10 Obranca) položí undead auru +1/+1 PRI SMRTI (nie pri
+    vyložení) – musí padnúť; kostíky a balíček ju dostanú navždy. Combo
+    s U004 reviveAs / Pierkom = aura dvakrát.
     U004 (t2, cielený battlecry): označená príšerka po smrti vstane ako
     1/1 (stupeň 2/2, 3/3) – deathrattle prebehne PRED vstávaním, takže
     revivnutý deathrattler zomrie dvakrát a druhá dávka kostíkov pri
@@ -78,11 +88,19 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     nepriateľa a pri evolve škáluje POČET zásahov (1/2/3), nie silu;
     `dmgAllEnemies` (E010) bije všetkých naraz jednou vlnou.
     Counter na undead hordu, slabé proti veľkým beast telám.
+    E005 (t3) = keď súper vyvolá token, výboj za 1 (+Živelná sila) a ak
+    token padne, +1/+1 NAVŽDY – proti undead/mláďatám vykladaj vždy,
+    kupuj k nemu Živelnú silu (kostíky s U002/aurou inak prežijú).
+    E004 Whifflet (Pri útoku: +1 útok všetkým vrátane tokenov) škáluje
+    so Živelnou silou – daj ho úplne doľava a s Vichorom rozdá bonus 2×.
   - **Fairy = Po kúzle motor**: F001 battlecry draw (1/2/3 podľa
     stupňa, NIE Po kúzle), F005 vracia zlato, F006
     battlecry pridá Iskričku ✨ (jednorazové kúzlo +1 útok – nejde do
-    balíčka, po ťahu zmizne; spúšťa Po kúzle), F009 vanilka 8/8,
-    F008 (t6) +2/+2 všetkým. Self-rast F002/F004 je
+    balíčka, po ťahu zmizne; spúšťa Po kúzle), F009 (t5, 6/6) Po kúzle
+    +2/+2 všetkým kamarátom (dočasné, aj iné rasy), F008 (t6) Po kúzle
+    VŠETKY tvoje príšerky každej rasy +1/+1 NAVŽDY (aj balíček, tokeny –
+    každé kúzlo s ňou na ploche = permanentná aura; na t6 kupuj kúzla
+    húfne). Self-rast F002/F004 je
     PERMANENTNÝ (prežije cyklus balíčka) – kúzla do nich sú investícia
     navždy. Kupuj kúzla húfne – každé kúzlo spustí všetky víly na
     ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský
@@ -91,7 +109,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     k telám). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
-    battlecry na RASU vybranej príšerky – D002/D008 buff do boja
+    battlecry. t1: D007 = Živelná sila +1 pri každom vyložení (navždy,
+    ako kúzlo ⚡ – v elemental builde kupuj každého, cykluje balíčkom),
+    D001 v najbližšom boji náhodný súper −1/−1 (odložené, hraj vždy). Vyššie tiery mieria na RASU vybranej
+    príšerky – D002/D008 buff do boja
     (VŠETKY ne-aurové dračie staty platia celé kolo: dostanú ich aj
     neskôr vyložené karty a tokeny vyvolané v boji – kombuje so summon
     buildmi; rovnako D005 Pred bojom aj D006 Po nákupe),
@@ -101,9 +122,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     keď je telo nad krivkou alebo battlecry živí tvoju rasu.
   - **Ogre = veľké staty, chaos efekty** (môžu udrieť aj vlastníka):
     O001 hod mincou (battlecry +4/+4 alebo −2/−2), O006 Pri útoku 50 %
-    sa trafí sám za ½ útoku, O002 battlecry zožerie NÁHODNÉHO suseda
-    (staty NAVŽDY, karta zmizne z hry – vykladaj ho na prázdnu plochu,
-    alebo vedľa karty, ktorú chceš obetovať), O003 Pred bojom 2 dmg
+    sa trafí sám za ½ útoku, O002 (5/6) Pred bojom spustí schopnosť
+    náhodnej príšerky na bojisku – aj súperovej (deathrattle bez smrti,
+    Pred bojom druhýkrát; dobrý s vlastnými deathrattle summonmi, riskantný
+    proti undead horde), O003 Pred bojom 2 dmg
     VŠETKÝM (aj tvojim – zlé so swarm buildmi, dobré proti nim),
     O007 Pri smrti 5 dmg náhodnej príšerke (aj tvojej), O010 (t6 taunt)
     Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
