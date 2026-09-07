@@ -146,8 +146,10 @@ const Bot = (() => {
     if (def.token) return false;
     if (inst.atk === 0) return true;
     const dom = dominantRace(state, p);
+    // Pár cudzej rasy sa oplatí držať len kým je t1 telo relevantné – od
+    // tieru 3 je aj strieborná t1 karta balast (log: O004×2 v undead builde).
     return !!dom && def.race !== dom && def.race !== "dragon" && def.tier <= 2 &&
-      inst.rank === 1 && ownedCount(p, inst.defId) < 2;
+      inst.rank === 1 && (ownedCount(p, inst.defId) < 2 || p.tier >= 3);
   }
 
   function botTurn(state, pid, difficulty) {
@@ -156,7 +158,12 @@ const Bot = (() => {
     const events = [];
     const push = ev => { if (ev) events.push(...ev); };
 
-    // 0. Príšerky na plochu HNEĎ – víly („Po kúzle“) tak zachytia triggery
+    // 0. Hard: balast z ruky predaj EŠTE PRED vyložením (+1 zlato, tenší
+    //    balíček = lepšie ruky do konca hry). Štartovací balíček je 10
+    //    náhodných t1 kariet – človek ich postupne vypredá, bot musí tiež.
+    //    Obetuje najviac 1 slot plochy za ťah (ostane aspoň 4 tiel).
+    if (cfg.sellJunk) sellJunk(state, p, push, true);
+    //    Príšerky na plochu HNEĎ – víly („Po kúzle“) tak zachytia triggery
     //    zo všetkých kúziel zahraných v tomto ťahu.
     deployMinions(state, p, cfg, push);
 
@@ -170,7 +177,8 @@ const Bot = (() => {
     playGoldSpells(state, p, push);
 
     // 2. Upgrade tieru podľa agresivity. Hard: aj celé zlato do upgradu, keď
-    //    je plocha už plná (tento boj nákup neovplyvní) – ako ľudský hráč.
+    //    je plocha už plná (tento boj nákup neovplyvní) – ako ľudský hráč;
+    //    naopak s deravou plochou (< 4 tiel) upgrade počká, telá majú prednosť.
     for (;;) {
       const cost = Engine.upgradeCost(state, pid);
       if (cost === null) break;
@@ -178,7 +186,8 @@ const Bot = (() => {
       const worth =
         cfg.upgradeAggro === 0 ? cost === 0 :
         cfg.upgradeAggro === 1 ? (cost <= 1 || (p.money - cost >= Engine.CARD_COST && state.round >= p.tier * 2)) :
-        (cost <= 2 || (onSchedule && (p.money - cost >= Engine.CARD_COST || p.board.length >= Engine.BOARD_MAX)));
+        (cost <= 2 || (onSchedule && (p.board.length >= Engine.BOARD_MAX ||
+          (p.money - cost >= Engine.CARD_COST && p.board.length >= Engine.BOARD_MAX - 1))));
       if (!worth || p.money < cost) break;
       push(Engine.upgradeTier(state, pid));
     }
@@ -208,8 +217,11 @@ const Bot = (() => {
           choice = affordable[Math.floor(state.rng() * affordable.length)];
         } else {
           choice = affordable[0];
-          if (rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST &&
-              cardScore(state, p, choice.defId, cfg) < bar) break;
+          const best = cardScore(state, p, choice.defId, cfg);
+          if (rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST && best < bar) break;
+          // Zvyšné zlato nemíňaj na kartu so záporným skóre (kúzlo nad strop,
+          // cudzia rasa) – balast v balíčku je horší než prepadnuté zlato.
+          if (best < 0) break;
         }
         push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
           : choice.kind === "priv" ? Engine.buyPrivate(state, pid, choice.i)
@@ -344,11 +356,17 @@ const Bot = (() => {
   }
 
   // Balast z ruky predaj (nehrá sa, len by sa točil v balíčku).
-  function sellJunk(state, p, push) {
+  // keepBodies: pred vyložením predaj len toľko, aby z ruky + plochy ostali
+  // aspoň 4 telá (max 1 obetovaný slot za ťah).
+  function sellJunk(state, p, push, keepBodies) {
     for (let i = p.hand.length - 1; i >= 0; i--) {
       const inst = p.hand[i];
-      if (!inst || inst.spell) continue;
-      if (isJunk(state, p, inst)) push(Engine.sellCard(state, p.id, "hand", i));
+      if (!inst || inst.spell || !isJunk(state, p, inst)) continue;
+      if (keepBodies) {
+        const bodies = p.hand.filter(x => x && !x.spell).length - 1;
+        if (p.board.length + bodies < Engine.BOARD_MAX - 1) continue;
+      }
+      push(Engine.sellCard(state, p.id, "hand", i));
     }
   }
 

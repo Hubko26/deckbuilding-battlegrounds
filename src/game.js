@@ -1451,6 +1451,9 @@ function cardEl(instOrId, opts) {
   if (isInst && instOrId.shield) inner += `<span class="shield-badge">😇</span>`;
   if (isInst && instOrId.revive) inner += `<span class="revive-badge">🪶</span>`;
   if (isInst && instOrId.windfury) inner += `<span class="windfury-badge">🌪️</span>`;
+  // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
+  // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
+  if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
   inner += `<div class="nm">${name}</div>`;
   inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
