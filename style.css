@@ -544,19 +544,23 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .end-turn { left: 89.5%; top: 41%; width: 9%; height: 7.5%; font-size: 2cqh; }
 }
 
-/* ---------- Mobil (na výšku): PlayGround-mobile.png, 5 slotov v rade.
-   Horný rad = obchod (v boji súperov board), spodný rad = moje bojujúce
-   karty, ruka pod doskou. Sloty: x 169–768 px, medzera 17, pri 941×1672. */
+/* ---------- Mobil (na výšku): PlayGround-mobile.png. Pásy zhora nadol ako na
+   desktope: banner súpera → obchod v 2 riadkoch (spoločné / súkromné+kúzlo;
+   v boji tam hrá súperov board) → MOJE bojujúce karty v strede (vlastný
+   priesvitný panel) → RUKA v spodnom rade slotov šablóny (medzi kôpkou súpera
+   a mojím balíčkom; sloty x 169–768 px, medzera 17, pri 941×1672) → môj
+   banner. Hlavička je počas hry zbalená do ☰ (body.playing), doska tak
+   berie takmer celú výšku a nič nie je pod ňou. */
 @media (orientation: portrait) {
   #stage {
-    /* 70vh výšky dosky + ~13vh ruka pod ňou = zmestí sa bez scrollovania */
-    width: min(96vw, calc(70vh * 941 / 1672));
-    width: min(96vw, calc(70dvh * 941 / 1672));
+    width: min(97vw, calc(94vh * 941 / 1672));
+    width: min(97vw, calc(94dvh * 941 / 1672));
     aspect-ratio: 941 / 1672;
     background-image: url("PlayGround-mobile.webp");
-    margin-bottom: 13vh;
+    border-radius: 8px;
   }
-  .log { width: 98vw; font-size: .8rem; }
+  main { padding: 0 0 4px; gap: 2px; }
+  .log { width: 98vw; font-size: .8rem; min-height: 1.2em; }
   .hero-plate { left: 21%; width: 58%; grid-template-columns: 1fr 12cqw 1fr; font-size: 1.9cqh; }
   .hero-plate.top { top: 2.4%; height: 5.6%; }
   .hero-plate.bottom { top: 89%; height: 5.6%; }
@@ -574,35 +578,87 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .mutator .ic { font-size: 2.6cqh; }
   .mutator .lb { font-size: 1cqh; }
 
-  .board { left: 18.02%; width: 63.6%; gap: 1.8cqw; }
-  .board.opp { top: 12.3%; height: 10.9%; }
-  .board.mine { top: 74.2%; height: 10.9%; background: none; border-radius: 0; }
-
-  .shop-panel { left: 8%; top: 12%; width: 84%; height: 16%; }
-  .shop-row { min-height: 10.5cqh; }
-  .shop-head { height: auto; flex-wrap: wrap; gap: .4cqh .8cqw; justify-content: center; }
+  /* Obchod: 2 riadky nad sebou (spoločné hore, súkromné + kúzlo dole) – od
+     6. karty ide druhý riadok, karty ostávajú čitateľné. */
+  .shop-panel { left: 4%; top: 11%; width: 92%; height: 30%; }
+  .shop-rows { flex-direction: column; align-items: center; gap: .5cqh; }
+  .shop-row { min-height: 10.5cqh; gap: .4cqw; padding: 0 .4cqw; flex-wrap: nowrap; }
+  .shop-head { height: auto; flex-wrap: wrap; gap: .3cqh .8cqw; justify-content: center; margin-top: .3cqh; }
   .banner { font-size: 1.5cqh; width: 100%; text-align: center; }
   .money { font-size: 2cqh; }
   .head-btns button { font-size: 1.35cqh; padding: .4cqh .8cqw; }
 
-  #stage .card { height: 10.4cqh; font-size: 1cqh; }
-  #stage .board.mine .card { height: 10.4cqh; font-size: 1cqh; }
-  #stage .board.mine .card .tx { display: none; }
-  .shop-row .card { height: 10.2cqh; font-size: .95cqh; }
+  /* Súperov board (len v boji) medzi hornými rámikmi. Karty na ploche,
+     v ruke aj u súpera sú na mobile široké podľa SLOTU (šírka, výška
+     z pomeru strán), nie podľa výšky dosky – 5 kariet sa vždy zmestí
+     medzi rámiky a pri väčšom počte (ruka do 8) sa zúžia. */
+  .board { left: 15.5%; width: 69%; gap: 1cqw; }
+  .board.opp { top: 12.3%; height: 12%; }
+  #stage .board .card, #stage .hand .card {
+    height: auto; width: 18%; flex: 0 1 18%; min-width: 0;
+  }
 
-  .end-turn { left: 60%; top: 66%; width: 32%; height: 4.4%; font-size: 1.7cqh; }
+  /* Moje bojujúce karty: stred dosky, vlastný panel (šablóna tu sloty nemá). */
+  .board.mine {
+    top: 43.5%; height: 22%; left: 5%; width: 90%;
+    background: rgba(255,255,255,.16); border-radius: 1.4cqh;
+  }
+  #stage.battle .board.mine { top: 36%; height: 26%; }
+
+  #stage .card { height: 10.4cqh; font-size: 1cqh; }
+  #stage .board.mine .card { font-size: 1.4cqh; }
+  #stage .board.mine .card .tx { display: none; }
+  #stage.battle .board.mine .card { font-size: 1.5cqh; }
+  #stage.battle .board.mine .card .tx { display: none; }
+  .shop-row .card { height: 10.2cqh; font-size: .95cqh; }
+  .card.spell-slot { margin-left: .8cqh; }
+
+  .end-turn { left: 63%; top: 67%; width: 32%; height: 4.4%; font-size: 1.7cqh; }
   .fight-banner { font-size: 5cqh; }
   .fight-banner.small { font-size: 2.4cqh; top: 45%; }
 
+  /* Ruka: spodný rad 5 slotov šablóny – tie isté súradnice, kde bol predtým
+     môj board (a kde sú v obrázku nakreslené sloty). Do 8 kariet sa zmestí
+     zúžením medzery. */
   #stage .hand {
-    /* širšia než doska, aby sa 5 kariet zmestilo do jedného radu */
-    top: calc(100% + 4px); left: 50%; transform: translateX(-50%);
-    width: 96vw; height: auto; min-height: 12vh;
-    display: flex; flex-wrap: nowrap; gap: 3px; justify-content: center; align-items: center;
-    background: rgba(255,255,255,.55); border-radius: 12px; padding: 3px;
+    left: 16.5%; width: 66.6%; top: 74%; height: 11%; transform: none;
+    display: flex; flex-wrap: nowrap; gap: 1.2cqw; justify-content: center; align-items: center;
+    background: none; border-radius: 0; padding: 0; min-height: 0;
   }
-  #stage .hand .card { height: 11vh; font-size: 1.35vh; flex: 0 0 auto; }
+  #stage .hand .card { font-size: 1cqh; }
   .preview-card { width: min(260px, 68vw); font-size: clamp(11px, 3.6vw, 15px); }
+}
+
+/* ---------- ☰ menu na mobile počas hry ----------
+   Hlavička (názov, nová hra, zvuk, celá obrazovka, jazyk) sa počas hry
+   (body.playing) zmení na fixný overlay: zavretá je neviditeľná a neberie
+   výšku, ☰ vľavo hore ju otvorí ako panel cez tmavé pozadie. Platí pre
+   portrét aj mobilný landscape; desktop má hlavičku ako doteraz. */
+.menu-btn { display: none; }
+@media (orientation: portrait),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
+  body.playing .menu-btn {
+    display: flex; align-items: center; justify-content: center;
+    position: fixed; left: 8px; top: calc(8px + env(safe-area-inset-top, 0px)); z-index: 40;
+    width: 40px; height: 40px; padding: 0; font-size: 1.35rem; line-height: 1;
+    border-radius: 50%; background: rgba(255,255,255,.88); box-shadow: 0 2px 6px rgba(0,0,0,.35);
+  }
+  body.playing header {
+    position: fixed; inset: 0; z-index: 39; margin: 0;
+    padding: calc(58px + env(safe-area-inset-top, 0px)) 14px 14px;
+    flex-direction: column; align-items: flex-start; justify-content: flex-start; gap: 12px;
+    background: rgba(8, 16, 30, .62);
+    opacity: 0; pointer-events: none; transition: opacity .15s ease-out;
+  }
+  body.playing header.open { opacity: 1; pointer-events: auto; }
+  body.playing header h1 { color: #fff; text-shadow: 0 1px 3px #000; font-size: 1.3rem; }
+  body.playing header .controls,
+  body.playing header .langsw {
+    display: flex; gap: 10px; margin: 0;
+    background: rgba(255,255,255,.94); border-radius: 14px; padding: 10px;
+  }
+  body.playing header .controls button, body.playing header .langsw button { font-size: 1.05rem; }
+  body.playing footer { display: none; }
 }
 
 /* ---------- Celá obrazovka (⛶ tlačidlo alebo PWA z plochy) ----------

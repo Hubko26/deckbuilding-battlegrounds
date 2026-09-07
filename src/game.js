@@ -587,6 +587,9 @@ function enterGameScreen() {
   $("pickScreen").classList.add("hidden");
   $("netOverlay").classList.add("hidden");
   $("gameScreen").classList.remove("hidden");
+  // body.playing: na mobile sa hlavička zbalí do ☰ menu, doska berie celú výšku.
+  document.body.classList.add("playing");
+  document.querySelector("header").classList.remove("open");
   $("newGameBtn").classList.remove("hidden");
   $("overOverlay").classList.add("hidden");
   logClear();
@@ -719,6 +722,8 @@ async function applyRemote(msg) {
 }
 
 function backToPick() {
+  document.body.classList.remove("playing");
+  document.querySelector("header").classList.remove("open");
   Net.disconnect();
   state = null;
   $("gameScreen").classList.add("hidden");
@@ -1938,6 +1943,12 @@ $("peerHostBtn").addEventListener("click", peerHost);
 $("peerJoinBtn").addEventListener("click", peerJoin);
 $("peerCodeInput").addEventListener("keydown", e => { if (e.key === "Enter") peerJoin(); });
 $("newGameBtn").addEventListener("click", backToPick);
+// ☰ menu (mobil v hre): hlavička je fixný overlay, ☰ ju otvára/zatvára;
+// ťuk na hociktoré tlačidlo v nej alebo na tmavé pozadie ju zavrie.
+$("menuBtn").addEventListener("click", () => document.querySelector("header").classList.toggle("open"));
+document.querySelector("header").addEventListener("click", e => {
+  if (e.target.tagName === "BUTTON" || e.target === e.currentTarget) e.currentTarget.classList.remove("open");
+});
 $("endTurnBtn").addEventListener("click", onEndTurn);
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));

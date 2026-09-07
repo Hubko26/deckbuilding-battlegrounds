@@ -25,10 +25,15 @@ Zostáva:
    kúziel (kniha, koreň, vlna, iskra, svätožiara, pierko, blesk) – presunúť
    2–3 na iné tiery; Srdce t4 +3/+3 za 3 má horší kurz než Koreň t3 – +4/+4.
 
-6. Bublina (elemental token) – definovaná, nikto ju nevyvoláva. Plán: elemental
-   tokeny vybuchujú za dmg. Návrh: E002 t1 (1/3 taunt vanilla) "Pri smrti: 2×
-   Bublina", Bublina 1/1 "Pri smrti: 1 dmg najslabšiemu" (+Živelná sila).
+6. HOTOVO (2026-09-07): Bublina – E002 "Pri smrti: 2× Bublina", Bublina 1/1
+   "Pri smrti: výboj 1 náhodnému" (+Živelná sila).
 
 7. Ostatné poznámky: F001 (t2 víla draw) zostal jediný draw minion – OK;
    claude-bot prompt (src/claude-bot.js) nespomína nové mechaniky (Vichor,
    lovec tokenov, chaos spúšťač) – doplniť do textu pravidiel pri ďalšej úprave.
+
+8. Mobil na ležato (landscape na telefóne): rovnaká úprava ako portrét
+   (2026-09-07) – hlavička zbalená do ☰ už platí aj tu, ale rozloženie dosky
+   (PlayGround-mobile-wide.webp) treba prejsť: ruka medzi rámiky, môj board
+   v strede, obchod v 2 riadkoch, karty široké podľa slotu (nie podľa výšky),
+   nech 5 kariet nepretečie. Overiť na reálnom telefóne aj v PWA režime.

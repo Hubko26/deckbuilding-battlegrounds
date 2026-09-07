@@ -545,9 +545,16 @@ pravidla v logu); texty v `game.js` (`L.mutators`).
 Zemetrasenie (smrť najslabšej príšerky po boji) zamietnuté – plocha sa po
 boji aj tak vyprázdňuje.
 
-## Mobilné UI redesign + zrušenie spoločného obchodu (návrh, neimplementované)
+## Mobilné UI redesign + zrušenie spoločného obchodu (návrh)
 
-Analýza nápadu na vylepšenie mobilnej verzie. Štyri časti: dve sú čisté UI
+**Stav (2026-09-07):** portrét je prekopaný – hlavička sa počas hry
+(`body.playing`) zbalí do ☰ menu (fixný overlay, neberie výšku), doska berie
+~94 % výšky, obchod je v 2 riadkoch (spoločné / súkromné + kúzlo), môj board
+má vlastný panel v strede, ruka sedí v spodnom rade slotov šablóny (medzi
+kôpkou súpera a mojím balíčkom) a karty na ploche/v ruke/u súpera sú široké
+podľa slotu (18 % šírky radu), nech 5 kariet nikdy nepretečie. Mobil na
+ležato ešte čaká (TODO.md). Zrušenie spoločného obchodu sa NEROBÍ – namiesto
+toho sú pooly per hráč (viď Obchod). Pôvodná analýza nižšie: Štyri časti: dve sú čisté UI
 (nízke riziko), jedna je zmena karty (kozmetika s kolíziami) a jedna je
 **zmena herných pravidiel** (dotkne sa engine, botov, testov aj balance).
 Odporúčané poradie implementácie je preto UI najprv, pravidlá zvlášť.
