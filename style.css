@@ -553,13 +553,24 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    berie takmer celú výšku a nič nie je pod ňou. */
 @media (orientation: portrait) {
   #stage {
-    width: min(97vw, calc(94vh * 941 / 1672));
-    width: min(97vw, calc(94dvh * 941 / 1672));
+    width: min(100vw, calc(100vh * 941 / 1672));
+    width: min(100vw, calc(100dvh * 941 / 1672));
     aspect-ratio: 941 / 1672;
     background-image: url("PlayGround-mobile.webp");
-    border-radius: 8px;
+    border-radius: 0;
   }
-  main { padding: 0 0 4px; gap: 2px; }
+  main { padding: 0; gap: 0; }
+  #gameScreen { gap: 0; }
+  /* Log nad doskou na mobile netreba – herné hlášky idú aj floatmi a bublinami. */
+  body.playing .log { display: none; }
+  /* Doska na celý telefón: žiadne modré okolie – pod doskou (a tam, kde jej
+     pomer strán nevyplní obrazovku) je rozmazaná tá istá doska. */
+  body.playing { background: #4a2f16; }
+  body.playing::before {
+    content: ""; position: fixed; inset: -20px; z-index: -1;
+    background: url("PlayGround-mobile.webp") center / cover no-repeat;
+    filter: blur(14px) brightness(.55);
+  }
   .log { width: 98vw; font-size: .8rem; min-height: 1.2em; }
   .hero-plate { left: 21%; width: 58%; grid-template-columns: 1fr 12cqw 1fr; font-size: 1.9cqh; }
   .hero-plate.top { top: 2.4%; height: 5.6%; }
@@ -594,7 +605,10 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
      medzi rámiky a pri väčšom počte (ruka do 8) sa zúžia. */
   .board { left: 15.5%; width: 69%; gap: 1cqw; }
   .board.opp { top: 12.3%; height: 12%; }
-  #stage .board .card, #stage .hand .card {
+  /* Špecificita musí prebiť desktopové `#stage.battle .board.mine .card`
+     (pevná výška) – inak by sa karta natiahla (šírka zo slotu + cudzia výška). */
+  #stage .board .card, #stage .board.mine .card, #stage.battle .board.mine .card,
+  #stage .board.opp .card, #stage .hand .card {
     height: auto; width: 18%; flex: 0 1 18%; min-width: 0;
   }
 
