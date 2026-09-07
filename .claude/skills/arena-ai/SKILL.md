@@ -61,7 +61,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
   bojom, Po nákupe, Pri útoku, Po kúzle (afterSpell – spustí sa každým
   zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
-  sa zruší; z kúzla Svätožiara). Buffy z boja sú dočasné; trvalé sú buffy
+  sa zruší; z kúzla Svätožiara), Pečať (Imprint = trvalá rasová aura,
+  na karte „Pečať +1/+1 Zvieratám"). Buffy z boja sú dočasné; trvalé sú buffy
   z nákupnej fázy a AURY (`futureRace`: „VŠETKY tvoje X, aj v balíčku,
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
 - Rasové archetypy (trojuholník counterov):

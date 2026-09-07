@@ -143,6 +143,7 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 | After a spell | **Po kúzle** | keď zošleš kúzlo, kým je víla na ploche |
 | Divine Shield | **Božský štít** | prvé zranenie sa zruší (štít praskne); z kúzla Svätožiara |
 | Windfury | **Vichor** | príšerka útočí vo svojom ťahu dvakrát (druhý útok len ak prežila); z kúzla Vichor |
+| Imprint | **Pečať** | trvalá rasová aura (`futureRace`/`futureRaceOf`/`futureAll`): „Pečať +1/+1 Zvieratám" – všetky tvoje príšerky rasy (plocha, ruka, balíček, tokeny aj budúce) dostanú staty navždy; vysvetlené v pravidlách na úvodnej obrazovke |
 
 Nie každá príšerka má schopnosť – niektoré majú len silu a život.
 

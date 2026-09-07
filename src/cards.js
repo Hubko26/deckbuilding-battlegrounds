@@ -338,6 +338,10 @@ const Cards = (() => {
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
   };
   const TAUNT_LABEL = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
+  // Pečať: trvalá rasová aura (futureRace / futureRaceOf / futureAll) – všetky
+  // tvoje príšerky danej rasy (plocha, ruka, balíček, kôpka, tokeny aj
+  // budúce) dostanú staty NAVŽDY. Vysvetlenie je v pravidlách (game.js L.rules).
+  const IMPRINT = { sk: "Pečať", cs: "Pečeť", en: "Imprint" };
 
   // Šablóny textov efektov. `m` je násobič čísel podľa stupňa (1/2/3).
   const FX_TEXT = {
@@ -356,15 +360,18 @@ const Cards = (() => {
       cs: `+${f.a * m}/+${f.h * m} náhodnému kamarádovi`,
       en: `+${f.a * m}/+${f.h * m} to a random friend`,
     }),
+    // Pečať (Imprint) = keyword pre trvalú rasovú auru: „Pečať +1/+1 Zvieratám"
+    // namiesto vety „VŠETKY tvoje Zvieratá (aj v balíčku, navždy)…" – deti
+    // sa naučia slovo, vysvetlenie je v pravidlách na úvodnej obrazovke.
     futureRace: (f, m) => ({
-      sk: `VŠETKY tvoje ${RACES_NOM[f.race].sk} (aj v balíčku, navždy) dostanú +${f.a * m}/+${f.h * m}`,
-      cs: `VŠECHNA tvá ${RACES_NOM[f.race].cs} (i v balíčku, navždy) dostanou +${f.a * m}/+${f.h * m}`,
-      en: `ALL your ${RACES_NOM[f.race].en} (deck too, forever) get +${f.a * m}/+${f.h * m}`,
+      sk: `${IMPRINT.sk} +${f.a * m}/+${f.h * m} ${RACES_PL[f.race].sk}`,
+      cs: `${IMPRINT.cs} +${f.a * m}/+${f.h * m} ${RACES_PL[f.race].cs}`,
+      en: `${IMPRINT.en} +${f.a * m}/+${f.h * m} to ${RACES_PL[f.race].en}`,
     }),
     futureAll: (f, m) => ({
-      sk: `VŠETKY tvoje príšerky (každá rasa, aj v balíčku, navždy) dostanú +${f.a * m}/+${f.h * m}`,
-      cs: `VŠECHNY tvé příšerky (každá rasa, i v balíčku, navždy) dostanou +${f.a * m}/+${f.h * m}`,
-      en: `ALL your minions (every race, deck too, forever) get +${f.a * m}/+${f.h * m}`,
+      sk: `${IMPRINT.sk} +${f.a * m}/+${f.h * m} všetkým tvojim príšerkám (každá rasa)`,
+      cs: `${IMPRINT.cs} +${f.a * m}/+${f.h * m} všem tvým příšerkám (každá rasa)`,
+      en: `${IMPRINT.en} +${f.a * m}/+${f.h * m} to all your minions (every race)`,
     }),
     // Dočasný buff Živla (E007/E008) ukazuje čísla aj so Živelnou silou.
     buffRace: (f, m, hl, kw, def) => {
@@ -564,9 +571,9 @@ const Cards = (() => {
       en: `pick a minion – its race gets +${f.a * m}/+${f.h * m}`,
     }),
     futureRaceOf: (f, m) => ({
-      sk: `vyber príšerku – VŠETKY tvoje karty jej rasy (aj v balíčku, navždy) dostanú +${f.a * m}/+${f.h * m}`,
-      cs: `vyber příšerku – VŠECHNY tvé karty její rasy (i v balíčku, navždy) dostanou +${f.a * m}/+${f.h * m}`,
-      en: `pick a minion – ALL your cards of its race (deck too, forever) get +${f.a * m}/+${f.h * m}`,
+      sk: `vyber príšerku – ${IMPRINT.sk} +${f.a * m}/+${f.h * m} jej rase`,
+      cs: `vyber příšerku – ${IMPRINT.cs} +${f.a * m}/+${f.h * m} její rase`,
+      en: `pick a minion – ${IMPRINT.en} +${f.a * m}/+${f.h * m} to its race`,
     }),
     discoverRace: () => ({
       sk: "vyber príšerku – vyber si 1 z 3 kariet jej rasy",
@@ -664,7 +671,7 @@ const Cards = (() => {
   // Staty pre stupeň: bronz ×1, striebro ×2, zlato ×4.
   const STAT_MULT = [null, 1, 2, 4];
 
-  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL };
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL, IMPRINT };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

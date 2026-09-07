@@ -797,7 +797,9 @@ test("F009 (t5) Po kúzle +2/+2 všetkým kamarátom aj iných rás; F008 (t6) P
   // Budúce inštancie každej rasy aj tokeny auru nesú
   assert.equal(E.makeInst(state, "O004", 1, p).atk, 3 + 2);
   assert.equal(E.makeInst(state, "kostik", 1, p).hp, 1 + 2);
-  assert.ok(C.cardText(C.byId["F008"], 1, "sk", false, 0).includes("navždy"));
+  assert.match(C.cardText(C.byId["F008"], 1, "sk", false, 0), /Pečať \+1\/\+1 všetkým tvojim príšerkám/);
+  assert.match(C.cardText(C.byId["B010"], 1, "sk", false, 0), /Pečať \+1\/\+1 Zvieratám/);
+  assert.match(C.cardText(C.byId["D003"], 1, "en", false, 0), /Imprint \+1\/\+1 to its race/);
 });
 
 test("U002 fightToken: kostíky vyvolané v najbližšom boji +1/+1, stackuje sa, po boji končí", () => {

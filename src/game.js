@@ -223,6 +223,11 @@ const L = {
       en: `🔄 Refresh (<i class="hl-g">1 🪙</i>) rerolls the shop; ❄️ <i class="hl-b">Freeze</i> keeps your private offer for the next round. After every fight the shop is <i class="hl-b">fresh</i>.`,
     },
     {
+      sk: `🔮 <i class="hl-e">Pečať</i> +X/+Y Rase: všetky tvoje príšerky tej rasy – aj v balíčku a tie, čo ešte kúpiš – dostanú staty <i class="hl-e">navždy</i>. Ostatné buffy z boja platia len <i class="hl-b">do konca boja</i>; rast označený <i class="hl-e">NAVŽDY</i> ostáva na karte.`,
+      cs: `🔮 <i class="hl-e">Pečeť</i> +X/+Y Rase: všechny tvé příšerky té rasy – i v balíčku a ty, které teprve koupíš – dostanou staty <i class="hl-e">navždy</i>. Ostatní buffy z boje platí jen <i class="hl-b">do konce boje</i>; růst označený <i class="hl-e">NAVŽDY</i> zůstává na kartě.`,
+      en: `🔮 <i class="hl-e">Imprint</i> +X/+Y to a Race: all your minions of that race – in your deck and the ones you buy later too – get the stats <i class="hl-e">forever</i>. Other buffs from battle last only <i class="hl-b">until the fight ends</i>; growth marked <i class="hl-e">FOREVER</i> stays on the card.`,
+    },
+    {
       sk: `⚔️ V boji sa útočí zľava doprava; <i class="hl-r">Obrancovia 🛡️</i> musia byť napadnutí prví. Preživšie príšery uberú <i class="hl-r">❤️</i> súperovmu hrdinovi.`,
       cs: `⚔️ V boji se útočí zleva doprava; <i class="hl-r">Obránci 🛡️</i> musí být napadeni první. Přeživší příšery uberou <i class="hl-r">❤️</i> soupeřovu hrdinovi.`,
       en: `⚔️ Minions attack left to right; <i class="hl-r">Defenders 🛡️</i> must be attacked first. Survivors damage the enemy hero's <i class="hl-r">❤️</i>.`,

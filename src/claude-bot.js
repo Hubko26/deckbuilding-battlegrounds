@@ -44,6 +44,7 @@ RULES:
 - Spells are cast for free from hand; they return to your deck cycle (one-shot token spells vanish).
 - Races: beast (big bodies/auras), elemental (zaps/AoE), undead (skeleton swarm), fairy (abilities trigger on each spell cast), dragon (mercenaries – above-curve bodies whose battlecries boost the RACE of a targeted friendly minion; they fit into any build), ogre (huge stats with chaotic downsides – coin flips, friendly fire, self-hits; the randomness can backfire). Stick to a dominant race for synergy.
 - Battle: sides alternate attacks, random targets, Taunt minions must be hit first. "startFight"/"deathrattle"/"onAttack" abilities as written on cards.
+- "Imprint +X/+Y to <Race>" = permanent race aura: ALL your minions of that race (board, hand, deck, tokens, future buys) get +X/+Y forever. Buy Imprint cards of your race early.
 
 YOUR TASK: return ONLY a JSON object, no markdown fences, shaped:
 {"actions":[...], "taunt":"..."}
