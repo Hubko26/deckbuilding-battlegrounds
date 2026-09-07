@@ -47,6 +47,18 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
   aj koniec kola. V novom kole sa automaticky rozmrazí (freeze platí jedno kolo,
   štýl Battlegrounds).
 - **Refresh** – vymení 3 spoločné a všetky nezmrazené súkromné karty.
+- **Pooly kariet** (per hráč, štýl Battlegrounds): každý hráč má vlastný
+  pool **6 kópií** každej príšery (súkromná ponuka, štartovací balíček,
+  Kniha prianí, D004 discover, Zrkadlo, Klobúk), spoločná ponuka losuje zo
+  spoločného poolu **3 kópií**. Losuje sa vážene podľa zostávajúcich kópií;
+  karta v obchode je z poolu vybratá, nekúpená sa vracia (refresh, nové
+  kolo, nevybraný discover). **Predaj vracia kópie do poolov, z ktorých
+  boli** (`inst.src = { common: n, p1: n }`; evolve zdroje sčíta, predaj
+  striebornej vráti 3). Odhodenie na kôpku nič nevracia (kartu stále
+  vlastníš). Zlatá z obchodu = všetkých 6 vlastných + 3 spoločné kópie, čiže
+  len ak súper kartu nekupuje – inak cez Zrkadlo/Knihu/Klobúk. Prázdny pool
+  pre daný tier → záložné losovanie bez limitu (prázdny slot nechceme),
+  taká karta nemá `src`. Kúzla a tokeny pool nemajú.
 - Hráči vidia, čo súper nakúpil (zoznam v logu po jeho ťahu) – dá sa podľa toho stavať
   stratégia.
 

@@ -862,6 +862,82 @@ test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku
   assert.ok(!ev2.some(e => e.type === "proc" && e.uid === owl3.uid && e.kw === "tokenDeath"));
 });
 
+test("pooly: vlastný 6 / spoločný 3 na kartu; obchod a štartovací balíček z nich uberajú, refresh vracia", () => {
+  const { state, E, C } = fresh(60);
+  const minions = C.DEFS.filter(d => !d.spell);
+  for (const d of minions) {
+    const inDeck = state.p1.deck.filter(c => c.defId === d.id).length;
+    const inShop = state.p1.priv.filter(x => x.defId === d.id).length;
+    assert.equal(state.pools.p1[d.id] + inDeck + inShop, E.POOL_PRIVATE);
+    const inCommons = state.commons.filter(x => x === d.id).length;
+    assert.equal(state.pools.common[d.id] + inCommons, E.POOL_COMMON);
+  }
+  assert.ok(state.p1.deck.every(c => c.src && c.src.p1 === 1));
+  E.startRound(state);
+  const p = state.p1;
+  p.money = 10;
+  const c0 = state.commons[0];
+  E.buyCommon(state, "p1", 0);
+  // Kúpená karta nesie zdroj common (ak dokončila trojicu zo štartovacieho balíčka, nesie ho evolvnutá).
+  const owned = [...p.deck, ...p.hand, ...p.board].filter(c => c.defId === c0);
+  assert.ok(owned.some(c => c.src && c.src.common >= 1));
+  E.refreshShop(state, "p1");
+  // Invariant: pool + v obchode + kúpené = 3 pre každú kartu (staré karty sa vrátili).
+  for (const d of minions) {
+    const inCommons = state.commons.filter(x => x === d.id).length;
+    const bought = d.id === c0 ? 1 : 0;
+    assert.equal(state.pools.common[d.id] + inCommons + bought, E.POOL_COMMON, d.id);
+  }
+});
+
+test("predaj vracia kópie do poolov, z ktorých boli – strieborná z 2× spoločnej + 1× vlastnej vráti 2+1", () => {
+  const { state, E } = fresh(61);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = []; p.hand = []; p.board = [];
+  const id = "B001";
+  p.money = 20;
+  state.commons[0] = id; state.pools.common[id] = 2;
+  E.buyCommon(state, "p1", 0);
+  state.commons[0] = id; state.pools.common[id] = 1;
+  E.buyCommon(state, "p1", 0);
+  p.priv[0] = { defId: id, frozen: false }; state.pools.p1[id] = 5;
+  E.buyPrivate(state, "p1", 0);
+  const silver = p.hand.find(x => x.defId === id && x.rank === 2); // trojica sa spojila do ruky
+  assert.ok(silver);
+  assert.deepEqual({ ...silver.src }, { common: 2, p1: 1 });
+  const cBefore = state.pools.common[id], oBefore = state.pools.p1[id];
+  E.sellCard(state, "p1", "hand", p.hand.indexOf(silver));
+  assert.equal(state.pools.common[id], Math.min(E.POOL_COMMON, cBefore + 2));
+  assert.equal(state.pools.p1[id], oBefore + 1);
+});
+
+test("Kniha prianí: možnosti z vlastného poolu, nevybrané sa vrátia; prázdny pool losuje záložne a nespadne", () => {
+  const { state, E } = fresh(63);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  p.hand = [E.makeInst(state, "kniha", 1)];
+  const total = () => Object.values(state.pools.p1).reduce((a, b) => a + b, 0);
+  const t0 = total();
+  E.castSpell(state, "p1", 0);
+  assert.equal(total(), t0 - 3);
+  E.pickDiscover(state, "p1", 1);
+  assert.equal(total(), t0 - 1);
+  const picked = p.hand.find(x => !x.spell);
+  assert.deepEqual({ ...picked.src }, { p1: 1 });
+
+  const { state: s2, E: E2 } = fresh(64);
+  for (const k of Object.keys(s2.pools.p1)) s2.pools.p1[k] = 0;
+  for (const k of Object.keys(s2.pools.common)) s2.pools.common[k] = 0;
+  E2.startRound(s2);
+  assert.ok(s2.commons.every(x => typeof x === "string"));
+  assert.ok(s2.p1.priv.every(x => typeof x.defId === "string"));
+  s2.p1.money = 5;
+  assert.ok(E2.refreshShop(s2, "p1"));
+  assert.ok(Object.values(s2.pools.common).every(n => n <= E2.POOL_COMMON)); // strop drží
+});
+
 test("Živelná sila zosilňuje aj Pri útoku bonus (E004): +1 útok +boost, tokeny tiež", () => {
   const { state, E } = fresh(43);
   E.startRound(state);

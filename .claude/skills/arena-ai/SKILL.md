@@ -38,7 +38,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   vlastnú príšerku na náhodnú o tier vyššiu – hoď na najslabšie telo;
   Zrkadlo (t5) = kópia 1. stupňa cieľa do balíčka – akcelerátor trojíc,
   cieľ vždy karta, ktorej máš najviac kópií; Poklad škriatka (t5) =
-  +2 zlato hneď a +2 v ďalšom kole). Refresh 1, freeze mrazí súkromné aj spell slot. Po každom
+  +2 zlato hneď a +2 v ďalšom kole). Refresh 1, freeze mrazí súkromné aj spell slot.
+  Pooly: každý hráč má vlastný pool 6 kópií každej príšery, spoločná
+  ponuka 3 kópie – tretiu kópiu nevidíš častejšie než prvú, skôr menej;
+  zlatá (9 kópií) z obchodu len ak súper kartu nekupuje, inak Zrkadlo/
+  Kniha. Predaj vracia kópiu do poolu. Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
 - Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/8/9/11/12,

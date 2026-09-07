@@ -11,6 +11,15 @@ const Engine = (() => {
   const BOLT_DMG = 3; // kúzlo Blesk: základný damage odloženého výboja
   const REFRESH_COST = 1;
   const COMMON_COUNT = 3;
+  // Pooly kariet (štýl Battlegrounds, ale per hráč): každý hráč má vlastný
+  // pool POOL_PRIVATE kópií každej príšery (súkromná ponuka, štartovací
+  // balíček, Kniha, Zrkadlo, Klobúk), spoločná ponuka losuje zo spoločného
+  // poolu POOL_COMMON kópií. Karta v obchode je z poolu vybratá; nekúpená
+  // (refresh, nové kolo, nevybraný discover) sa vracia; predaj vracia kópie
+  // do poolov, z ktorých boli (inst.src = { common: n, p1: n }). Strop
+  // zlatej: 6 vlastných + 3 spoločné = 9 = presne zlatá, ak súper nekúpi nič.
+  const POOL_PRIVATE = 6;
+  const POOL_COMMON = 3;
   const TIER_MAX = 6;
   // Drahšie než HS Battlegrounds (5/7/8/11/10): trojice tu chodia zadarmo
   // cyklom balíčka (netreba platiť refreshe), takže zlata zvyšuje viac.
@@ -95,9 +104,53 @@ const Engine = (() => {
   // Náhodná PRÍŠERA z obchodného poolu (bez tokenov a kúziel), tier <= limit.
   // Kúzla majú vlastný slot (rollSpell) – neberú miesto príšerám.
   // Classy nie sú – všetci hráči ťahajú z rovnakého poolu.
-  function rollCard(state, tierLimit) {
-    const pool = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell);
-    return pick(pool, state.rng).id;
+  // Losovanie z poolu poolKey ("p1" | "p2" | "common"): vážené počtom
+  // zostávajúcich kópií, vylosovaná karta z poolu ubudne. filter: voliteľné
+  // ďalšie obmedzenie (rasa, presný tier). Prázdny pool → záložné losovanie
+  // bez limitu (prázdny slot v obchode nechceme).
+  function rollCard(state, tierLimit, poolKey, filter) {
+    const pool = state.pools[poolKey];
+    const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && (!filter || filter(d)));
+    const weighted = [];
+    for (const d of defs) for (let i = 0; i < (pool[d.id] || 0); i++) weighted.push(d.id);
+    if (weighted.length) {
+      const id = pick(weighted, state.rng);
+      pool[id]--;
+      return id;
+    }
+    return defs.length ? pick(defs, state.rng).id : null;
+  }
+
+  // Vrátenie kópií do poolu (strop = základný počet – záložne vylosované
+  // karty pool nenafúknu).
+  function returnToPool(state, poolKey, defId, n = 1) {
+    const pool = state.pools[poolKey];
+    const cap = poolKey === "common" ? POOL_COMMON : POOL_PRIVATE;
+    pool[defId] = Math.min(cap, (pool[defId] || 0) + n);
+  }
+
+  // Zdroj kópií karty ({ common: 1 } / { p1: 3 }) – evolve zdroje sčíta,
+  // predaj ich vráti do správnych poolov. Tokeny a záložne vylosované karty
+  // zdroj nemajú.
+  function addSrc(target, src) {
+    if (!src) return;
+    target.src = target.src || {};
+    for (const [k, n] of Object.entries(src)) target.src[k] = (target.src[k] || 0) + n;
+  }
+  function returnSrc(state, defId, src) {
+    if (!src) return;
+    for (const [k, n] of Object.entries(src)) returnToPool(state, k, defId, n);
+  }
+
+  function makePools() {
+    const pools = { p1: {}, p2: {}, common: {} };
+    for (const d of Cards.DEFS) {
+      if (d.spell) continue;
+      pools.p1[d.id] = POOL_PRIVATE;
+      pools.p2[d.id] = POOL_PRIVATE;
+      pools.common[d.id] = POOL_COMMON;
+    }
+    return pools;
   }
 
   function rollSpell(state, tierLimit) {
@@ -118,6 +171,7 @@ const Engine = (() => {
     const state = {
       rng, uidSeq: 0, round: 0, phase: "shop", active: null, first: "p1",
       commons: [], winner: null, pendingDiscover: null, mutator,
+      pools: makePools(),
       p1: makePlayer("p1"),
       p2: makePlayer("p2"),
     };
@@ -130,11 +184,12 @@ const Engine = (() => {
         let id;
         do { id = pick(basics, rng).id; }
         while (p.deck.filter(c => c.defId === id).length >= 2);
-        p.deck.push({ defId: id, rank: 1 });
+        state.pools[pid][id]--; // štartovací balíček ide z vlastného poolu
+        p.deck.push({ defId: id, rank: 1, src: { [pid]: 1 } });
       }
     }
     const commonCount = COMMON_COUNT + (mutator === "plenty" ? 1 : 0);
-    for (let i = 0; i < commonCount; i++) state.commons.push(rollCard(state, 1));
+    for (let i = 0; i < commonCount; i++) state.commons.push(rollCard(state, 1, "common"));
     for (const pid of ["p1", "p2"]) {
       fillPrivate(state, pid);
       state[pid].spellShop = { defId: rollSpell(state, 1), frozen: false };
@@ -168,7 +223,7 @@ const Engine = (() => {
   function fillPrivate(state, pid) {
     const p = state[pid];
     while (p.priv.length < privateCount(p.tier)) {
-      p.priv.push({ defId: rollCard(state, p.tier), frozen: false });
+      p.priv.push({ defId: rollCard(state, p.tier, pid), frozen: false });
     }
   }
 
@@ -187,13 +242,15 @@ const Engine = (() => {
     state.round++;
     state.first = state.round % 2 === 1 ? "p1" : "p2";
     for (let i = 0; i < state.commons.length; i++) {
-      state.commons[i] = rollCard(state, commonTierLimit(state));
+      returnToPool(state, "common", state.commons[i]);
+      state.commons[i] = rollCard(state, commonTierLimit(state), "common");
     }
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       p.money = income(state.round) + p.goldNext; // Poklad škriatka z minulého kola
       p.goldNext = 0;
       p.bought = [];
+      for (const s of p.priv) if (!s.frozen) returnToPool(state, pid, s.defId);
       p.priv = p.priv.filter(s => s.frozen);
       for (const s of p.priv) s.frozen = false;
       fillPrivate(state, pid);
@@ -226,6 +283,7 @@ const Engine = (() => {
   function pileCard(inst) {
     const c = { defId: inst.defId, rank: inst.rank || 1 };
     if (inst.pa || inst.ph) { c.pa = inst.pa || 0; c.ph = inst.ph || 0; }
+    if (inst.src) c.src = inst.src;
     return c;
   }
 
@@ -239,6 +297,7 @@ const Engine = (() => {
       }
       const c = p.deck.pop();
       const inst = makeInst(state, c.defId, c.rank, p);
+      if (c.src) inst.src = c.src;
       if (c.pa || c.ph) {
         inst.pa = c.pa || 0;
         inst.ph = c.ph || 0;
@@ -291,11 +350,18 @@ const Engine = (() => {
       const baseA = def.atk * Cards.STAT_MULT[rank] + aura.a;
       const baseH = def.hp * Cards.STAT_MULT[rank] + aura.h;
       const consumed = [];
-      const noteInst = inst => consumed.push({
-        a: Math.max(0, inst.atk - baseA), h: Math.max(0, inst.maxHp - baseH),
-        pa: inst.pa || 0, ph: inst.ph || 0,
-      });
-      const noteRef = c => consumed.push({ a: c.pa || 0, h: c.ph || 0, pa: c.pa || 0, ph: c.ph || 0 });
+      const srcAll = {}; // zdroje všetkých kópií (predaj striebornej vráti 3 kópie)
+      const noteInst = inst => {
+        consumed.push({
+          a: Math.max(0, inst.atk - baseA), h: Math.max(0, inst.maxHp - baseH),
+          pa: inst.pa || 0, ph: inst.ph || 0,
+        });
+        addSrc(srcAll, inst.src);
+      };
+      const noteRef = c => {
+        consumed.push({ a: c.pa || 0, h: c.ph || 0, pa: c.pa || 0, ph: c.ph || 0 });
+        addSrc(srcAll, c.src);
+      };
 
       let need = NEED, boardSlot = null, hidden = false;
       while (need > 0 && v.board.length) {
@@ -337,6 +403,7 @@ const Engine = (() => {
         evolved.hp += bonus.h;
         evolved.maxHp += bonus.h;
         if (bonus.pa || bonus.ph) { evolved.pa = bonus.pa; evolved.ph = bonus.ph; }
+        if (srcAll.src) evolved.src = srcAll.src;
       };
 
       let uid = null;
@@ -354,7 +421,7 @@ const Engine = (() => {
         p.hand.push(evolved);
         uid = evolved.uid;
       } else {
-        addToDeckRef(state, p, defId, rank + 1, bonus.pa, bonus.ph);
+        addToDeckRef(state, p, defId, rank + 1, bonus.pa, bonus.ph, srcAll.src);
       }
       events.push({ type: "evolve", pid: p.id, defId, rank: rank + 1, uid, hidden });
     }
@@ -368,9 +435,9 @@ const Engine = (() => {
     if (p.money < cardCost(defId)) return null;
     p.money -= cardCost(defId);
     const events = [{ type: "buy", pid, defId }];
-    acquireCard(state, p, defId, events);
+    acquireCard(state, p, defId, events, { common: 1 });
     p.bought.push(defId);
-    state.commons[idx] = rollCard(state, commonTierLimit(state));
+    state.commons[idx] = rollCard(state, commonTierLimit(state), "common");
     return events;
   }
 
@@ -381,9 +448,9 @@ const Engine = (() => {
     if (p.money < cardCost(defId)) return null;
     p.money -= cardCost(defId);
     const events = [{ type: "buy", pid, defId }];
-    acquireCard(state, p, defId, events);
+    acquireCard(state, p, defId, events, { [pid]: 1 });
     p.bought.push(defId);
-    p.priv[idx] = { defId: rollCard(state, p.tier), frozen: false };
+    p.priv[idx] = { defId: rollCard(state, p.tier, pid), frozen: false };
     return events;
   }
 
@@ -402,20 +469,21 @@ const Engine = (() => {
 
   // Kúpená karta ide do balíčka; globálny checkEvolve hneď spojí trojicu,
   // ak kúpou vznikla (aj z kópií schovaných v balíčku/kôpke).
-  function acquireCard(state, p, defId, events) {
-    addToDeck(state, p, defId);
+  function acquireCard(state, p, defId, events, src) {
+    addToDeck(state, p, defId, src);
     checkEvolve(state, p, events);
   }
 
   // Kúpená karta sa zamieša do balíčka (na náhodné miesto).
-  function addToDeck(state, p, defId) {
-    addToDeckRef(state, p, defId, 1);
+  function addToDeck(state, p, defId, src) {
+    addToDeckRef(state, p, defId, 1, 0, 0, src);
   }
 
-  function addToDeckRef(state, p, defId, rank, pa, ph) {
+  function addToDeckRef(state, p, defId, rank, pa, ph, src) {
     const i = Math.floor(state.rng() * (p.deck.length + 1));
     const c = { defId, rank };
     if (pa || ph) { c.pa = pa || 0; c.ph = ph || 0; }
+    if (src) c.src = src;
     p.deck.splice(i, 0, c);
   }
 
@@ -424,10 +492,13 @@ const Engine = (() => {
     if (p.money < refreshCost(state)) return null;
     p.money -= refreshCost(state);
     for (let i = 0; i < state.commons.length; i++) {
-      state.commons[i] = rollCard(state, commonTierLimit(state));
+      returnToPool(state, "common", state.commons[i]);
+      state.commons[i] = rollCard(state, commonTierLimit(state), "common");
     }
     for (let i = 0; i < p.priv.length; i++) {
-      if (!p.priv[i].frozen) p.priv[i] = { defId: rollCard(state, p.tier), frozen: false };
+      if (p.priv[i].frozen) continue;
+      returnToPool(state, pid, p.priv[i].defId);
+      p.priv[i] = { defId: rollCard(state, p.tier, pid), frozen: false };
     }
     if (!p.spellShop.frozen) p.spellShop.defId = rollSpell(state, p.tier);
     return [{ type: "refresh", pid }];
@@ -545,7 +616,10 @@ const Engine = (() => {
       if (!target || Cards.byId[target.defId].token) return null;
       p.hand.splice(handIdx, 1);
       p.spentSpells.push({ defId: inst.defId, rank: 1 });
-      addToDeck(state, p, target.defId);
+      // Kópia ide z vlastného poolu, kým v ňom je; potom bez zdroja.
+      let src;
+      if (state.pools[pid][target.defId] > 0) { state.pools[pid][target.defId]--; src = { [pid]: 1 }; }
+      addToDeck(state, p, target.defId, src);
       const events = [{ type: "spell", pid, defId: inst.defId, targetUid }];
       checkEvolve(state, p, events);
       afterSpellProcs(state, p, events);
@@ -557,11 +631,13 @@ const Engine = (() => {
       const target = p.board.find(x => x.uid === targetUid);
       if (!target) return null;
       const newTier = Math.min(Cards.byId[target.defId].tier + 1, TIER_MAX);
-      const pool = Cards.DEFS.filter(d => d.tier === newTier && !d.spell);
-      if (!pool.length) return null;
+      const newId = rollCard(state, newTier, pid, d => d.tier === newTier); // z vlastného poolu
+      if (!newId) return null;
       p.hand.splice(handIdx, 1);
       p.spentSpells.push({ defId: inst.defId, rank: 1 });
-      const fresh = makeInst(state, pick(pool, state.rng).id, 1, p);
+      returnSrc(state, target.defId, target.src); // originál späť do poolu
+      const fresh = makeInst(state, newId, 1, p);
+      fresh.src = { [pid]: 1 };
       fresh.slot = target.slot;
       p.board[p.board.indexOf(target)] = fresh;
       const events = [
@@ -576,8 +652,8 @@ const Engine = (() => {
       p.hand.splice(handIdx, 1);
       if (!def.token) p.spentSpells.push({ defId: inst.defId, rank: 1 }); // jednorazové kúzla miznú
       const options = [];
-      for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier));
-      state.pendingDiscover = { pid, options };
+      for (let i = 0; i < 3; i++) options.push(rollCard(state, p.tier, pid)); // z vlastného poolu
+      state.pendingDiscover = { pid, options, poolKey: pid };
       const events = [{ type: "discoverStart", pid, options }];
       afterSpellProcs(state, p, events);
       return events;
@@ -597,7 +673,10 @@ const Engine = (() => {
     const defId = pd.options[choiceIdx];
     state.pendingDiscover = null;
     const p = state[pid];
+    // Nevybrané možnosti späť do poolu, z ktorého boli vylosované.
+    pd.options.forEach((id, i) => { if (i !== choiceIdx) returnToPool(state, pd.poolKey, id); });
     const inst = makeInst(state, defId, 1, p);
+    inst.src = { [pd.poolKey]: 1 };
     inst.slot = freeSlot(p.hand, HAND_MAX);
     p.hand.push(inst);
     const events = [{ type: "discoverPick", pid, defId }];
@@ -645,6 +724,7 @@ const Engine = (() => {
     if (!inst) return null;
     p[zone].splice(idx, 1);
     p.money += SELL_GAIN + (state.mutator === "richSell" ? 1 : 0);
+    returnSrc(state, inst.defId, inst.src); // kópie späť do poolov, z ktorých boli
     return [{ type: "sell", pid, defId: inst.defId }];
   }
 
@@ -690,11 +770,13 @@ const Engine = (() => {
         const t = pickTarget();
         if (!t) break;
         const race = Cards.byId[t.defId].race;
-        const pool = Cards.DEFS.filter(d => !d.spell && d.race === race && d.tier <= p.tier);
-        if (!pool.length) break;
         const options = [];
-        for (let i = 0; i < 3; i++) options.push(pick(pool, state.rng).id);
-        state.pendingDiscover = { pid: p.id, options };
+        for (let i = 0; i < 3; i++) {
+          const id = rollCard(state, p.tier, p.id, d => d.race === race); // z vlastného poolu
+          if (id) options.push(id);
+        }
+        if (!options.length) break;
+        state.pendingDiscover = { pid: p.id, options, poolKey: p.id };
         events.push({ type: "discoverStart", pid: p.id, options });
         break;
       }
@@ -712,6 +794,7 @@ const Engine = (() => {
         up.hp += bonusH;
         up.maxHp += bonusH;
         if (t.pa || t.ph) { up.pa = t.pa; up.ph = t.ph; }
+        if (t.src) up.src = t.src;
         up.slot = t.slot;
         p.board[p.board.indexOf(t)] = up;
         events.push({ type: "evolve", pid: p.id, uid: up.uid, defId: up.defId, rank: up.rank, replaced: t.uid });
@@ -1526,7 +1609,7 @@ const Engine = (() => {
   }
 
   return {
-    HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST,
+    HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
     TIER_MAX, MUTATORS, privateCount, income, seededRng, cardCost, refreshCost,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
