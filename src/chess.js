@@ -33,6 +33,7 @@ const ArenaChess = (() => {
   let selected = null;  // vybrané políčko ("e2")
   let panel = null, boardEl = null, statusEl = null, btn = null;
   let botTimer = null;
+  let dragging = false; // prebieha ťahanie figúry (pointer alebo mouse záloha)
 
   const tt = o => (typeof t === "function" ? t(o) : o.sk);
 
@@ -139,6 +140,13 @@ const ArenaChess = (() => {
         }
         cell.dataset.sq = sq;
         cell.addEventListener("click", () => onSquare(sq));
+        if (pc && pc.color === myColor) {
+          // Pointer events (myš/dotyk/pero); preventDefault v startDrag potlačí
+          // kompatibilné mouse eventy, takže mousedown je len záloha pre
+          // prostredia, ktoré posielajú iba MouseEvent (staré webview, automatizácia).
+          cell.addEventListener("pointerdown", e => startDrag(e, sq, cell, "pointer"));
+          cell.addEventListener("mousedown", e => startDrag(e, sq, cell, "mouse"));
+        }
         boardEl.appendChild(cell);
       }
     }
@@ -180,6 +188,63 @@ const ArenaChess = (() => {
     // výber vlastnej figúry (klik na inú vlastnú figúru = presun výberu)
     selected = pc && pc.color === myColor ? sq : null;
     render();
+  }
+
+  // Drag & drop: pointerdown na vlastnej figúre → klon letí pod kurzorom,
+  // pustenie nad legálnym cieľom = ťah (klik-klik ostáva funkčný).
+  function startDrag(e, from, cell, kind) {
+    if (!myTurn() || e.button !== 0 || dragging) return;
+    e.preventDefault();
+    dragging = true;
+    const EV_MOVE = kind === "pointer" ? "pointermove" : "mousemove";
+    const EV_UP = kind === "pointer" ? "pointerup" : "mouseup";
+    const legal = new Set(game.moves({ square: from, verbose: true }).map(m => m.to));
+    selected = from;
+    render();
+    const src = boardEl.querySelector(`.sq[data-sq="${from}"]`) || cell;
+    const ghost = document.createElement("div");
+    ghost.className = "chess-ghost " + (myColor === "w" ? "pw" : "pb");
+    ghost.textContent = src.textContent;
+    ghost.style.fontSize = getComputedStyle(src).fontSize;
+    document.body.appendChild(ghost);
+    src.classList.add("dragging");
+    let over = null, moved = false;
+    const at = ev => { ghost.style.left = ev.clientX + "px"; ghost.style.top = ev.clientY + "px"; };
+    at(e);
+    const squareAt = ev => {
+      const el = document.elementFromPoint(ev.clientX, ev.clientY);
+      const c = el && el.closest ? el.closest("#chessBoard .sq") : null;
+      return c ? c.dataset.sq : null;
+    };
+    const onMove = ev => {
+      moved = true;
+      at(ev);
+      const sq = squareAt(ev);
+      if (over && over !== sq) boardEl.querySelector(`.sq[data-sq="${over}"]`)?.classList.remove("over");
+      over = sq;
+      if (sq && legal.has(sq)) boardEl.querySelector(`.sq[data-sq="${sq}"]`)?.classList.add("over");
+    };
+    const finish = ev => {
+      window.removeEventListener(EV_MOVE, onMove);
+      window.removeEventListener(EV_UP, finish);
+      window.removeEventListener("pointercancel", finish);
+      ghost.remove();
+      dragging = false;
+      const to = ev.type === EV_UP ? squareAt(ev) : null;
+      if (to && to !== from && legal.has(to)) {
+        const done = game.move({ from, to, promotion: "q" });
+        selected = null;
+        render();
+        if (done) afterLocalMove(done.san);
+        return;
+      }
+      // pustené mimo cieľa: figúra ostáva vybraná (klik-klik dokončí ťah)
+      if (moved && to !== from) selected = from;
+      render();
+    };
+    window.addEventListener(EV_MOVE, onMove);
+    window.addEventListener(EV_UP, finish);
+    window.addEventListener("pointercancel", finish);
   }
 
   function afterLocalMove(san) {
