@@ -459,7 +459,8 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
-  Beast B006/B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/
+  Beast B002 (t3, +1/+0 útok) / B006 (t4, +0/+1 život – obe boli +0/+1,
+  kópie) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/
   E008/E009, Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne

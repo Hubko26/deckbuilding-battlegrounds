@@ -224,8 +224,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
   proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
   E008 (t4 Pečať), E009 (t5 Pečať), E010 (t6). Slabí proti beast telám.
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
-  sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať), B008
-  (t3 rast navždy), B006 (t4 Pečať), B009 (t4 mrchožrút, vpravo), B010 (t5
+  sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+0 útok), B008
+  (t3 rast navždy), B006 (t4 Pečať +0/+1 život), B009 (t4 mrchožrút, vpravo), B010 (t5
   Pečať). B001 vanilla predaj, keď máš lepšie.
 - **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6

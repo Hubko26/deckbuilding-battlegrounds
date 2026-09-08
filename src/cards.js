@@ -56,8 +56,10 @@ const Cards = (() => {
     // B005: stádo mláďat pri smrti – kŕmi B009 (rastie za smrť zvieraťa).
     M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 2 } } }),
+    // B002 = Pečať útoku (+1/+0), B006 = Pečať života (+0/+1) – boli obe
+    // +0/+1 (kópia); medveď dáva silu, pancierový tank výdrž.
     M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5,
-      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
+      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 0 } } }),
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 2, h: 2, perm: true } } }),
     M("B006", 4, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 4, 7,
