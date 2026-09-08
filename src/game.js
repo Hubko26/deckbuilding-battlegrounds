@@ -123,6 +123,8 @@ const L = {
   },
   yourTurn: { sk: "Tvoj ťah – nakupuj!", cs: "Tvůj tah – nakupuj!", en: "Your turn – go shopping!" },
   enemyTurn: { sk: "Súper nakupuje…", cs: "Soupeř nakupuje…", en: "Opponent is shopping…" },
+  buyBack: { sk: "↩️ Vrátiť predaj", cs: "↩️ Vrátit prodej", en: "↩️ Undo sell" },
+  buyBackMsg: { sk: "↩️ Predaj vrátený – karta je späť v ruke", cs: "↩️ Prodej vrácen – karta je zpět v ruce", en: "↩️ Sale undone – the card is back in your hand" },
   fight: { sk: "⚔️ Boj!", cs: "⚔️ Boj!", en: "⚔️ Fight!" },
   round: { sk: "Kolo", cs: "Kolo", en: "Round" },
   endTurn: { sk: "✅ Koniec ťahu", cs: "✅ Konec tahu", en: "✅ End turn" },
@@ -1421,6 +1423,11 @@ function renderShop() {
   const cost = Engine.upgradeCost(state, MY);
   $("tierBtn").textContent = cost === null ? `⭐ MAX` : `${t(L.tierUp)} (${cost}🪙)`;
   $("tierBtn").disabled = !myTurn || cost === null || p.money < cost;
+  // Buyback: raz za ťah vráti poslednú predanú kartu (omyl pri ťahaní).
+  const ls = p.lastSold;
+  $("buyBackBtn").textContent = `${t(L.buyBack)}${ls ? ` (${ls.gain}🪙)` : ""}`;
+  $("buyBackBtn").disabled = !myTurn || !ls || p.buyBackUsed || p.money < ls.gain;
+  $("buyBackBtn").classList.toggle("hidden", !ls && !!p.buyBackUsed);
   $("endTurnBtn").textContent = t(L.endTurn);
   $("endTurnBtn").disabled = !myTurn || !!state.pendingDiscover;
 }
@@ -1802,6 +1809,7 @@ function act(events) {
       if (ev.hidden) hiddenEvolves.push(Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang));
     }
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
+    if (ev.type === "buyBack" && ev.pid === MY) { Sfx.coin(); log(t(L.buyBackMsg)); }
     if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));
     if (ev.type === "futureBuff" && ev.pid === MY) {
       Sfx.evolve();
@@ -1961,6 +1969,7 @@ $("chatSend").addEventListener("click", sendChat);
 $("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
 $("freezeBtn").addEventListener("click", () => act(doAction("toggleFreezeAll")));
 $("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
+$("buyBackBtn").addEventListener("click", () => act(doAction("buyBack")));
 $("overAgain").addEventListener("click", () => {
   $("overOverlay").classList.add("hidden");
   if (mode === "net") backToPick();

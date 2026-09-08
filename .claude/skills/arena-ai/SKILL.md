@@ -259,7 +259,7 @@ akcie za hráča `pid` – vracajú events alebo `null` pri nelegálnom ťahu:
 - `Engine.playMinion(state, pid, handIdx)`
 - `Engine.castSpell(state, pid, handIdx, targetUid?)` +
   `Engine.pickDiscover(state, pid, choiceIdx)`
-- `Engine.sellCard(state, pid, "hand"|"board", idx)`
+- `Engine.sellCard(state, pid, "hand"|"board", idx)` / `Engine.buyBack(state, pid)` – raz za ťah vráti poslednú predanú kartu do ruky za cenu predaja (poistka proti omylu; bot ju nepotrebuje)
 - `Engine.discardCard(state, pid, "hand"|"board", idx)` – do kôpky bez
   peňazí (karta ostáva v balíčku; napr. battlecry telo pred bojom)
 - `Engine.moveOnBoard(state, pid, boardIdx, slot)`

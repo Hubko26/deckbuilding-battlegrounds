@@ -24,6 +24,10 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**).
   Pierko/Kliatba/Vichor 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
   automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
+  **Buyback** ↩️: poslednú predanú kartu v ťahu si môžeš **raz za ťah** vziať
+  späť za to, čo predaj dal (1, pri `richSell` 2) – vráti sa do ruky tá istá
+  inštancia aj s buffmi, kópie sa vezmú späť z poolu (`Engine.buyBack`).
+  Poistka proti omylu pri ťahaní karty na obchod.
 - Refresh obchodu: **1** peniaz.
 
 ## Obchod (v strede medzi hráčmi)

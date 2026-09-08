@@ -2090,3 +2090,33 @@ test("Bublina strieborného E002 strieľa pri smrti len raz (hits: 1), aj keď m
   }
   assert.match(C.cardText(C.byId["E002"], 2, "sk", false, 0), /každá pri smrti: 1 damage náhodnému nepriateľovi/);
 });
+
+test("Buyback: posledný predaj v ťahu sa dá raz vrátiť (tá istá karta, peniaze späť, pool späť)", () => {
+  const { state, E } = fresh(72);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = []; p.board = [];
+  const a = E.makeInst(state, "B002", 1); a.slot = 0; a.atk += 2; a.src = { p1: 1 };
+  const b = E.makeInst(state, "U001", 1); b.slot = 1; b.src = { common: 1 };
+  p.hand = [a, b];
+  const money = p.money;
+  state.pools.p1.B002 = 4; // pod stropom, nech je návrat do poolu merateľný
+  const poolBefore = state.pools.p1.B002;
+  E.sellCard(state, "p1", "hand", 0); // predaj B002
+  assert.equal(p.money, money + 1);
+  assert.equal(state.pools.p1.B002, poolBefore + 1);
+  E.sellCard(state, "p1", "hand", 0); // predaj U001 – posledný predaj je U001
+  const ev = E.buyBack(state, "p1");
+  assert.ok(ev && ev.some(e => e.type === "buyBack" && e.defId === "U001"));
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].uid, b.uid);        // tá istá inštancia
+  assert.equal(p.money, money + 2 - 1);      // dva predaje +2, buyback −1
+  assert.equal(E.buyBack(state, "p1"), null); // raz za ťah
+  assert.equal(p.buyBackUsed, true);
+  // ďalšie kolo: opäť k dispozícii, ale bez predaja nie je čo vrátiť
+  E.endShopTurn(state, "p1");
+  state.p2.board = []; state.p2.hand = [];
+  E.doBattle(state);
+  assert.equal(p.buyBackUsed, false);
+  assert.equal(E.buyBack(state, state.active), null);
+});

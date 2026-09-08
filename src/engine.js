@@ -257,6 +257,7 @@ const Engine = (() => {
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       p.money = income(state.round) + p.goldNext; // Poklad škriatka z minulého kola
+      p.lastSold = null; p.buyBackUsed = false; // buyback platí raz za ťah
       p.goldNext = 0;
       p.bought = [];
       for (const s of p.priv) if (!s.frozen) returnToPool(state, pid, s.defId);
@@ -751,9 +752,35 @@ const Engine = (() => {
     const inst = p[zone][idx];
     if (!inst) return null;
     p[zone].splice(idx, 1);
-    p.money += SELL_GAIN + (state.mutator === "richSell" ? 1 : 0);
+    const gain = SELL_GAIN + (state.mutator === "richSell" ? 1 : 0);
+    p.money += gain;
     returnSrc(state, inst.defId, inst.src); // kópie späť do poolov, z ktorých boli
+    // Buyback: posledný predaj v ťahu sa dá raz vrátiť (omyl pri ťahaní).
+    p.lastSold = { inst, gain };
     return [{ type: "sell", pid, defId: inst.defId }];
+  }
+
+  // Buyback: vráti poslednú predanú kartu tohto ťahu do ruky za to, čo predaj
+  // dal (1, pri richSell 2). Raz za ťah; karta sa vracia aj s buffmi (rovnaká
+  // inštancia), kópie idú späť z poolu. Plná ruka = nejde.
+  function buyBack(state, pid) {
+    const p = state[pid];
+    if (state.phase !== "shop" || state.active !== pid) return null;
+    const ls = p.lastSold;
+    if (!ls || p.buyBackUsed || p.money < ls.gain || p.hand.length >= HAND_MAX) return null;
+    p.money -= ls.gain;
+    p.buyBackUsed = true;
+    p.lastSold = null;
+    const inst = ls.inst;
+    if (inst.src) for (const [k, n] of Object.entries(inst.src)) {
+      const pool = state.pools[k];
+      if (pool) pool[inst.defId] = Math.max(0, (pool[inst.defId] || 0) - n);
+    }
+    inst.slot = freeSlot(p.hand, HAND_MAX);
+    p.hand.push(inst);
+    const events = [{ type: "buyBack", pid, uid: inst.uid, defId: inst.defId }];
+    checkEvolve(state, p, events);
+    return events;
   }
 
   function applyShopFx(state, p, fx, rank, self, events, target) {
@@ -1654,7 +1681,7 @@ const Engine = (() => {
     TIER_MAX, MUTATORS, privateCount, income, seededRng, cardCost, refreshCost,
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
-    sellCard, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
+    sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
     pileCard, drawCards, rollCard, returnToPool, // pre testy a nástroje (cyklus balíčka, pooly, rollBias)
   };
 })();
