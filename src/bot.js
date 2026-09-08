@@ -23,6 +23,10 @@ const Bot = (() => {
 
   // Od tohto kola sa bot zafixuje na dominantnú rasu (predtým skladá, čo príde).
   const RACE_LOCK_ROUND = 3;
+  // Podporné rasy: nikdy nie sú hlavný build. Draci = žoldnieri s battlecry
+  // pre rasu cieľa, ogri = veľké telá na doplnenie plochy. Log Claude bota:
+  // O004×3 + O001×2 spravili z ogrov „dominantnú rasu" a build sa rozpadol.
+  const SUPPORT_RACES = new Set(["dragon", "ogre"]);
   // Koľko kúziel v balíčku toleruje ne-vílový build – kúzla nedávajú telá.
   const SPELL_CAP = 2;
 
@@ -52,12 +56,12 @@ const Bot = (() => {
     return counts;
   }
 
-  // Dominantná rasa: od RACE_LOCK_ROUND najpočetnejšia ne-dračia rasa
-  // (aspoň 3 kusy), inak null – bot ešte len skladá.
+  // Dominantná rasa: od RACE_LOCK_ROUND najpočetnejšia HLAVNÁ rasa (beast,
+  // elemental, undead, fairy; aspoň 3 kusy), inak null – bot ešte len skladá.
   function dominantRace(state, p) {
     if (state.round < RACE_LOCK_ROUND) return null;
     const counts = ownedRaceCounts(p);
-    delete counts.dragon;
+    for (const r of SUPPORT_RACES) delete counts[r];
     const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
     return top && top[1] >= 3 ? top[0] : null;
   }
@@ -84,9 +88,14 @@ const Bot = (() => {
     if (def.race) {
       // drž sa dominantnej rasy (hard drží silnejšie)
       score += (races[def.race] || 0) * ((cfg && cfg.raceFocus) || 0.5);
-      // Po zafixovaní rasy: vlastná +3, cudzia −3 (draci sú neutrálni,
-      // trojica cudzej rasy sa stále oplatí – +6 vyššie to preváži).
-      if (dom && def.race !== "dragon") score += def.race === dom ? 3 : -3;
+      // Po zafixovaní rasy: vlastná +3, cudzia −3; podporné rasy miernejšie
+      // (drak neutrálny – jeho battlecry živí moju rasu; ogr −1 – telo nad
+      // krivkou je ok ako doplnok, nie ako plán). Trojica (+6) to preváži.
+      if (dom) {
+        if (def.race === dom) score += 3;
+        else if (def.race === "ogre") score -= 1;
+        else if (def.race !== "dragon") score -= 3;
+      }
     }
     if (def.power) {
       const fx = def.power.fx;
@@ -404,7 +413,7 @@ const Bot = (() => {
     }
   }
 
-  return { botTurn, ownedCount, cardScore, dominantRace };
+  return { botTurn, ownedCount, cardScore, dominantRace, isJunk, orderBoard, SUPPORT_RACES };
 })();
 
 if (typeof module !== "undefined") module.exports = Bot;

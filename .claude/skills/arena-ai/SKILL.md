@@ -155,9 +155,19 @@ Boti prehrávali na 4 veciach: miešanie rás, nafúknutý balíček plný
 štartovacieho balastu a kúziel, plocha s 3–4 telami, upgrade s deravou
 plochou. Rob VŠETKY kroky, každý ťah:
 
-1. **Predaj balast z ruky ešte pred vykladaním.** Balast = telo s 0 útoku
-   (prehratý hod mincou), a od 3. kola každá karta cudzej rasy tieru 1–2
-   bez páru (od tieru 3 aj s párom). Štartovací balíček je 10 náhodných
+0. **Hlavná rasa je len beast / elemental / undead / fairy. Ogre a dragon sú
+   PODPORNÉ** – drak je žoldnier s battlecry pre rasu cieľa, ogr telo nad
+   krivkou na doplnenie slotu. Tri ogri v balíčku z ogrov hlavnú rasu
+   nerobia (Claude bot v logu z 8. 9. 2026 takto prehral: O004×3, O001×2,
+   nula predajov, 22 kariet v balíčku). `dominantRace` v stave ich už
+   ignoruje; ak je null, vyber hlavnú rasu, ktorej máš najviac, alebo tú,
+   ktorej Pečať/motor je v ponuke.
+1. **Predaj balast z ruky ešte pred vykladaním.** Stav ti posiela
+   `junkInHand` – predaj všetko z neho ako prvé akcie ťahu. Balast = telo
+   s 0 útoku (prehratý hod mincou), a od 3. kola každá karta cudzej rasy
+   tieru 1–2 bez páru (od tieru 3 aj s párom; ogre/dragon t1–2 sa rátajú
+   ako cudzia rasa). Driver po pláne balast dopredá a plochu usporiada sám
+   (poistka), ale plán, čo to nerobí, je zlý plán. Štartovací balíček je 10 náhodných
    t1 kariet – človek ich vypredá do 6. kola, ty tiež. Nechaj si toľko tiel,
    aby si zaplnil plochu (aspoň 4); zvyšný balast zahraj a predaj nabudúce.
    Cieľ: balíček ≤ 12–14 kariet vlastnej rasy. Každá mŕtva karta = horšia

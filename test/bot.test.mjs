@@ -138,6 +138,26 @@ test("hard bot: poradie útoku – Pri útoku vľavo, škálovač vpravo", () =>
   assert.deepEqual(order, ["E004", "O005", "B009"]);
 });
 
+test("bot: ogre a dragon nie sú dominantná rasa; s dominantnou rasou je ogr len mierne horší, cudzia hlavná rasa výrazne", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(35), null);
+  state.round = 4;
+  const p = state.p2;
+  p.deck = ["O004", "O004", "O001", "D001", "D007", "U001", "U002", "U003"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(ctx.Bot.dominantRace(state, p), "undead"); // 5 ogrov+drakov nerozhoduje, 3 undead áno
+  const own = ctx.Bot.cardScore(state, p, "U006");   // t3 undead
+  const ogre = ctx.Bot.cardScore(state, p, "O008");  // t3 ogr (podporná)
+  const beast = ctx.Bot.cardScore(state, p, "B008"); // t3 beast (cudzia hlavná)
+  assert.ok(own > ogre && ogre > beast, `${own} / ${ogre} / ${beast}`);
+  p.deck = ["O004", "O004", "O001", "D001", "D007"].map(id => ({ defId: id, rank: 1 }));
+  assert.equal(ctx.Bot.dominantRace(state, p), null);
+  const o1 = E.makeInst(state, "O001", 1);
+  p.deck = ["U001", "U002", "U003"].map(id => ({ defId: id, rank: 1 }));
+  assert.equal(ctx.Bot.isJunk(state, p, o1), true); // ogr t1 bez páru = balast v undead builde
+});
+
 test("bot skóre: po zafixovaní rasy je cudzia karta rovnakého tieru horšia, kúzla nad strop trestané", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;

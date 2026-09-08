@@ -45,6 +45,7 @@ RULES:
 - Races: beast (big bodies/auras), elemental (zaps/AoE), undead (skeleton swarm), fairy (abilities trigger on each spell cast), dragon (mercenaries – above-curve bodies whose battlecries boost the RACE of a targeted friendly minion; they fit into any build), ogre (huge stats with chaotic downsides – coin flips, friendly fire, self-hits; the randomness can backfire). Stick to a dominant race for synergy.
 - Battle: sides alternate attacks, random targets, Taunt minions must be hit first. "startFight"/"deathrattle"/"onAttack" abilities as written on cards.
 - "Imprint +X/+Y to <Race>" = permanent race aura: ALL your minions of that race (board, hand, deck, tokens, future buys) get +X/+Y forever. Buy Imprint cards of your race early.
+- MAIN races are beast, elemental, undead, fairy. OGRE and DRAGON are SUPPORT races – never a main build: dragons are mercenaries whose battlecries feed the race you target, ogres are above-curve bodies to fill a slot. Owning many ogres/dragons does NOT make them your race; dominantRace in the state already ignores them. If dominantRace is null, pick the main race you own most of (or the best Imprint/engine in the shop) and commit to it.
 
 YOUR TASK: return ONLY a JSON object, no markdown fences, shaped:
 {"actions":[...], "taunt":"..."}
@@ -61,7 +62,7 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"freeze","id":"<cardId in your private shop>"}  freeze that private-shop card so it survives into next round
 
 STRATEGY – do ALL of these every turn, in this order (derived from logs of winning games; bots lost on mixed races, bloated decks, 3-4 minion boards and upgrading with an empty board):
-1. SELL JUNK FROM HAND FIRST (before playing): any minion with 0 attack; from round 3 on, every off-race tier 1-2 minion you own fewer than 2 copies of (from tier 3 on: even pairs). Your starting deck is 10 random tier-1 cards – winners sell them all by round 6. Keep enough bodies to field at least 4; sell the rest of the junk next turn. Target deck size: 12-14 cards of your race. Never sell dragons or a card you own 2 copies of (unless off-race and tier >= 3).
+1. SELL JUNK FROM HAND FIRST (before playing): the state lists junkInHand – emit {"a":"sell","zone":"hand","id":...} for EVERY card in it as your first actions (rule: 0 attack; from round 3 on every off-race tier 1-2 minion without a pair, from tier 3 on even pairs; ogre/dragon tier 1-2 count as off-race). Your starting deck is 10 random tier-1 cards – winners sell them all by round 6. Keep enough bodies to field at least 4. Target deckSize: 12-14 cards of your race. A game with zero sells is a lost game.
 2. PLAY MINIONS: plain bodies first (strongest first), battlecry buffers and Imprint cards LAST so they hit a full board. Dragons: "target" = your best minion of dominantRace. U004: target U001/U006/U009. Always fight with 5 minions.
 3. SWAP ON A FULL BOARD: if a hand minion is >= 3 points better (atk+hp, +2 if it has an ability) than your weakest board minion, sell the weakest and play the better one.
 4. UPGRADE TIER on schedule: tier 2 by round 3-4, tier 3 by 6, tier 4 by 8-9, tier 5 by 11 (rule: round >= tier*2-1). Only when your board is full (5), or you keep >= 3 gold after upgrading AND have >= 4 bodies. With 1-3 bodies on board do NOT upgrade – bodies first.
@@ -97,10 +98,16 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
     // Dominantná rasa spočítaná v kóde – Claude dostane jasný signál,
     // ktorú líniu držať (one-shot plán si ju sám spoľahlivo neodvodí).
     const raceCounts = {};
-    const addRace = defId => { const r = Cards.byId[defId].race; if (r) raceCounts[r] = (raceCounts[r] || 0) + 1; };
+    const addRace = defId => { const d = Cards.byId[defId]; if (d.race && !d.token) raceCounts[d.race] = (raceCounts[d.race] || 0) + 1; };
     for (const zone of [p.deck, p.discard]) for (const c of zone) addRace(c.defId);
     for (const zone of [p.hand, p.board]) for (const c of zone) if (!c.spell) addRace(c.defId);
-    const dominantRace = Object.entries(raceCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+    // Dominantná = najpočetnejšia HLAVNÁ rasa; ogre a dragon sú podporné
+    // (v logu Claude urobil z ogrov hlavný build a prehral).
+    const mainRaces = Object.entries(raceCounts).filter(([r]) => !Bot.SUPPORT_RACES.has(r)).sort((a, b) => b[1] - a[1]);
+    const dominantRace = mainRaces[0]?.[0] || null;
+    // Balast v ruke podľa rovnakých pravidiel ako hard bot (0 útoku; od 3. kola
+    // cudzia rasa t1–2 bez páru, od tieru 3 aj s párom) – Claude ho má predať.
+    const junkInHand = p.hand.filter(x => !x.spell && Bot.isJunk(state, p, x)).map(x => x.defId);
     return {
       round: state.round,
       you: { hp: p.hp, tier: p.tier, money: p.money, upgradeCost: Engine.upgradeCost(state, pid), dmgBoost: p.dmgBoost, raceAuras: p.raceBuffs, spellsCastTotal: p.spellsCast },
@@ -110,6 +117,9 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       deckAndDiscard: [...p.deck, ...p.discard].map(c => c.defId),
       copiesOwnedTowardTriple: ownedCounts,
       raceCounts, dominantRace,
+      supportRaces: [...Bot.SUPPORT_RACES], // nikdy hlavný build
+      junkInHand, // predaj ich ako prvé (sell zone hand)
+      deckSize: p.deck.length + p.discard.length + p.hand.length + p.board.length,
       shop: {
         commons: state.commons.map(id => card(id, 1)),
         private: p.priv.map(s => ({ ...card(s.defId, 1), frozen: s.frozen })),
@@ -245,13 +255,34 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         run("pickDiscover", [best]);
       }
     }
-    // Dohraj zvyšné príšerky z ruky (nech plán s dierami nenechá prázdny board).
-    let dg = 10;
-    while (p.board.length < Engine.BOARD_MAX && dg-- > 0) {
-      const i = p.hand.findIndex(x => x && !x.spell);
-      if (i < 0) break;
-      run("playMinion", [i]);
-      if (state.pendingDiscover && state.pendingDiscover.pid === pid) run("pickDiscover", [0]);
+    // Poistka „hygieny" (Claude v logoch nepredával ani neusporadúval):
+    // 1) balast z ruky predaj, kým z ruky + plochy ostanú aspoň 4 telá,
+    // 2) dohraj zvyšné príšerky (plán s dierami nesmie nechať prázdny board),
+    // 3) čo ostalo v ruke a je balast, predaj (plocha je plná),
+    // 4) keď Claude plochu neusporiadal sám, usporiadaj ju ako hard bot.
+    const movedByPlan = (Array.isArray(plan.actions) ? plan.actions : []).some(a => a && a.a === "move");
+    const sellJunk = keepBodies => {
+      for (let i = p.hand.length - 1; i >= 0; i--) {
+        const x = p.hand[i];
+        if (!x || x.spell || !Bot.isJunk(state, p, x)) continue;
+        if (keepBodies) {
+          const bodies = p.hand.filter(y => y && !y.spell).length - 1;
+          if (p.board.length + bodies < Engine.BOARD_MAX - 1) continue;
+        }
+        run("sellCard", ["hand", i]);
+      }
+    };
+    if (state.phase === "shop" && state.active === pid) {
+      sellJunk(true);
+      let dg = 10;
+      while (p.board.length < Engine.BOARD_MAX && dg-- > 0) {
+        const i = p.hand.findIndex(x => x && !x.spell);
+        if (i < 0) break;
+        run("playMinion", [i]);
+        if (state.pendingDiscover && state.pendingDiscover.pid === pid) run("pickDiscover", [0]);
+      }
+      sellJunk(false);
+      if (!movedByPlan) Bot.orderBoard(state, p, ev => { if (ev) events.push(...ev); });
     }
     run("endShopTurn", []);
     return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 250) : null };
