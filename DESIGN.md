@@ -245,7 +245,8 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   sile** (1/2/3), nie väčší zásah. Ladder t1 3 → t3 4 → t6 výbuch 3.
 - **E002 Bubbleskip** (t1, 1/3 Obranca): „Pri smrti: vyvolaj 2× Bublinu"
   🫧 – Bublina 1/1 elemental token s „Pri smrti: výboj 1" (+Živelná
-  sila, stupeň rodiča = počet zásahov). Živly tak majú telá navyše aj
+  sila, vždy JEDEN zásah – `hits: 1`; strieborná E002 dáva Bubliny 2/2,
+  nie dvojitý výboj). Živly tak majú telá navyše aj
   reťazové výbuchy; na plnú plochu sa Bublina nezmestí (Pretečenie je len
   undead). Súperov Lovec tokenov (E005) Bubliny loví – a každá mu pri
   smrti odpovie výbojom.

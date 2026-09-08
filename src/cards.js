@@ -292,11 +292,12 @@ const Cards = (() => {
     { id: "kostik", tier: 1, race: "undead", emoji: "💀", atk: 1, hp: 1, token: true,
       namePl: { sk: "Kostíky", cs: "Kůstky", en: "Bonelets" }, // množné číslo (U002 text)
       name: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" } },
-    // Bublina: elemental token z E002 – pri smrti výboj 1 (+Živelná sila,
-    // stupeň rodiča = počet zásahov). Nezmestí sa na plnú plochu (bez Pretečenia).
+    // Bublina: elemental token z E002 – pri smrti výboj 1 (+Živelná sila),
+    // VŽDY jeden zásah (hits: 1 – strieborná E002 dáva tokeny stupňa 2, tie
+    // majú väčšie telo, nie dvojitý výboj). Bez Pretečenia (len undead).
     { id: "bublina", tier: 1, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
       namePl: { sk: "Bubliny", cs: "Bubliny", en: "Bubbles" },
-      power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 1 } },
+      power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 1, hits: 1 } },
       name: { sk: "Bublina", cs: "Bublina", en: "Bubble" } },
     // Iskrička: jednorazové kúzlo z battlecry F006 – po zoslaní ZMIZNE
     // (nejde do kôpky ani balíčka), rovnako prepadne nezahraná na konci ťahu.
@@ -442,14 +443,14 @@ const Cards = (() => {
     // Evolve škáluje počet zásahov (1/2/3), nie silu – text to ukazuje.
     // Výboj mieri na náhodného nepriateľa.
     // hl = číslo aj s trvalým bonusom Živelnej sily (dmgBoost), zvýraznené.
-    dmgWeakEnemy: (f, m, hl) => (m === 1 ? {
+    dmgWeakEnemy: (f, m, hl) => ((f.hits || m) === 1 ? {
       sk: `${hl(f.n)} damage náhodnému nepriateľovi`,
       cs: `${hl(f.n)} damage náhodnému nepříteli`,
       en: `deal ${hl(f.n)} damage to a random enemy`,
     } : {
-      sk: `${m}× ${hl(f.n)} damage náhodným nepriateľom`,
-      cs: `${m}× ${hl(f.n)} damage náhodným nepřátelům`,
-      en: `deal ${hl(f.n)} damage to ${m} random enemies`,
+      sk: `${f.hits || m}× ${hl(f.n)} damage náhodným nepriateľom`,
+      cs: `${f.hits || m}× ${hl(f.n)} damage náhodným nepřátelům`,
+      en: `deal ${hl(f.n)} damage to ${f.hits || m} random enemies`,
     }),
     dmgAllEnemies: (f, m, hl) => ({
       sk: `výbuch: ${hl(f.n * m)} damage VŠETKÝM nepriateľom`,

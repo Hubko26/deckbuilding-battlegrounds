@@ -2069,3 +2069,24 @@ test("rollBias: súkromná ponuka hráča s biasom praje jeho rase, spoločná n
   for (let i = 0; i < N; i++) { const id = E.rollCard(state, 3, "common"); if (isUndead(id)) hitC++; E.returnToPool(state, "common", id); }
   assert.ok(hitC / N < base * 1.5, `spoločná ${hitC / N} vs základ ${base.toFixed(2)}`);
 });
+
+test("Bublina strieborného E002 strieľa pri smrti len raz (hits: 1), aj keď má stupeň 2", () => {
+  const { state, E, C } = fresh(71);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const bub = E.makeInst(state, "E002", 2); bub.slot = 0; // strieborná 2/6 – bubliny stupňa 2
+  state.p1.board = [bub];
+  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "O009", 1), { slot: i })); // 7/7 ×3 – zabijú všetko
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const bubbles = events.filter(e => e.type === "summon" && e.defId === "bublina");
+  assert.equal(bubbles.length, 2);
+  assert.equal(bubbles[0].rank, 2);
+  for (const b of bubbles) {
+    const zaps = events.filter(e => e.type === "powerDmg" && e.from === b.uid);
+    assert.equal(zaps.length, 1, "každá Bublina presne 1 výboj");
+  }
+  assert.match(C.cardText(C.byId["E002"], 2, "sk", false, 0), /každá pri smrti: 1 damage náhodnému nepriateľovi/);
+});

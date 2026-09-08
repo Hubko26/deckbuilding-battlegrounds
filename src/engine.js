@@ -1371,7 +1371,9 @@ const Engine = (() => {
     dmgWeakEnemy({ state, sides, pid, self, fx, m, events }) {
       const foe = other(pid);
       const hitDmg = fx.n + state[pid].dmgBoost;
-      for (let i = 0; i < m; i++) {
+      // Počet zásahov = stupeň (1/2/3); fx.hits ho prebije (Bublina: vždy 1 –
+      // strieborná E002 vyvoláva tokeny stupňa 2, no každý má strieľať raz).
+      for (let i = 0; i < (fx.hits || m); i++) {
         const enemies = aliveOn(sides, foe);
         if (!enemies.length) break;
         powerHit(pick(enemies, state.rng), foe, hitDmg, self.uid, events);
