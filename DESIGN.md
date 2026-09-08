@@ -258,9 +258,10 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - **E007 Sproutsnout** (t4, 4/7): „Po nákupe: Živelná sila +1" (navždy,
   evolve +2/+3), kým je na ploche – motor identity, živly už nezávisia od
   jediného spell slotu. Kúp-vylož-predaj = 2 zlata za +1, cena kúzla.
-- **E008 Prismite** (t4, 5/5): permanentná aura Živly +1/+1 (bola dočasná
-  +2/+2). Ladder aur živlov: E003 t2 +1/+1 → E008 t4 +1/+1 → **E009 t5
-  +2/+2** (vyšší tier = väčší skok, inak by E009 bola kópia E008).
+- **E008 Prismite** (t4, 5/5): cielený battlecry **+1/+1 vybranej príšerke**
+  (`buffOne`, do konca boja, hocijaká rasa) – dočasný buff Živla, takže ho
+  Živelná sila škáluje v oboch číslach (⚡+2 → +3/+3), evolve ×2/×3. Živly
+  majú aury E003 t2 +1/+1 a **E009 t5 +2/+2**; Prismite už auru nedáva.
 - Telá na krivku: E001 2/2, E004 4/4, E005 3/5, E006 4/4 (boli 1/2, 4/3,
   3/4, 4/3 – živly platili za výboje telom aj číslom).
 - AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: **3** všetkým).
@@ -275,9 +276,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   permanentných aur (malý krok +1, aby nesnowballoval). Zosilňuje výboje
   (`dmgWeakEnemy`), výbuchy (`dmgAllEnemies`, `dmgAllBoth`, `dmgRandomAny`),
   Blesk aj **dočasné buffy Živlov**: E004 „Pri útoku" (+1 útok všetkým →
-  +1+boost), E007 „Po nákupe: +1/+1 Živlom" a E008 „Pri vyložení: +2/+2
-  Živlom" (`buffRace` z živelnej karty: +boost na útok, na život len ak
-  buff život dáva). Bonus sa nenásobí stupňom; výboje/výbuchy platia pre
+  +1+boost) a E008 „Pri vyložení: +1/+1 vybranej príšerke" (`buffOne`
+  z živelnej karty: +boost na útok aj život; `buffRace` z Živla by sa
+  škáloval rovnako). Bonus sa nenásobí stupňom; výboje/výbuchy platia pre
   všetky rasy, buffy len pre Živly (F007 buffRace víl nie). Permanentné
   aury (`futureRace`) NEzosilňuje – aura +1 navždy by snowballovala.
   UI: popisky výbojov/výbuchov/Pri útoku ukazujú číslo aj s bonusom
@@ -467,7 +468,7 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
   Beast B002 (t3, +1/+0 útok) / B006 (t4, +0/+1 život – obe boli +0/+1,
   kópie) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/
-  E008/E009, Undead U008/U010 – hra tak
+  E009, Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
   všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez

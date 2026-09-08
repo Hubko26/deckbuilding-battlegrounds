@@ -1456,10 +1456,10 @@ test("battlecry buffRace: buffne len príšerky rovnakej rasy", () => {
   const beast = E.makeInst(state, "B001", 1);     // beast
   const elem = E.makeInst(state, "E001", 1);      // elemental
   p.board = [beast, elem];
-  p.hand = [E.makeInst(state, "E008", 1)];        // battlecry: +1/+1 Živlom
+  p.hand = [E.makeInst(state, "E003", 1)];        // battlecry: Pečať +1/+1 Živlom
   E.playMinion(state, "p1", 0);
   const { C } = fresh();
-  const fx = C.byId["E008"].power.fx;
+  const fx = C.byId["E003"].power.fx;
   assert.equal(elem.atk, C.byId["E001"].atk + fx.a); // živel buffnutý
   assert.equal(beast.atk, C.byId["B001"].atk);       // zviera nie
 });
@@ -2027,13 +2027,31 @@ test("mutácia echoDeath: deathrattle sa spustí 2× (U001 vyvolá 4 kostíkov)"
   assert.equal(summons.length, 4);
 });
 
-test("mutácia echoCry: battlecry 2× (E008 aura živlov +2/+2 spolu)", () => {
+test("E008 Prismite: cielený +1/+1 vybranej príšerke, škáluje Živelnou silou, fallback najsilnejšia", () => {
+  const { state, E, C } = fresh(73);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  p.dmgBoost = 2;
+  const small = E.makeInst(state, "B001", 1); small.slot = 0; // 2/2 zviera
+  const big = E.makeInst(state, "U008", 1); big.slot = 1;     // 3/8
+  p.board = [small, big];
+  p.hand = [E.makeInst(state, "E008", 1), E.makeInst(state, "E008", 2)];
+  E.playMinion(state, "p1", 0, small.uid);   // cielené na zviera: +1+2 / +1+2
+  assert.equal(small.atk, 2 + 3); assert.equal(small.maxHp, 2 + 3);
+  E.playMinion(state, "p1", 0);              // strieborný bez cieľa: najsilnejšia (big) +2+2
+  assert.equal(big.atk, 3 + 4); assert.equal(big.maxHp, 8 + 4);
+  assert.ok(!p.raceBuffs.elemental);         // žiadna aura
+  assert.match(C.cardText(C.byId["E008"], 1, "sk", false, 2), /\+3\/\+3 vybranej príšerke/);
+});
+
+test("mutácia echoCry: battlecry 2× (E003 aura živlov +2/+2 spolu)", () => {
   const { state, E } = fresh(8, "echoCry");
   E.startRound(state);
   const p = state.p1;
   const pal = E.makeInst(state, "E002", 1); pal.slot = 0; // elemental 1/3
   p.board = [pal];
-  p.hand = [E.makeInst(state, "E008", 1)]; // battlecry: aura živlov +1/+1
+  p.hand = [E.makeInst(state, "E003", 1)]; // battlecry: Pečať živlov +1/+1
   E.playMinion(state, "p1", 0);
   assert.equal(pal.atk, 1 + 2);
   assert.equal(pal.maxHp, 3 + 2);

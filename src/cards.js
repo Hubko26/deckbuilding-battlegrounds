@@ -105,10 +105,11 @@ const Cards = (() => {
     // stojí 2 zlata za +1 = cena kúzla, bez zneužitia.
     M("E007", 4, "elemental", ["Sproutsnout", "Verdantusk", "Worldroot"], 4, 7,
       { power: { kw: "endTurn", fx: { type: "dmgBoost", n: 1 } } }),
-    // E008: trvalá aura namiesto dočasného buffu – ladder E003 t2 +1/+1,
-    // E008 t4 +1/+1, E009 t5 +1/+1 (auru t4 majú aj beast/undead).
+    // E008 Prismite: cielený battlecry „+1/+1 vybranej príšerke" (buffOne,
+    // do konca boja) – ako dočasný buff Živla ho škáluje Živelná sila v oboch
+    // číslach (⚡+2 → +3/+3), evolve ×2/×3. Živly majú aury E003 t2 / E009 t5.
     M("E008", 4, "elemental", ["Prismite", "Shardmane", "Auroraclysm"], 5, 5,
-      { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "buffOne", a: 1, h: 1 } } }),
     M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 2, h: 2 } } }),
     M("E010", 6, "elemental", ["Duskdrop", "Gloamstalker", "Eclipse Sovereign"], 9, 9,
@@ -358,6 +359,17 @@ const Cards = (() => {
       cs: `v nejbližším boji náhodná soupeřova příšerka −${f.a * m}/−${f.h * m}`,
       en: `next fight, a random enemy minion gets −${f.a * m}/−${f.h * m}`,
     }),
+    // Cielený buff (E008): číslo aj so Živelnou silou, keď je karta Živel.
+    buffOne: (f, m, hl, kw, def) => {
+      const el = def && def.race === "elemental";
+      const a = el ? hl(f.a * m) : String(f.a * m);
+      const h = el && f.h ? hl(f.h * m) : String(f.h * m);
+      return {
+        sk: `+${a}/+${h} vybranej príšerke`,
+        cs: `+${a}/+${h} vybrané příšerce`,
+        en: `+${a}/+${h} to a chosen minion`,
+      };
+    },
     buffFriend: (f, m) => ({
       sk: `+${f.a * m}/+${f.h * m} náhodnému kamarátovi`,
       cs: `+${f.a * m}/+${f.h * m} náhodnému kamarádovi`,

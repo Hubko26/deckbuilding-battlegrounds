@@ -42,7 +42,7 @@ test("bot hrá battlecry buffer až po obyčajných príšerách (buff zasiahne 
   p.money = 0; // nič nenakupuj
   p.deck = []; p.discard = [];
   const plain = E.makeInst(state, "E002", 1); plain.slot = 0;   // elemental 1/3
-  const buffer = E.makeInst(state, "E008", 1); buffer.slot = 1; // battlecry: aura Živlov +1/+1
+  const buffer = E.makeInst(state, "E003", 1); buffer.slot = 1; // battlecry: Pečať Živlov +1/+1
   p.hand = [buffer, plain];
   ctx.Bot.botTurn(state, "p2", "normal");
   const played = p.board.find(x => x.defId === "E002");

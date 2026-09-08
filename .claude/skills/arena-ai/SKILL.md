@@ -28,8 +28,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
   Vlna/Živelná sila/Blesk/Klobúk/Vichor/Poklad 2, Srdce/Zrkadlo 3;
   Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage a
-  dočasné buffy Živlov +1 (E004 Pri útoku, E007 Po nákupe, E008 Pri
-  vyložení), stackuje sa, kupuj pri elemental builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
+  dočasné buffy Živlov +1 (E004 Pri útoku, E008 Pri vyložení +1/+1
+  vybranej príšerke – cieľ = najsilnejšie telo), stackuje sa, kupuj pri
+  elemental builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
   pri každom útoku – hoď na E004/O006 alebo na najväčší útok, ideálne
   spolu so Svätožiarou; Umlčanie = v najbližšom boji náhodná súperova
   príšerka so schopnosťou stratí efekt aj Obrancu – counter na
@@ -97,7 +98,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     jednou vlnou. E002 (t1) Pri smrti 2× Bublina 🫧 (1/1, pri smrti výboj
     1) – lacné telá + reťaz výbojov. E007 (t4) Po nákupe Živelná sila +1
     navždy – drž ho na ploche každé kolo, je to hlavný motor rasy.
-    Aury E003 t2 / E008 t4 / E009 t5 (+1/+1 navždy).
+    Aury E003 t2 (+1/+1) / E009 t5 (+2/+2) navždy; E008 (t4) = cielený
+    +1/+1(+⚡) vybranej príšerke do boja.
     Counter na undead hordu, slabé proti veľkým beast telám.
     E005 (t3) = keď súper vyvolá token, výboj za 1 (+Živelná sila) a ak
     token padne, +1/+1 NAVŽDY – proti undead/mláďatám vykladaj vždy,
@@ -185,7 +187,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
    má aspoň 4 telá. S 1–3 telami na ploche NEUPGRADUJ – telá majú prednosť.
 5. **Nakupuj podľa tejto priority** (všetko zlato, neminuté prepadne):
    a) tretia kópia = trojica (aj kópie v balíčku a kôpke – `copiesOwnedTowardTriple`),
-   b) Pečať (aura) vlastnej rasy (E003/E008/E009, B002/B006/B010,
+   b) Pečať (aura) vlastnej rasy (E003/E009, B002/B006/B010,
       U003/U008/U010, F008; draci D003/D009 s targetom na tvoju rasu),
    c) motor rasy (undead U002/U005/U006, elemental E007/E004 + Živelná
       sila/D007, beast B004/B007/B005/B003/B008, fairy F002/F004 + kúzla),
@@ -222,7 +224,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Elemental**: E002 (t1 Bubliny), E001, E003 (t2 Pečať), E004 (t2 – vľavo,
   s Vichorom 2×), Živelná sila ⚡ + D007 vždy (každý +1 navždy), E005 (t3,
   proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
-  E008 (t4 Pečať), E009 (t5 Pečať), E010 (t6). Slabí proti beast telám.
+  E008 (t4, +1/+1(+⚡) vybranej – na najsilnejšie telo), E009 (t5 Pečať
+  +2/+2), E010 (t6). Slabí proti beast telám.
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
   sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+0 útok), B008
   (t3 rast navždy), B006 (t4 Pečať +0/+1 život), B009 (t4 mrchožrút, vpravo), B010 (t5

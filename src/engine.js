@@ -856,6 +856,15 @@ const Engine = (() => {
   // Efekty nákupnej fázy podľa fx.type. Kontext: state, p (hráč), fx, m (stupeň
   // karty = násobič), self (zdroj efektu, ak je to príšerka), events, target.
   const SHOP_FX = {
+    // Cielený buff (E008): +a/+h vybranej príšerke do konca boja; dočasný
+    // buff Živla škáluje Živelná sila v oboch číslach.
+    buffOne({ state, p, fx, m, self, target, events }) {
+      const t = shopTarget(p, self, target);
+      if (!t) return;
+      const boost = Cards.byId[self.defId].race === "elemental" ? state[p.id].dmgBoost : 0;
+      const b = elementalBonus(fx, m, boost);
+      buffWithEvent(t, p.id, b.a, b.h, events);
+    },
     // Drak: +a/+h všetkým príšerkám RASY cieľa (do konca boja).
     buffRaceOf({ p, fx, m, self, target, events }) {
       const t = shopTarget(p, self, target);

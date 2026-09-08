@@ -153,7 +153,7 @@ const Bot = (() => {
   function isBattlecryBuffer(defId) {
     const pw = Cards.byId[defId].power;
     return !!pw && pw.kw === "battlecry" &&
-      (["buffRace", "buffAllFriends", "buffFriend", "futureRace", "evolveTarget"].includes(pw.fx.type) ||
+      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "evolveTarget"].includes(pw.fx.type) ||
         RACE_TARGETED.has(pw.fx.type));
   }
 
@@ -173,6 +173,7 @@ const Bot = (() => {
       const mine = others.filter(x => Cards.byId[x.defId].race === race);
       return (mine.length ? strongest(mine) : strongest(others)).uid;
     }
+    if (pw.fx.type === "buffOne") return strongest(others).uid; // stat buff na najsilnejšie telo
     if (pw.fx.type === "evolveTarget") {
       const cands = others.filter(x => x.rank < 3);
       if (!cands.length) return undefined;
