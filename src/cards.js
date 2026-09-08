@@ -185,13 +185,16 @@ const Cards = (() => {
     // vlastná príšerka. Telá nad krivkou – drak je silný aj sám.
     // t1 draci: malé battlecry namiesto vanilky (draci = žoldnieri).
     // D001 útočný: odložené oslabenie súpera (štýl Kliatby – v boji, nech
-    // nezáleží na tom, kto nakupoval prvý). D007 = Živelná sila na tele:
-    // kúzlo má len 1 spell slot, živly ho ťažko nachádzali; drak cykluje
-    // balíčkom ako kúzlo a dáva +1 pri každom vyložení (evolve +2/+3).
+    // nezáleží na tom, kto nakupoval prvý). D007 nesie Pred bojom buff
+    // najpočetnejšej rasy – dočasný a bez hromadenia, preto je na t1 bezpečný.
+    // Živelná sila (`dmgBoost`) sa z t1 PRESUNULA na D005 (t3): je trvalá,
+    // stackuje sa pri každom vyložení a karta cykluje balíčkom, takže na t1
+    // rozbiehala živelný snowball od prvého kola. Na t3 je to odmena za už
+    // postavený build, nie jeho štartér.
     M("D001", 1, "dragon", ["Flickerwyrm", "Blazewing", "Inferno Crown"], 3, 2,
       { power: { kw: "battlecry", fx: { type: "shrinkEnemy", a: 1, h: 1 } } }),
     M("D007", 1, "dragon", ["Puffsnack", "Sugarscale", "Confection Colossus"], 2, 4,
-      { power: { kw: "battlecry", fx: { type: "dmgBoost", n: 1 } } }),
+      { power: { kw: "startFight", fx: { type: "buffTopRace", a: 1, h: 1 } } }),
     M("D002", 2, "dragon", ["Puddlewing", "Tidecoil", "Oceanic Leviathan"], 3, 4,
       { power: { kw: "battlecry", fx: { type: "buffRaceOf", a: 1, h: 1 } } }),
     M("D006", 2, "dragon", ["Lunabat", "Crescentwing", "Eclipse Dragon"], 2, 5,
@@ -199,7 +202,7 @@ const Cards = (() => {
     M("D004", 3, "dragon", ["Shardnip", "Prismwing", "Cathedral Dragon"], 4, 4,
       { power: { kw: "battlecry", fx: { type: "discoverRace" } } }),
     M("D005", 3, "dragon", ["Nimbusnip", "Galefin", "Tempest Emperor"], 5, 4,
-      { power: { kw: "startFight", fx: { type: "buffTopRace", a: 1, h: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "dmgBoost", n: 1 } } }),
     M("D003", 4, "dragon", ["Mossclaw", "Grovewyrm", "Worldbark Dragon"], 5, 6,
       { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
     M("D008", 5, "dragon", ["Rivetwyrm", "Forgewing", "Ironstar Dragon"], 6, 9,

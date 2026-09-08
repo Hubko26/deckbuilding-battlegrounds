@@ -131,13 +131,14 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     odstránený). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
-    battlecry. t1: D007 = Živelná sila +1 pri každom vyložení (navždy,
-    ako kúzlo ⚡ – v elemental builde kupuj každého, cykluje balíčkom),
-    D001 v najbližšom boji náhodný súper −1/−1 (odložené, hraj vždy). Vyššie tiery mieria na RASU vybranej
-    príšerky – D002/D008 buff do boja
+    battlecry. t1: D007 Pred bojom = najpočetnejšia rasa +1/+1 (dočasne,
+    ale drží celý boj), D001 v najbližšom boji náhodný súper −1/−1
+    (odložené, hraj vždy). **Živelná sila na tele je až t3 (D005)** – bola
+    na t1 a rozbiehala živelný snowball od druhého kola. Vyššie tiery mieria
+    na RASU vybranej príšerky – D002/D008 buff do boja
     (VŠETKY ne-aurové dračie staty platia celé kolo: dostanú ich aj
     neskôr vyložené karty a tokeny vyvolané v boji – kombuje so summon
-    buildmi; rovnako D005 Pred bojom aj D006 Po nákupe),
+    buildmi; rovnako D007 Pred bojom aj D006 Po nákupe),
     D003/D009 permanentná aura +1/+1, D004 discover rasy, D010 (t6)
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
@@ -209,7 +210,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
    b) Pečať (aura) vlastnej rasy (E003/E009, B002/B006/B010,
       U003/U008/U010, F008; draci D003/D009 s targetom na tvoju rasu),
    c) motor rasy (undead U002/U005/U006, elemental E007/E004 + Živelná
-      sila/D007, beast B004/B007/B005/B003/B008, fairy F002/F004 + kúzla),
+      sila/D005 (t3), beast B004/B007/B005/B003/B008, fairy F002/F004 + kúzla),
    d) druhá kópia rozbehnutej trojice,
    e) najlepšie telo vlastnej rasy najvyššieho dostupného tieru,
    f) drak s battlecry pre tvoju rasu (D002/D008 buff, D004 discover).
@@ -242,7 +243,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
   (t4 Pečať), U007 (t4 charga), U009 (t5), U010 (t6, Pečať pri smrti –
   Obranca, nech padne). Proti undead: E005 lovec tokenov, E010, O003.
 - **Elemental**: E002 (t1 Bubliny), E001, E003 (t2 Pečať), E004 (t2 – vľavo,
-  s Vichorom 2×), Živelná sila ⚡ + D007 vždy (každý +1 navždy), E005 (t3,
+  s Vichorom 2×), Živelná sila ⚡ + D005 (t3) vždy (každý +1 navždy), E005 (t3,
   proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
   E008 (t4, +1/+1(+⚡) vybranej – na najsilnejšie telo), E009 (t5 Pečať
   +2/+2), E010 (t6). Slabí proti beast telám.

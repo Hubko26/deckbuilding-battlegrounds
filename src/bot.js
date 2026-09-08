@@ -112,7 +112,7 @@ const Bot = (() => {
       if (def.power.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
       // Iskrička z battlecry kŕmi Po kúzle víly – hodnotnejšia s vílami
       if (def.power.fx.type === "addSpell") score += 1 + (races.fairy || 0) * 0.5;
-      // D007 / E007 (Živelná sila na tele) – cennejší s elementálmi
+      // D005 / E007 (Živelná sila na tele) – cennejší s elementálmi
       if (fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
       // U002 (kostíky +1/+1 v boji) – cenný s vyvolávačmi kostíkov
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;

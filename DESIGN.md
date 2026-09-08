@@ -405,22 +405,26 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   najbližšieho boja** (`p.fightRaceBuffs`): dostanú ju aj karty vyložené po
   drakovi a tokeny vyvolané počas boja (vedomá výnimka – permanentné rasové
   aury tokeny neberú). Po boji sa nuluje. Platí to aj pre `buffTopRace`
-  (D005, Pred bojom) – hoci sa spúšťa až v boji, tokeny vyvolané po ňom
+  (D007, Pred bojom) – hoci sa spúšťa až v boji, tokeny vyvolané po ňom
   buff dostanú rovnako ako pri battlecry drakoch.
 - Roster: D001 (t1, 3/2) battlecry **odložené oslabenie** (`shrinkEnemy`,
   `p.shrinks`): na začiatku najbližšieho boja náhodná súperova príšerka
   −1/−1 (útok min 0, život min 1; nie je to damage – štít ani deathrattle
   sa nespustia; odložené ako Kliatba, nech nezáleží na poradí nákupu);
-  D007 (t1, 2/4) battlecry **Živelná sila +1** (`dmgBoost` – to isté, čo
-  kúzlo ⚡: výboje, výbuchy a „Pri útoku" bonusy navždy +1, evolve +2/+3).
-  Dôvod: kúzlo má jediný spell slot, živly boost ťažko nachádzali; drak
-  cykluje balíčkom ako kúzlo a dáva +1 pri každom vyložení. Obe boli
-  vanilky – t1 draci teraz nesú dračiu identitu (žoldnier pre iný build);
+  D007 (t1, 2/4, Pred bojom) najpočetnejšia rasa +1/+1 (`buffTopRace`, drží
+  celý boj – aj pre neskoršie tokeny). Obe boli vanilky – t1 draci nesú
+  dračiu identitu (žoldnier pre iný build);
   D002 (t2) battlecry rasa cieľa +1/+1 do boja (`buffRaceOf`);
   D006 (t2, Po nákupe) náhodná tvoja rasa +1/+1 (`buffRandomRace`);
   D004 (t3) battlecry **Discover karta rasy cieľa** (`discoverRace`);
-  D005 (t3, Pred bojom) najpočetnejšia rasa +1/+1 (`buffTopRace`, drží
-  celý boj – aj pre neskoršie tokeny);
+  D005 (t3, 5/4) battlecry **Živelná sila +1** (`dmgBoost` – to isté, čo
+  kúzlo ⚡: výboje, výbuchy a „Pri útoku" bonusy navždy +1, evolve +2/+3);
+  kúzlo má jediný spell slot, živly boost ťažko nachádzali a drak cykluje
+  balíčkom ako kúzlo. **Presunuté z t1 (pôvodne D007).** Dôvod: efekt je
+  trvalý, stackuje sa pri KAŽDOM vyložení a karta sa vracia cyklom balíčka –
+  na t1 sa dala mať v druhom kole, na stupni 2 dávala +2 a živly s ňou
+  odchádzali do trhu. Na t3 je to odmena za postavený živelný build, nie
+  jeho štartér;
   D003 (t4) a D009 (t5) battlecry **permanentná aura rasy cieľa** +1/+1
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;

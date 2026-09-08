@@ -134,7 +134,7 @@ test("drak buffTopRace (Pred bojom): najpočetnejšia rasa dostane +1/+1", () =>
   const b1 = Object.assign(E.makeInst(state, "B001", 1), { slot: 0 });
   const b2 = Object.assign(E.makeInst(state, "B001", 1), { slot: 1 });
   const u1 = Object.assign(E.makeInst(state, "U001", 1), { slot: 2 });
-  const drak = Object.assign(E.makeInst(state, "D005", 1), { slot: 3 });
+  const drak = Object.assign(E.makeInst(state, "D007", 1), { slot: 3 });
   p.board = [b1, b2, u1, drak];
   state.p2.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
   E.endShopTurn(state, "p1");
@@ -560,13 +560,13 @@ test("endShopTurn: duplicitné/oneskorené ukončenie ťahu je nelegálne (null)
   assert.equal(E.endShopTurn(state, "p1"), null);    // v boji sa ťah ukončiť nedá
 });
 
-test("dračí buff D005 (Pred bojom) platí celé kolo: dostane ho aj token vyvolaný neskôr", () => {
+test("dračí buff D007 (Pred bojom) platí celé kolo: dostane ho aj token vyvolaný neskôr", () => {
   const { state, E } = fresh(21);
   E.startRound(state);
   const p = state.p1;
   const b = E.makeInst(state, "B005", 1); b.slot = 0; // beast 3/2, Pri smrti 2× mláďa
   const b2 = E.makeInst(state, "B001", 1); b2.slot = 1; // beast 2/2
-  const drak = E.makeInst(state, "D005", 1); drak.slot = 2; // Pred bojom: top rasa +1/+1
+  const drak = E.makeInst(state, "D007", 1); drak.slot = 2; // Pred bojom: top rasa +1/+1
   p.board = [b, b2, drak]; // beast 2× > dragon 1× → top rasa = beast
   p.hand = [];
   state.p2.board = [E.makeInst(state, "B010", 1)]; // 6/10 taunt – B005 zabije
@@ -731,12 +731,12 @@ test("E005 lovec tokenov: súperov token dostane výboj; ak padne, E005 +1/+1 NA
   }
 });
 
-test("D007: battlecry Živelná sila +1 (navždy, ako kúzlo), strieborný +2, cykluje balíčkom", () => {
+test("D005 (t3): battlecry Živelná sila +1 (navždy, ako kúzlo), strieborný +2, cykluje balíčkom", () => {
   const { state, E, C } = fresh(53);
   E.startRound(state);
   const p = state.p1;
   p.deck = []; p.discard = [];
-  p.hand = [E.makeInst(state, "D007", 1), E.makeInst(state, "D007", 2)];
+  p.hand = [E.makeInst(state, "D005", 1), E.makeInst(state, "D005", 2)];
   E.playMinion(state, "p1", 0);
   assert.equal(p.dmgBoost, 1);
   E.playMinion(state, "p1", 0);
@@ -746,8 +746,9 @@ test("D007: battlecry Živelná sila +1 (navždy, ako kúzlo), strieborný +2, c
   state.p1.hand = []; state.p2.hand = [];
   E.doBattle(state);
   assert.equal(p.dmgBoost, 3);                                 // trvalé
-  assert.ok(p.discard.some(c => c.defId === "D007"));          // vráti sa cyklom balíčka
-  assert.match(C.cardText(C.byId["D007"], 1, "sk", false, 0), /Pri vyložení: Živelná sila \+1/);
+  assert.ok(p.discard.some(c => c.defId === "D005"));          // vráti sa cyklom balíčka
+  assert.match(C.cardText(C.byId["D005"], 1, "sk", false, 0), /Pri vyložení: Živelná sila \+1/);
+  assert.equal(C.byId["D005"].tier, 3); // Živelná sila je až t3 – na t1 rozbiehala snowball
 });
 
 test("D001 shrinkEnemy: v najbližšom boji náhodný súper −1/−1 (min 0 atk / 1 hp), stackuje sa", () => {
