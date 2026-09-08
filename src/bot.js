@@ -18,6 +18,7 @@ const Bot = (() => {
     hard: {
       randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 3, raceFocus: 1.0, buyBar: 3,
       sellJunk: true, swapBoard: true, orderBoard: true, freeze: true, raceHunt: true,
+      rollBias: 3, // súkromná ponuka losuje karty dominantnej rasy 3× častejšie (handicap)
     },
   };
 
@@ -204,6 +205,12 @@ const Bot = (() => {
     const p = state[pid];
     const events = [];
     const push = ev => { if (ev) events.push(...ev); };
+
+    // Handicap (hard): od zafixovania rasy praje súkromná ponuka bota jeho
+    // rase – platí pre refreshe v tomto ťahu aj pre roll po boji (ostáva
+    // na hráčovi), kým sa dominantná rasa nezmení.
+    const domNow = dominantRace(state, p);
+    p.rollBias = cfg.rollBias && domNow ? { race: domNow, weight: cfg.rollBias } : null;
 
     // 0. Hard: balast z ruky predaj EŠTE PRED vyložením (+1 zlato, tenší
     //    balíček = lepšie ruky do konca hry). Štartovací balíček je 10

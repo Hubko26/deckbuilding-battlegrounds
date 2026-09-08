@@ -2054,3 +2054,18 @@ test("mutácia gift: obaja hráči dostanú raz za kolo kúzlo do ruky navyše",
   E.beginShopTurn(state, active);
   assert.equal(p.hand.filter(x => x.spell).length, spells);
 });
+
+test("rollBias: súkromná ponuka hráča s biasom praje jeho rase, spoločná nie", () => {
+  const { state, E, C } = fresh(70);
+  const isUndead = id => C.byId[id].race === "undead";
+  const undeadDefs = C.DEFS.filter(d => !d.spell && d.tier <= 3 && d.race === "undead").length;
+  const allDefs = C.DEFS.filter(d => !d.spell && d.tier <= 3).length;
+  const base = undeadDefs / allDefs; // ~ podiel undead kariet v poole
+  state.p1.rollBias = { race: "undead", weight: 3 };
+  let hit = 0, N = 400;
+  for (let i = 0; i < N; i++) { const id = E.rollCard(state, 3, "p1"); if (isUndead(id)) hit++; E.returnToPool(state, "p1", id); }
+  assert.ok(hit / N > base * 1.8, `bias ${hit / N} vs základ ${base.toFixed(2)}`);
+  let hitC = 0;
+  for (let i = 0; i < N; i++) { const id = E.rollCard(state, 3, "common"); if (isUndead(id)) hitC++; E.returnToPool(state, "common", id); }
+  assert.ok(hitC / N < base * 1.5, `spoločná ${hitC / N} vs základ ${base.toFixed(2)}`);
+});

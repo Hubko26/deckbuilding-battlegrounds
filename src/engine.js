@@ -108,11 +108,19 @@ const Engine = (() => {
   // zostávajúcich kópií, vylosovaná karta z poolu ubudne. filter: voliteľné
   // ďalšie obmedzenie (rasa, presný tier). Prázdny pool → záložné losovanie
   // bez limitu (prázdny slot v obchode nechceme).
+  // rollBias: { race, weight } na hráčovi – karty danej rasy sa v JEHO
+  // súkromnej ponuke losujú weight-krát častejšie (handicap pre bota:
+  // keď sa zafixuje na rasu, obchod mu ju ponúka častejšie; spoločná ponuka
+  // bez zmeny). Náhoda stále cez state.rng – determinizmus a replay platia.
   function rollCard(state, tierLimit, poolKey, filter) {
     const pool = state.pools[poolKey];
     const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && (!filter || filter(d)));
+    const bias = poolKey !== "common" && state[poolKey] && state[poolKey].rollBias;
     const weighted = [];
-    for (const d of defs) for (let i = 0; i < (pool[d.id] || 0); i++) weighted.push(d.id);
+    for (const d of defs) {
+      const w = (pool[d.id] || 0) * (bias && d.race === bias.race ? bias.weight : 1);
+      for (let i = 0; i < w; i++) weighted.push(d.id);
+    }
     if (weighted.length) {
       const id = pick(weighted, state.rng);
       pool[id]--;
@@ -214,6 +222,7 @@ const Engine = (() => {
       shrinks: [], // nabité oslabenia (D001) – v najbližšom boji náhodný súper −a/−h
       bolts: 0, // nabité Blesky – na začiatku najbližšieho boja výboj za 3 (+dmgBoost)
       goldNext: 0, // Poklad škriatka: zlato navyše na začiatku ďalšieho kola
+      rollBias: null, // { race, weight } – bot: súkromná ponuka praje jeho rase (rollCard)
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
       giftRound: 0, // mutácia „gift": v ktorom kole hráč naposledy dostal kúzlo
@@ -1644,7 +1653,7 @@ const Engine = (() => {
     newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
-    pileCard, drawCards, // pre testy a nástroje (cyklus balíčka s trvalým rastom)
+    pileCard, drawCards, rollCard, returnToPool, // pre testy a nástroje (cyklus balíčka, pooly, rollBias)
   };
 })();
 

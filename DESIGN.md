@@ -682,6 +682,11 @@ len staty + keyword badge.
 - `src/engine.js` – čistá herná logika bez DOM, deterministická (injektovaný generátor
   náhody) kvôli unit testom (`node --test`).
 - `src/bot.js` – heuristický bot (kupuje trojice, upgraduje tier, vykladá najsilnejšie).
+  **Handicap hard bota**: keď sa zafixuje na dominantnú rasu (od 3. kola,
+  ≥ 3 karty hlavnej rasy), nastaví si `p.rollBias = { race, weight: 3 }` a
+  `rollCard` mu v SÚKROMNEJ ponuke losuje karty tej rasy 3× častejšie
+  (spoločná ponuka bez zmeny; náhoda cez `state.rng`, replay platí).
+  Heuristika sama hráča neporazí – toto mu vyrovnáva šance.
 - `src/cards.js` – dáta kariet, texty schopností sa generujú zo šablón (SK/CZ/EN).
 - `src/game.js` – UI, animácie boja prehrávajú event log z enginu.
 - Grafika: emoji príšerky + farebné rámy podľa stupňa (bronz/striebro/zlato). Neskôr

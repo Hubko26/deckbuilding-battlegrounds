@@ -215,3 +215,17 @@ test("bot: dračí cielený battlecry mieri na kartu dominantnej rasy, nie na na
   assert.equal(o.atk, 5, "ogr nedostal");
   assert.ok(p.fightRaceBuffs.undead && p.fightRaceBuffs.undead.a === 1);
 });
+
+test("hard bot: po zafixovaní rasy si nastaví rollBias na dominantnú rasu (normal nie)", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  for (const [diff, expect] of [["hard", "undead"], ["normal", null]]) {
+    const state = E.newGame(seeded(38), null);
+    E.startRound(state); E.startRound(state); E.startRound(state);
+    E.endShopTurn(state, "p1");
+    const p = state.p2;
+    p.deck = ["U001", "U003", "U005"].map(id => ({ defId: id, rank: 1 })); p.discard = [];
+    ctx.Bot.botTurn(state, "p2", diff);
+    assert.equal(p.rollBias ? p.rollBias.race : null, expect, diff);
+  }
+});
