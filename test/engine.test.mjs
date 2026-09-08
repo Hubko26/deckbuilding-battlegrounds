@@ -827,7 +827,7 @@ test("U002 fightToken: kostíky vyvolané v najbližšom boji +1/+1, stackuje sa
   assert.match(C.cardText(C.byId["U002"], 1, "sk", false, 0), /v najbližšom boji všetky tvoje Kostíky \+1\/\+1/);
 });
 
-test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku), strieborný +2/+2", () => {
+test("B004 raceDeath perm: keď padne tvoje Zviera (aj Mláďa), rastie +1/+1 NAVŽDY (cez kôpku), strieborný +2/+2", () => {
   const { state, E } = fresh(47);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -840,18 +840,19 @@ test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku
   state.p1.deck = []; state.p1.discard = [];
   state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
-  assert.ok(events.some(e => e.type === "proc" && e.uid === owl.uid && e.kw === "tokenDeath"));
+  assert.ok(events.some(e => e.type === "proc" && e.uid === owl.uid && e.kw === "raceDeath"));
   assert.ok(events.some(e => e.type === "buff" && e.uid === owl.uid && e.a === 1 && e.h === 1));
   assert.ok(events.some(e => e.type === "buff" && e.uid === owl2.uid && e.a === 2 && e.h === 2)); // ×stupeň
   // Rast je NAVŽDY: kópia v kôpke nesie pa/ph a ďalšia inštancia z nej má väčšie staty.
   const pile = state.p1.discard.filter(c => c.defId === "B004");
   assert.equal(pile.length, 2);
   const c1 = pile.find(c => c.rank === 1), c2 = pile.find(c => c.rank === 2);
-  assert.equal(c1.pa, 1); assert.equal(c1.ph, 1);
-  assert.equal(c2.pa, 2); assert.equal(c2.ph, 2);
+  // bronz: +1 za Mláďa (a prípadne +1 za padnutú druhú sovu – tá je tiež Zviera)
+  assert.ok(c1.pa >= 1 && c1.pa === c1.ph, `c1 ${c1.pa}/${c1.ph}`);
+  assert.ok(c2.pa >= 2 && c2.pa % 2 === 0 && c2.pa === c2.ph, `c2 ${c2.pa}/${c2.ph}`);
   const cardTextSk = fresh().C.cardText(fresh().C.byId["B004"], 1, "sk", false, 0);
-  assert.match(cardTextSk, /Keď zomrie tvoje Mláďa: \+1\/\+1 pre seba \(NAVŽDY/);
-  // Cudzí token (kostík) B004 nekŕmi.
+  assert.match(cardTextSk, /Keď zomrie tvoje Zviera: \+1\/\+1 pre seba \(NAVŽDY/);
+  // Cudzia rasa (kostík) B004 nekŕmi.
   const { state: s2, E: E2 } = fresh(48);
   E2.startRound(s2);
   E2.endShopTurn(s2, "p1");
@@ -861,7 +862,18 @@ test("B004 tokenDeath: keď padne Mláďa, rastie +1/+1 NAVŽDY (perm cez kôpku
   s2.p2.board = [Object.assign(E2.makeInst(s2, "U008", 1), { slot: 0 })];
   s2.p1.hand = []; s2.p2.hand = [];
   const ev2 = E2.doBattle(s2);
-  assert.ok(!ev2.some(e => e.type === "proc" && e.uid === owl3.uid && e.kw === "tokenDeath"));
+  assert.ok(!ev2.some(e => e.type === "proc" && e.uid === owl3.uid && e.kw === "raceDeath"));
+  // Obyčajné zviera (B001) kŕmi tiež.
+  const { state: s3, E: E3 } = fresh(49);
+  E3.startRound(s3);
+  E3.endShopTurn(s3, "p1");
+  const owl4 = E3.makeInst(s3, "B004", 1); owl4.slot = 1;
+  const lamb = E3.makeInst(s3, "B001", 1); lamb.slot = 0;
+  s3.p1.board = [lamb, owl4];
+  s3.p2.board = [Object.assign(E3.makeInst(s3, "U008", 1), { slot: 0 })];
+  s3.p1.hand = []; s3.p2.hand = []; s3.p1.deck = []; s3.p1.discard = [];
+  const ev3 = E3.doBattle(s3);
+  assert.ok(ev3.some(e => e.type === "proc" && e.uid === owl4.uid && e.kw === "raceDeath"));
 });
 
 test("E007 Po nákupe: Živelná sila +1 navždy (strieborný +2); vílie buffRace (F007) sa neboostuje", () => {

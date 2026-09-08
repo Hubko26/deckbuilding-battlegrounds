@@ -116,8 +116,8 @@ const Bot = (() => {
       if (fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
       // U002 (kostíky +1/+1 v boji) – cenný s vyvolávačmi kostíkov
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
-      // Token scavenger (B004 „Keď zomrie tvoje Mláďa") – cenný len s vyvolávačmi Mláďaťa
-      if (def.power.kw === "tokenDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005")) * 0.8;
+      // Mrchožrúti (B004 navždy, B009 dočasne) – cennejší s vyvolávačmi Mláďat
+      if (def.power.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005")) * 0.8;
     }
     if (def.spell) {
       const spells = ownedSpellCount(p);
@@ -444,7 +444,7 @@ const Bot = (() => {
     const pw = Cards.byId[inst.defId].power;
     if (!pw) return 1;
     if (pw.kw === "onAttack") return 0;
-    if (["raceDeath", "tokenDeath", "onEnemySummon", "endTurn", "afterSpell"].includes(pw.kw)) return 2;
+    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell"].includes(pw.kw)) return 2;
     return 1;
   }
 

@@ -187,11 +187,12 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   rodiča (2/2, 4/4). Obranca berie údery a padne skoro → kŕmi sovu B004
   („Keď zomrie tvoje Mláďa") a chráni mrchožrúta B009. Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
-- B004 (t2) je **mláďací mrchožrút** (`tokenDeath`): „Keď zomrie tvoje
-  Mláďa: +1/+1 pre seba NAVŽDY" (`perm: true`, evolve ×2/×3). Prvý
+- B004 (t2) je **trvalý mrchožrút** (`raceDeath` + `perm`): „Keď zomrie
+  tvoje Zviera: +1/+1 pre seba NAVŽDY" (evolve ×2/×3) – kŕmi ho každé
+  padnuté vlastné zviera vrátane Mláďat (tokeny majú rasu). Prvý
   permanentný rast z boja – bojuje kópia, engine zapíše `pa/ph` na originál
-  na ploche, ktorý ide po boji do kôpky. Kŕmia ho B007/B005; pôvodný
-  battlecry draw bol kópia F001 a mimo témy.
+  na ploche, ktorý ide po boji do kôpky. Pôvodne len Mláďa (príliš úzke);
+  bývalý battlecry draw bol kópia F001 a mimo témy.
 - B009 (t4) je **mrchožrút** (`raceDeath`): „Keď zomrie tvoje Zviera:
   +2/+2 pre seba" – rast je bojový a dočasný, viazaný na padlé vlastné
   zvieratá (synergia s Mláďaťom a trade-ami), evolve ×2/×3.

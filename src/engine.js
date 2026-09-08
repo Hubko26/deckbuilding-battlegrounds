@@ -1425,7 +1425,7 @@ const Engine = (() => {
     // druhýkrát, Pri útoku… Chaos: súperov deathrattle mu dá tokeny zadarmo.
     // Iné chaos spúšťače (a seba) preskočí – žiadna rekurzia.
     triggerRandom({ state, sides, pid, self, fx, m, events }) {
-      const BATTLE_KW = ["deathrattle", "startFight", "onAttack", "raceDeath", "tokenDeath"];
+      const BATTLE_KW = ["deathrattle", "startFight", "onAttack", "raceDeath"];
       for (let i = 0; i < fx.n * m; i++) {
         const pool = [];
         for (const sp of ["p1", "p2"]) {
@@ -1636,13 +1636,11 @@ const Engine = (() => {
   }
 
   // Pozorovatelia smrti: Scavenger (raceDeath) rastie, keď padne VLASTNÝ
-  // kamarát jeho rasy (B009 „Keď zomrie tvoje Zviera: +2/+2"); token
-  // scavenger (tokenDeath), keď padne vlastný token daného id (B004 „Keď
-  // zomrie tvoje Mláďa: +1/+1 navždy"). Najprv všetci raceDeath, potom tokenDeath.
+  // kamarát jeho rasy – B009 „Keď zomrie tvoje Zviera: +2/+2" (dočasne),
+  // B004 to isté +1/+1 NAVŽDY (perm). Tokeny majú rasu, Mláďa teda kŕmi oboch.
   function runScavengers(state, sides, pid, dead, events) {
     const race = Cards.byId[dead.defId].race;
     runObservers(state, sides, pid, dead, "raceDeath", fx => fx.race === race, events);
-    runObservers(state, sides, pid, dead, "tokenDeath", fx => fx.token === dead.defId, events);
   }
 
   function runObservers(state, sides, pid, dead, kw, matches, events) {

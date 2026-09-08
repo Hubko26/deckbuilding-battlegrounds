@@ -70,7 +70,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   - **Beast = telá a mrchožrút**: B007 (1×) a B005 (t2, 2×) vyvolávajú
     Mláďa 🐣 s Obrancom (1/1, škáluje len evolvom) – Obranca ho nechá
     padnúť skoro, combo s B004 (rast navždy) a B009 (chránený mrchožrút).
-    B004 (t2) = „Keď zomrie tvoje Mláďa: +1/+1 NAVŽDY" (rast ostáva na
+    B004 (t2) = „Keď zomrie tvoje Zviera: +1/+1 NAVŽDY" (aj Mláďatá; rast ostáva na
     kópii karty cez balíček) – vykladaj ho vedľa B007/B005 každé kolo.
     B009 = scavenger („Keď zomrie tvoje Zviera:
     +2/+2 pre seba", bojové, dočasné) – chráň ho a kŕm smrťami zvierat

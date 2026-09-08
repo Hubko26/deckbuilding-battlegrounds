@@ -48,11 +48,12 @@ const Cards = (() => {
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1, perm: true } } }),
     M("B007", 1, "beast", ["Finwhisk", "Rapidsnout", "Riverking"], 1, 1,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 1 } } }),
-    // B004: „Keď zomrie tvoje Mláďa: +1/+1 NAVŽDY" (tokenDeath, perm) –
-    // beast ladder k B009 (mrchožrút): kŕmia ho B007/B005. Bývalý battlecry
-    // draw bol kópia F001 a mimo témy zvierat.
+    // B004: „Keď zomrie tvoje Zviera: +1/+1 NAVŽDY" (raceDeath + perm) –
+    // kŕmi ho každé padnuté zviera vrátane Mláďat (tokeny sú beast). Beast
+    // ladder k B009 (rovnaký trigger, +2/+2 dočasne). Pôvodne len Mláďa –
+    // príliš úzke; bývalý battlecry draw bol kópia F001.
     M("B004", 2, "beast", ["Hootnip", "Moongaze", "Nightoracle"], 2, 3,
-      { power: { kw: "tokenDeath", fx: { type: "growSelf", token: "mlada", a: 1, h: 1, perm: true } } }),
+      { power: { kw: "raceDeath", fx: { type: "growSelf", race: "beast", a: 1, h: 1, perm: true } } }),
     // B005: stádo mláďat pri smrti – kŕmi B009 (rastie za smrť zvieraťa).
     M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 2 } } }),
@@ -337,7 +338,6 @@ const Cards = (() => {
     afterSpell: { sk: "Po kúzle", cs: "Po kouzle", en: "After a spell" },
     onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
-    tokenDeath: { sk: "Mláďa padlo", cs: "Mládě padlo", en: "Cub fell" }, // proc badge
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
   };
   const TAUNT_LABEL = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
@@ -654,11 +654,6 @@ const Cards = (() => {
     } else if (def.power && def.power.kw === "onEnemySummon") {
       // Lovec tokenov: vlastný label („Keď súper vyvolá token: …“).
       const label = { sk: "Keď súper vyvolá token", cs: "Když soupeř vyvolá token", en: "When the enemy summons a token" };
-      parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
-    } else if (def.power && def.power.kw === "tokenDeath") {
-      // Token scavenger: label nesie meno tokenu („Keď zomrie tvoje Mláďa: …“).
-      const tn = byId[def.power.fx.token].name;
-      const label = { sk: `Keď zomrie tvoje ${tn.sk}`, cs: `Když zemře tvé ${tn.cs}`, en: `When your ${tn.en} dies` };
       parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
     } else if (def.power) {
       parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${fxText(def.power.fx, m, def.power.kw)}.`);
