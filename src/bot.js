@@ -19,6 +19,7 @@ const Bot = (() => {
       randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 3, raceFocus: 1.0, buyBar: 3,
       sellJunk: true, swapBoard: true, orderBoard: true, freeze: true, raceHunt: true,
       rollBias: 3, // súkromná ponuka losuje karty dominantnej rasy 3× častejšie (handicap)
+      goldBonus: 1, // +1 zlato každé kolo od prvého (handicap)
     },
   };
 
@@ -206,6 +207,12 @@ const Bot = (() => {
     const events = [];
     const push = ev => { if (ev) events.push(...ev); };
 
+    // Handicap (hard): +1 zlato každé kolo, raz za kolo (bot je na ťahu až
+    // po startRound, tak si ho pridá sám; bonusRound stráži duplicitu).
+    if (cfg.goldBonus && p.bonusRound !== state.round) {
+      p.money += cfg.goldBonus;
+      p.bonusRound = state.round;
+    }
     // Handicap (hard): od zafixovania rasy praje súkromná ponuka bota jeho
     // rase – platí pre refreshe v tomto ťahu aj pre roll po boji (ostáva
     // na hráčovi), kým sa dominantná rasa nezmení.

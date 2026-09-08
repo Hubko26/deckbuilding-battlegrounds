@@ -229,3 +229,27 @@ test("hard bot: po zafixovaní rasy si nastaví rollBias na dominantnú rasu (no
     assert.equal(p.rollBias ? p.rollBias.race : null, expect, diff);
   }
 });
+
+test("hard bot: +1 zlato každé kolo (raz za kolo), normal nie", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  for (const [diff, expect] of [["hard", 1], ["normal", 0]]) {
+    const state = E.newGame(seeded(39), null);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    const p = state.p2;
+    p.money = 0; p.deck = []; p.discard = []; p.hand = [];
+    state.commons = ["B002", "B002", "B002"]; p.priv = [{ defId: "B002", frozen: false }, { defId: "B002", frozen: false }];
+    p.spellShop = { defId: "srdce", frozen: false }; // všetko za 3 – s 1 zlatom nič nekúpi
+    ctx.Bot.botTurn(state, "p2", diff);
+    assert.equal(p.money, expect, diff);
+  }
+  // druhé volanie v tom istom kole už nepridá (stráž bonusRound)
+  const state = E.newGame(seeded(40), null);
+  E.startRound(state); E.endShopTurn(state, "p1");
+  const p = state.p2; p.money = 0; p.deck = []; p.discard = []; p.hand = [];
+  state.commons = ["B002", "B002", "B002"]; p.priv = [{ defId: "B002", frozen: false }, { defId: "B002", frozen: false }];
+  p.spellShop = { defId: "srdce", frozen: false };
+  ctx.Bot.botTurn(state, "p2", "hard");
+  assert.equal(p.bonusRound, state.round);
+});

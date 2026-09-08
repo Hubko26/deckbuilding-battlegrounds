@@ -686,7 +686,9 @@ len staty + keyword badge.
   ≥ 3 karty hlavnej rasy), nastaví si `p.rollBias = { race, weight: 3 }` a
   `rollCard` mu v SÚKROMNEJ ponuke losuje karty tej rasy 3× častejšie
   (spoločná ponuka bez zmeny; náhoda cez `state.rng`, replay platí).
-  Heuristika sama hráča neporazí – toto mu vyrovnáva šance.
+  Heuristika sama hráča neporazí – toto mu vyrovnáva šance. Druhý
+  handicap: hard bot má **+1 zlato každé kolo** od prvého (pridá si ho na
+  začiatku svojho ťahu, `p.bonusRound` stráži jedno pridanie za kolo).
 - `src/cards.js` – dáta kariet, texty schopností sa generujú zo šablón (SK/CZ/EN).
 - `src/game.js` – UI, animácie boja prehrávajú event log z enginu.
 - Grafika: emoji príšerky + farebné rámy podľa stupňa (bronz/striebro/zlato). Neskôr
