@@ -327,6 +327,11 @@ const L = {
     cs: "🤫 Nabito: v nejbližším boji bude umlčena soupeřova příšerka",
     en: "🤫 Charged: an enemy minion will be silenced next fight",
   },
+  cleaveMsg: {
+    sk: "💥 Rozmach! Úder zasiahol aj susedov",
+    cs: "💥 Rozmach! Úder zasáhl i sousedy",
+    en: "💥 Cleave! The hit struck the neighbours too",
+  },
   backstabMsg: {
     sk: "👹 Backstab! Ogrom to nevyšlo – všetci Ogri +1/+1 navždy",
     cs: "👹 Backstab! Zlobrům to nevyšlo – všichni Zlobři +1/+1 navždy",
@@ -1169,6 +1174,16 @@ async function runBattle() {
           }
         }
         await sleep(650);
+        for (const el of els) el.classList.remove("hit");
+        break;
+      }
+      case "cleave": {
+        // Ogrí Rozmach – susedia cieľa dostali ten istý úder.
+        log(`${t(L.cleaveMsg)} (${ev.n} 💥)`);
+        const els = ev.uids.map(u => cardById(u)).filter(Boolean);
+        for (const el of els) { floatText(el, `-${ev.n} 💥`); el.classList.add("hit"); }
+        Sfx.hit();
+        await sleep(450);
         for (const el of els) el.classList.remove("hit");
         break;
       }

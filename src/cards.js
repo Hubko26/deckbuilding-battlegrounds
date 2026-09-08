@@ -231,8 +231,12 @@ const Cards = (() => {
       { power: { kw: "deathrattle", fx: { type: "dmgRandomAny", n: 5 } } }),
     // O010: Obranca; pri smrti 50 % šanca, že vstane s 1 HP na NÁHODNEJ
     // strane plochy (aj u súpera). Raz za boj.
+    // O010: Obranca + Rozmach (50 % šanca zasiahnuť aj susedov cieľa) –
+    // ogrí endgame. Rasa mala pomalý záver: vanilla telá a chaos efekty,
+    // ale žiadnu kartu, čo hru ukončí. 10 útoku do troch tiel naraz je
+    // hrozba hodná t6; s Vichrom 🌪️ sa hádže dvakrát.
     M("O010", 6, "ogre", ["Twinklebrow", "Moonmaul", "Celestial Titan"], 10, 10,
-      { taunt: true, power: { kw: "deathrattle", fx: { type: "confusedRevive" } } }),
+      { taunt: true, cleave: 0.5, power: { kw: "deathrattle", fx: { type: "confusedRevive" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     // Minca od t2 – na t1 bola automatická kúpa a rozbiehala snowball.
@@ -357,6 +361,12 @@ const Cards = (() => {
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
   };
   const TAUNT_LABEL = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
+  const CLEAVE_LABEL = { sk: "Rozmach", cs: "Rozmach", en: "Cleave" };
+  const cleaveText = (pct) => ({
+    sk: `${pct} % šanca, že úder zasiahne aj susedov cieľa`,
+    cs: `${pct} % šance, že úder zasáhne i sousedy cíle`,
+    en: `${pct}% chance the hit also strikes the target's neighbours`,
+  });
   // Pečať: trvalá rasová aura (futureRace / futureRaceOf / futureAll) – všetky
   // tvoje príšerky danej rasy (plocha, ruka, balíček, kôpka, tokeny aj
   // budúce) dostanú staty NAVŽDY. Vysvetlenie je v pravidlách (game.js L.rules).
@@ -690,6 +700,9 @@ const Cards = (() => {
     const fxText = (fx, mult, kw) => FX_TEXT[fx.type](fx, mult, hl, kw, def)[lang];
     const parts = [];
     if (def.taunt) parts.push(b(TAUNT_LABEL[lang]) + ".");
+    if (def.cleave) {
+      parts.push(`${b(CLEAVE_LABEL[lang])}: ${cleaveText(Math.round(def.cleave * 100))[lang]}.`);
+    }
     if (def.power && def.power.kw === "raceDeath") {
       // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
       const r = RACES[def.power.fx.race];
@@ -713,7 +726,7 @@ const Cards = (() => {
   // Staty pre stupeň: bronz ×1, striebro ×2, zlato ×4.
   const STAT_MULT = [null, 1, 2, 4];
 
-  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL, IMPRINT };
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, IMPRINT };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

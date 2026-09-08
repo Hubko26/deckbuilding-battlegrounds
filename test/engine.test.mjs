@@ -1913,6 +1913,71 @@ test("ogr O006 ožratý úder: 50 % sa trafí sám za polovicu útoku", () => {
   assert.ok(drunkSeen && soberSeen);
 });
 
+test("ogr O010 rozmach: 50 % šanca, že úder zasiahne aj susedov cieľa", () => {
+  let cleaved = false, clean = false;
+  for (let seed = 1; seed <= 40 && !(cleaved && clean); seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10 Obranca
+    state.p2.board = [0, 1, 2].map(slot =>
+      Object.assign(E.makeInst(state, "U008", 2), { slot }));                     // 6/16 taunt
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    const cl = events.filter(e => e.type === "cleave");
+    if (cl.length) {
+      cleaved = true;
+      assert.equal(cl[0].n, 10);            // susedia dostanú celý útok
+      assert.ok(cl[0].uids.length >= 1);
+    } else clean = true;
+  }
+  assert.ok(cleaved && clean, "musí padnúť aj rozmach, aj čistý úder");
+});
+
+test("ogr O010 rozmach: zasiahne LEN susedné sloty, nie celú plochu", () => {
+  for (let seed = 1; seed <= 40; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })];
+    state.p2.board = [0, 1, 2, 3, 4].map(slot =>
+      Object.assign(E.makeInst(state, "U008", 2), { slot }));
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    // Po boji sa plochy vyprázdnia – sloty si zapamätaj vopred.
+    const slotOf = new Map(state.p2.board.map(x => [x.uid, x.slot]));
+    const events = E.doBattle(state);
+    for (const [i, cl] of events.entries()) {
+      if (cl.type !== "cleave") continue;
+      assert.ok(cl.uids.length <= 2, "najviac dvaja susedia");
+      // Útok, ku ktorému rozmach patrí = najbližší `attack` PRED ním.
+      const atk = events.slice(0, i).reverse().find(e => e.type === "attack" && e.aUid === cl.uid);
+      for (const uid of cl.uids) {
+        assert.equal(Math.abs(slotOf.get(uid) - slotOf.get(atk.dUid)), 1);
+      }
+    }
+  }
+});
+
+test("ogr O010 rozmach: umlčaný ogr Rozmach stratí", () => {
+  for (let seed = 1; seed <= 25; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0, silenced: true })];
+    state.p2.board = [0, 1, 2].map(slot =>
+      Object.assign(E.makeInst(state, "U008", 2), { slot }));
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    assert.equal(events.filter(e => e.type === "cleave").length, 0);
+  }
+});
+
 test("ogr O007 divoká rana: strana cieľa je čistých 50/50, vlastný zásah = backstab", () => {
   let own = false, foe = false;
   for (let seed = 1; seed <= 60 && !(own && foe); seed++) {

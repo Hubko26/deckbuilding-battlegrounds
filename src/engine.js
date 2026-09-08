@@ -1360,8 +1360,29 @@ const Engine = (() => {
     dealDmg(d, a.atk, defender, events);
     pushHp(events, attacker, a);
     pushHp(events, defender, d);
+    cleaveSplash(state, sides, attacker, a, d, events);
     handleDeaths(state, sides, events);
     return true;
+  }
+
+  // Rozmach (cleave, `def.cleave` = šanca 0–1): útok môže zasiahnuť aj
+  // SUSEDOV cieľa (podľa slotov na ploche) rovnakým číslom ako hlavný úder.
+  // Ogrí endgame – rasa mala dovtedy pomalý záver; damage rastie so statmi
+  // útočníka, šanca je fixná a NEnásobí sa evolve stupňom. Bez suseda sa
+  // nehádže vôbec (nemíňa sa roll, boj ostáva deterministický rovnako
+  // na oboch klientoch). Umlčaná príšerka Rozmach stráca.
+  function cleaveSplash(state, sides, attacker, a, d, events) {
+    const chance = Cards.byId[a.defId].cleave;
+    if (!chance || a.silenced) return;
+    const defender = other(attacker);
+    const hit = aliveOn(sides, defender).filter(x => x !== d && Math.abs(x.slot - d.slot) === 1);
+    if (!hit.length) return;
+    if (state.rng() >= chance) return;
+    events.push({ type: "cleave", pid: attacker, uid: a.uid, targetPid: defender, uids: hit.map(x => x.uid), n: a.atk });
+    for (const x of hit) {
+      dealDmg(x, a.atk, defender, events);
+      pushHp(events, defender, x);
+    }
   }
 
   // ----- Vyhodnotenie a upratanie -----

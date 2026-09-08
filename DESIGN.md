@@ -135,6 +135,22 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 7. Tokeny, ktoré prežili, ostávajú na ploche; padlé tokeny miznú z hry (nejdú do
    discard pile – nie sú súčasťou balíčka).
 
+## Rozmach (cleave)
+
+`def.cleave` = šanca 0–1, že útok zasiahne **aj susedov cieľa** (podľa
+slotov na ploche) rovnakým číslom ako hlavný úder. Zatiaľ len **O010**
+(t6 ogr, 50 %). Dôvod: ogri mali **pomalý endgame** – vanilla telá a chaos
+efekty, ale žiadnu kartu, ktorá hru ukončí. 10 útoku do troch tiel naraz je
+hrozba hodná t6.
+
+- Šanca je fixná a **NEnásobí sa evolve stupňom**; rastie damage, lebo ten
+  je útok príšerky (strieborná 20, zlatá 40).
+- **Bez suseda sa vôbec nehádže** – roll sa nemíňa naprázdno, boj ostáva
+  deterministický rovnako na oboch klientoch (multiplayer).
+- **Umlčanie 🤫 Rozmach odoberá** (rovnako ako Obrancu).
+- S **Vichrom 🌪️** sa hádže pri každom z dvoch útokov.
+- Nie je to backstab – Rozmach nemá zlú vetvu, je to čistý upside.
+
 ## Kľúčové schopnosti (keywords)
 
 | Keyword | SK label | Kedy |
@@ -440,8 +456,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     zásah závisela od počtu príšeriek na plochách a backstab by bol
     nespoľahlivý. Prázdna strana = zásah ide na druhú (efekt neprepadne).
     Ruská ruleta s veľkým číslom.
-  - **O010 Zmätený obranca** (t6, 10/10): „Obranca. Pri smrti: 50 % šanca,
-    že vstane s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Raz za boj,
+  - **O010 Zmätený obranca** (t6, 10/10): „Obranca. **Rozmach: 50 % šanca,
+    že úder zasiahne aj susedov cieľa.** Pri smrti: 50 % šanca, že vstane
+    s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Revive je raz za boj,
     pri plnej strane ostáva ležať (technicky vstáva bojová kópia).
   - Vanilla: O004 (t1, 3/4), O005 (t2, 4/5), O008 (t3, 5/7), O009 (t4, 7/7).
 - Balance: očakávaná hodnota efektov mierne záporná/neutrálna, kompenzujú

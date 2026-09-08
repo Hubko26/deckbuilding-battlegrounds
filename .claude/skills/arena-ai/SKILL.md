@@ -156,7 +156,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     proti undead horde), O003 Pred bojom 2 dmg
     VŠETKÝM (aj tvojim – zlé so swarm buildmi, dobré proti nim),
     O007 Pri smrti 5 dmg náhodnej príšerke – hod mincou 50 % tvoja strana,
-    50 % súperova (vlastný zásah = backstab, čiže Pečať), O010 (t6 taunt)
+    50 % súperova (vlastný zásah = backstab, čiže Pečať), O010 (t6 taunt
+    + **Rozmach**: 50 % šanca, že úder zasiahne aj susedov cieľa – ogrí
+    finišer proti širokej ploche súpera)
     Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
     Vanilla telá nad krivkou: O004/O005/O008/O009 – bezpečný nákup.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
@@ -252,7 +254,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
   Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,
   Svätožiara…), cast až keď sú víly na ploche. Strop kúziel neplatí.
-- **Ogre**: build stojí na **generátoroch Backstabu** – O006 (Pri útoku,
+- **Ogre**: endgame je **O010** (t6, Obranca + Rozmach) – proti swarmu je to
+  finišer, kupuj ho hneď, ako naň máš tier. Build stojí na
+  **generátoroch Backstabu** – O006 (Pri útoku,
   hádže každý boj), O001 (lacný hod), O002/O007/O010. Vanilla telá
   O004/O005/O008/O009 Pečať negenerujú, len z nej žijú, takže ich ber až
   ako doplnok. Jedna Pečať za kolo je strop, viac generátorov naraz
