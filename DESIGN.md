@@ -275,19 +275,18 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   bonusy Pri útoku +1 útok". Stackuje sa – elemental ekvivalent
   permanentných aur (malý krok +1, aby nesnowballoval). Zosilňuje výboje
   (`dmgWeakEnemy`), výbuchy (`dmgAllEnemies`, `dmgAllBoth`, `dmgRandomAny`),
-  Blesk aj **dočasné buffy Živlov**: E004 „Pri útoku" (+1 útok všetkým →
-  +1+boost) a E008 „Pri vyložení: +1/+1 vybranej príšerke" (`buffOne`
-  z živelnej karty: +boost na útok aj život; `buffRace` z Živla by sa
-  škáloval rovnako). Bonus sa nenásobí stupňom; výboje/výbuchy platia pre
+  Blesk aj **dočasné buffy Živlov**: E004 „Pri útoku: +1/+1 Živlom"
+  (`buffRace`) a E008 „Pri vyložení: +1/+1 vybranej príšerke" (`buffOne`) –
+  z živelnej karty dostanú +boost na útok aj život. Bonus sa nenásobí stupňom; výboje/výbuchy platia pre
   všetky rasy, buffy len pre Živly (F007 buffRace víl nie). Permanentné
   aury (`futureRace`) NEzosilňuje – aura +1 navždy by snowballovala.
   UI: popisky výbojov/výbuchov/Pri útoku ukazujú číslo aj s bonusom
   majiteľa a zvýrazňujú ho zelenou (trieda `.boosted`).
-- **E004 Whifflet** (t2, 4/4, Pri útoku: **+1/+1** všetkým kamarátom):
-  OBE čísla škáluje Živelná sila (⚡+2 → +3/+3 za útok), bonus dostanú aj
-  tokeny na ploche (kostíky, Bubliny); s Vichorom útočí dvakrát a rozdá ho
-  dvakrát. Nízkotierový dôvod kupovať ⚡ – „Pri útoku" karty sú zároveň
-  hlavný cieľ Vichoru.
+- **E004 Whifflet** (t2, 4/4, Pri útoku: **+1/+1 všetkým Živlom**):
+  buffuje len vlastnú rasu (vrátane Bublín – tokeny majú rasu), nie celú
+  plochu. OBE čísla škáluje Živelná sila (⚡+2 → +3/+3 za útok); s Vichorom
+  útočí dvakrát a rozdá ho dvakrát. Nízkotierový dôvod kupovať ⚡ –
+  „Pri útoku" karty sú zároveň hlavný cieľ Vichoru.
 
 **🧚 Fairy – Po kúzle (implementované)**
 

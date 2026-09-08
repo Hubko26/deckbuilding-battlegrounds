@@ -512,8 +512,8 @@ test("onAttack: dočasný boost pri útoku v boji", () => {
   const { state, E } = fresh(12);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const dasher = E.makeInst(state, "E004", 1); dasher.slot = 0; // onAttack: kamaráti +1/0
-  const pal = E.makeInst(state, "B002", 1); pal.slot = 1;       // beast 4/5
+  const dasher = E.makeInst(state, "E004", 1); dasher.slot = 0; // onAttack: Živly +1/+1
+  const pal = E.makeInst(state, "E002", 1); pal.slot = 1;       // elemental 1/3 taunt
   state.p1.board = [dasher, pal];
   state.p2.board = [E.makeInst(state, "U008", 1)]; // 3/8 taunt – prežije
   state.p1.hand = []; state.p2.hand = [];
@@ -1005,21 +1005,23 @@ test("Kniha prianí: možnosti z vlastného poolu, nevybrané sa vrátia; prázd
   assert.ok(Object.values(s2.pools.common).every(n => n <= E2.POOL_COMMON)); // strop drží
 });
 
-test("Živelná sila zosilňuje aj Pri útoku bonus (E004): +1 útok +boost, tokeny tiež", () => {
+test("Živelná sila zosilňuje Pri útoku bonus (E004): +1/+1 Živlom +boost, cudzia rasa nič", () => {
   const { state, E } = fresh(43);
   E.startRound(state);
   state.p1.dmgBoost = 2;
   E.endShopTurn(state, "p1");
-  const wf = E.makeInst(state, "E004", 1); wf.slot = 0;      // Pri útoku: +1/0 všetkým
-  const pal = E.makeInst(state, "B002", 1); pal.slot = 1;    // 4/5
-  const tok = E.makeInst(state, "kostik", 1); tok.slot = 2;  // token na ploche
-  state.p1.board = [wf, pal, tok];
+  const wf = E.makeInst(state, "E004", 1); wf.slot = 0;      // Pri útoku: +1/+1 Živlom
+  const elem = E.makeInst(state, "E002", 1); elem.slot = 1;  // elemental 1/3
+  const beast = E.makeInst(state, "B002", 1); beast.slot = 2; // beast 4/5 – nedostane nič
+  const tok = E.makeInst(state, "bublina", 1); tok.slot = 3; // elemental token
+  state.p1.board = [wf, elem, beast, tok];
   state.p2.board = [Object.assign(E.makeInst(state, "U008", 1), { slot: 0 })]; // 3/8 taunt
   state.p1.hand = []; state.p2.hand = [];
   const events = E.doBattle(state);
   const buffs = events.filter(e => e.type === "buff" && e.pid === "p1");
-  assert.ok(buffs.some(e => e.uid === pal.uid && e.a === 3 && e.h === 3)); // 1 + boost 2, obe čísla
-  assert.ok(buffs.some(e => e.uid === tok.uid && e.a === 3 && e.h === 3)); // token tiež
+  assert.ok(buffs.some(e => e.uid === elem.uid && e.a === 3 && e.h === 3)); // 1 + boost 2, obe čísla
+  assert.ok(buffs.some(e => e.uid === tok.uid && e.a === 3 && e.h === 3)); // elemental token tiež
+  assert.ok(!buffs.some(e => e.uid === beast.uid), "zviera nedostalo nič")
   // Popisok karty ukáže navýšené číslo len pri „Pri útoku"; Vlna (buffAllFriends kúzlo) nie.
   const C = fresh().C;
   assert.match(C.cardText(C.byId["E004"], 1, "sk", false, 2), /\+3\/\+3/);
@@ -1054,7 +1056,7 @@ test("Vichor: príšerka útočí dvakrát a Pri útoku sa spustí pri každom �
   E.startRound(state);
   const p = state.p1;
   const wf = E.makeInst(state, "E004", 1); wf.slot = 0; // 4/3, Pri útoku
-  const pal = E.makeInst(state, "B002", 1); pal.slot = 1; // 2 karty > 1 – p1 začína, wf útočí prvý
+  const pal = E.makeInst(state, "E002", 1); pal.slot = 1; // 2 karty > 1 – p1 začína, wf útočí prvý
   p.board = [wf, pal];
   p.hand = [E.makeInst(state, "vichor", 1)];
   E.castSpell(state, "p1", 0, wf.uid);

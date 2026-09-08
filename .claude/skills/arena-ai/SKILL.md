@@ -28,9 +28,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
   Vlna/Živelná sila/Blesk/Klobúk/Vichor/Poklad 2, Srdce/Zrkadlo 3;
   Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage a
-  dočasné buffy Živlov +1 (E004 Pri útoku, E008 Pri vyložení +1/+1
-  vybranej príšerke – cieľ = najsilnejšie telo), stackuje sa, kupuj pri
-  elemental builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
+  dočasné buffy Živlov +1 (E004 Pri útoku +1/+1 Živlom, E008 Pri vyložení
+  +1/+1 vybranej príšerke – cieľ = najsilnejšie telo), stackuje sa, kupuj
+  pri elemental builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
   pri každom útoku – hoď na E004/O006 alebo na najväčší útok, ideálne
   spolu so Svätožiarou; Umlčanie = v najbližšom boji náhodná súperova
   príšerka so schopnosťou stratí efekt aj Obrancu – counter na
@@ -104,8 +104,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     E005 (t3) = keď súper vyvolá token, výboj za 1 (+Živelná sila) a ak
     token padne, +1/+1 NAVŽDY – proti undead/mláďatám vykladaj vždy,
     kupuj k nemu Živelnú silu (kostíky s U002/aurou inak prežijú).
-    E004 Whifflet (Pri útoku: +1/+1 všetkým vrátane tokenov) škáluje OBE
-    čísla so Živelnou silou – daj ho úplne doľava a s Vichorom rozdá 2×.
+    E004 Whifflet (Pri útoku: +1/+1 všetkým ŽIVLOM vrátane Bublín) škáluje
+    OBE čísla so Živelnou silou – daj ho úplne doľava a s Vichorom rozdá 2×.
   - **Fairy = Po kúzle motor**: F001 battlecry draw (1/2/3 podľa
     stupňa, NIE Po kúzle), F005 vracia zlato, F006
     battlecry pridá Iskričku ✨ (jednorazové kúzlo +1 útok – nejde do
