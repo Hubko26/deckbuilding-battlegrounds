@@ -1536,12 +1536,15 @@ const Engine = (() => {
     // Ogr O007 (Pri smrti): veľký zásah ÚPLNE náhodnej živej príšerke –
     // hocijakej na ploche, aj vlastnej (ruská ruleta).
     dmgRandomAny({ state, sides, pid, self, fx, m, events }) {
-      const all = [
-        ...aliveOn(sides, "p1").map(t => ({ t, side: "p1" })),
-        ...aliveOn(sides, "p2").map(t => ({ t, side: "p2" })),
-      ];
-      if (!all.length) return;
-      const { t, side } = pick(all, state.rng);
+      // Strana sa losuje ČISTÝM hodom mincou 50/50 (ako O010), nie rovnomerne
+      // cez všetky príšerky – inak by šanca na vlastný zásah závisela od počtu
+      // tiel na plochách a backstab by bol nespoľahlivý. Prázdna strana =
+      // zásah ide na druhú (efekt nikdy neprepadne naprázdno).
+      let side = state.rng() < 0.5 ? pid : other(pid);
+      if (!aliveOn(sides, side).length) side = other(side);
+      const targets = aliveOn(sides, side);
+      if (!targets.length) return;
+      const t = pick(targets, state.rng);
       powerHit(t, side, scaledPowerDmg(state, pid, fx, m), self.uid, events);
       handleDeaths(state, sides, events);
       if (side === pid) backstab(state, pid, events, sides); // trafil vlastnú = backstab

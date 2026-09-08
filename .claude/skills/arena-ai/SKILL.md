@@ -155,7 +155,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     Pred bojom druhýkrát; dobrý s vlastnými deathrattle summonmi, riskantný
     proti undead horde), O003 Pred bojom 2 dmg
     VŠETKÝM (aj tvojim – zlé so swarm buildmi, dobré proti nim),
-    O007 Pri smrti 5 dmg náhodnej príšerke (aj tvojej), O010 (t6 taunt)
+    O007 Pri smrti 5 dmg náhodnej príšerke – hod mincou 50 % tvoja strana,
+    50 % súperova (vlastný zásah = backstab, čiže Pečať), O010 (t6 taunt)
     Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
     Vanilla telá nad krivkou: O004/O005/O008/O009 – bezpečný nákup.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj

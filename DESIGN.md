@@ -434,8 +434,12 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   - **O003 Chaos výbuch** (t4, 7/8, Pred bojom): „2 damage VŠETKÝM
     príšerkám – aj tvojim" (škáluje ×stupeň). Anti-swarm s friendly fire;
     veľké ogrie HP vlastný výbuch prežije.
-  - **O007 Divoká rana** (t5, 9/7, Pri smrti): „5 damage úplne náhodnej
-    príšerke – hocijakej, aj tvojej." Ruská ruleta s veľkým číslom.
+  - **O007 Divoká rana** (t5, 9/7, Pri smrti): „5 damage náhodnej príšerke –
+    **50 % tvojej, 50 % súperovej**." Strana sa losuje čistým hodom mincou
+    (ako O010), nie rovnomerne cez všetky telá – inak by šanca na vlastný
+    zásah závisela od počtu príšeriek na plochách a backstab by bol
+    nespoľahlivý. Prázdna strana = zásah ide na druhú (efekt neprepadne).
+    Ruská ruleta s veľkým číslom.
   - **O010 Zmätený obranca** (t6, 10/10): „Obranca. Pri smrti: 50 % šanca,
     že vstane s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Raz za boj,
     pri plnej strane ostáva ležať (technicky vstáva bojová kópia).
@@ -470,7 +474,7 @@ práve tie sú teraz zdroj rastu.
 | O001 Hod mincou | padol chvost (−2/−2) |
 | O006 Ožratý úder | trafil sám seba |
 | O002 Chaos spúšťač | spustil schopnosť **súperovej** príšerky |
-| O007 Divoká rana | 5 damage padlo na **vlastnú** príšerku |
+| O007 Divoká rana | hod mincou poslal 5 damage na **vlastnú** stranu (50 %) |
 | O010 Zmätený obranca | vstal na **súperovej** strane |
 | O003 Chaos výbuch | **nepočíta sa** – friendly fire je deterministický, nie roll |
 

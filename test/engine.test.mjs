@@ -1913,6 +1913,35 @@ test("ogr O006 ožratý úder: 50 % sa trafí sám za polovicu útoku", () => {
   assert.ok(drunkSeen && soberSeen);
 });
 
+test("ogr O007 divoká rana: strana cieľa je čistých 50/50, vlastný zásah = backstab", () => {
+  let own = false, foe = false;
+  for (let seed = 1; seed <= 60 && !(own && foe); seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [
+      Object.assign(E.makeInst(state, "O007", 1), { slot: 0 }),  // 9/7 deathrattle
+      Object.assign(E.makeInst(state, "O004", 2), { slot: 1 }),  // 6/8 – 5 dmg prežije
+    ];
+    state.p2.board = [
+      Object.assign(E.makeInst(state, "B002", 2), { slot: 0 }),  // 8/10 – zloží O007
+      Object.assign(E.makeInst(state, "B002", 2), { slot: 1 }),
+    ];
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    // Pozor: deathrattle sa vyhodnotí PRED eventom `die` – nedá sa filtrovať za ním.
+    if (!events.some(e => e.type === "die" && e.defId === "O007")) continue;
+    const shot = events.find(e => e.type === "powerDmg" && e.n === 5);
+    if (!shot) continue;
+    const back = events.some(e => e.type === "backstab" && e.pid === "p1");
+    if (shot.pid === "p1") { own = true; assert.ok(back, "vlastný zásah musí dať backstab"); }
+    else { foe = true; }
+  }
+  assert.ok(own && foe, "za 60 seedov musí padnúť aj vlastná, aj súperova strana");
+});
+
 test("ogr O007 divoká rana: pri smrti 5 dmg náhodnej príšerke", () => {
   const { state, E } = fresh(92);
   E.startRound(state);
