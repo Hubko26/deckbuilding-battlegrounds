@@ -709,3 +709,57 @@ body.fs footer { display: none; }
        (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
   body.fs #stage, body.fs .log { width: min(98vw, calc((100dvh - 74px) * 1850 / 850)); }
 }
+
+/* ---------- Šach popri hre (len desktop) ----------
+   ♟️ v hlavičke prepne body.chess: doska arény ide doľava (užšia), vpravo
+   šachovnica bez hodín. Na mobile/tablete (portrait alebo dotyk) sa
+   tlačidlo aj panel skryjú – nie je kam. */
+#chessPanel { display: none; }
+#chessBtn.active { background: #ffd33d; }
+@media (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
+  body.chess #gameScreen {
+    display: grid; grid-template-columns: minmax(0, 1fr) 380px;
+    grid-template-areas: "log chess" "stage chess" "chat chess";
+    column-gap: 14px; align-items: start; justify-items: center;
+  }
+  body.chess #gameScreen .log { grid-area: log; }
+  body.chess #gameScreen #stage { grid-area: stage; }
+  body.chess #gameScreen .chat-row { grid-area: chat; }
+  body.chess #stage, body.chess .log {
+    width: min(calc(100vw - 420px), calc(72vh * 1.783));
+    width: min(calc(100vw - 420px), calc(72dvh * 1.783));
+  }
+  body.chess #chessPanel {
+    grid-area: chess; display: flex; flex-direction: column; gap: 8px;
+    width: 380px; padding: 10px; align-self: start; margin-top: 1.5em;
+    background: rgba(255,255,255,.72); border-radius: 14px;
+    box-shadow: 0 4px 14px rgba(0,20,40,.25);
+  }
+}
+@media (orientation: portrait), (pointer: coarse) { #chessBtn { display: none !important; } }
+.chess-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.chess-title { font-weight: 800; color: #345; }
+.chess-head button { font-size: .85rem; padding: 5px 10px; }
+.chess-board {
+  display: grid; grid-template-columns: repeat(8, 1fr); width: 360px; height: 360px;
+  border: 3px solid #6b4a1b; border-radius: 6px; overflow: hidden; user-select: none;
+}
+.chess-board .sq {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 30px; line-height: 1; cursor: pointer; position: relative;
+}
+.chess-board .sq.light { background: #f0d9b5; }
+.chess-board .sq.dark { background: #b58863; }
+.chess-board .sq.last { box-shadow: inset 0 0 0 45px rgba(255, 230, 80, .35); }
+.chess-board .sq.sel { box-shadow: inset 0 0 0 45px rgba(60, 140, 255, .45); }
+.chess-board .sq.target::after {
+  content: ""; position: absolute; width: 30%; height: 30%; border-radius: 50%;
+  background: rgba(30, 90, 30, .45);
+}
+.chess-board .sq.target.pw::after, .chess-board .sq.target.pb::after {
+  width: 90%; height: 90%; background: none; border: 4px solid rgba(200, 40, 40, .55);
+}
+.chess-board .sq.pw { color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000, 0 1px 2px #000; }
+.chess-board .sq.pb { color: #111; }
+.chess-board .sq.check { background: #e77 !important; }
+.chess-status { font-weight: 700; color: #345; font-size: .9rem; min-height: 1.3em; text-align: center; }
