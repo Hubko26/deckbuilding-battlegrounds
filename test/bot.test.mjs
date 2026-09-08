@@ -175,3 +175,24 @@ test("bot skóre: po zafixovaní rasy je cudzia karta rovnakého tieru horšia, 
   const manySpells = ctx.Bot.cardScore(state, p, "jablko");
   assert.ok(manySpells < noSpells - 2, `${manySpells} vs ${noSpells}`);
 });
+
+test("hard bot: lov rasy – bez relevantnej karty vlastnej rasy v ponuke refreshne namiesto kúpy t1 balastu", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(36), null);
+  E.startRound(state); E.startRound(state); E.startRound(state); E.startRound(state); // kolo 4
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.tier = 4; p.money = 7;
+  p.deck = ["U003", "U005", "U006", "U007"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(ctx.Bot.dominantRace(state, p), "undead");
+  // ponuka: len cudzie telá + t1 undead vanilla-ish (U001 má schopnosť → relevantný nie je? U001 má power → je) – použi U002? má power tiež.
+  // Použijeme čisto cudzie karty: bot musí refreshnúť aspoň raz.
+  state.commons = ["B001", "O004", "D001"];
+  p.priv = [{ defId: "F002", frozen: false }, { defId: "E002", frozen: false }, { defId: "B003", frozen: false }, { defId: "O005", frozen: false }, { defId: "F003", frozen: false }];
+  const events = ctx.Bot.botTurn(state, "p2", "hard");
+  assert.ok(events.some(e => e.type === "refresh"), "očakávaný refresh");
+  const bought = events.filter(e => e.type === "buy").map(e => e.defId);
+  assert.ok(!bought.some(id => ["B001", "O004", "D001", "F002", "E002", "B003", "O005", "F003"].includes(id)), bought.join(","));
+});

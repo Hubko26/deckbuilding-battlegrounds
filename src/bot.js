@@ -16,8 +16,8 @@ const Bot = (() => {
     easy: { randomBuy: true, upgradeAggro: 0, smartSpells: false, refreshHunt: 0, raceFocus: 0.5, buyBar: 0 },
     normal: { randomBuy: false, upgradeAggro: 1, smartSpells: true, refreshHunt: 0, raceFocus: 0.5, buyBar: 0 },
     hard: {
-      randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 2, raceFocus: 1.0, buyBar: 3,
-      sellJunk: true, swapBoard: true, orderBoard: true, freeze: true,
+      randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 3, raceFocus: 1.0, buyBar: 3,
+      sellJunk: true, swapBoard: true, orderBoard: true, freeze: true, raceHunt: true,
     },
   };
 
@@ -134,6 +134,17 @@ const Bot = (() => {
     return score;
   }
 
+  // „Relevantná" karta pre lov rasy: tretia kópia, alebo príšera dominantnej
+  // rasy s tierom aspoň (môj tier − 1) alebo s Pečaťou/motorom (schopnosťou).
+  // t1 vanilla vlastnej rasy na tieri 4 relevantná nie je – človek refreshne.
+  function isWanted(state, p, defId, dom) {
+    const def = Cards.byId[defId];
+    if (def.spell) return false;
+    if (ownedCount(p, defId) === 2) return true;
+    if (!dom || def.race !== dom) return false;
+    return def.tier >= Math.max(1, p.tier - 1) || !!def.power;
+  }
+
   // Battlecry buffery hraj až po ostatných – zasiahnu plnú plochu.
   function isBattlecryBuffer(defId) {
     const pw = Cards.byId[defId].power;
@@ -208,6 +219,7 @@ const Bot = (() => {
     const bar = cfg.buyBar ? p.tier + cfg.buyBar : 0;
     let rerolls = cfg.refreshHunt || 0;
     let bestUnaffordable = null; // kandidát na freeze
+    const dom = dominantRace(state, p);
     for (;;) {
       let guard = 20;
       while (guard-- > 0) {
@@ -216,6 +228,10 @@ const Bot = (() => {
         p.priv.forEach((s, i) => options.push({ kind: "priv", i, defId: s.defId }));
         if (p.spellShop) options.push({ kind: "spell", i: 0, defId: p.spellShop.defId });
         if (!cfg.randomBuy) options.sort((a, b) => cardScore(state, p, b.defId, cfg) - cardScore(state, p, a.defId, cfg));
+        // Lov rasy (hard): keď v ponuke nie je relevantná karta mojej rasy
+        // ani trojica, radšej refreshni než kupovať t1 telá „lebo sú moje".
+        if (cfg.raceHunt && dom && rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST &&
+            !options.some(o => isWanted(state, p, o.defId, dom))) break;
         const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
         if (!affordable.length) {
           bestUnaffordable = options.find(o => o.kind !== "common") || null;
