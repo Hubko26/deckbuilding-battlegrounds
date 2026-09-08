@@ -186,7 +186,10 @@ plochou. Rob VŠETKY kroky, každý ťah:
    ktorej máš najviac, alebo tú, ktorej Pečať/motor je v ponuke.
 1. **Predaj balast z ruky ešte pred vykladaním.** Stav ti posiela
    `junkInHand` – predaj všetko z neho ako prvé akcie ťahu. Balast = telo
-   s 0 útoku (prehratý hod mincou), a od 3. kola každá karta cudzej rasy
+   s 0 útoku (prehratý hod mincou), **kúzlo nad strop 2, ak nehráš víly**
+   (zahrané kúzlo ide do kôpky a vracia sa cyklom balíčka – jediná cesta von
+   je predaj; heuristický bot na tom v zázname z 8. 9. 2026 prehral: 6 Štítov
+   v balíčku = plocha 2–4 z 5), a od 3. kola každá karta cudzej rasy
    tieru 1–2 bez páru (od tieru 3 aj s párom; dragon t1–2 sa ráta ako
    cudzia rasa, ogre len ak ogri nie sú tvoja hlavná rasa). Driver po pláne balast dopredá a plochu usporiada sám
    (poistka), ale plán, čo to nerobí, je zlý plán. Štartovací balíček je 10 náhodných

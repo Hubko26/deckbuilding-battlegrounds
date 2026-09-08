@@ -176,6 +176,63 @@ test("bot skóre: po zafixovaní rasy je cudzia karta rovnakého tieru horšia, 
   assert.ok(manySpells < noSpells - 2, `${manySpells} vs ${noSpells}`);
 });
 
+test("bot: víly v štartovacom balíčku pred zafixovaním rasy NErušia strop na kúzla", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(51), null);
+  state.round = 2; // pred RACE_LOCK_ROUND – dominantná rasa je ešte null
+  const p = state.p2;
+  // 3 víly v náhodnom štartovacom balíčku sú bežné; bot sa kvôli nim
+  // považoval za vílí build, strop na kúzla vypadol a míňal zvyšné zlato
+  // na Štíty za 1 (záznam z 8. 9. 2026: 5 Štítov v druhom kole).
+  p.deck = ["F002", "F003", "F003", "B001", "B003"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(ctx.Bot.dominantRace(state, p), null);
+  const noSpells = ctx.Bot.cardScore(state, p, "stit");
+  p.deck.push({ defId: "stit", rank: 1 }, { defId: "stit", rank: 1 }, { defId: "stit", rank: 1 });
+  const manySpells = ctx.Bot.cardScore(state, p, "stit");
+  assert.ok(manySpells < noSpells - 2, `kúzla nad strop musia byť trestané: ${manySpells} vs ${noSpells}`);
+});
+
+test("bot: kúzlo nad strop je balast a predá sa; Minca a discover nie", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(52), null);
+  state.round = 4;
+  const p = state.p2;
+  p.deck = ["U001", "U002", "U003", "stit", "stit", "stit"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(ctx.Bot.dominantRace(state, p), "undead");
+  const stit = E.makeInst(state, "stit", 1);
+  assert.equal(ctx.Bot.isJunk(state, p, stit), true);   // 3 kúzla > SPELL_CAP
+  const minca = E.makeInst(state, "minca", 1);
+  assert.equal(ctx.Bot.isJunk(state, p, minca), false); // zlato má hodnotu vždy
+  const kniha = E.makeInst(state, "kniha", 1);
+  assert.equal(ctx.Bot.isJunk(state, p, kniha), false); // discover dá kartu
+  // Vo vílom builde sú kúzla motor – nepredávajú sa.
+  p.deck = ["F002", "F003", "F004", "stit", "stit", "stit"].map(id => ({ defId: id, rank: 1 }));
+  assert.equal(ctx.Bot.dominantRace(state, p), "fairy");
+  assert.equal(ctx.Bot.isJunk(state, p, stit), false);
+});
+
+test("hard bot: upgrade tieru nečaká na plnú plochu – stačí, že po ňom ostane na kartu", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(53), null);
+  for (let i = 0; i < 3; i++) E.startRound(state); // kolo 3 – onSchedule pre t2
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  // Plocha ostane deravá (2 telá v ruke) – stará podmienka „aspoň 4 telá"
+  // bránu nikdy neotvorila a bot ostal 2 tiery za hráčom.
+  p.deck = []; p.discard = []; p.hand = []; p.board = [];
+  p.hand = [E.makeInst(state, "U001", 1, p), E.makeInst(state, "U002", 1, p)];
+  p.hand.forEach((x, i) => { x.slot = i; });
+  p.money = 20;
+  const events = ctx.Bot.botTurn(state, "p2", "hard");
+  assert.ok(events.some(e => e.type === "tierUp"), "bot musí upgradnúť aj s deravou plochou");
+  assert.ok(p.tier >= 2, `tier ${p.tier}`);
+});
+
 test("hard bot: lov rasy – bez relevantnej karty vlastnej rasy v ponuke refreshne namiesto kúpy t1 balastu", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;

@@ -132,7 +132,14 @@ const Bot = (() => {
       if (def.fx.type === "starPower") score += 4 + spells * 0.4;
       // Kúzla nedávajú telá: víly ich premieňajú na rast (bonus), ostatní
       // majú strop – každé kúzlo nad SPELL_CAP vytláča z ruky príšerku.
-      if (dom === "fairy" || (!dom && races.fairy >= 2)) score += (races.fairy || 0) * 0.5;
+      // Bonus platí LEN pri zamknutej vílej rase. Fallback „!dom && fairy >= 2"
+      // bol chybný: do RACE_LOCK_ROUND je dom vždy null a 2–3 víly v náhodnom
+      // štartovacom balíčku sú bežné, takže sa bot v kole 1–2 považoval za
+      // vílí build, strop na kúzla vypadol a zvyšné zlato míňal na Štíty za 1.
+      // V zázname z 8. 9. 2026 tak kúpil 5 Štítov v druhom kole; rasa sa
+      // v treťom zamkla na beast a 6 kúziel mu do konca hry vytláčalo
+      // príšerky z ruky (plocha 2–4 z 5, tier o dva pozadu, prehra).
+      if (dom === "fairy") score += (races.fairy || 0) * 0.5;
       else score -= Math.max(0, spells + 1 - SPELL_CAP) * 3;
     }
     return score;
@@ -198,6 +205,15 @@ const Bot = (() => {
     if (def.token) return false;
     if (inst.atk === 0) return true;
     const dom = dominantRace(state, p);
+    // Kúzlo nad SPELL_CAP je v ne-vílom builde balast: zahrané ide do kôpky
+    // a vráti sa cyklom balíčka, takže z neho niet cesty von – jediný spôsob,
+    // ako ho z balíčka dostať, je predaj. Mince (zlato) a discover (karta)
+    // sa nepredávajú, tie hodnotu majú vždy.
+    if (def.spell) {
+      if (dom === "fairy") return false;
+      if (def.fx.type === "gold" || def.fx.type === "discover") return false;
+      return ownedSpellCount(p) > SPELL_CAP;
+    }
     // Pár cudzej rasy sa oplatí držať len kým je t1 telo relevantné – od
     // tieru 3 je aj strieborná t1 karta balast (log: O004×2 v undead builde).
     return !!dom && def.race !== dom && def.race !== "dragon" && def.tier <= 2 &&
@@ -242,7 +258,10 @@ const Bot = (() => {
 
     // 2. Upgrade tieru podľa agresivity. Hard: aj celé zlato do upgradu, keď
     //    je plocha už plná (tento boj nákup neovplyvní) – ako ľudský hráč;
-    //    naopak s deravou plochou (< 4 tiel) upgrade počká, telá majú prednosť.
+    //    inak stačí, že po upgrade ostane na kartu. Podmienka „aspoň 4 telá"
+    //    tu bola brzda: pri zapchatom balíčku je plocha 2–4, brána sa
+    //    neotvorila a bot ostal 2 tiery za hráčom (záznam z 8. 9. 2026,
+    //    t2 až do 8. kola). Tempo drží `onSchedule` (kolo >= tier*2 − 1).
     for (;;) {
       const cost = Engine.upgradeCost(state, pid);
       if (cost === null) break;
@@ -251,7 +270,7 @@ const Bot = (() => {
         cfg.upgradeAggro === 0 ? cost === 0 :
         cfg.upgradeAggro === 1 ? (cost <= 1 || (p.money - cost >= Engine.CARD_COST && state.round >= p.tier * 2)) :
         (cost <= 2 || (onSchedule && (p.board.length >= Engine.BOARD_MAX ||
-          (p.money - cost >= Engine.CARD_COST && p.board.length >= Engine.BOARD_MAX - 1))));
+          p.money - cost >= Engine.CARD_COST)));
       if (!worth || p.money < cost) break;
       push(Engine.upgradeTier(state, pid));
     }
@@ -431,8 +450,10 @@ const Bot = (() => {
   function sellJunk(state, p, push, keepBodies) {
     for (let i = p.hand.length - 1; i >= 0; i--) {
       const inst = p.hand[i];
-      if (!inst || inst.spell || !isJunk(state, p, inst)) continue;
-      if (keepBodies) {
+      if (!inst || !isJunk(state, p, inst)) continue;
+      // Strážiť počet tiel treba len pri predaji tela – predaj kúzla žiadny
+      // slot plochy nestojí, naopak uvoľňuje miesto v budúcich rukách.
+      if (keepBodies && !inst.spell) {
         const bodies = p.hand.filter(x => x && !x.spell).length - 1;
         if (p.board.length + bodies < Engine.BOARD_MAX - 1) continue;
       }
