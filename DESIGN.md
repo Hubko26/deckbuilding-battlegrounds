@@ -167,7 +167,7 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 | undead | Nemŕtvy | horda kostíkov + Pretečenie |
 | fairy | Víla | Po kúzle – schopnosti spúšťané zoslaním kúzla |
 | dragon | Drak | žoldnieri – cielené battlecry zosilňujú rasu cieľa |
-| ogre | Ogr | derpy chaos – veľké staty, efekt sa môže obrátiť proti tebe |
+| ogre | Ogr | derpy chaos – veľké staty; smolný roll („backstab") dá Pečať celej rase |
 
 Roster: **60 príšer z art sád** (6 rás × 10). Ďalšie rasy (Human)
 sa pridajú s ďalšími art sadami – dátový model je pripravený
@@ -445,6 +445,69 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   momenty hlási log (🪙 hod mincou, 👹 zožratie, 🍺 vlastný zásah,
   🎲 vstávanie) + floaty nad kartami.
 
+**Backstab – kmeňový payoff ogrov (implementované)**
+
+Problém: **ogrov nikto nehrá.** Príčina nie je rozptyl, ale to, že ogri sú
+jediná rasa **bez kmeňového payoffu**. Zvieratá majú aury a trvalý rast,
+Nemŕtvi hordu, Živly škálovanie damage, Víly Po kúzle, Draci cross-race
+boost – ogri nemajú ani jednu kartu, ktorá by sa starala o iných ogrov.
+Preto sa nikdy nestavia „ogr build"; ogr je len občasné veľké telo do inak
+postavenej plochy. Druhý problém: viaceré ogrie efekty **pomáhajú súperovi**
+(O002 spustí súperov deathrattle, O010 vstane na súperovej strane), čo je
+pre dieťa čistý feelbad bez kompenzácie.
+
+Riešenie: **„backstab" (nešťastný roll, ktorý sa obrátil proti vlastníkovi)
+dá Pečať +1/+1 všetkým ogrom** – permanentná rasová aura (`raceBuffs.ogre`),
+platí aj na budúce kópie z balíčka a obchodu. Rozptyl tým prestáva byť čistý
+downside: smolný hod platí za seba a je to zároveň ten chýbajúci kmeňový
+engine. Rieši to obe príčiny naraz vrátane „pomohol som súperovi" momentov –
+práve tie sú teraz zdroj rastu.
+
+Čo je backstab (musí to byť uzavretý zoznam, inak je pravidlo nejasné):
+
+| karta | backstab vetva |
+|---|---|
+| O001 Hod mincou | padol chvost (−2/−2) |
+| O006 Ožratý úder | trafil sám seba |
+| O002 Chaos spúšťač | spustil schopnosť **súperovej** príšerky |
+| O007 Divoká rana | 5 damage padlo na **vlastnú** príšerku |
+| O010 Zmätený obranca | vstal na **súperovej** strane |
+| O003 Chaos výbuch | **nepočíta sa** – friendly fire je deterministický, nie roll |
+
+UI: log hlási „👹 Backstab!" a hneď za ním rasový buff (`futureBuff`).
+
+Implementácia (`backstab()` v `src/engine.js`) – jedno miesto, ktoré všetky
+vetvy volajú, plus event `backstab` pre UI:
+
+- **Strop: 1 Pečať za KOLO.** Nákupná fáza aj nasledujúci boj majú rovnaké
+  `state.round`, takže `p.backstabRound` pokrýva oboje. Bez stropu by O006
+  hádzal pri každom útoku (s Vichrom 🌪️ dvakrát) – tri kópie = ~1,5 backstabu
+  za boj a cez 10 kôl +15/+15 na celú rasu. So stropom vychádza max ~+10/+10
+  za dlhú hru, porovnateľné s beast perm rastom.
+- **Pečať je fixne +1/+1 a NEnásobí sa evolve stupňom** (`m`). Inak by bola
+  útecha lepšia než výhra a hod mincou by stratil napätie.
+- **V boji Pečať zosilní živé ogry hneď** (rovnako ako U010): ogr z vlastnej
+  smoly zosilnie ešte v tom istom boji. V nákupnej fáze to isté cez
+  `grantRaceAura` – preto O001 na chvoste nekončí 0/1, ale **1/2**
+  (−2/−2 clamp, potom +1/+1 z vlastnej Pečate).
+- **Bot**: zrušená penalizácia `ogre` mimo dominantnej rasy v `src/bot.js`
+  (ogr je teraz neutrálny ako drak) – inak by rasu nikdy nezobral a matchupy
+  by boli skreslené.
+
+Otvorené po reworku:
+
+1. **Útecha vs. výhra.** Pri 4 ogroch na ploche je chvost O001 (+1/+1 celej
+   rase navždy) lepší než hlava (+4/+4 jednému). Zámerné – je to odmena za
+   to, že hráč skutočne stavia ogrov – ale ak sa ukáže, že hráč hody
+   *chce* prehrávať, znížiť Pečať na +0/+1 alebo zúžiť ju len na ogrov na
+   ploche.
+2. **Staty nad krivkou.** Ogrie telá sú nad krivkou práve preto, že
+   očakávaná hodnota efektov bola záporná. Backstab ju zdvihol. Rasa bola
+   nehraná, takže najprv buff a meranie; orezanie vanilla tiel
+   (O004/O005/O008/O009) je až druhý krok.
+3. **Vanilla ogri Pečať negenerujú, len ju berú** – zdravé napätie (kto
+   hádže, kto profituje), netreba opravovať.
+
 Návrhy pre ďalšie art sady (zatiaľ neimplementované):
 
 **🙋 Human (Človek) – nová rasa: Božský štít (Divine Shield)**
@@ -459,6 +522,111 @@ Návrhy pre ďalšie art sady (zatiaľ neimplementované):
   jeden obrovský hit – prirodzene zapadne do trojuholníka.
 - Implementačne: `inst.shield` boolean, vetva v boji pred odpočtom HP;
   evolve môže pridať „štít sa raz obnoví".
+
+**🦝 Zlodej – návrh (neimplementované)**
+
+Rasa postavená na **podsúvaní blbostí súperovi** a drobnom zisku zlata. Vznikla
+z nápadu „Bankári" (staty podľa neminutého zlata), ktorý bol zamietnutý: buď je
+nudný (zlato prepadáva, max 10/kolo), alebo zavádza prenos zlata medzi kolami
+a s ním 100-zlatové ťahy a pivot do inej rasy na tieri 6. Zlodeji zlato
+neinflatujú – len ho presúvajú medzi hráčmi, a to bezpečným kanálom.
+
+Zlodeji sú **prvá rasa, ktorá v nákupnej fáze siaha do súperovho stavu**
+(dnes to robí len boj). Pravidlá, ktoré musí každá zlodejská karta dodržať:
+
+- **Nikdy nesiahať na `foe.money`.** Prvý hráč sa strieda (`state.first`), takže
+  krádež z hotovosti by bola raz plná (súper ešte nehral) a raz prázdna (už
+  všetko minul). Všetko ide cez **`foe.goldNext -= n`** (príjem nikdy pod 0)
+  a zisk zlodeja cez `p.goldNext += n` – jediný existujúci prenos zlata.
+- **Kopírovať, nie brať.** Vzatie karty zo súperovej kôpky (rozbitá trojica) je
+  pre deti čistý feelbad. „Krádež" karty = kópia do vlastného balíčka, alebo
+  odkúpenie karty zo súperovej **ponuky** (jeho plán to nezničí). Pri presune
+  reálnej inštancie treba zahodiť/prepísať `inst.src`, inak predaj vráti kópie
+  do súperovho poolu.
+- **Blbosť sa nedá zbaviť zadarmo ani so ziskom.** Manuálne odhodenie necháva
+  kartu v cykle (to je dobre), ale bežný predaj dáva +1 – podsunutá karta by
+  bola dar. Blbosť má **zápornú predajnú cenu: predaj stojí obeť 3 mince**
+  a navyše **dá všetkým zlodejom podsúvateľa Pečať +1/+1** (`futureRace`,
+  permanentne aj na budúce kópie). Implementačne: `def.sellValue = -3` +
+  `def.onSold` fx mierený na `tok.owner`; `sellCard` vráti `null`, ak
+  `money < 3`; buyback pre ňu vypnutý (inak by buyback za −3 dal +3 zlato).
+  Tokeny sa neevolvujú (`canEvolve`), takže tri blbosti sa nezlúčia do jednej.
+- **Strop blbostí v súperovom balíčku: 3.** Ďalšie podsunutie prepadne.
+  Bez stropu 5 Zlodejov × endTurn = 5 blbostí/kolo a dieťa má po štyroch
+  kolách ruku samých kameňov. Podsúvať prednostne cez **battlecry** (samo-
+  limit: 3 zlata za kartu), nie endTurn.
+- **Blbosť je bez rasy, bez deathrattle a nedá sa vyložiť** (`unplayable`).
+  0/0 telo na ploche by inak mohlo prejsť spracovaním smrti pri štarte boja
+  a spustiť súperove „Pri smrti Zvieraťa" (B004) – pre obeť bonus zadarmo.
+- **Eventy pre prijímateľa.** UI dnes prehráva eventy aktívneho hráča; súper
+  musí vidieť „dostal si Potkana" (event `plant` s `pid` obete), aj Pečať,
+  ktorú predajom dal súperovi.
+
+**Kľúčový token – Potkan 🐀** (0/0, bez rasy, nedá sa vyložiť). Dve dane
+pre obeť:
+
+1. **Pri dotiahnutí**: obeť stratí 1 mincu (min 0) a zlodej, ktorý ju podsunul
+   (`tok.owner`), dostane `goldNext += 1`. Krádež zlata je **oneskorená a
+   viazaná na draw** – timing symetrický pre oboch hráčov, obeť vidí, čo sa
+   deje („zas potkan!").
+2. **Deratizácia stojí 3 mince a dá zlodejom Pečať +1/+1.** Kým obeť
+   nezaplatí, potkan ostáva v balíčku a pri každom dotiahnutí zje ďalšiu
+   mincu aj slot v ruke.
+
+**Obe vetvy živia zlodeja – to je zámer, ale aj hlavné riziko rasy.** Nechať
+si ju = daň pri každom dotiahnutí a zabratý slot v ruke. Predať = 3 mince
+a **trvalý** rasový buff súperovi. Tri veci treba ustrážiť:
+
+1. **Čísla musia dávať predaj ako reálnu voľbu.** Pri dani 1 minca za draw a
+   balíčku ~10 kariet sa potkan dotiahne zhruba každé druhé kolo, čiže držať
+   ho stojí ~0,5 mince za kolo – proti 3 minciam za predaj **nikto nikdy
+   nepredá** a Pečať sa nespustí. Buď zdvihnúť daň pri dotiahnutí (2 mince),
+   alebo znížiť predajnú cenu na 2, alebo nechať zlodejov podsúvať ďalej,
+   kým sa balíček neupchá (strop 3 potkany) – vtedy je predaj úľava.
+2. **Strop Pečate.** `futureRace` je najsilnejší efekt v hre (permanentný,
+   celá rasa, aj budúce kópie) a normálne stojí battlecry za 3 zlata. Tu ho
+   zlodej dostáva zadarmo za súperovo rozhodnutie. Bez stropu (3 potkany × 5
+   kôl) je to +15/+15 na rasu. Odporúčanie: **max +1/+1 z Pečate za kolo**
+   a strop **+3/+3 za hru**, alebo Pečať nahradiť buffom len pre zlodejov
+   **práve na ploche** (nie permanentná aura) – to je najbezpečnejšie.
+3. **Rasa nesmie stáť LEN na tom, čo urobí súper.** Ak obeť nikdy nepredá,
+   zlodeji nemajú škálovanie. Preto daň pri dotiahnutí (`goldNext += 1`
+   podsúvateľovi) musí ostať – to je istý, na súperovi nezávislý zisk;
+   Pečať je bonus navrch.
+
+**Counter: ogr, čo zožerie susednú kartu.** Jediná cesta zbaviť sa potkana
+bez zaplatenia. Návrh karty: **O0xx (t2–t3, ogr) „Pri vyložení: zožerie kartu
+vedľa seba V RUKE (slot vľavo/vpravo) a získa jej staty; zožraná karta mizne
+z hry."** Prečo v ruke a nie na ploche: potkan je `unplayable`, na plochu sa
+nedostane, takže bežné plošné countre (Umlčanie, Kúzelný klobúk 🎩 – ten mieri
+na vlastnú príšerku NA PLOCHE) naň nesiahnu. Požiadavky:
+
+- **Nízky tier (2–3).** Ak by bol jediný counter celej rasy na t5, obeť bez
+  neho je zamknutá – to je pri hre pre deti neprijateľné.
+- **Užitočný aj mimo matchupu** (žerie hocijakú kartu = čistenie balíčka od
+  štartových t1 príšer), inak je to mŕtva karta v 5 z 6 hier.
+- **Zožratie vracia kópie do poolu** (`returnSrc`, ako predaj), inak pool
+  tečie. Zožratie potkana **nespustí Pečať** – v tom je celá pointa.
+- Ogr žerie „susedné" podľa `inst.slot` v ruke – sloty sú trvalé, takže si
+  hráč môže poradie v ruke pripraviť. Bez suseda efekt prepadne (ogr vibe).
+
+Kostra rostera:
+
+- t1 **Vreckár**: Pri vyložení: podsuň Potkana.
+- t2 **Špión**: Pri vyložení: kópia náhodnej karty zo súperovej kôpky do
+  tvojho balíčka.
+- t3 **Priekupník**: Po nákupe: +1 minca za každého Potkana v súperovom balíčku
+  (strop 3).
+- t5 **Kmotor**: Pri vyložení: kúp si náhodnú kartu zo súperovej súkromnej
+  ponuky za 3.
+
+Implementačná cena oproti Bankárom ~4–5×: draw hook (`drawCards`), záporný
+`sellValue` + `onSold` fx, `unplayable`, cross-player eventy v UI, ogr
+„zožer suseda v ruke", a **bot** – dnes hrá najsilnejšie karty a ruku
+nepredáva, musí sa naučiť rozhodnúť „platiť 3 a buffnúť súpera, alebo trpieť
+daň"; rovnako sekcia v arena-ai SKILL.md. Pred implementáciou celej rasy
+otestovať len Potkana + Vreckára s dieťaťom: rozhodne, či podsúvanie baví
+alebo hnevá.
 
 ### Synergie
 

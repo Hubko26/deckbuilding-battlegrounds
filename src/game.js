@@ -327,6 +327,11 @@ const L = {
     cs: "🤫 Nabito: v nejbližším boji bude umlčena soupeřova příšerka",
     en: "🤫 Charged: an enemy minion will be silenced next fight",
   },
+  backstabMsg: {
+    sk: "👹 Backstab! Ogrom to nevyšlo – všetci Ogri +1/+1 navždy",
+    cs: "👹 Backstab! Zlobrům to nevyšlo – všichni Zlobři +1/+1 navždy",
+    en: "👹 Backstab! It went wrong for the Ogres – all Ogres +1/+1 forever",
+  },
   chaosTriggerMsg: {
     sk: "🎲 Chaos! {a} spustil schopnosť: {b}",
     cs: "🎲 Chaos! {a} spustil schopnost: {b}",
@@ -1165,6 +1170,13 @@ async function runBattle() {
         }
         await sleep(650);
         for (const el of els) el.classList.remove("hit");
+        break;
+      }
+      case "backstab": {
+        // Ogrí smolný roll sa mení na trvalú Pečať – hneď za ním ide futureBuff.
+        Sfx.drunk();
+        log(t(L.backstabMsg));
+        await sleep(400);
         break;
       }
       case "futureBuff": {
@@ -2054,6 +2066,7 @@ function act(events) {
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
     if (ev.type === "buyBack" && ev.pid === MY) { Sfx.coin(); log(t(L.buyBackMsg)); }
     if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));
+    if (ev.type === "backstab" && ev.pid === MY) { Sfx.drunk(); log(t(L.backstabMsg)); }
     if (ev.type === "futureBuff" && ev.pid === MY) {
       Sfx.evolve();
       log(`${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]} +${ev.a}/+${ev.h}!`);

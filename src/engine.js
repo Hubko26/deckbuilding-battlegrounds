@@ -10,6 +10,7 @@ const Engine = (() => {
   const SELL_GAIN = 1;
   const BOLT_DMG = 3; // kúzlo Blesk: základný damage odloženého výboja
   const REFRESH_COST = 1;
+  const BACKSTAB_BUFF = 1; // ogr „Backstab": Pečať +1/+1 všetkým ogrom za smolný roll
   const COMMON_COUNT = 3;
   // Pooly kariet (štýl Battlegrounds, ale per hráč): každý hráč má vlastný
   // pool POOL_PRIVATE kópií každej príšery (súkromná ponuka, štartovací
@@ -208,6 +209,7 @@ const Engine = (() => {
   function makePlayer(id) {
     return {
       id, hp: HERO_HP, tier: 1, reachedRound: 1, money: 0,
+      backstabRound: 0, // ogri: kolo, v ktorom naposledy padla Pečať za backstab (strop 1/kolo)
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
@@ -842,6 +844,29 @@ const Engine = (() => {
     events.push({ type: "futureBuff", pid: p.id, race, a, h });
   }
 
+  // Ogr „Backstab": smolný roll, ktorý sa obrátil proti vlastníkovi, dá
+  // Pečať +1/+1 VŠETKÝM ogrom – permanentná aura, platí aj na budúce kópie.
+  // Toto je kmeňový payoff rasy: rozptyl nie je čistý downside, smola platí.
+  // Strop 1× za KOLO (nákupná fáza aj nasledujúci boj majú rovnaké
+  // state.round) – bez neho by O006 Ožratý úder hádzal pri každom útoku
+  // (s Vichrom dvakrát) a rasa by sa rozbila. Pečať je fixne +1/+1 a
+  // NEnásobí sa evolve stupňom (inak by bola útecha lepšia než výhra).
+  // `sides` = volanie z boja: aura prežije boj a živé príšerky zosilnia hneď.
+  function backstab(state, pid, events, sides) {
+    const p = state[pid];
+    if (p.backstabRound === state.round) return;
+    p.backstabRound = state.round;
+    events.push({ type: "backstab", pid });
+    if (sides) {
+      addRaceAura(p, "ogre", BACKSTAB_BUFF, BACKSTAB_BUFF);
+      buffAlive(sides, pid, f => Cards.byId[f.defId].race === "ogre",
+        BACKSTAB_BUFF, BACKSTAB_BUFF, events);
+      events.push({ type: "futureBuff", pid, race: "ogre", a: BACKSTAB_BUFF, h: BACKSTAB_BUFF });
+    } else {
+      grantRaceAura(p, "ogre", BACKSTAB_BUFF, BACKSTAB_BUFF, events);
+    }
+  }
+
   // Živelná sila (dmgBoost) zosilňuje dočasné buffy Živlov: +boost na útok,
   // na život len ak buff život dáva.
   function elementalBonus(fx, m, boost) {
@@ -989,6 +1014,7 @@ const Engine = (() => {
       self.maxHp = Math.max(1, self.maxHp + h);
       events.push({ type: "coinflip", pid: p.id, uid: self.uid, heads });
       events.push({ type: "buff", pid: p.id, uid: self.uid, a, h });
+      if (!heads) backstab(state, p.id, events); // chvost = backstab
     },
     draw({ state, p, fx, m, events }) {
       drawCards(state, p, fx.n * m, events);
@@ -1491,6 +1517,7 @@ const Engine = (() => {
         if (!pool.length) break;
         const { x, sp, pw } = pick(pool, state.rng);
         events.push({ type: "chaosTrigger", pid, uid: self.uid, targetPid: sp, targetUid: x.uid, targetDefId: x.defId, kw: pw.kw });
+        if (sp !== pid) backstab(state, pid, events, sides); // spustil súperovu = backstab
         triggerPower(state, sides, sp, x, pw.kw, events);
         handleDeaths(state, sides, events); // Ožratý úder / výboje mohli niekoho zložiť
       }
@@ -1504,6 +1531,7 @@ const Engine = (() => {
       events.push({ type: "drunkHit", pid, uid: self.uid, n: dmg });
       pushHp(events, pid, self);
       handleDeaths(state, sides, events);
+      backstab(state, pid, events, sides); // trafil sám seba = backstab
     },
     // Ogr O007 (Pri smrti): veľký zásah ÚPLNE náhodnej živej príšerke –
     // hocijakej na ploche, aj vlastnej (ruská ruleta).
@@ -1516,6 +1544,7 @@ const Engine = (() => {
       const { t, side } = pick(all, state.rng);
       powerHit(t, side, scaledPowerDmg(state, pid, fx, m), self.uid, events);
       handleDeaths(state, sides, events);
+      if (side === pid) backstab(state, pid, events, sides); // trafil vlastnú = backstab
     },
     // Ogr O010 (Pri smrti): 50 % šanca, že vstane s 1 HP na NÁHODNEJ strane
     // plochy (aj u súpera!). Raz za boj; pri plnej strane ostáva ležať.
@@ -1534,6 +1563,7 @@ const Engine = (() => {
       sides[side].push(copy);
       events.push({ type: "confusedRevive", pid: side, fromPid: pid, uid: copy.uid, defId: copy.defId, swapped: side !== pid });
       events.push({ type: "summon", pid: side, uid: copy.uid, defId: copy.defId, slot: copy.slot, rank: copy.rank, atk: copy.atk, hp: 1 });
+      if (side !== pid) backstab(state, pid, events, sides); // vstal u súpera = backstab
     },
     // Rast seba; perm (B004) = rast NAVŽDY aj z boja (na originál na ploche).
     growSelf({ state, pid, self, fx, m, events }) {

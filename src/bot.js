@@ -91,12 +91,12 @@ const Bot = (() => {
       // drž sa dominantnej rasy (hard drží silnejšie)
       score += (races[def.race] || 0) * ((cfg && cfg.raceFocus) || 0.5);
       // Po zafixovaní rasy: vlastná +3, cudzia −3; podporné rasy miernejšie
-      // (drak neutrálny – jeho battlecry živí moju rasu; ogr −1 – telo nad
-      // krivkou je ok ako doplnok, nie ako plán). Trojica (+6) to preváži.
+      // (drak neutrálny – jeho battlecry živí moju rasu; ogr tiež neutrálny –
+      // po reworku „Backstab" jeho smolné rolly kŕmia Pečať celej ogrej rasy,
+      // takže telo nad krivkou je legitímny doplnok). Trojica (+6) to preváži.
       if (dom) {
         if (def.race === dom) score += 3;
-        else if (def.race === "ogre") score -= 1;
-        else if (def.race !== "dragon") score -= 3;
+        else if (def.race !== "dragon" && def.race !== "ogre") score -= 3;
       }
     }
     if (def.power) {

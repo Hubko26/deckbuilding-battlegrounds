@@ -1783,11 +1783,95 @@ test("ogr O001 hod mincou: +4/+4 alebo −2/−2 (clamp na 0 atk / 1 hp)", () =>
     p.deck = []; p.discard = [];
     assert.ok(E.playMinion(state, "p1", 0));
     const o = p.board[0];
-    assert.ok((o.atk === 6 && o.hp === 7) || (o.atk === 0 && o.hp === 1),
+    // Chvost = backstab: −2/−2 (clamp 0/1) a hneď +1/+1 z ogrej Pečate → 1/2.
+    assert.ok((o.atk === 6 && o.hp === 7) || (o.atk === 1 && o.hp === 2),
       `nečakané staty ${o.atk}/${o.hp}`);
     outcomes.add(o.atk === 6 ? "heads" : "tails");
   }
   assert.equal(outcomes.size, 2); // obe strany mince padli
+});
+
+test("ogr backstab: chvost mince dá Pečať +1/+1 všetkým ogrom, hlava nie", () => {
+  let tails = false, heads = false;
+  for (let seed = 1; seed <= 40 && !(tails && heads); seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    const p = state.p1;
+    p.board = []; p.deck = []; p.discard = [];
+    p.hand = [E.makeInst(state, "O001", 1)];
+    const events = E.playMinion(state, "p1", 0);
+    const back = events.filter(e => e.type === "backstab");
+    if (p.board[0].atk !== 6) { // chvost
+      tails = true;
+      assert.equal(back.length, 1);
+      assert.equal(p.raceBuffs.ogre.a, 1);
+      assert.equal(p.raceBuffs.ogre.h, 1);
+      assert.equal(p.board[0].hp, 2); // 1 po postihu + 1 z Pečate
+    } else {                    // hlava
+      heads = true;
+      assert.equal(back.length, 0);
+      assert.equal(p.raceBuffs.ogre, undefined);
+    }
+  }
+  assert.ok(tails && heads);
+});
+
+test("ogr backstab: Pečať platí aj na budúce ogrie kópie", () => {
+  const { state, E } = fresh(3);
+  E.startRound(state);
+  const p = state.p1;
+  p.board = []; p.deck = []; p.discard = [];
+  p.raceBuffs.ogre = { a: 1, h: 1 };
+  const fresh004 = E.makeInst(state, "O004", 1, p); // základ 3/4
+  assert.equal(fresh004.atk, 4);
+  assert.equal(fresh004.hp, 5);
+});
+
+test("ogr backstab: strop 1 Pečať za kolo aj pri viacerých smolných rolloch", () => {
+  let seen = false;
+  for (let seed = 1; seed <= 60 && !seen; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    // tri Ožratí úderi – šanca, že sa aspoň dvaja trafia sami, je vysoká
+    state.p1.board = [0, 1, 2].map(slot =>
+      Object.assign(E.makeInst(state, "O006", 1), { slot }));
+    state.p2.board = [Object.assign(E.makeInst(state, "U008", 2), { slot: 0 })];
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    const drunk = events.filter(e => e.type === "drunkHit");
+    const back = events.filter(e => e.type === "backstab" && e.pid === "p1");
+    if (drunk.length >= 2) {
+      seen = true;
+      assert.equal(back.length, 1); // strop: koľkokoľvek smoly = jedna Pečať
+      assert.equal(state.p1.raceBuffs.ogre.a, 1);
+      assert.equal(state.p1.raceBuffs.ogre.h, 1);
+    }
+  }
+  assert.ok(seen, "nenašiel sa boj s aspoň dvoma ožratými údermi");
+});
+
+test("ogr backstab: Pečať z boja prežije boj (permanentná aura)", () => {
+  let seen = false;
+  for (let seed = 1; seed <= 40 && !seen; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    state.p1.board = [Object.assign(E.makeInst(state, "O006", 1), { slot: 0 })];
+    state.p2.board = [Object.assign(E.makeInst(state, "U008", 2), { slot: 0 })];
+    state.p1.hand = []; state.p2.hand = [];
+    state.p1.deck = []; state.p1.discard = [];
+    state.p2.deck = []; state.p2.discard = [];
+    const events = E.doBattle(state);
+    if (!events.some(e => e.type === "drunkHit")) continue;
+    seen = true;
+    assert.equal(state.p1.raceBuffs.ogre.a, 1);
+    assert.equal(state.p1.raceBuffs.ogre.h, 1);
+    assert.ok(events.some(e => e.type === "futureBuff" && e.race === "ogre"));
+  }
+  assert.ok(seen);
 });
 
 test("ogr O003 chaos výbuch: 2 dmg VŠETKÝM – aj vlastným", () => {

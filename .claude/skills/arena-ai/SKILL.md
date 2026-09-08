@@ -142,7 +142,13 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
     keď je telo nad krivkou alebo battlecry živí tvoju rasu.
-  - **Ogre = veľké staty, chaos efekty** (môžu udrieť aj vlastníka):
+  - **Ogre = veľké staty, chaos efekty + Backstab.** Keď sa ogrí roll
+    obráti proti tebe (chvost mince, ožratý úder do seba, chaos spúšťač na
+    súperovu príšerku, divoká rana do vlastnej, zmätený obranca u súpera),
+    dostanú **VŠETCI tvoji ogri Pečať +1/+1 navždy** – aj budúce kópie
+    z balíčka a obchodu. **Strop 1 Pečať za kolo.** Smola je teda payoff,
+    nie trest: ogri sú plnohodnotná hlavná rasa, keď ich máš viac.
+    Efekty (môžu udrieť aj vlastníka):
     O001 hod mincou (battlecry +4/+4 alebo −2/−2), O006 Pri útoku 50 %
     sa trafí sám za ½ útoku, O002 (5/6) Pred bojom spustí schopnosť
     náhodnej príšerky na bojisku – aj súperovej (deathrattle bez smrti,
@@ -166,18 +172,19 @@ Boti prehrávali na 4 veciach: miešanie rás, nafúknutý balíček plný
 štartovacieho balastu a kúziel, plocha s 3–4 telami, upgrade s deravou
 plochou. Rob VŠETKY kroky, každý ťah:
 
-0. **Hlavná rasa je len beast / elemental / undead / fairy. Ogre a dragon sú
-   PODPORNÉ** – drak je žoldnier s battlecry pre rasu cieľa, ogr telo nad
-   krivkou na doplnenie slotu. Tri ogri v balíčku z ogrov hlavnú rasu
-   nerobia (Claude bot v logu z 8. 9. 2026 takto prehral: O004×3, O001×2,
-   nula predajov, 22 kariet v balíčku). `dominantRace` v stave ich už
-   ignoruje; ak je null, vyber hlavnú rasu, ktorej máš najviac, alebo tú,
-   ktorej Pečať/motor je v ponuke.
+0. **Hlavná rasa je beast / elemental / undead / fairy / ogre. Dragon je
+   PODPORNÝ** – drak je žoldnier s battlecry pre rasu cieľa. Ogri sú po
+   reworku Backstab plnohodnotný build, ale len ako **zámer**: potrebujú
+   rolly, ktoré Pečať generujú (O001, O006, O002, O007, O010), nie štyri
+   vanilla telá. Tri náhodné ogry v balíčku z ogrov hlavnú rasu nerobia
+   (Claude bot v logu z 8. 9. 2026 takto prehral: O004×3, O001×2, nula
+   predajov, 22 kariet v balíčku). Ak je `dominantRace` null, vyber rasu,
+   ktorej máš najviac, alebo tú, ktorej Pečať/motor je v ponuke.
 1. **Predaj balast z ruky ešte pred vykladaním.** Stav ti posiela
    `junkInHand` – predaj všetko z neho ako prvé akcie ťahu. Balast = telo
    s 0 útoku (prehratý hod mincou), a od 3. kola každá karta cudzej rasy
-   tieru 1–2 bez páru (od tieru 3 aj s párom; ogre/dragon t1–2 sa rátajú
-   ako cudzia rasa). Driver po pláne balast dopredá a plochu usporiada sám
+   tieru 1–2 bez páru (od tieru 3 aj s párom; dragon t1–2 sa ráta ako
+   cudzia rasa, ogre len ak ogri nie sú tvoja hlavná rasa). Driver po pláne balast dopredá a plochu usporiada sám
    (poistka), ale plán, čo to nerobí, je zlý plán. Štartovací balíček je 10 náhodných
    t1 kariet – človek ich vypredá do 6. kola, ty tiež. Nechaj si toľko tiel,
    aby si zaplnil plochu (aspoň 4); zvyšný balast zahraj a predaj nabudúce.
@@ -244,9 +251,12 @@ plochou. Rob VŠETKY kroky, každý ťah:
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
   Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,
   Svätožiara…), cast až keď sú víly na ploche. Strop kúziel neplatí.
-- **Ogre**: telá nad krivkou O004/O005/O008/O009 bezpečne, O002 (t3 chaos –
-  dobrý s vlastnými deathrattle), O003 len bez vlastného swarmu, O006
-  vľavo s Vichorom je hazard. Ogre je splash, nie plán.
+- **Ogre**: build stojí na **generátoroch Backstabu** – O006 (Pri útoku,
+  hádže každý boj), O001 (lacný hod), O002/O007/O010. Vanilla telá
+  O004/O005/O008/O009 Pečať negenerujú, len z nej žijú, takže ich ber až
+  ako doplnok. Jedna Pečať za kolo je strop, viac generátorov naraz
+  netreba – radšej jeden spoľahlivý (O006) a zvyšok telá. O003 len bez
+  vlastného swarmu. Ako splash bez generátorov je ogre stále len telo.
 - **Draci** patria do každého buildu: D002/D008 buff rasy cieľa do boja,
   D003/D009 Pečať rasy cieľa, D004 discover rasy, D010 evolvne cieľ.
   Vždy `target` na najlepšiu kartu dominantnej rasy.
