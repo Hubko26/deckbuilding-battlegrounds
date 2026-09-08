@@ -8,11 +8,11 @@ function fresh(seed = 1, mutator = null) {
   return { ctx, state, E: ctx.Engine, C: ctx.Cards };
 }
 
-test("newGame: 10 náhodných kariet tieru 1 v balíčku, 35 HP, tier 1, 2 súkromné", () => {
+test("newGame: 10 náhodných kariet tieru 1 v balíčku, 50 HP, tier 1, 2 súkromné", () => {
   const { state, C } = fresh();
   for (const pid of ["p1", "p2"]) {
     assert.equal(state[pid].deck.length, 10);
-    assert.equal(state[pid].hp, 35);
+    assert.equal(state[pid].hp, 50);
     assert.equal(state[pid].tier, 1);
     assert.equal(state[pid].priv.length, 2);
     for (const c of state[pid].deck) {
@@ -1452,7 +1452,7 @@ test("battlecry buffRace: buffne len príšerky rovnakej rasy", () => {
   assert.equal(beast.atk, C.byId["B001"].atk);       // zviera nie
 });
 
-test("boj: prázdna plocha prehráva, damage = súčet stupňov preživších", () => {
+test("boj: prázdna plocha prehráva, damage = súčet tierov preživších (evolve nehrá rolu)", () => {
   const { state, E } = fresh(11);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -1462,8 +1462,8 @@ test("boj: prázdna plocha prehráva, damage = súčet stupňov preživších", 
   const events = E.doBattle(state);
   const dmg = events.find(e => e.type === "heroDmg");
   assert.equal(dmg.pid, "p2");
-  assert.equal(dmg.dmg, 3); // bronz 1 + strieborná 2
-  assert.equal(state.p2.hp, 32);
+  assert.equal(dmg.dmg, 4); // B002 tier 3 + B001 tier 1 (strieborná – rank nehrá rolu)
+  assert.equal(state.p2.hp, 46);
 });
 
 test("boj: obranca (taunt) je napadnutý prvý", () => {
@@ -1960,8 +1960,8 @@ test("mutácie: newGame bez parametra žrebuje, null = žiadna, string = vynúte
 
 test("mutácia smallArena/marathon: životy hrdinov 25/45", () => {
   const { E } = fresh();
-  assert.equal(E.newGame(E.seededRng(1), "smallArena").p1.hp, 25);
-  assert.equal(E.newGame(E.seededRng(1), "marathon").p2.hp, 45);
+  assert.equal(E.newGame(E.seededRng(1), "smallArena").p1.hp, 35);
+  assert.equal(E.newGame(E.seededRng(1), "marathon").p2.hp, 65);
 });
 
 test("mutácia plenty: obchod má 4 spoločné karty", () => {

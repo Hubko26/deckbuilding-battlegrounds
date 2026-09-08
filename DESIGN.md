@@ -13,7 +13,7 @@ Hra sa hrá na kolá. Každé kolo:
 2. **Nákupná fáza hráča B**
 3. **Automatický boj** – príšerky sa bijú samy, hrdina porazeného dostane damage
 
-Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **35 HP**).
+Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**).
 
 ## Ekonomika
 
@@ -125,8 +125,8 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 4. Smrť spúšťa **Pri smrti** (deathrattle) – vyvolané tokeny sa objavia na mieste
    padlej príšerky, ak je miesto.
 5. Boj končí, keď jedna strana nemá príšerky (limit ťahov → remíza bez damage).
-6. Hrdina porazeného dostane damage = súčet stupňov preživších súperových príšeriek
-   (bronz 1, strieborná 2, zlatá 3).
+6. Hrdina porazeného dostane damage = súčet TIEROV preživších súperových príšeriek
+   (tier 1–6 karty; evolve stupeň nehrá rolu – zlatá jednotka dá stále 1).
 7. Tokeny, ktoré prežili, ostávajú na ploche; padlé tokeny miznú z hry (nejdú do
    discard pile – nie sú súčasťou balíčka).
 
@@ -538,8 +538,8 @@ pravidla v logu); texty v `game.js` (`L.mutators`).
 | `twinEvolve` | na evolve stačia 2 kópie namiesto 3 |
 | `plenty` | obchod má 4 spoločné karty namiesto 3 |
 | `richSell` | predaj karty dáva 2 mince |
-| `smallArena` | hrdinovia 25 HP |
-| `marathon` | hrdinovia 45 HP |
+| `smallArena` | hrdinovia 35 HP |
+| `marathon` | hrdinovia 65 HP |
 | `gift` | každé kolo obaja dostanú náhodné kúzlo do ruky navyše (po draw) |
 | `echoCry` | battlecry sa spúšťa 2× (druhý discover sa preskočí – jeden pending) |
 

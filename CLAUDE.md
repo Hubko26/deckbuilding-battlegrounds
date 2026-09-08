@@ -46,7 +46,7 @@ commity, UI) je slovenčina.
 
 ## Kľúčové herné pravidlá (výber; detaily v DESIGN.md)
 
-- Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 35 HP.
+- Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 50 HP.
 - Kúpená karta ide **do balíčka** (nie do ruky); ruka sa doťahuje na 5.
 - Evolve: 3 rovnaké kópie (karta + stupeň) **kdekoľvek** (plocha, ruka, balíček,
   kôpka) sa automaticky spoja; staty ×2/×4.

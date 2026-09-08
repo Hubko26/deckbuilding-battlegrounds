@@ -159,11 +159,11 @@ const L = {
     },
     smallArena: {
       e: "⚡", sk: "Malá aréna", cs: "Malá aréna", en: "Small Arena",
-      d: { sk: "Hrdinovia majú len 25 ❤️.", cs: "Hrdinové mají jen 25 ❤️.", en: "Heroes have only 25 ❤️." },
+      d: { sk: "Hrdinovia majú len 35 ❤️.", cs: "Hrdinové mají jen 35 ❤️.", en: "Heroes have only 35 ❤️." },
     },
     marathon: {
       e: "🐢", sk: "Maratón", cs: "Maraton", en: "Marathon",
-      d: { sk: "Hrdinovia majú 45 ❤️.", cs: "Hrdinové mají 45 ❤️.", en: "Heroes have 45 ❤️." },
+      d: { sk: "Hrdinovia majú 65 ❤️.", cs: "Hrdinové mají 65 ❤️.", en: "Heroes have 65 ❤️." },
     },
     gift: {
       e: "🎁", sk: "Darček", cs: "Dárek", en: "Gift",
@@ -188,9 +188,9 @@ const L = {
   // Texty obsahujú zvýrazňovacie spany – kreslia sa cez innerHTML v renderRules.
   rules: [
     {
-      sk: `🎯 Cieľ: zober súperovmu hrdinovi všetkých <i class="hl-r">35 ❤️</i> – príšerky bojujú samy.`,
-      cs: `🎯 Cíl: seber soupeřovu hrdinovi všech <i class="hl-r">35 ❤️</i> – příšerky bojují samy.`,
-      en: `🎯 Goal: bring the enemy hero's <i class="hl-r">35 ❤️</i> to zero – your minions fight on their own.`,
+      sk: `🎯 Cieľ: zober súperovmu hrdinovi všetkých <i class="hl-r">50 ❤️</i> – príšerky bojujú samy.`,
+      cs: `🎯 Cíl: seber soupeřovu hrdinovi všech <i class="hl-r">50 ❤️</i> – příšerky bojují samy.`,
+      en: `🎯 Goal: bring the enemy hero's <i class="hl-r">50 ❤️</i> to zero – your minions fight on their own.`,
     },
     {
       sk: `🪙 Každé kolo dostaneš <i class="hl-g">mince</i> (3, každé kolo +1, max 10). Neminuté <i class="hl-g">prepadnú</i>.`,
