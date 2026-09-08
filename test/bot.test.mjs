@@ -200,19 +200,37 @@ test("bot: kúzlo nad strop je balast a predá sa; Minca a discover nie", () => 
   const state = E.newGame(seeded(52), null);
   state.round = 4;
   const p = state.p2;
-  p.deck = ["U001", "U002", "U003", "stit", "stit", "stit"].map(id => ({ defId: id, rank: 1 }));
+  p.deck = ["U001", "U002", "U003", "jablko", "koren", "vlna"].map(id => ({ defId: id, rank: 1 }));
   p.discard = []; p.hand = []; p.board = [];
   assert.equal(ctx.Bot.dominantRace(state, p), "undead");
-  const stit = E.makeInst(state, "stit", 1);
-  assert.equal(ctx.Bot.isJunk(state, p, stit), true);   // 3 kúzla > SPELL_CAP
+  const jablko = E.makeInst(state, "jablko", 1);
+  assert.equal(ctx.Bot.isJunk(state, p, jablko), true);  // 3 kúzla > SPELL_CAP
   const minca = E.makeInst(state, "minca", 1);
-  assert.equal(ctx.Bot.isJunk(state, p, minca), false); // zlato má hodnotu vždy
+  assert.equal(ctx.Bot.isJunk(state, p, minca), false);  // zlato má hodnotu vždy
   const kniha = E.makeInst(state, "kniha", 1);
-  assert.equal(ctx.Bot.isJunk(state, p, kniha), false); // discover dá kartu
-  // Vo vílom builde sú kúzla motor – nepredávajú sa.
-  p.deck = ["F002", "F003", "F004", "stit", "stit", "stit"].map(id => ({ defId: id, rank: 1 }));
+  assert.equal(ctx.Bot.isJunk(state, p, kniha), false);  // discover dá kartu
+  // Vo vílom builde sú kúzla motor – strop je vyšší, tie isté 3 nie sú balast.
+  p.deck = ["F002", "F003", "F004", "jablko", "koren", "vlna"].map(id => ({ defId: id, rank: 1 }));
   assert.equal(ctx.Bot.dominantRace(state, p), "fairy");
-  assert.equal(ctx.Bot.isJunk(state, p, stit), false);
+  assert.equal(ctx.Bot.isJunk(state, p, jablko), false);
+});
+
+test("bot: Štít je výplňové kúzlo – nekupuje ho nikto, ani vílí build, a vždy sa predá", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(54), null);
+  state.round = 4;
+  const p = state.p2;
+  const stit = E.makeInst(state, "stit", 1);
+  for (const [dom, deck] of [["undead", ["U001", "U002", "U003"]], ["fairy", ["F002", "F003", "F004"]]]) {
+    p.deck = deck.map(id => ({ defId: id, rank: 1 }));
+    p.discard = []; p.hand = []; p.board = [];
+    assert.equal(ctx.Bot.dominantRace(state, p), dom);
+    // Balíček je pod stropom kúziel – Štít je balast aj tak, sám o sebe nemá hodnotu.
+    assert.equal(ctx.Bot.isJunk(state, p, stit), true, dom);
+    assert.ok(ctx.Bot.cardScore(state, p, "stit") < 0, `${dom}: ${ctx.Bot.cardScore(state, p, "stit")}`);
+    assert.ok(ctx.Bot.cardScore(state, p, "stit") < ctx.Bot.cardScore(state, p, "jablko"), dom);
+  }
 });
 
 test("hard bot: upgrade tieru nečaká na plnú plochu – stačí, že po ňom ostane na kartu", () => {

@@ -29,8 +29,25 @@ const Bot = (() => {
   // pre rasu cieľa, ogri = veľké telá na doplnenie plochy. Log Claude bota:
   // O004×3 + O001×2 spravili z ogrov „dominantnú rasu" a build sa rozpadol.
   const SUPPORT_RACES = new Set(["dragon", "ogre"]);
-  // Koľko kúziel v balíčku toleruje ne-vílový build – kúzla nedávajú telá.
+  // Koľko kúziel v balíčku toleruje build – kúzla nedávajú telá. Víly majú
+  // strop vyšší (kúzlo im navyše spúšťa „Po kúzle"), ale strop MAJÚ: ruka je
+  // 5 kariet a slabina vílieho buildu je práve ťahanie kariet.
   const SPELL_CAP = 2;
+  const SPELL_CAP_FAIRY = 4;
+
+  // VÝPLŇOVÉ kúzlo: nedá staty, kartu ani zlato (Štít – iba Obranca). Je
+  // v hre zámerne ako slabá možnosť, aby v spell slote neboli samé dobré
+  // kúzla – pridanú hodnotu nemá žiadnu. Bot ho NEKUPUJE nikdy, ani vo vílom
+  // builde: „Po kúzle" trigger nevyváži slot v ruke a slabina víl je práve
+  // ťahanie kariet – kúpa Štítu v early game znamená, že v tom kole nemáš
+  // čo vyložiť. Bot ho pritom spam-kupoval ako najlacnejší odkladač zvyšného
+  // zlata za 1 (záznam z 8. 9. 2026: 5 Štítov v druhom kole).
+  const FILLER_PENALTY = 99;
+  function fillerSpell(def) {
+    const fx = def.fx;
+    return fx.type === "buffTarget" && !fx.a && !fx.h &&
+      !fx.shield && !fx.revive && !fx.windfury;
+  }
 
   // Koľko kópií karty bot vlastní (všade) – kvôli skladaniu trojíc.
   function ownedCount(p, defId) {
@@ -130,8 +147,8 @@ const Bot = (() => {
       if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
       // Hviezdna moc (t6): Pečať každej rase + Živelná sila – vždy dobrá, s kúzlami lepšia
       if (def.fx.type === "starPower") score += 4 + spells * 0.4;
-      // Kúzla nedávajú telá: víly ich premieňajú na rast (bonus), ostatní
-      // majú strop – každé kúzlo nad SPELL_CAP vytláča z ruky príšerku.
+      // Kúzla nedávajú telá: víly ich premieňajú na rast (bonus), ale strop
+      // platí každému – kúzlo nad strop vytláča z ruky príšerku.
       // Bonus platí LEN pri zamknutej vílej rase. Fallback „!dom && fairy >= 2"
       // bol chybný: do RACE_LOCK_ROUND je dom vždy null a 2–3 víly v náhodnom
       // štartovacom balíčku sú bežné, takže sa bot v kole 1–2 považoval za
@@ -140,7 +157,9 @@ const Bot = (() => {
       // v treťom zamkla na beast a 6 kúziel mu do konca hry vytláčalo
       // príšerky z ruky (plocha 2–4 z 5, tier o dva pozadu, prehra).
       if (dom === "fairy") score += (races.fairy || 0) * 0.5;
-      else score -= Math.max(0, spells + 1 - SPELL_CAP) * 3;
+      score -= Math.max(0, spells + 1 - (dom === "fairy" ? SPELL_CAP_FAIRY : SPELL_CAP)) * 3;
+      // Výplňové kúzlo (Štít) je vždy posledná voľba – nikdy sa nekupuje.
+      if (fillerSpell(def)) score -= FILLER_PENALTY;
     }
     return score;
   }
@@ -205,14 +224,14 @@ const Bot = (() => {
     if (def.token) return false;
     if (inst.atk === 0) return true;
     const dom = dominantRace(state, p);
-    // Kúzlo nad SPELL_CAP je v ne-vílom builde balast: zahrané ide do kôpky
-    // a vráti sa cyklom balíčka, takže z neho niet cesty von – jediný spôsob,
-    // ako ho z balíčka dostať, je predaj. Mince (zlato) a discover (karta)
-    // sa nepredávajú, tie hodnotu majú vždy.
+    // Kúzlo nad strop je balast: zahrané ide do kôpky a vráti sa cyklom
+    // balíčka, takže z neho niet cesty von – jediný spôsob, ako ho z balíčka
+    // dostať, je predaj. Mince (zlato) a discover (karta) sa nepredávajú, tie
+    // hodnotu majú vždy; Štít naopak vždy (slot v ruke > Obranca), aj vílam.
     if (def.spell) {
-      if (dom === "fairy") return false;
+      if (fillerSpell(def)) return true;
       if (def.fx.type === "gold" || def.fx.type === "discover") return false;
-      return ownedSpellCount(p) > SPELL_CAP;
+      return ownedSpellCount(p) > (dom === "fairy" ? SPELL_CAP_FAIRY : SPELL_CAP);
     }
     // Pár cudzej rasy sa oplatí držať len kým je t1 telo relevantné – od
     // tieru 3 je aj strieborná t1 karta balast (log: O004×2 v undead builde).
