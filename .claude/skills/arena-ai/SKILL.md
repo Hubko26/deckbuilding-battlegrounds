@@ -7,15 +7,15 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 
 ## Pravidlá v skratke
 
-- 1v1 autobattler + deckbuilding. Hrdina má 35 HP; prehráva, kto klesne na 0.
+- 1v1 autobattler + deckbuilding. Hrdina má 50 HP; prehráva, kto klesne na 0.
 - **Mutácia („Pravidlo dnešnej arény")**: každá hra má jedno náhodné globálne
   pravidlo pre oboch hráčov (`state.mutator`, Claude ho dostáva v stave ako
   `mutator`). Prispôsob stratégiu: `echoDeath` deathrattly 2× (undead/summon
   raj), `bloodMoon` preživší +1/+1 navždy (stavaj na prežitie), `freeRefresh`
   refresh zadarmo (rolluj agresívne za trojicami), `twinEvolve` evolve z 2
   kópií (páry majú hodnotu trojíc), `plenty` 4 spoločné karty, `richSell`
-  predaj za 2 (lacnejšie pivotovanie), `smallArena` 25 HP (tempo > scaling),
-  `marathon` 45 HP (greed/scaling vyhráva), `gift` kúzlo do ruky každé kolo
+  predaj za 2 (lacnejšie pivotovanie), `smallArena` 35 HP (tempo > scaling),
+  `marathon` 65 HP (greed/scaling vyhráva), `gift` kúzlo do ruky každé kolo
   (víly profitujú), `echoCry` battlecry 2× (draci/battlecry telá raj).
 - Kolo = nákupná fáza hráča A → nákupná fáza hráča B → automatický boj.
   V nepárnom kole začína p1, v párnom p2.
@@ -51,7 +51,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   fázy; nezahrané karty idú na konci fázy do kôpky (discard). Prázdny
   balíček = kôpka sa zamieša. Vyloženie na plochu je zadarmo, max 5.
 - Po boji idú VŠETKY karty z plochy do kôpky (aj preživšie); tokeny miznú.
-  Damage hrdinovi = súčet stupňov preživších súperových príšer (1/2/3).
+  Damage hrdinovi = súčet TIEROV preživších súperových príšer (evolve
+  stupeň nehrá rolu) – prežité vysoké tiery bolia, gold t1 dá stále 1.
 - Evolve: 3 rovnaké kópie (karta + stupeň) KDEKOĽVEK (plocha, ruka,
   balíček, kôpka) sa automaticky spoja: bronz → strieborná (staty ×2)
   → zlatá (×4); efekty ×2/×3. Evolvnutá karta si nechá buffy DVOCH
@@ -146,55 +147,95 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
 
-## Odporúčaná stratégia (v poradí dôležitosti)
+## Odporúčaná stratégia – postup v každom ťahu (v tomto poradí)
 
-Overené z logov reálnych hier: hráči, čo vyhrávajú, robia VŠETKY body
-1–3 a 6–8; boti prehrávajú hlavne na miešaní rás, mŕtvych kartách
-v balíčku a neusporiadanej ploche.
+Odvodené z logov reálnych hier (2026-09-07) a z heuristického hard bota,
+ktorý po týchto úpravách otáča prehraté hry (replay: −3 : 23 → 22 : 5).
+Boti prehrávali na 4 veciach: miešanie rás, nafúknutý balíček plný
+štartovacieho balastu a kúziel, plocha s 3–4 telami, upgrade s deravou
+plochou. Rob VŠETKY kroky, každý ťah:
 
-1. **Trojice sú najsilnejšia mena.** Kúpa, ktorá kompletizuje trojicu
-   (rátaj VŠETKY vlastnené kópie vrátane balíčka a kôpky), má prednosť
-   takmer pred všetkým – zdvojnásobuje staty a zosilňuje efekt.
-2. **Vyber si dominantnú rasu čo najskôr** (podľa toho, čoho vlastníš
-   najviac) a od ~3. kola kupuj TAKMER VÝHRADNE ju. Rasové buffy
-   (`buffRace`) a aury škálujú s počtom kariet rasy; miešaná plocha
-   prehráva so synergiou aj pri rovnakých statoch. Výnimky: dokončenie
-   trojice, drak ako žoldnier (battlecry cieli na TVOJU rasu), jasne
-   nadkrivkové telo o tier vyššie.
-3. **Riedenie balíčka predajom – OD KOLA 1.** Štartové a cudzorasové
-   karty predávaj hneď, ako sa rozhodneš pre rasu (aj 2–3 karty v jednom
-   kole; predaj = +1 zlato navyše k tempu). Každá mŕtva karta v balíčku
-   = horšia ruka každé ďalšie kolo. V neskorej hre predávaj aj slabé
-   tier-1 karty vlastnej rasy, ktoré už nič nebuffujú.
-4. **Aury (`futureRace`) kupuj a hraj vždy, keď patria tvojej rase** –
-   permanentne zväčšujú celý balíček; čím skôr, tým viac kôl sa sčítavajú.
-   Aury cudzej rasy kupuj, len ak plánuješ prechod.
-5. **Poradie vykladania**: najprv obyčajné príšery, POTOM battlecry
-   buffery (buffRace/buffAllFriends/buffFriend/aury) – battlecry zasiahne
-   plnú plochu. Kúzla na buff (Jablko, Srdce, Vlna, Koreň) až po vyložení,
-   cieľ = najsilnejšia príšera (alebo Obranca pre Koreň). Dračí cielený
-   battlecry VŽDY na príšeru dominantnej rasy. Bojuj s PLNOU plochou
-   (5) – každá prázdna pozícia je stratený útok aj HP.
-6. **Usporiadaj plochu KAŽDÉ kolo** (`moveOnBoard`): poradie zľava
-   doprava = poradie útoku. „Pri útoku" karty čo najviac doľava (útočia
-   skôr, buff platí dlhšie); Obrancov (taunt) rozmiestni tak, aby kryli
-   deathrattle a motorové karty; krehké scaling karty (B009, víly)
-   doprava.
-7. **Recykluj battlecry telá** (`discardCard`): battlecry/aura karta,
-   ktorá už na ploche nič nerobí, ide pred bojom discardom do kôpky –
-   o pár kôl ju zahráš znova aj s efektom. Nepredávaj ju, ak efekt
-   stále živí build.
-8. **Ekonomika**: Mincu (1g → +2g, od tieru 2) kupuj takmer vždy. Upgrade
-   tieru, keď cena klesne na ~2–3 a ostane aspoň na kartu; neupgraduj,
-   keď vieš dokončiť trojicu. Refresh (1g) len so zvyšným zlatom, ktoré
-   by prepadlo, a NIKDY ako posledná akcia ťahu – obchod sa po boji
-   rolluje sám zadarmo. Freeze (`toggleFreeze`) použi, keď v ponuke
-   ostáva karta, ktorú chceš, ale už na ňu nemáš – prežije do nového kola.
-9. **Counterpick podľa súperovho nákupu** (vidíš ho v logu): proti undead
-   horde kupuj elementálov (multi-hit/AoE), proti elementálom veľké beast
-   telá a aury, proti beastom undead hordu. Mláďa karty (B007/B008) kupuj
-   čo najskôr – zdieľané počítadlo rastie celú hru. S plnou undead plochou
-   sú ďalšie summony stále hodnotné (Pretečenie = buffy).
+1. **Predaj balast z ruky ešte pred vykladaním.** Balast = telo s 0 útoku
+   (prehratý hod mincou), a od 3. kola každá karta cudzej rasy tieru 1–2
+   bez páru (od tieru 3 aj s párom). Štartovací balíček je 10 náhodných
+   t1 kariet – človek ich vypredá do 6. kola, ty tiež. Nechaj si toľko tiel,
+   aby si zaplnil plochu (aspoň 4); zvyšný balast zahraj a predaj nabudúce.
+   Cieľ: balíček ≤ 12–14 kariet vlastnej rasy. Každá mŕtva karta = horšia
+   ruka každé ďalšie kolo.
+2. **Vylož príšerky – najprv obyčajné (najsilnejšie), battlecry buffery
+   a Pečate ako posledné**, nech zasiahnu plnú plochu. Dračí cielený
+   battlecry vždy s `target` na kartu dominantnej rasy; U004 s `target`
+   na U001/U006/U009. Bojuj s PLNOU plochou (5).
+3. **Výmena na plnej ploche**: ak máš v ruke telo aspoň o 3 staty
+   (útok + život + 2 za schopnosť) lepšie než najslabšie na ploche, predaj
+   najslabšie a vylož lepšie.
+4. **Upgrade tieru podľa plánu**: t2 v 3.–4. kole, t3 v 6., t4 v 8.–9.,
+   t5 v 11., t6 v 13.+ (pravidlo: `kolo ≥ tier·2−1`). Upgraduj len keď je
+   plocha plná (5) alebo keď ti po upgrade ostanú aspoň 3 zlata a plocha
+   má aspoň 4 telá. S 1–3 telami na ploche NEUPGRADUJ – telá majú prednosť.
+5. **Nakupuj podľa tejto priority** (všetko zlato, neminuté prepadne):
+   a) tretia kópia = trojica (aj kópie v balíčku a kôpke – `copiesOwnedTowardTriple`),
+   b) Pečať (aura) vlastnej rasy (E003/E008/E009, B002/B006/B010,
+      U003/U008/U010, F008; draci D003/D009 s targetom na tvoju rasu),
+   c) motor rasy (undead U002/U005/U006, elemental E007/E004 + Živelná
+      sila/D007, beast B004/B007/B005/B003/B008, fairy F002/F004 + kúzla),
+   d) druhá kópia rozbehnutej trojice,
+   e) najlepšie telo vlastnej rasy najvyššieho dostupného tieru,
+   f) drak s battlecry pre tvoju rasu (D002/D008 buff, D004 discover).
+   NIKDY: príšera cudzej rasy tieru 1–2 po 3. kole (okrem trojice), tretie
+   a ďalšie kúzlo v ne-vílovom balíčku, Vlna/Štít „lebo ostalo zlato".
+   Radšej nech 1–2 zlata prepadnú, než kúpiť balast do balíčka.
+6. **Refresh len výnimočne**: max 1× za ťah, iba ak nič v ponuke nespĺňa
+   a)–e) A ostanú ti aspoň 4 zlata. Ako jednorázový plán výsledok refreshu
+   nevidíš – radšej kúp priemerné telo svojej rasy. Nikdy refresh ako
+   poslednú akciu (obchod sa po boji rolluje zadarmo).
+7. **Freeze**: dobrá karta v súkromnej ponuke (trojica, Pečať tvojej rasy),
+   na ktorú už nemáš → `freeze`, kúpiš ju v novom kole.
+8. **Kúzla až po vyložení**: buffy (Jablko, Srdce, Koreň) na najsilnejšiu
+   príšerku; Vichor na kartu s „Pri útoku" (E004, O006) alebo najväčší
+   útok, ideálne so Svätožiarou; Živelná sila a Umlčanie/Kliatba/Blesk
+   vždy hneď; Mincu hneď na začiatku ťahu; víly vyložiť PRED kúzlami.
+9. **Usporiadaj plochu** (`move`, slot 0 útočí prvý): „Pri útoku" karty
+   (E004, O006) úplne vľavo → tvrdé telá podľa útoku → Obrancovia tam,
+   kde kryjú motor → škálovače (B004, B009, E005, E007, F002, F004)
+   úplne vpravo, nech útočia posledné a prežijú.
+10. **Recykluj battlecry telá** (`discard`, nie predaj) len pri karte, ktorej
+    hodnota je battlecry a telo je slabé (F001 draw, D004 discover) – Pečate
+    a aury nie, tie už svoje spravili a telo je nad krivkou.
+
+### Nákupné zoznamy podľa rasy (priorita zľava doprava)
+
+- **Undead**: U002 (t1, kostíky +1/+1 v boji – vykladaj každé kolo), U001,
+  U003 (t2 Pečať), U004 (t2, target U001/U006/U009), U005/U006 (t3), U008
+  (t4 Pečať), U007 (t4 charga), U009 (t5), U010 (t6, Pečať pri smrti –
+  Obranca, nech padne). Proti undead: E005 lovec tokenov, E010, O003.
+- **Elemental**: E002 (t1 Bubliny), E001, E003 (t2 Pečať), E004 (t2 – vľavo,
+  s Vichorom 2×), Živelná sila ⚡ + D007 vždy (každý +1 navždy), E005 (t3,
+  proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
+  E008 (t4 Pečať), E009 (t5 Pečať), E010 (t6). Slabí proti beast telám.
+- **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
+  sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať), B008
+  (t3 rast navždy), B006 (t4 Pečať), B009 (t4 mrchožrút, vpravo), B010 (t5
+  Pečať). B001 vanilla predaj, keď máš lepšie.
+- **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
+  F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
+  Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,
+  Svätožiara…), cast až keď sú víly na ploche. Strop kúziel neplatí.
+- **Ogre**: telá nad krivkou O004/O005/O008/O009 bezpečne, O002 (t3 chaos –
+  dobrý s vlastnými deathrattle), O003 len bez vlastného swarmu, O006
+  vľavo s Vichorom je hazard. Ogre je splash, nie plán.
+- **Draci** patria do každého buildu: D002/D008 buff rasy cieľa do boja,
+  D003/D009 Pečať rasy cieľa, D004 discover rasy, D010 evolvne cieľ.
+  Vždy `target` na najlepšiu kartu dominantnej rasy.
+
+### Čo NEROBIŤ (z logov)
+
+- Nekupuj Štít/Vlnu/Ticho za zvyšné zlato – balíček bez tiel prehráva.
+- Nedrž páry cudzej rasy „na trojicu" po tieri 3 – strieborná t1 karta
+  v 10. kole nič nerieši.
+- Neupgraduj s 2–3 telami na ploche, ani keď je cena 2.
+- Neukončuj ťah s neminutými 3+ zlatými, ak je v ponuke telo tvojej rasy.
+- Nenechaj E004/O006 vpravo a B009/E005/B004 vľavo.
 
 ## Rozhranie akcií (pre Claude-bot driver)
 
