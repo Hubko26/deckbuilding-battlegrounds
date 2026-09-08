@@ -498,7 +498,11 @@ function doAction(name, ...args) {
   return ev;
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
+// Rýchlosť animácií. Pri prefers-reduced-motion sa všetky pauzy skrátia a
+// partikle / otrasy obrazu sa vypnú (citlivosť na pohyb, slabé mobily).
+const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+const ANIM = REDUCED ? 0.5 : 1;
+const sleep = ms => new Promise(r => setTimeout(r, ms * ANIM));
 
 // ---------- Statické texty ----------
 function applyI18n() {
@@ -959,6 +963,9 @@ async function runBattle() {
           await sleep(370);
           Sfx.hit();
           d.classList.add("hit");
+          impactRing(d, "#ff6b6b");
+          spawnParticles(d, { n: 6, color: "#ff6b6b", spread: 40 });
+          if (ev.aDmg >= 6) screenShake(0.5);
           floatText(d, `-${ev.aDmg}`);
           if (ev.dDmg > 0) floatText(a, `-${ev.dDmg}`);
           await sleep(480);
@@ -1043,7 +1050,9 @@ async function runBattle() {
         log(`🐸 ${name} ${t(L.hexMsg)}`);
         if (el) {
           floatText(el, "🐸");
-          Sfx.zap();
+          Sfx.hex();
+          impactRing(el, "#be4bdb");
+          spawnParticles(el, { n: 8, color: "#be4bdb", emoji: "🐸", spread: 55 });
           await sleep(700);
         }
         break;
@@ -1054,6 +1063,9 @@ async function runBattle() {
         if (el) {
           el.querySelector(".shield-badge")?.remove();
           floatText(el, "😇💥");
+          Sfx.shieldPop();
+          impactRing(el, "#ffd147");
+          spawnParticles(el, { n: 10, color: "#ffd147", spread: 60 });
           await sleep(500);
         }
         break;
@@ -1066,7 +1078,9 @@ async function runBattle() {
           const hpEl = el.querySelector(".hp");
           if (hpEl) hpEl.textContent = "1";
           floatText(el, "🪶✨", true);
-          Sfx.evolve();
+          Sfx.revive();
+          impactRing(el, "#ff922b");
+          spawnParticles(el, { n: 10, color: "#ff922b", emoji: "🪶", spread: 60 });
           await sleep(800);
         }
         break;
@@ -1083,7 +1097,8 @@ async function runBattle() {
           badge.textContent = "🤫";
           el.appendChild(badge);
           floatText(el, "🤫");
-          Sfx.zap();
+          Sfx.silence();
+          impactRing(el, "#868e96");
           el.classList.add("proc");
           await sleep(900);
           el.classList.remove("proc");
@@ -1097,11 +1112,15 @@ async function runBattle() {
       case "aoeDmg": {
         // Veľká vlna: zasiahne všetkých nepriateľov NARAZ – žiadne projektily.
         const els = ev.hits.map(h => cardById(h.uid)).filter(Boolean);
-        Sfx.zap();
-        for (const el of els) {
+        Sfx.spell("bolt");
+        if (els[0]) boardWave(els[0].closest(".board"), "#ff7a1a");
+        screenShake(1);
+        els.forEach((el, i) => {
           el.classList.add("hit");
-          floatText(el, `-${ev.n}`);
-        }
+          // Zásahy rozfázované zľava doprava – vlna, nie jeden blik.
+          floatText(el, `-${ev.n}`, false, i * 60 * ANIM);
+          setTimeout(() => { impactRing(el, "#ff7a1a"); spawnParticles(el, { n: 5, color: "#ff7a1a", spread: 40 }); }, i * 60 * ANIM);
+        });
         for (const h of ev.hits) {
           const el = cardById(h.uid);
           const hpEl = el && el.querySelector(".hp");
@@ -1143,6 +1162,7 @@ async function runBattle() {
         if (el) {
           // mouseleave po remove() nepríde – zatvor preview padlej karty ručne.
           if (previewEl && previewEl._srcCard === el) hidePreview();
+          spawnParticles(el, { n: 10, color: "#868e96", emoji: "💨", spread: 55 });
           el.classList.add("dying"); await sleep(500); el.remove();
         }
         break;
@@ -1158,6 +1178,8 @@ async function runBattle() {
         el.style.order = String(ev.slot ?? 0);
         row.appendChild(el);
         Sfx.summon();
+        impactRing(el, "#4dabf7");
+        spawnParticles(el, { n: 8, color: "#4dabf7", emoji: "✨", spread: 50 });
         await sleep(450);
         break;
       }
@@ -1188,7 +1210,9 @@ async function runBattle() {
         log(`${t(L.drunkMsg)} ${ev.n} 💥`);
         if (el) {
           floatText(el, `🍺 -${ev.n}`);
-          Sfx.zap();
+          Sfx.drunk();
+          el.classList.add("hit");
+          setTimeout(() => el.classList.remove("hit"), 400);
           await sleep(600);
         }
         break;
@@ -1210,6 +1234,9 @@ async function runBattle() {
       case "heroDmg": {
         const chip = ev.pid === MY ? $("myHero") : $("oppHero");
         Sfx.hero();
+        screenShake(1.3);
+        impactRing(chip, "#e03131");
+        spawnParticles(chip, { n: 12, color: "#e03131", emoji: "💥", spread: 70 });
         floatText(chip, `-${ev.dmg}`);
         renderHero(chip, { ...state[ev.pid], hp: ev.hp });
         log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
@@ -1244,22 +1271,183 @@ function cardById(uid) {
   return document.querySelector(`.card[data-uid="${uid}"]`);
 }
 
-// Letiaci projektil zo stredu jednej karty do stredu druhej.
-function shootProjectile(fromEl, toEl) {
+// ---------- Vizuálne efekty ----------
+// Všetky efekty sú dočasné <div>y pripnuté na <body> (position: fixed),
+// animované cez Web Animations API – nezávislé od prerenderu kariet.
+
+const center = r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
+
+// Farba + emoji + režim každého kúzla (fx.type). target = letí na vybranú
+// príšerku, board = vlna cez celú vlastnú plochu, self = k hrdinovi/peniazom.
+const SPELL_FX = {
+  buffTarget:     { color: "#40c057", emoji: "✨", mode: "target" },
+  copyToDeck:     { color: "#4dabf7", emoji: "🪞", mode: "target" },
+  transform:      { color: "#9775fa", emoji: "🎩", mode: "target" },
+  buffAllFriends: { color: "#22b8cf", emoji: "🌊", mode: "board" },
+  bolt:           { color: "#fcc419", emoji: "⚡", mode: "board", shake: 0.8 },
+  hex:            { color: "#be4bdb", emoji: "🐸", mode: "board" },
+  silence:        { color: "#868e96", emoji: "🤫", mode: "board" },
+  dmgBoost:       { color: "#ff922b", emoji: "⚡", mode: "self" },
+  discover:       { color: "#4dabf7", emoji: "📖", mode: "self" },
+  gold:           { color: "#ffd147", emoji: "🪙", mode: "money" },
+  goldLater:      { color: "#ffd147", emoji: "💰", mode: "money" },
+};
+
+// Letiaci projektil zo stredu jednej karty do stredu druhej; farba podľa
+// zdroja (výboj, bublina…), na dopade prstenec + iskry.
+function shootProjectile(fromEl, toEl, color = "#ff7a1a") {
   return new Promise(resolve => {
-    const rf = fromEl.getBoundingClientRect(), rt = toEl.getBoundingClientRect();
+    const a = center(fromEl.getBoundingClientRect()), b = center(toEl.getBoundingClientRect());
     const p = document.createElement("div");
     p.className = "projectile";
-    p.style.left = (rf.left + rf.width / 2) + "px";
-    p.style.top = (rf.top + rf.height / 2) + "px";
+    p.style.left = a.x + "px";
+    p.style.top = a.y + "px";
+    p.style.setProperty("--fx", color);
     document.body.appendChild(p);
-    // reflow, aby transition zabrala
-    p.getBoundingClientRect();
-    const dx = (rt.left + rt.width / 2) - (rf.left + rf.width / 2);
-    const dy = (rt.top + rt.height / 2) - (rf.top + rf.height / 2);
-    p.style.transform = `translate(${dx}px, ${dy}px)`;
-    setTimeout(() => { p.remove(); resolve(); }, 420);
+    const ms = 400 * ANIM;
+    if (p.animate) {
+      p.animate([
+        { transform: "translate(0,0) scale(.6)", opacity: 0.6 },
+        { transform: `translate(${(b.x - a.x) / 2}px, ${(b.y - a.y) / 2 - 30}px) scale(1.3)`, opacity: 1, offset: 0.5 },
+        { transform: `translate(${b.x - a.x}px, ${b.y - a.y}px) scale(1)`, opacity: 1 },
+      ], { duration: ms, easing: "cubic-bezier(.3,.1,.7,1)", fill: "forwards" });
+    }
+    setTimeout(() => {
+      p.remove();
+      impactRing(toEl, color);
+      spawnParticles(toEl, { n: 7, color, spread: 50 });
+      resolve();
+    }, ms);
   });
+}
+
+// Emoji kúzla letí oblúkom z ruky na cieľ, cestou sa zväčší a rozžiari.
+function flyEmoji(from, to, emoji, color, ms = 480) {
+  ms *= ANIM;
+  const a = center(from), b = center(to);
+  const el = document.createElement("div");
+  el.className = "cast-fx";
+  el.textContent = emoji;
+  el.style.left = a.x + "px";
+  el.style.top = a.y + "px";
+  el.style.setProperty("--fx", color);
+  document.body.appendChild(el);
+  const dx = b.x - a.x, dy = b.y - a.y;
+  const lift = Math.max(70, Math.abs(dx) * 0.3);
+  if (el.animate) {
+    el.animate([
+      { transform: "translate(-50%,-50%) scale(.4) rotate(-25deg)", opacity: 0 },
+      { transform: `translate(calc(-50% + ${dx / 2}px), calc(-50% + ${dy / 2 - lift}px)) scale(1.7) rotate(8deg)`, opacity: 1, offset: 0.55 },
+      { transform: `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(1)`, opacity: 1 },
+    ], { duration: ms, easing: "cubic-bezier(.35,.1,.35,1)", fill: "forwards" });
+  }
+  return sleep(ms / ANIM).then(() => el.remove());
+}
+
+// Expandujúci prstenec na mieste zásahu.
+function impactRing(el, color = "#ffd147") {
+  if (REDUCED || !el) return;
+  const r = el.getBoundingClientRect(), c = center(r);
+  const d = document.createElement("div");
+  d.className = "fx-ring";
+  d.style.left = c.x + "px";
+  d.style.top = c.y + "px";
+  d.style.setProperty("--fx", color);
+  d.style.setProperty("--sz", Math.max(r.width, r.height) * 0.9 + "px");
+  document.body.appendChild(d);
+  setTimeout(() => d.remove(), 520 * ANIM);
+}
+
+// Iskry / emoji rozletené z karty do všetkých strán, padajú dole.
+function spawnParticles(el, opts = {}) {
+  if (REDUCED || !el) return;
+  const { n = 8, color = "#ffd147", emoji = null, spread = 70 } = opts;
+  const c = center(el.getBoundingClientRect());
+  for (let i = 0; i < n; i++) {
+    const p = document.createElement("div");
+    p.className = "fx-particle" + (emoji ? " emoji" : "");
+    if (emoji) p.textContent = emoji;
+    p.style.left = c.x + "px";
+    p.style.top = c.y + "px";
+    p.style.setProperty("--fx", color);
+    document.body.appendChild(p);
+    const ang = (Math.PI * 2 * i) / n + Math.random() * 0.6;
+    const dist = spread * (0.6 + Math.random() * 0.8);
+    const dur = (450 + Math.random() * 250) * ANIM;
+    if (p.animate) {
+      p.animate([
+        { transform: "translate(-50%,-50%) scale(1)", opacity: 1 },
+        { transform: `translate(calc(-50% + ${Math.cos(ang) * dist}px), calc(-50% + ${Math.sin(ang) * dist + 24}px)) scale(.15) rotate(${Math.random() * 180 - 90}deg)`, opacity: 0 },
+      ], { duration: dur, easing: "cubic-bezier(.2,.6,.4,1)", fill: "forwards" });
+    }
+    setTimeout(() => p.remove(), dur + 60);
+  }
+}
+
+// Krátky otras celej dosky (blesk, plošný útok, zásah hrdinu).
+function screenShake(strength = 1) {
+  if (REDUCED) return;
+  const st = $("stage");
+  if (!st || !st.animate) return;
+  const m = 6 * strength;
+  st.animate([
+    { transform: "translate(0,0)" },
+    { transform: `translate(${m}px, ${-m * 0.6}px)` },
+    { transform: `translate(${-m}px, ${m * 0.5}px)` },
+    { transform: `translate(${m * 0.5}px, ${m * 0.3}px)` },
+    { transform: "translate(0,0)" },
+  ], { duration: 280 * ANIM, easing: "ease-out" });
+}
+
+// Farebná vlna prebehne cez celú plochu (plošné kúzla, AoE výbuch).
+function boardWave(boardEl, color) {
+  if (REDUCED || !boardEl) return;
+  const r = boardEl.getBoundingClientRect();
+  const w = document.createElement("div");
+  w.className = "fx-wave";
+  w.style.left = r.left + "px";
+  w.style.top = r.top + "px";
+  w.style.width = r.width + "px";
+  w.style.height = r.height + "px";
+  w.style.setProperty("--fx", color);
+  document.body.appendChild(w);
+  setTimeout(() => w.remove(), 650 * ANIM);
+}
+
+// Zoslanie kúzla v nákupnej fáze: emoji letí z ruky na cieľ, tam praskne.
+// fromRect = pozícia karty v ruke ZACHYTENÁ pred prerenderom (karta zmizne).
+async function playSpellCast(ev, fromRect) {
+  const def = Cards.byId[ev.defId];
+  if (!def || !def.fx) return;
+  const fx = SPELL_FX[def.fx.type] || { color: "#ffd147", mode: "self" };
+  const emoji = fx.emoji || def.emoji;
+  const targetEl = ev.targetUid ? cardById(ev.targetUid) : null;
+  const dest = targetEl
+    || (fx.mode === "board" ? $("myBoard") : fx.mode === "money" ? $("moneyEl") : $("myHero"));
+  Sfx.cast();
+  await flyEmoji(fromRect || $("handEl").getBoundingClientRect(), dest.getBoundingClientRect(), emoji, fx.color);
+  Sfx.spell(def.fx.type);
+  if (fx.mode === "board") {
+    boardWave(dest, fx.color);
+    if (fx.shake) screenShake(fx.shake);
+    const cards = [...dest.querySelectorAll(".card")];
+    cards.forEach((c, i) => setTimeout(() => {
+      impactRing(c, fx.color);
+      spawnParticles(c, { n: 5, color: fx.color, emoji, spread: 45 });
+    }, i * 60 * ANIM));
+  } else {
+    impactRing(dest, fx.color);
+    spawnParticles(dest, { n: 10, color: fx.color, emoji, spread: 65 });
+    if (targetEl) {
+      targetEl.classList.add("evolving");
+      setTimeout(() => targetEl.classList.remove("evolving"), 600 * ANIM);
+      // Cielený buff nevracia „buff“ event – ukáž, čo príšerka dostala.
+      const f = def.fx;
+      const tags = [f.taunt && "🛡️", f.shield && "😇", f.revive && "🪶", f.windfury && "🌪️"].filter(Boolean);
+      if (f.a || f.h) tags.unshift(fmtBuff(f.a, f.h));
+      if (tags.length) floatText(targetEl, tags.join(" "), true);
+    }
+  }
 }
 
 // Formát buff čísel so znamienkom – ogrí hod mincou môže byť aj záporný.
@@ -1268,12 +1456,15 @@ function fmtBuff(a, h) {
   return `${s(a)}/${s(h)}`;
 }
 
-function floatText(el, text, heal) {
+// Číslo/emoji vyskočí nad kartou; delay (ms) na rozfázovanie AoE zásahov.
+function floatText(el, text, heal, delay = 0) {
   const f = document.createElement("div");
   f.className = "dmg-float" + (heal ? " heal" : "");
   f.textContent = text;
+  f.style.setProperty("--tilt", (Math.random() * 16 - 8).toFixed(1) + "deg");
+  if (delay) f.style.animationDelay = delay + "ms";
   el.appendChild(f);
-  setTimeout(() => f.remove(), 700);
+  setTimeout(() => f.remove(), 800 * ANIM + delay);
 }
 
 // ---------- Vykresľovanie ----------
@@ -1442,6 +1633,7 @@ function cardEl(instOrId, opts) {
   const el = document.createElement("div");
   el.className = "card" + ((isInst ? instOrId.taunt : def.taunt) ? " taunt" : "");
   el.dataset.rank = rank;
+  el.dataset.defid = defId;
   if (isInst) el.dataset.uid = instOrId.uid;
   // Trvalý bonus Živelnej sily majiteľa (opts.owner, default ja) – výboje,
   // výbuchy a „Pri útoku" bonus ukážu v popisku navýšené číslo (zeleno).
@@ -1802,6 +1994,19 @@ function endDrag(e) {
 function act(events) {
   if (!events) { renderAll(); return; }
   const hiddenEvolves = [];
+  // Zoslané kúzlo: zapamätaj si, kde v ruke karta bola – renderAll ju
+  // odstráni a animácia potrebuje štart letu.
+  // Kniha (discover) nevracia „spell“ event, ale discoverStart – bez „play“
+  // v tej istej dávke (draci majú discover ako battlecry) je to kúzlo.
+  let spellEv = events.find(e => e.type === "spell" && e.pid === MY);
+  if (!spellEv && events.some(e => e.type === "discoverStart" && e.pid === MY) && !events.some(e => e.type === "play")) {
+    spellEv = { type: "spell", pid: MY, defId: "kniha" };
+  }
+  let castFrom = null;
+  if (spellEv) {
+    const src = [...$("handEl").querySelectorAll(".card")].find(c => c.dataset.defid === spellEv.defId);
+    castFrom = (src || $("handEl")).getBoundingClientRect();
+  }
   for (const ev of events) {
     if (ev.type === "evolve" && ev.pid === MY) {
       Sfx.evolve();
@@ -1825,9 +2030,10 @@ function act(events) {
   for (const ev of events) {
     if (ev.type === "evolve" && ev.uid) {
       const el = cardById(ev.uid);
-      if (el) el.classList.add("evolving");
+      if (el) { el.classList.add("evolving"); spawnParticles(el, { n: 12, color: "#ffd147", emoji: "⭐", spread: 80 }); }
     }
   }
+  if (spellEv) playSpellCast(spellEv, castFrom);
   // Efekty schopností v nákupnej fáze (battlecry, Po nákupe, kúzla) – nech
   // hráč VIDÍ, že sa niečo stalo: proc badge, +a/+h nad kartou, log chárg.
   for (const ev of events) {
@@ -1852,6 +2058,7 @@ function act(events) {
       const el = cardById(ev.uid);
       if (el) {
         floatText(el, fmtBuff(ev.a, ev.h), true);
+        spawnParticles(el, { n: 6, color: "#40c057", spread: 45 });
         el.classList.add("evolving");
         setTimeout(() => el.classList.remove("evolving"), 600);
       }
@@ -1967,7 +2174,7 @@ $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
 $("chatSend").addEventListener("click", sendChat);
 $("chatInput").addEventListener("keydown", e => { if (e.key === "Enter") sendChat(); });
-$("freezeBtn").addEventListener("click", () => act(doAction("toggleFreezeAll")));
+$("freezeBtn").addEventListener("click", () => { Sfx.freeze(); act(doAction("toggleFreezeAll")); });
 $("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
 $("buyBackBtn").addEventListener("click", () => act(doAction("buyBack")));
 $("overAgain").addEventListener("click", () => {

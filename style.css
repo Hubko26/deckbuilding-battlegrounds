@@ -473,13 +473,65 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   animation: pop .2s ease-out;
 }
 
-/* Letiaci projektil (damage schopnosti). */
+/* Letiaci projektil (damage schopnosti); farba cez --fx, dráhu riadi JS
+   (Web Animations API). */
 .projectile {
-  position: fixed; width: 16px; height: 16px; margin: -8px 0 0 -8px;
+  --fx: #ff7a1a;
+  position: fixed; width: 18px; height: 18px; margin: -9px 0 0 -9px;
   border-radius: 50%; z-index: 70; pointer-events: none;
-  background: radial-gradient(circle, #fff 0%, #ffd147 35%, #ff7a1a 70%, rgba(255,60,0,0) 100%);
-  box-shadow: 0 0 12px 4px rgba(255,150,30,.8);
-  transition: transform .4s cubic-bezier(.3,.1,.7,1);
+  background: radial-gradient(circle, #fff 0%, var(--fx) 45%, transparent 100%);
+  box-shadow: 0 0 14px 5px var(--fx);
+}
+
+/* ---------- Efekty kúziel a zásahov (fixed, na body, riadi JS) ---------- */
+/* Emoji kúzla letiace z ruky na cieľ. */
+.cast-fx {
+  --fx: #ffd147;
+  position: fixed; z-index: 80; pointer-events: none;
+  font-size: clamp(28px, 5vh, 52px); line-height: 1;
+  filter: drop-shadow(0 0 10px var(--fx)) drop-shadow(0 0 22px var(--fx));
+  will-change: transform, opacity;
+}
+/* Prstenec na mieste dopadu. */
+.fx-ring {
+  --fx: #ffd147; --sz: 80px;
+  position: fixed; z-index: 75; pointer-events: none;
+  width: var(--sz); height: var(--sz); margin: calc(var(--sz) / -2) 0 0 calc(var(--sz) / -2);
+  border-radius: 50%; border: 4px solid var(--fx);
+  box-shadow: 0 0 18px var(--fx), inset 0 0 18px var(--fx);
+  animation: ringOut .5s ease-out forwards;
+}
+@keyframes ringOut {
+  0% { transform: scale(.3); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+/* Iskry – bodky alebo emoji, dráhu dáva JS. */
+.fx-particle {
+  --fx: #ffd147;
+  position: fixed; z-index: 78; pointer-events: none;
+  width: 9px; height: 9px; border-radius: 50%;
+  background: var(--fx); box-shadow: 0 0 8px var(--fx);
+  will-change: transform, opacity;
+}
+.fx-particle.emoji {
+  width: auto; height: auto; background: none; box-shadow: none;
+  font-size: clamp(14px, 2.4vh, 24px); line-height: 1;
+  filter: drop-shadow(0 0 4px var(--fx));
+}
+/* Farebná vlna cez celú plochu (plošné kúzla, výbuchy). */
+.fx-wave {
+  --fx: #22b8cf;
+  position: fixed; z-index: 60; pointer-events: none; overflow: hidden;
+  border-radius: 1.4cqh; mix-blend-mode: screen;
+}
+.fx-wave::before {
+  content: ""; position: absolute; inset: 0; width: 40%;
+  background: linear-gradient(90deg, transparent, var(--fx), transparent);
+  opacity: .85; animation: waveSweep .6s ease-in-out forwards;
+}
+@keyframes waveSweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
 }
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
@@ -487,14 +539,32 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   75% { transform: translateX(6px); }
 }
 .card.dying { opacity: 0; transform: scale(.4) rotate(20deg); transition: all .35s; }
+/* Číslo nad kartou: vyskočí (scale), mierne naklonené (--tilt z JS), stúpa
+   a mizne. opacity 0 + fill both = pri animation-delay (AoE stagger) nie je
+   vidno, kým nepríde jeho rad. */
 .dmg-float {
+  --tilt: 0deg;
   position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
-  font-weight: 900; font-size: 2.4cqh; color: #c22; pointer-events: none;
-  animation: rise .7s ease-out forwards; z-index: 5;
-  text-shadow: 0 1px 2px #fff;
+  font-weight: 900; font-size: 2.6cqh; color: #c22; pointer-events: none;
+  opacity: 0; animation: rise .75s cubic-bezier(.2,.8,.3,1) both; z-index: 5;
+  text-shadow: 0 1px 2px #fff, 0 0 8px rgba(255,255,255,.7);
+  white-space: nowrap;
 }
 .dmg-float.heal { color: #2f9e44; }
-@keyframes rise { from { opacity: 1; } to { opacity: 0; transform: translate(-50%, -26px); } }
+@keyframes rise {
+  0% { opacity: 0; transform: translate(-50%, 6px) scale(.5) rotate(var(--tilt)); }
+  25% { opacity: 1; transform: translate(-50%, -4px) scale(1.35) rotate(var(--tilt)); }
+  60% { opacity: 1; transform: translate(-50%, -14px) scale(1) rotate(var(--tilt)); }
+  100% { opacity: 0; transform: translate(-50%, -30px) scale(.95) rotate(var(--tilt)); }
+}
+
+/* Citlivosť na pohyb: partikle/otrasy vypína JS (REDUCED), tu skrátime
+   zvyšné CSS animácie. */
+@media (prefers-reduced-motion: reduce) {
+  .dmg-float { animation-duration: .4s; }
+  .card.hit, .card.proc, .card.evolving { animation-duration: .2s; }
+  .fx-ring, .fx-wave::before { animation-duration: .25s; }
+}
 .card.evolving { animation: evolve .6s; }
 @keyframes evolve {
   0% { transform: scale(1); filter: brightness(1); }
