@@ -271,6 +271,11 @@ const Cards = (() => {
       name: { sk: "Vichor", cs: "Vichr", en: "Windfury" } },
     { id: "kliatba", cost: 2, tier: 4, emoji: "🐸", spell: true, fx: { type: "hex", n: 1 },
       name: { sk: "Žabia kliatba", cs: "Žabí kletba", en: "Frog Curse" } },
+    // Ovčia premena: najsilnejšia odložená kliatba – na začiatku najbližšieho
+    // boja sa náhodná súperova príšerka zmení na Ovečku 0/1 (bez schopnosti,
+    // Obrancu, štítu…). Tvrdý counter na jednu veľkú kartu, preto až t5.
+    { id: "ovca", cost: 2, tier: 5, emoji: "🐑", spell: true, fx: { type: "polymorph", n: 1 },
+      name: { sk: "Ovčia premena", cs: "Ovčí proměna", en: "Polymorph" } },
     // Blesk: prvé ofenzívne kúzlo – odložený výboj (štýl kliatby/umlčania),
     // škáluje so Živelnou silou (dmgBoost), synergia s vílami (lacný trigger).
     { id: "blesk", cost: 2, tier: 3, emoji: "⛈️", spell: true, fx: { type: "bolt", n: 1 },
@@ -286,6 +291,11 @@ const Cards = (() => {
     // polovica na začiatku ďalšieho kola (jediný spôsob, ako si preniesť zlato).
     { id: "poklad", cost: 2, tier: 5, emoji: "💰", spell: true, fx: { type: "goldLater", n: 2 },
       name: { sk: "Poklad škriatka", cs: "Poklad skřítka", en: "Goblin Treasure" } },
+    // Hviezdna moc: jediné t6 kúzlo – Pečať +1/+1 KAŽDEJ rase (ako F008) a
+    // k tomu Živelná sila +1. Živelná sila zosilňuje aj buffy kúziel, takže
+    // každé ďalšie kúzlo dáva viac – late-game snowball za plnú cenu.
+    { id: "hviezda", cost: 3, tier: 6, emoji: "🌟", spell: true, fx: { type: "starPower", a: 1, h: 1, n: 1 },
+      name: { sk: "Hviezdna moc", cs: "Hvězdná moc", en: "Star Power" } },
   ];
 
   // Tokeny – vyvolávané príšerky, nie sú v obchode ani v balíčku.
@@ -312,6 +322,11 @@ const Cards = (() => {
     { id: "mlada", tier: 1, race: "beast", emoji: "🐣", atk: 1, hp: 1, token: true, taunt: true,
       namePl: { sk: "Mláďatá", cs: "Mláďata", en: "Cubs" },
       name: { sk: "Mláďa", cs: "Mládě", en: "Cub" } },
+    // Ovečka 0/1: výsledok Ovčej premeny – súperova príšerka na jeden boj.
+    // Neútočí (0), padne na prvý úder, preživšia dá hrdinovi len 1 (tier 1).
+    { id: "ovecka", tier: 1, race: "beast", emoji: "🐑", atk: 0, hp: 1, token: true,
+      namePl: { sk: "Ovečky", cs: "Ovečky", en: "Sheep" },
+      name: { sk: "Ovečka", cs: "Ovečka", en: "Sheep" } },
   ];
 
   const byId = {};
@@ -399,9 +414,16 @@ const Cards = (() => {
         en: `+${a}/+${h} to all ${RACES_PL[f.race].en}`,
       };
     },
-    // „Pri útoku" variant (E004): obe čísla ukazujú bonus Živelnej sily.
-    buffAllFriends: (f, m, hl, kw) => {
-      const el = kw === "onAttack";
+    // Pečať pre všetky rasy + Živelná sila naraz (kúzlo Hviezdna moc).
+    starPower: (f, m) => ({
+      sk: `${IMPRINT.sk} +${f.a * m}/+${f.h * m} všetkým tvojim príšerkám (každá rasa) a Živelná sila +${f.n * m}`,
+      cs: `${IMPRINT.cs} +${f.a * m}/+${f.h * m} všem tvým příšerkám (každá rasa) a Živelná síla +${f.n * m}`,
+      en: `${IMPRINT.en} +${f.a * m}/+${f.h * m} to all your minions (every race) and Elemental Power +${f.n * m}`,
+    }),
+    // „Pri útoku" variant (E004) a kúzlo (Vlna): obe čísla ukazujú bonus
+    // Živelnej sily.
+    buffAllFriends: (f, m, hl, kw, def) => {
+      const el = kw === "onAttack" || !!(def && def.spell);
       const a = el && f.a ? hl(f.a * m) : String(f.a * m);
       const h = el && f.h ? hl(f.h * m) : String(f.h * m);
       return {
@@ -410,7 +432,12 @@ const Cards = (() => {
         en: `+${a}/+${h} to all friends`,
       };
     },
-    buffTarget: (f, m) => {
+    // Kúzlo (Jablko, Koreň, Srdce, Iskrička): nenulové čísla ukazujú bonus
+    // Živelnej sily majiteľa (kúzla škálujú Živelnou silou, kúzla bez statov nie).
+    buffTarget: (f, m, hl, kw, def) => {
+      const sp = !!(def && def.spell);
+      const a = sp && f.a ? hl(f.a * m) : String(f.a * m);
+      const h = sp && f.h ? hl(f.h * m) : String(f.h * m);
       if (!f.a && !f.h && f.shield) return {
         sk: "vybraná príšerka získa Božský štít (zablokuje prvé zranenie)",
         cs: "vybraná příšerka získá Božský štít (zablokuje první zranění)",
@@ -432,9 +459,9 @@ const Cards = (() => {
         en: "give a chosen minion Taunt",
       };
       return {
-        sk: `+${f.a * m}/+${f.h * m} vybranej príšerke` + (f.taunt ? " a Obranca" : ""),
-        cs: `+${f.a * m}/+${f.h * m} vybrané příšerce` + (f.taunt ? " a Obránce" : ""),
-        en: `+${f.a * m}/+${f.h * m} to a chosen minion` + (f.taunt ? " and Taunt" : ""),
+        sk: `+${a}/+${h} vybranej príšerke` + (f.taunt ? " a Obranca" : ""),
+        cs: `+${a}/+${h} vybrané příšerce` + (f.taunt ? " a Obránce" : ""),
+        en: `+${a}/+${h} to a chosen minion` + (f.taunt ? " and Taunt" : ""),
       };
     },
     draw: (f, m) => ({
@@ -530,13 +557,13 @@ const Cards = (() => {
     // Na príšerke (E007 „Po nákupe") staví krátku formu – dlhá veta za
     // dvojbodkou sa zle číta; kúzlo (bez kw) ostáva úplné.
     dmgBoost: (f, m, hl, kw) => (kw ? {
-      sk: `Živelná sila +${f.n * m} (navždy: výboje, výbuchy a dočasné buffy Živlov)`,
-      cs: `Živelná síla +${f.n * m} (navždy: výboje, výbuchy a dočasné buffy Živlů)`,
-      en: `Elemental Power +${f.n * m} (forever: zaps, explosions and Elementals' temporary buffs)`,
+      sk: `Živelná sila +${f.n * m} (navždy: výboje, výbuchy, buffy kúziel a dočasné buffy Živlov)`,
+      cs: `Živelná síla +${f.n * m} (navždy: výboje, výbuchy, buffy kouzel a dočasné buffy Živlů)`,
+      en: `Elemental Power +${f.n * m} (forever: zaps, explosions, spell buffs and Elementals' temporary buffs)`,
     } : {
-      sk: `navždy: tvoje výboje a výbuchy +${f.n * m} damage, dočasné buffy Živlov +${f.n * m}`,
-      cs: `navždy: tvé výboje a výbuchy +${f.n * m} damage, dočasné buffy Živlů +${f.n * m}`,
-      en: `forever: your zaps and explosions +${f.n * m} damage, Elementals' temporary buffs +${f.n * m}`,
+      sk: `navždy: tvoje výboje a výbuchy +${f.n * m} damage, buffy kúziel a dočasné buffy Živlov +${f.n * m}`,
+      cs: `navždy: tvé výboje a výbuchy +${f.n * m} damage, buffy kouzel a dočasné buffy Živlů +${f.n * m}`,
+      en: `forever: your zaps and explosions +${f.n * m} damage, spell buffs and Elementals' temporary buffs +${f.n * m}`,
     }),
     // Bonus za kúzlo sa neškáluje stupňom – evolve rastie cez základné staty.
     spellScale: (f) => ({
@@ -548,6 +575,11 @@ const Cards = (() => {
       sk: "v najbližšom boji sa náhodnej súperovej príšerke zmení život na 1",
       cs: "v nejbližším boji se náhodné soupeřově příšerce změní život na 1",
       en: "next fight, a random enemy minion's health becomes 1",
+    }),
+    polymorph: () => ({
+      sk: "na začiatku najbližšieho boja sa náhodná súperova príšerka zmení na Ovečku 0/1",
+      cs: "na začátku nejbližšího boje se náhodná soupeřova příšerka změní v Ovečku 0/1",
+      en: "at the start of the next fight, a random enemy minion becomes a 0/1 Sheep",
     }),
     silence: () => ({
       sk: "v najbližšom boji stratí náhodná súperova príšerka so schopnosťou svoj efekt aj Obrancu",

@@ -1022,10 +1022,11 @@ test("Živelná sila zosilňuje Pri útoku bonus (E004): +1/+1 Živlom +boost, c
   assert.ok(buffs.some(e => e.uid === elem.uid && e.a === 3 && e.h === 3)); // 1 + boost 2, obe čísla
   assert.ok(buffs.some(e => e.uid === tok.uid && e.a === 3 && e.h === 3)); // elemental token tiež
   assert.ok(!buffs.some(e => e.uid === beast.uid), "zviera nedostalo nič")
-  // Popisok karty ukáže navýšené číslo len pri „Pri útoku"; Vlna (buffAllFriends kúzlo) nie.
+  // Popisok karty ukáže navýšené číslo pri „Pri útoku" aj pri kúzle Vlna
+  // (buffy kúziel škálujú Živelnou silou); F009 (Po kúzle z príšerky) nie.
   const C = fresh().C;
   assert.match(C.cardText(C.byId["E004"], 1, "sk", false, 2), /\+3\/\+3/);
-  assert.match(C.cardText(C.byId["vlna"], 1, "sk", false, 2), /\+1\/\+1/);
+  assert.match(C.cardText(C.byId["vlna"], 1, "sk", false, 2), /\+3\/\+3/);
   assert.match(C.cardText(C.byId["F009"], 1, "sk", false, 2), /\+2\/\+2/); // Po kúzle bez boostu
 });
 
@@ -1302,6 +1303,56 @@ test("Žabia kliatba: v najbližšom boji zmení náhodnej súperovej príšerke
   assert.equal(state.p1.hexes, 0); // spotrebovaná
 });
 
+test("Ovčia premena: na začiatku najbližšieho boja zmení náhodnú súperovu príšerku na Ovečku 0/1", () => {
+  const { state, E } = fresh(75);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "ovca", 1)];
+  E.castSpell(state, "p1", 0);
+  assert.equal(p.polymorphs, 1);
+  E.endShopTurn(state, "p1");
+  // Tank s Obrancom + štítom + pierkom – premena zmaže všetko.
+  const tank = Object.assign(E.makeInst(state, "U010", 1), { slot: 0, taunt: true, shield: true, revive: true }); // 8/10
+  state.p2.board = [tank];
+  state.p1.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const poly = events.find(e => e.type === "polymorph" && e.uid === tank.uid);
+  assert.ok(poly, "tank sa mal zmeniť na Ovečku");
+  assert.equal(poly.fromDefId, "U010");
+  assert.equal(poly.defId, "ovecka");
+  assert.equal(poly.atk, 0);
+  assert.equal(poly.hp, 1);
+  assert.equal(state.p1.polymorphs, 0); // spotrebovaná
+  // Ovečka 0/1 padne na prvý úder bez štítu/pierka – p1 vyhrá boj.
+  assert.ok(events.some(e => e.type === "die" && e.uid === tank.uid), "Ovečka mala zomrieť");
+  assert.ok(!events.some(e => e.type === "shieldPop" && e.uid === tank.uid), "štít premena zmazala");
+  assert.ok(!events.some(e => e.type === "revive" && e.uid === tank.uid), "pierko premena zmazala");
+  assert.ok(events.some(e => e.type === "heroDmg" && e.pid === "p2"));
+  // Kartu v state to nezmení – premena platí len na jeden boj (bojová kópia);
+  // pôvodný tank cykluje ďalej (kôpka → po boji sa môže dotiahnuť do ruky).
+  const all = [...state.p2.discard, ...state.p2.deck, ...state.p2.hand];
+  assert.ok(all.some(c => c.defId === "U010"), "U010 mal ostať hráčovi p2");
+  assert.ok(!all.some(c => c.defId === "ovecka"), "Ovečka nesmie ostať v hre");
+});
+
+test("Ovčia premena: bez súperovej príšerky prepadne, Ovečku znova nepremieňa", () => {
+  const { state, E } = fresh(75);
+  E.startRound(state);
+  state.p1.polymorphs = 2;
+  state.p1.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p2.board = [Object.assign(E.makeInst(state, "U010", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  // Dve nabité premeny, jeden cieľ – druhá nemá koho (Ovečka sa vynechá).
+  assert.equal(events.filter(e => e.type === "polymorph").length, 1);
+  assert.equal(state.p1.polymorphs, 0);
+});
+
 test("Blesk: na začiatku najbližšieho boja výboj za 3 (+dmgBoost) na náhodnú súperovu príšerku", () => {
   const { state, E } = fresh(75);
   E.startRound(state);
@@ -1436,6 +1487,84 @@ test("kúzlo buffTarget: +2/+2 vybranej príšerke", () => {
   E.castSpell(state, "p1", 0, m.uid);
   assert.equal(m.atk, 4);
   assert.equal(m.hp, 4);
+});
+
+test("Živelná sila zosilňuje buffy kúziel: každé nenulové číslo +boost, kúzla bez statov nie", () => {
+  const { state, E, C } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.dmgBoost = 2;
+  const m = E.makeInst(state, "B001", 1); m.slot = 0; // 2/2
+  const m2 = E.makeInst(state, "B001", 1); m2.slot = 1; // 2/2
+  p.board = [m, m2];
+  // Jablko +2/+2 → +4/+4
+  p.hand = [E.makeInst(state, "jablko", 1)];
+  let ev = E.castSpell(state, "p1", 0, m.uid);
+  assert.equal(m.atk, 6); assert.equal(m.maxHp, 6);
+  assert.equal(ev[0].a, 4); assert.equal(ev[0].h, 4); // UI dostane reálne čísla
+  // Koreň +0/+4 a Obranca → +0/+6 (útok 0 ostáva 0)
+  p.hand = [E.makeInst(state, "koren", 1)];
+  E.castSpell(state, "p1", 0, m.uid);
+  assert.equal(m.atk, 6); assert.equal(m.maxHp, 12); assert.equal(m.taunt, true);
+  // Štít (0/0 + Obranca) sa nemení
+  p.hand = [E.makeInst(state, "stit", 1)];
+  E.castSpell(state, "p1", 0, m2.uid);
+  assert.equal(m2.atk, 2); assert.equal(m2.maxHp, 2); assert.equal(m2.taunt, true);
+  // Vlna +1/+1 všetkým → +3/+3
+  p.hand = [E.makeInst(state, "vlna", 1)];
+  E.castSpell(state, "p1", 0);
+  assert.equal(m2.atk, 5); assert.equal(m2.maxHp, 5);
+  assert.equal(m.atk, 9);
+  // Iskrička +1/+0 → +3/+0
+  p.hand = [E.makeInst(state, "iskricka", 1)];
+  E.castSpell(state, "p1", 0, m2.uid);
+  assert.equal(m2.atk, 8); assert.equal(m2.maxHp, 5);
+  // Popisky v obchode ukazujú čísla aj s bonusom (zeleným spanom)
+  assert.match(C.cardText(C.byId.jablko, 1, "sk", false, 2), /\+4\/\+4 vybranej/);
+  assert.match(C.cardText(C.byId.jablko, 1, "sk", true, 2), /<span class="boosted">4<\/span>\/\+<span class="boosted">4<\/span>/);
+  assert.match(C.cardText(C.byId.koren, 1, "sk", false, 2), /\+0\/\+6/);
+  assert.match(C.cardText(C.byId.vlna, 1, "sk", false, 2), /\+3\/\+3 všetkým kamarátom/);
+  assert.match(C.cardText(C.byId.jablko, 1, "sk", false, 0), /\+2\/\+2/); // bez boostu základ
+});
+
+test("buffAllFriends z príšerky (battlecry) Živelnou silou NEškáluje – len kúzla", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.dmgBoost = 3;
+  const m = E.makeInst(state, "B001", 1); m.slot = 0; // 2/2
+  p.board = [m];
+  p.hand = [E.makeInst(state, "F009", 1)]; // Po kúzle +2/+2 kamarátom
+  E.playMinion(state, "p1", 0);
+  p.hand = [E.makeInst(state, "minca", 1)];
+  E.castSpell(state, "p1", 0); // spustí F009 afterSpell buffAllFriends (self = F009)
+  assert.equal(m.atk, 4); assert.equal(m.maxHp, 4); // +2/+2, bez +3
+});
+
+test("Hviezdna moc (t6): Pečať +1/+1 každej rase + Živelná sila +1, oboje trvalé", () => {
+  const { state, E, C } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  const b = E.makeInst(state, "B001", 1); b.slot = 0; // 2/2 zviera na ploche
+  p.board = [b];
+  p.hand = [E.makeInst(state, "hviezda", 1), E.makeInst(state, "U001", 1)]; // undead v ruke
+  const u = p.hand[1];
+  const events = E.castSpell(state, "p1", 0);
+  assert.ok(events.some(e => e.type === "futureAllBuff" && e.a === 1 && e.h === 1));
+  assert.ok(events.some(e => e.type === "dmgBoost" && e.n === 1));
+  assert.equal(p.dmgBoost, 1);
+  for (const race of Object.keys(C.RACES)) {
+    assert.equal(p.raceBuffs[race].a, 1, race);
+    assert.equal(p.raceBuffs[race].h, 1, race);
+  }
+  assert.equal(b.atk, 3); assert.equal(b.maxHp, 3); // plocha hneď
+  assert.equal(u.atk, 2); assert.equal(u.maxHp, 2); // ruka hneď (U001 1/1)
+  // Nové karty ju dostanú pri vzniku (makeInst s hráčom)
+  const fresh2 = E.makeInst(state, "E001", 1, p);
+  assert.equal(fresh2.atk, C.byId.E001.atk + 1);
+  // Text karty: Pečať + Živelná sila
+  assert.match(C.cardText(C.byId.hviezda, 1, "sk", false, 0), /Pečať \+1\/\+1 .*Živelná sila \+1/);
+  assert.equal(C.byId.hviezda.tier, 6);
 });
 
 test("discover: ponúkne 3 karty, výber ide do ruky", () => {

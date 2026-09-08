@@ -128,6 +128,8 @@ const Bot = (() => {
       if (def.fx.type === "draw") score += 1 + spells * 0.2;
       // Živelná sila škáluje s počtom vlastných elementálov
       if (def.fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
+      // Hviezdna moc (t6): Pečať každej rase + Živelná sila – vždy dobrá, s kúzlami lepšia
+      if (def.fx.type === "starPower") score += 4 + spells * 0.4;
       // Kúzla nedávajú telá: víly ich premieňajú na rast (bonus), ostatní
       // majú strop – každé kúzlo nad SPELL_CAP vytláča z ruky príšerku.
       if (dom === "fairy" || (!dom && races.fairy >= 2)) score += (races.fairy || 0) * 0.5;
@@ -345,7 +347,7 @@ const Bot = (() => {
         push(Engine.castSpell(state, pid, i, target.uid));
       } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
         push(Engine.castSpell(state, pid, i));
-      } else if (fx.type === "silence" || fx.type === "dmgBoost" || fx.type === "hex" || fx.type === "bolt") {
+      } else if (["silence", "dmgBoost", "hex", "bolt", "polymorph", "starPower"].includes(fx.type)) {
         push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
       } else if (fx.type === "copyToDeck" && p.board.length) {
         // Zrkadlo: kopíruj kartu najbližšie k trojici (tiebreak najsilnejšia).

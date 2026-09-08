@@ -219,6 +219,7 @@ const Engine = (() => {
       summonCharge: 0, // jednorazovo: ďalšie vyvolanie v boji vyvolá +n navyše (U007)
       silences: 0, // nabité Umlčania – spotrebujú sa na začiatku najbližšieho boja
       hexes: 0, // nabité Žabie kliatby – v najbližšom boji zmenia HP cieľa na 1
+      polymorphs: 0, // nabité Ovčie premeny – v najbližšom boji zmenia súperovu príšerku na Ovečku 0/1
       shrinks: [], // nabité oslabenia (D001) – v najbližšom boji náhodný súper −a/−h
       bolts: 0, // nabité Blesky – na začiatku najbližšieho boja výboj za 3 (+dmgBoost)
       goldNext: 0, // Poklad škriatka: zlato navyše na začiatku ďalšieho kola
@@ -643,12 +644,13 @@ const Engine = (() => {
       if (!target) return null;
       spendSpell(p, inst, def);
       const fx = def.fx;
-      buff(target, fx.a, fx.h);
+      const { a, h } = sparkBonus(fx, 1, p.dmgBoost); // Živelná sila zosilňuje buffy kúziel
+      buff(target, a, h);
       if (fx.taunt) target.taunt = true;
       if (fx.shield) target.shield = true; // Božský štít: zablokuje prvé zranenie
       if (fx.revive) target.revive = true; // Fénixovo pierko: po smrti sa raz vráti s 1 HP
       if (fx.windfury) target.windfury = true; // Vichor: útočí dvakrát
-      return [{ type: "spell", pid: p.id, defId: inst.defId, targetUid }];
+      return [{ type: "spell", pid: p.id, defId: inst.defId, targetUid, a, h }];
     },
     // Zrkadlo: kópia 1. stupňa vybranej vlastnej príšerky do balíčka –
     // akcelerátor trojíc. Tokeny (kostík, Mláďa) kopírovať nejde.
@@ -846,6 +848,13 @@ const Engine = (() => {
     return { a: fx.a * m + boost, h: fx.h * m + (fx.h ? boost : 0) };
   }
 
+  // Živelná sila zosilňuje aj buffy KÚZIEL (Jablko, Koreň, Srdce, Vlna,
+  // Iskrička): +boost na každé nenulové číslo. Kúzla bez statov (Štít,
+  // Svätožiara, Pierko, Vichor) sa nemenia.
+  function sparkBonus(fx, m, boost) {
+    return { a: fx.a * m + (fx.a ? boost : 0), h: fx.h * m + (fx.h ? boost : 0) };
+  }
+
   // Odložená kliatba (spotrebuje sa na začiatku najbližšieho boja) – počítadlo
   // na hráčovi + event s celkovým počtom.
   function addPendingCurse(p, key, n, eventType, events) {
@@ -925,9 +934,11 @@ const Engine = (() => {
       const friends = p.board.filter(x => x !== self);
       if (friends.length) buffWithEvent(pick(friends, state.rng), p.id, fx.a * m, fx.h * m, events);
     },
+    // Kúzlo (self = null, Vlna) škáluje Živelnou silou; battlecry príšerky nie.
     buffAllFriends({ p, fx, m, self, events }) {
+      const { a, h } = sparkBonus(fx, m, self ? 0 : p.dmgBoost);
       for (const f of p.board) {
-        if (f !== self) buffWithEvent(f, p.id, fx.a * m, fx.h * m, events);
+        if (f !== self) buffWithEvent(f, p.id, a, h, events);
       }
     },
     // Rasová synergia: všetky vlastné príšerky danej rasy (okrem seba).
@@ -1016,6 +1027,9 @@ const Engine = (() => {
     // Žabia kliatba: náhodnej súperovej príšerke sa zmení život na 1
     // (nie je to damage – obchádza Božský štít).
     hex({ p, fx, m, events }) { addPendingCurse(p, "hexes", fx.n * m, "hexPending", events); },
+    // Ovčia premena: náhodná súperova príšerka sa na začiatku boja zmení na
+    // Ovečku 0/1 (stratí schopnosť, Obrancu, štít, pierko, Vichor).
+    polymorph({ p, fx, m, events }) { addPendingCurse(p, "polymorphs", fx.n * m, "polymorphPending", events); },
     // Poklad škriatka: polovica hneď, polovica na začiatku ďalšieho kola.
     goldLater({ p, fx, m, events }) {
       p.money += fx.n * m;
@@ -1045,6 +1059,12 @@ const Engine = (() => {
       for (const race of Object.keys(Cards.RACES)) addRaceAura(p, race, fx.a * m, fx.h * m);
       buffZones(p, ["board", "hand"], d => !!d.race, fx.a * m, fx.h * m, events);
       events.push({ type: "futureAllBuff", pid: p.id, a: fx.a * m, h: fx.h * m });
+    },
+    // Hviezdna moc (t6 kúzlo): Pečať +a/+h každej rase (ako F008) a k tomu
+    // Živelná sila +n – obe permanentné, Živelná sila sa nenásobí stupňom.
+    starPower(ctx) {
+      SHOP_FX.futureAll(ctx);
+      SHOP_FX.dmgBoost(ctx);
     },
   };
 
@@ -1163,11 +1183,34 @@ const Engine = (() => {
   }
 
   // ----- Odložené kliatby z kúziel -----
-  // Poradie: Ticho → Žabia kliatba → Oslabenie → Blesk; každý typ pre obe
-  // strany (začínajúca prvá), až potom ďalší typ.
+  // Poradie: Ticho → Ovčia premena → Žabia kliatba → Oslabenie → Blesk; každý
+  // typ pre obe strany (začínajúca prvá), až potom ďalší typ.
   function applyPendingCurses(state, sides, first, events) {
-    for (const step of [applySilences, applyHexes, applyShrinks, applyBolts]) {
+    for (const step of [applySilences, applyPolymorphs, applyHexes, applyShrinks, applyBolts]) {
       for (const pid of sideOrder(first)) step(state, sides, pid, events);
+    }
+  }
+
+  // Ovčia premena: náhodná živá súperova príšerka (nie už Ovečka) sa na tento
+  // boj zmení na Ovečku 0/1 – prepíše sa inštancia v bojovej kópii plochy,
+  // uid ostáva (UI vymení kartu na mieste). Nie je to damage: štít nepomôže,
+  // deathrattle sa nespustí; všetky bojové značky (štít, pierko, Vichor,
+  // Obranca, umlčanie) zmiznú spolu s pôvodnou kartou.
+  function applyPolymorphs(state, sides, pid, events) {
+    const p = state[pid], foe = other(pid);
+    while (p.polymorphs > 0) {
+      p.polymorphs--;
+      const targets = aliveOn(sides, foe).filter(x => x.defId !== "ovecka");
+      if (!targets.length) continue;
+      const t = pick(targets, state.rng);
+      const sheep = Cards.byId.ovecka;
+      const fromDefId = t.defId, fromRank = t.rank;
+      Object.assign(t, {
+        defId: "ovecka", rank: 1, atk: sheep.atk, hp: sheep.hp, maxHp: sheep.hp,
+        taunt: false, shield: false, revive: false, windfury: false, silenced: false,
+      });
+      events.push({ type: "polymorph", pid: foe, uid: t.uid, fromDefId, fromRank, defId: "ovecka", atk: t.atk, hp: t.hp });
+      pushHp(events, foe, t);
     }
   }
 

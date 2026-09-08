@@ -21,7 +21,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
   (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Živelná sila/Svätožiara/
-  Pierko/Kliatba/Vichor 2, Srdce 3). Minca je od **tieru 2** – na t1 bola
+  Pierko/Kliatba/Vichor/Blesk/Klobúk/Ovčia premena/Poklad 2, Srdce/Zrkadlo/
+  Hviezdna moc 3). Minca je od **tieru 2** – na t1 bola
   automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
   **Buyback** ↩️: poslednú predanú kartu v ťahu si môžeš **raz za ťah** vziať
@@ -280,8 +281,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   z živelnej karty dostanú +boost na útok aj život. Bonus sa nenásobí stupňom; výboje/výbuchy platia pre
   všetky rasy, buffy len pre Živly (F007 buffRace víl nie). Permanentné
   aury (`futureRace`) NEzosilňuje – aura +1 navždy by snowballovala.
-  UI: popisky výbojov/výbuchov/Pri útoku ukazujú číslo aj s bonusom
-  majiteľa a zvýrazňujú ho zelenou (trieda `.boosted`).
+  **Buffy kúziel** škáluje tiež (`sparkBonus`): Jablko, Koreň, Srdce, Vlna,
+  Iskrička dostanú +boost na každé NENULOVÉ číslo (Koreň +0/+4 → +0/+5,
+  Jablko +2/+2 → +3/+3); kúzla bez statov (Štít, Svätožiara, Pierko, Vichor)
+  sa nemenia. Platí len pre kúzlo (`castSpell`), nie pre rovnaký efekt
+  z príšerky (F009 Po kúzle buffAllFriends ostáva +2/+2).
+  UI: popisky výbojov/výbuchov/Pri útoku aj kúziel v obchode a ruke ukazujú
+  číslo aj s bonusom majiteľa a zvýrazňujú ho zelenou (trieda `.boosted`).
 - **E004 Whifflet** (t2, 4/4, Pri útoku: **+1/+1 všetkým Živlom**):
   buffuje len vlastnú rasu (vrátane Bublín – tokeny majú rasu), nie celú
   plochu. OBE čísla škáluje Živelná sila (⚡+2 → +3/+3 za útok); s Vichorom
@@ -495,6 +501,21 @@ ruky), peniaze navyše.
   náhodnú súperovu príšerku za **3 + dmgBoost** (je to výboj – Večná iskra
   ho zosilňuje). Stackuje sa, každý Blesk = samostatný zásah. Prvé
   ofenzívne kúzlo v hre.
+- **Ovčia premena** 🐑 (t5, cena 2): najsilnejšia odložená kliatba
+  (`p.polymorphs`, vzor Kliatby) – na začiatku najbližšieho boja (po Umlčaní,
+  pred Kliatbou) sa **náhodná súperova príšerka zmení na Ovečku 0/1** (token
+  `ovecka`, beast): stratí schopnosť, Obrancu, Božský štít, Fénixovo pierko aj
+  Vichor. Nie je to damage – štít nepomôže, deathrattle sa nespustí. Ovečka
+  neútočí (0), padne na prvý úder, preživšia dá hrdinovi len 1 (tier 1).
+  Premena platí len na ten boj (bojová kópia plochy), pôvodná karta sa vráti
+  do kôpky. Stackuje sa; Ovečku už znova nepremieňa, bez cieľa prepadne.
+  Tvrdý counter na jednu veľkú kartu (zlatý tank, evolvnutý motor) – preto t5.
+- **Hviezdna moc** 🌟 (t6, cena 3): jediné t6 kúzlo (`starPower` =
+  `futureAll` + `dmgBoost`): **Pečať +1/+1 KAŽDEJ rase** (ako F008 – plocha
+  a ruka hneď, balíček/kôpka/tokeny pri vzniku) **a Živelná sila +1**. Obe
+  trvalé, Živelná sila sa nenásobí stupňom. Keďže Živelná sila zosilňuje aj
+  buffy kúziel, každé ďalšie kúzlo po nej dáva viac – late-game odmena za
+  t6 za plnú cenu. Bot ju hrá hneď (bez cieľa).
 - **Vichor** 🌪️ (t4, cena 2): vybraná príšerka získa **Windfury**
   (`inst.windfury`) – vo svojom ťahu útočí dvakrát, druhý útok len ak
   prežila prvý. Každý útok znova spustí „Pri útoku" (E004 buff, O006

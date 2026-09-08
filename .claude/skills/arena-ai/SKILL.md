@@ -26,11 +26,17 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúpa: `Engine.buySpell(state, pid)`). Tier spoločných = NIŽŠÍ z tierov
   oboch hráčov; súkromné idú podľa vlastného tieru. Príšera stojí 3,
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
-  Vlna/Živelná sila/Blesk/Klobúk/Vichor/Poklad 2, Srdce/Zrkadlo 3;
-  Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage a
-  dočasné buffy Živlov +1 (E004 Pri útoku +1/+1 Živlom, E008 Pri vyložení
-  +1/+1 vybranej príšerke – cieľ = najsilnejšie telo), stackuje sa, kupuj
-  pri elemental builde; Vichor (t4) = cieľ útočí v boji dvakrát a „Pri útoku" spustí
+  Vlna/Živelná sila/Blesk/Klobúk/Vichor/Kliatba/Ovčia premena/Poklad 2,
+  Srdce/Zrkadlo/Hviezdna moc 3;
+  Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage,
+  buffy KÚZIEL +1 na každé nenulové číslo (Jablko +2/+2 → +3/+3, Koreň
+  +0/+4 → +0/+5, Vlna +1/+1 → +2/+2; Štít/Svätožiara/Pierko/Vichor bez
+  zmeny) a dočasné buffy Živlov +1 (E004 Pri útoku +1/+1 Živlom, E008 Pri
+  vyložení +1/+1 vybranej príšerke – cieľ = najsilnejšie telo), stackuje
+  sa, kupuj pri elemental builde a pri buff-kúzlovom builde; Hviezdna moc
+  🌟 (id `hviezda`, t6, cena 3) = Pečať +1/+1 KAŽDEJ rase (ako F008) +
+  Živelná sila +1 naraz – hraj hneď, potom kúzla dávajú viac; Vichor (t4)
+  = cieľ útočí v boji dvakrát a „Pri útoku" spustí
   pri každom útoku – hoď na E004/O006 alebo na najväčší útok, ideálne
   spolu so Svätožiarou; Umlčanie = v najbližšom boji náhodná súperova
   príšerka so schopnosťou stratí efekt aj Obrancu – counter na
@@ -118,7 +124,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     navždy. Kupuj kúzla húfne – každé kúzlo spustí všetky víly na
     ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský
     štít), Fénixovo pierko (revive 1 HP), Žabia kliatba (HP súperovej
-    príšerky na 1 – anti-beast). Draw kúzlo v hre nie je (Zvitok
+    príšerky na 1 – anti-beast), Ovčia premena 🐑 (t5: náhodná súperova
+    príšerka sa na začiatku boja zmení na Ovečku 0/1 – stratí schopnosť,
+    Obrancu, štít, pierko; counter na jednu veľkú kartu, hraj hneď). Draw
+    kúzlo v hre nie je (Zvitok
     odstránený). POZOR: zahrané kúzlo ide do kôpky až na konci ťahu –
     v tom istom ťahu sa nedá znova dotiahnuť (žiadne draw comba).
   - **Dragon = žoldnieri pre každý build**: telá nad krivkou + cielené
@@ -205,8 +214,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
    na ktorú už nemáš → `freeze`, kúpiš ju v novom kole.
 8. **Kúzla až po vyložení**: buffy (Jablko, Srdce, Koreň) na najsilnejšiu
    príšerku; Vichor na kartu s „Pri útoku" (E004, O006) alebo najväčší
-   útok, ideálne so Svätožiarou; Živelná sila a Umlčanie/Kliatba/Blesk
-   vždy hneď; Mincu hneď na začiatku ťahu; víly vyložiť PRED kúzlami.
+   útok, ideálne so Svätožiarou; Živelná sila a Umlčanie/Kliatba/Ovčia
+   premena/Blesk vždy hneď; Mincu hneď na začiatku ťahu; víly vyložiť
+   PRED kúzlami.
 9. **Usporiadaj plochu** (`move`, slot 0 útočí prvý): „Pri útoku" karty
    (E004, O006) úplne vľavo → tvrdé telá podľa útoku → Obrancovia tam,
    kde kryjú motor → škálovače (B004, B009, E005, E007, F002, F004)

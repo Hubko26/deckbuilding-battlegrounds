@@ -313,9 +313,9 @@ const L = {
     en: "Forever: ALL your minions",
   },
   chargeDmgMsg: {
-    sk: "⚡ Navždy: výboje a výbuchy +{n} damage, dočasné buffy Živlov +{n} (spolu +{t})",
-    cs: "⚡ Navždy: výboje a výbuchy +{n} damage, dočasné buffy Živlů +{n} (celkem +{t})",
-    en: "⚡ Forever: zaps and explosions +{n} damage, Elementals' temporary buffs +{n} (total +{t})",
+    sk: "⚡ Navždy: výboje a výbuchy +{n} damage, buffy kúziel a dočasné buffy Živlov +{n} (spolu +{t})",
+    cs: "⚡ Navždy: výboje a výbuchy +{n} damage, buffy kouzel a dočasné buffy Živlů +{n} (celkem +{t})",
+    en: "⚡ Forever: zaps and explosions +{n} damage, spell buffs and Elementals' temporary buffs +{n} (total +{t})",
   },
   chargeSummonMsg: {
     sk: "🧟 Nabité: tvoje ďalšie vyvolanie v boji vyvolá o {n} viac",
@@ -346,6 +346,16 @@ const L = {
     sk: "🐸 Nabité: v najbližšom boji sa súperovej príšerke zmení život na 1",
     cs: "🐸 Nabito: v nejbližším boji se soupeřově příšerce změní život na 1",
     en: "🐸 Charged: an enemy minion's health becomes 1 next fight",
+  },
+  polymorphPendingMsg: {
+    sk: "🐑 Nabité: na začiatku najbližšieho boja sa súperova príšerka zmení na Ovečku 0/1",
+    cs: "🐑 Nabito: na začátku nejbližšího boje se soupeřova příšerka změní v Ovečku 0/1",
+    en: "🐑 Charged: an enemy minion becomes a 0/1 Sheep next fight",
+  },
+  polymorphMsg: {
+    sk: "sa zmenil na Ovečku 0/1!",
+    cs: "se změnil v Ovečku 0/1!",
+    en: "turned into a 0/1 Sheep!",
   },
   boltPendingMsg: {
     sk: "⛈️ Nabité: na začiatku najbližšieho boja udrie blesk súperovu príšerku",
@@ -1044,6 +1054,30 @@ async function runBattle() {
         }
         break;
       }
+      case "polymorph": {
+        // Ovčia premena: karta sa na mieste vymení za Ovečku 0/1 (uid ostáva).
+        const el = cardById(ev.uid);
+        const name = Cards.nameOf(Cards.byId[ev.fromDefId], ev.fromRank || 1, I18N.lang);
+        log(`🐑 ${name} ${t(L.polymorphMsg)}`);
+        if (el) {
+          if (previewEl && previewEl._srcCard === el) hidePreview();
+          Sfx.spell("polymorph");
+          impactRing(el, "#e599f7");
+          spawnParticles(el, { n: 10, color: "#e599f7", emoji: "☁️", spread: 55 });
+          el.classList.add("proc");
+          await sleep(350);
+          const sheep = cardEl({
+            uid: ev.uid, defId: ev.defId, rank: 1, atk: ev.atk, hp: ev.hp, maxHp: ev.hp, taunt: false,
+          }, { owner: ev.pid });
+          sheep.style.order = el.style.order;
+          el.replaceWith(sheep);
+          floatText(sheep, "🐑");
+          sheep.classList.add("evolving");
+          await sleep(500);
+          sheep.classList.remove("evolving");
+        }
+        break;
+      }
       case "hex": {
         const el = cardById(ev.uid);
         const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
@@ -1286,6 +1320,8 @@ const SPELL_FX = {
   buffAllFriends: { color: "#22b8cf", emoji: "🌊", mode: "board" },
   bolt:           { color: "#fcc419", emoji: "⚡", mode: "board", shake: 0.8 },
   hex:            { color: "#be4bdb", emoji: "🐸", mode: "board" },
+  polymorph:      { color: "#e599f7", emoji: "🐑", mode: "board" },
+  starPower:      { color: "#ffd147", emoji: "🌟", mode: "board", shake: 0.5 },
   silence:        { color: "#868e96", emoji: "🤫", mode: "board" },
   dmgBoost:       { color: "#ff922b", emoji: "⚡", mode: "self" },
   discover:       { color: "#4dabf7", emoji: "📖", mode: "self" },
@@ -1441,10 +1477,12 @@ async function playSpellCast(ev, fromRect) {
     if (targetEl) {
       targetEl.classList.add("evolving");
       setTimeout(() => targetEl.classList.remove("evolving"), 600 * ANIM);
-      // Cielený buff nevracia „buff“ event – ukáž, čo príšerka dostala.
+      // Cielený buff nevracia „buff“ event – ukáž, čo príšerka dostala
+      // (ev.a/ev.h už aj so Živelnou silou).
       const f = def.fx;
+      const a = ev.a ?? f.a, h = ev.h ?? f.h;
       const tags = [f.taunt && "🛡️", f.shield && "😇", f.revive && "🪶", f.windfury && "🌪️"].filter(Boolean);
-      if (f.a || f.h) tags.unshift(fmtBuff(f.a, f.h));
+      if (a || h) tags.unshift(fmtBuff(a, h));
       if (tags.length) floatText(targetEl, tags.join(" "), true);
     }
   }
@@ -2077,10 +2115,11 @@ function act(events) {
     }
     if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
     if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);
-    if (ev.type === "dmgBoost") log(t(L.chargeDmgMsg).replace("{n}", ev.n).replace("{t}", ev.total));
+    if (ev.type === "dmgBoost") log(t(L.chargeDmgMsg).replaceAll("{n}", ev.n).replace("{t}", ev.total));
     if (ev.type === "summonCharge") log(t(L.chargeSummonMsg).replace("{n}", ev.n));
     if (ev.type === "silencePending") log(t(L.silencePendingMsg));
     if (ev.type === "hexPending") log(t(L.hexPendingMsg));
+    if (ev.type === "polymorphPending") log(t(L.polymorphPendingMsg));
     if (ev.type === "shrinkPending") log(t(L.shrinkPendingMsg));
     if (ev.type === "boltPending") log(t(L.boltPendingMsg));
     if (ev.type === "goldLater") log(t(L.goldLaterMsg).replace("{n}", ev.n));

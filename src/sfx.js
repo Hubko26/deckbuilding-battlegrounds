@@ -159,6 +159,11 @@ const Sfx = (() => {
       tone(760, 0.35, { type: "triangle", vol: 0.12, slide: 150, vib: 22, vibRate: 11 });
       tone(220, 0.2, { type: "sine", vol: 0.12, slide: 520, delay: 0.3 }); // bublina
     },
+    // ovčia premena: „béé“ – sawtooth s rýchlym vibrátom, klesá
+    polymorph() {
+      noise(0.15, { vol: 0.1, cutoff: 600, cutoffTo: 2500, type: "bandpass", q: 2 });
+      tone(470, 0.42, { type: "sawtooth", vol: 0.1, slide: 330, vib: 28, vibRate: 13, unison: 6, delay: 0.1, send: 0.4 });
+    },
     silence() {
       noise(0.5, { vol: 0.2, cutoff: 3200, cutoffTo: 120, type: "lowpass", q: 4, send: 0.1 });
       tone(300, 0.4, { type: "sine", vol: 0.07, slide: 90, send: 0.1 });
@@ -174,6 +179,12 @@ const Sfx = (() => {
     discover() {
       noise(0.28, { vol: 0.13, cutoff: 900, cutoffTo: 3200, type: "bandpass", q: 1.2 });
       arp([784, 988, 1319], { step: 0.08, dur: 0.22, vol: 0.09, send: 0.5 });
+    },
+    // hviezdna moc: veľká fanfára + trblietavý dozvuk
+    starPower() {
+      noise(0.6, { vol: 0.12, cutoff: 400, cutoffTo: 5000, type: "bandpass", q: 1.2, send: 0.6 });
+      arp([523, 659, 784, 1047, 1319], { step: 0.07, dur: 0.35, vol: 0.11, send: 0.6 });
+      tone(1568, 0.5, { type: "sine", vol: 0.08, unison: 12, delay: 0.35, send: 0.7 });
     },
     // mince: rovnaký cinkot ako kúpa, len hlasnejší
     gold() {
