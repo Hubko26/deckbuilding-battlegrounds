@@ -196,3 +196,22 @@ test("hard bot: lov rasy – bez relevantnej karty vlastnej rasy v ponuke refres
   const bought = events.filter(e => e.type === "buy").map(e => e.defId);
   assert.ok(!bought.some(id => ["B001", "O004", "D001", "F002", "E002", "B003", "O005", "F003"].includes(id)), bought.join(","));
 });
+
+test("bot: dračí cielený battlecry mieri na kartu dominantnej rasy, nie na najsilnejší cudzí splash", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(37), null);
+  E.startRound(state); E.startRound(state); E.startRound(state); // kolo 3 – rasa zafixovaná
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0; p.deck = ["U001", "U003", "U005"].map(id => ({ defId: id, rank: 1 })); p.discard = [];
+  const bone = E.makeInst(state, "U002", 1);   // undead 2/1
+  const ogre = E.makeInst(state, "O008", 1);   // ogr 5/7 – najsilnejší, ale splash
+  const drake = E.makeInst(state, "D002", 1);  // battlecry: rasa cieľa +1/+1 do boja
+  p.hand = [drake, bone, ogre]; p.board = [];
+  ctx.Bot.botTurn(state, "p2", "hard");
+  const b = p.board.find(x => x.defId === "U002"), o = p.board.find(x => x.defId === "O008");
+  assert.equal(b.atk, 3, "undead dostal dračí buff");   // 2+1
+  assert.equal(o.atk, 5, "ogr nedostal");
+  assert.ok(p.fightRaceBuffs.undead && p.fightRaceBuffs.undead.a === 1);
+});

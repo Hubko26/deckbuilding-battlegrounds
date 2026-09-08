@@ -145,11 +145,38 @@ const Bot = (() => {
     return def.tier >= Math.max(1, p.tier - 1) || !!def.power;
   }
 
-  // Battlecry buffery hraj až po ostatných – zasiahnu plnú plochu.
+  // Battlecry buffery hraj až po ostatných – zasiahnu plnú plochu. Cielené
+  // dračie battlecry tiež – cieľ dominantnej rasy musí byť už na ploche.
+  const RACE_TARGETED = new Set(["buffRaceOf", "futureRaceOf", "discoverRace"]);
   function isBattlecryBuffer(defId) {
     const pw = Cards.byId[defId].power;
     return !!pw && pw.kw === "battlecry" &&
-      ["buffRace", "buffAllFriends", "buffFriend", "futureRace"].includes(pw.fx.type);
+      (["buffRace", "buffAllFriends", "buffFriend", "futureRace", "evolveTarget"].includes(pw.fx.type) ||
+        RACE_TARGETED.has(pw.fx.type));
+  }
+
+  // Cieľ cieleného battlecry (draci, U004): rasové efekty na NAJSILNEJŠIU
+  // kartu dominantnej rasy (engine fallback berie najsilnejšiu bez ohľadu na
+  // rasu – drak by buffoval cudzí splash), evolveTarget na kartu s najviac
+  // kópiami (stupeň < 3), reviveAs nechaj enginu (vyberá deathrattlera).
+  function battlecryTarget(state, p, defId) {
+    const pw = Cards.byId[defId].power;
+    if (!pw || pw.kw !== "battlecry") return undefined;
+    const others = p.board.filter(x => !Cards.byId[x.defId].token);
+    if (!others.length) return undefined;
+    const strongest = list => [...list].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0];
+    if (RACE_TARGETED.has(pw.fx.type)) {
+      const dom = dominantRace(state, p);
+      const race = dom || Object.entries(ownedRaceCounts(p)).filter(([r]) => !SUPPORT_RACES.has(r)).sort((a, b) => b[1] - a[1])[0]?.[0];
+      const mine = others.filter(x => Cards.byId[x.defId].race === race);
+      return (mine.length ? strongest(mine) : strongest(others)).uid;
+    }
+    if (pw.fx.type === "evolveTarget") {
+      const cands = others.filter(x => x.rank < 3);
+      if (!cands.length) return undefined;
+      return [...cands].sort((a, b) => (ownedCount(p, b.defId) - ownedCount(p, a.defId)) || ((b.atk + b.hp) - (a.atk + a.hp)))[0].uid;
+    }
+    return undefined;
   }
 
   // Hodnota tela na ploche/v ruke pre výmeny: staty + niečo za schopnosť.
@@ -348,7 +375,8 @@ const Bot = (() => {
         });
         choice = minions[0];
       }
-      push(Engine.playMinion(state, p.id, choice.i));
+      const tgt = battlecryTarget(state, p, choice.inst.defId);
+      push(Engine.playMinion(state, p.id, choice.i, tgt));
       // Dračí battlecry (discoverRace) môže otvoriť discover – dovyber,
       // inak by sa ťah zasekol na pendingDiscover.
       if (state.pendingDiscover && state.pendingDiscover.pid === p.id) {
