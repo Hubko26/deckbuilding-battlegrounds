@@ -64,6 +64,8 @@ const Net = (() => {
   let roomCode = null;
   let resuming = false;
   let resumeUnavail = 0; // koľkokrát reconnect dostal peer-unavailable
+  let myYou = null;      // "p1" | "p2" – moja strana v hre (z „start"/„rejoin")
+  let appV = null;       // verzia klienta (na porovnanie pri rejoin)
 
   function resetSync() { sendSeq = 0; recvSeq = 0; sentBuf = []; resuming = false; }
 
@@ -73,7 +75,15 @@ const Net = (() => {
     }
     if (!msg || typeof msg !== "object") return;
     if (msg.type === "waiting" && handlers.onWaiting) handlers.onWaiting(msg);
-    if (msg.type === "start") { resetSync(); clearAway(); inGame = true; if (handlers.onStart) handlers.onStart(msg); }
+    if (msg.type === "start") { resetSync(); clearAway(); inGame = true; myYou = msg.you; if (handlers.onStart) handlers.onStart(msg); }
+    // Návrat do hry: preživší posiela seed + celý log akcií, klient hru prehrá.
+    if (msg.type === "rejoin" && Array.isArray(msg.actions)) {
+      resetSync(); clearAway(); inGame = true; myYou = msg.you; rejoinPending = false;
+      if (handlers.onRejoin) handlers.onRejoin(msg);
+    }
+    // LAN: server spároval vracajúceho sa hráča s nami – pošli mu log.
+    if (msg.type === "rejoinReq") sendRejoinData({ v: msg.v });
+    if (msg.type === "noGame" && handlers.onPeerError) handlers.onPeerError("noGame");
     if (msg.type === "action") {
       // resend po obnove môže duplikovať už prijaté akcie – q ich odfiltruje
       if (msg.q != null) {
@@ -84,7 +94,7 @@ const Net = (() => {
     }
     if (msg.type === "resumeReq") resumeSync(msg, true);
     if (msg.type === "resumeAck") resumeSync(msg, false);
-    if (msg.type === "peerLeft" && handlers.onPeerLeft) handlers.onPeerLeft(msg);
+    if (msg.type === "peerLeft") peerGone({});
     // Chat medzi hráčmi – nepatrí do hry (nereplikuje sa, nebufferuje sa).
     if (msg.type === "chat" && typeof msg.text === "string" && handlers.onChat) {
       const text = msg.text.slice(0, CHAT_MAX).trim();
@@ -92,9 +102,140 @@ const Net = (() => {
     }
     if (msg.type === "away") peerAway();
     if (msg.type === "back") peerBack();
-    // Súper zavrel stránku (pagehide) – hra končí hneď, bez čakania na
-    // výpadok spojenia a minútu obnovy.
-    if (msg.type === "leave") { clearAway(); if (handlers.onPeerLeft) handlers.onPeerLeft(msg); }
+    // Súper zavrel stránku (pagehide) – bez čakania na výpadok spojenia
+    // a minútu obnovy rovno čakáme, či sa vráti do hry (rejoin).
+    // kick = súper nás odpojil (boli sme dlho preč) a čaká na NÁŠ návrat.
+    if (msg.type === "leave") { clearAway(); if (msg.kick) kicked(); else peerGone({}); }
+  }
+
+  // ---------- Návrat do hry (rejoin) ----------
+  // Preživší hráč má celý log (seed + akcie oboch strán, GameLog v game.js)
+  // a engine je deterministický: vracajúci sa hráč dostane log, hru prehrá
+  // a pokračuje sa presne tam, kde bola. Preživší drží miestnosť (kód) až
+  // REJOIN_LIMIT; kto z dvojice prežil, vždy vlastní ID s kódom (rehost).
+  const REJOIN_LIMIT = 10 * 60000;
+  let rejoinWaiting = false;
+  let rejoinTimer = null;
+  let rejoinPending = false; // ja sa vraciam (čakám na „rejoin" správu)
+
+  function clearRejoinWait() {
+    rejoinWaiting = false;
+    if (rejoinTimer) { clearTimeout(rejoinTimer); rejoinTimer = null; }
+  }
+
+  // Súper je preč. Keď hra ešte beží a UI to dovolí (canRejoin), nekončíme –
+  // čakáme na jeho návrat; inak je to obyčajné odpojenie.
+  function peerGone(info) {
+    if (rejoinWaiting) return;
+    clearAway();
+    stopPing();
+    resuming = false;
+    const can = inGame && handlers.canRejoin && handlers.canRejoin();
+    if (!can) { if (handlers.onPeerLeft) handlers.onPeerLeft(info); return; }
+    rejoinWaiting = true;
+    if (transport === "peer") rehost();
+    rejoinTimer = setTimeout(() => {
+      clearRejoinWait();
+      if (handlers.onPeerLeft) handlers.onPeerLeft({ ...info, expired: true });
+    }, REJOIN_LIMIT);
+    if (handlers.onPeerLeft) handlers.onPeerLeft({ ...info, rejoin: true, code: roomCode, transport });
+  }
+
+  // Súper nás odpojil (dlho v pozadí) a čaká na náš návrat: pusti staré
+  // spojenie (hostiteľ tým uvoľní ID s kódom, aby ho súper mohol prevziať)
+  // a UI nech sa hneď vráti do hry.
+  function kicked() {
+    stopPing();
+    inGame = false;
+    if (transport === "peer") destroyPeer();
+    if (transport === "ws" && ws) { try { ws.close(); } catch {} ws = null; }
+    if (handlers.onKicked) handlers.onKicked({ code: roomCode, transport });
+  }
+
+  // Preživší joiner prevezme ID s kódom miestnosti (mŕtvy hostiteľ ho pustí,
+  // keď mu spadne signaling socket – dovtedy „unavailable-id", skúšame ďalej).
+  function rehost() {
+    if (role === "host" && peer && !peer.destroyed) {
+      if (peer.disconnected) { try { peer.reconnect(); } catch {} }
+      return;
+    }
+    destroyPeer();
+    role = "host";
+    const tryHost = () => {
+      if (!rejoinWaiting || transport !== "peer") return;
+      peerOpts().then(po => {
+        if (!rejoinWaiting || peer) return;
+        const pr = new Peer(PEER_PREFIX + roomCode, po);
+        peer = pr;
+        keepAlive(pr);
+        pr.on("open", () => console.info("[arena] rejoin: držím kód " + roomCode));
+        pr.on("connection", c => hostConnection(c, null));
+        pr.on("error", err => {
+          const kind = err && err.type;
+          if (kind === "unavailable-id") {
+            try { pr.destroy(); } catch {}
+            if (peer === pr) peer = null;
+            if (rejoinWaiting) setTimeout(tryHost, 3000);
+          }
+        });
+      });
+    };
+    tryHost();
+  }
+
+  // Vracajúci sa hráč sa pripojil: pošli mu log a pokračuj s novým spojením.
+  function sendRejoinData(meta) {
+    const data = handlers.getRejoin && handlers.getRejoin();
+    if (!data) return false;
+    clearRejoinWait();
+    resetSync();
+    sendRaw({ type: "rejoin", seed: data.seed, mut: data.mut, actions: data.actions,
+      you: myYou === "p1" ? "p2" : "p1", v: appV });
+    if (handlers.onRejoined) handlers.onRejoined({ v: meta && meta.v });
+    return true;
+  }
+
+  // Vráti sa do rozohranej hry s kódom (nová stránka alebo po „kick").
+  // Preživší možno ešte len preberá ID s kódom – peer-unavailable skúšame
+  // opakovane, kým nevyprší celkový limit.
+  function rejoinPeer(code, h, opts) {
+    handlers = h;
+    transport = "peer";
+    appV = opts && opts.v;
+    destroyPeer();
+    clearRejoinWait();
+    role = "join";
+    roomCode = code;
+    rejoinPending = true;
+    const deadline = Date.now() + 60000;
+    const fail = kind => {
+      if (!rejoinPending) return;
+      rejoinPending = false;
+      if (handlers.onPeerError) handlers.onPeerError(kind);
+    };
+    const attempt = () => {
+      if (!rejoinPending || !peer || peer.destroyed) return;
+      if (Date.now() > deadline) { fail("noGame"); return; }
+      let c = null;
+      try { c = peer.connect(PEER_PREFIX + code, { reliable: true, metadata: { rejoin: true, v: appV } }); } catch {}
+      if (!c) { setTimeout(attempt, 3000); return; }
+      let opened = false;
+      c.on("open", () => { opened = true; if (!rejoinPending) { try { c.close(); } catch {} return; } wireConn(c); startPing(c); });
+      c.on("error", () => { if (!opened && rejoinPending) setTimeout(attempt, 3000); });
+      setTimeout(() => { if (!opened && rejoinPending) { try { c.close(); } catch {} attempt(); } }, 6000);
+    };
+    peerOpts().then(po => {
+      if (transport !== "peer" || peer || !rejoinPending) return;
+      peer = new Peer(po);
+      keepAlive(peer);
+      peer.on("open", attempt);
+      peer.on("error", err => {
+        const kind = err && err.type;
+        if (kind === "peer-unavailable") { if (Date.now() > deadline) fail("noGame"); return; } // attempt to skúsi znova
+        if (kind === "network" || kind === "server-error" || kind === "socket-error" || kind === "browser-incompatible") fail(kind);
+      });
+    });
+    setTimeout(() => { if (rejoinPending) fail("noGame"); }, 65000);
   }
 
   // ---------- Prítomnosť hráča (telefón v pozadí) ----------
@@ -115,8 +256,8 @@ const Net = (() => {
     if (awayTimer) return;
     awayTimer = setTimeout(() => {
       awayTimer = null;
-      sendRaw({ type: "leave" });
-      if (handlers.onPeerLeft) handlers.onPeerLeft({ away: true });
+      sendRaw({ type: "leave", kick: true });
+      peerGone({ away: true });
     }, AWAY_LIMIT);
     if (handlers.onPeerAway) handlers.onPeerAway(AWAY_LIMIT);
   }
@@ -179,7 +320,7 @@ const Net = (() => {
 
   function giveUpResume() {
     resuming = false;
-    if (handlers.onPeerLeft) handlers.onPeerLeft({});
+    peerGone({});
   }
 
   function hostWaitResume(deadline) {
@@ -216,28 +357,34 @@ const Net = (() => {
   function connect(h, opts) {
     handlers = h;
     transport = "ws";
+    appV = opts && opts.v;
+    clearRejoinWait();
+    rejoinPending = !!(opts && opts.rejoin);
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
     let opened = false;
+    let sock = null; // tento socket – po kicku/reštarte môže byť `ws` už iný
     try {
-      ws = new WebSocket(`${proto}//${location.host}/ws`);
+      sock = ws = new WebSocket(`${proto}//${location.host}/ws`);
     } catch {
       transport = null;
       if (handlers.onPeerMode) handlers.onPeerMode();
       return;
     }
-    ws.addEventListener("open", () => {
+    sock.addEventListener("open", () => {
       opened = true;
       // Voľba mutácií – server ju vezme od hráča, ktorý čaká prvý (zakladateľ).
-      ws.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), v: opts && opts.v }));
+      sock.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), v: opts && opts.v, rejoin: !!(opts && opts.rejoin) }));
     });
-    ws.addEventListener("message", e => dispatch(e.data));
-    ws.addEventListener("close", () => {
+    sock.addEventListener("message", e => { if (ws === sock) dispatch(e.data); });
+    sock.addEventListener("close", () => {
+      if (ws !== sock) return; // starý socket (kick, nové pripojenie) – ignoruj
+      ws = null;
       if (!opened) {
         // server nebeží (napr. GitHub Pages) – prepni na kód miestnosti
-        ws = null;
         transport = null;
         if (handlers.onPeerMode) handlers.onPeerMode();
       } else if (handlers.onPeerLeft) {
+        // vlastný socket spadol (server vypnutý / sieť) – bez servera sa nedá vrátiť
         handlers.onPeerLeft({});
       }
     });
@@ -339,7 +486,9 @@ const Net = (() => {
     transport = "peer";
     const mut = !(opts && opts.mut === false);
     const myV = opts && opts.v;
+    appV = myV;
     destroyPeer();
+    clearRejoinWait();
     role = "host";
     roomCode = code;
     peerOpts().then(po => {
@@ -350,31 +499,47 @@ const Net = (() => {
       console.info("[arena] signalizácia OK (host, kód " + code + ")");
       if (handlers.onWaiting) handlers.onWaiting({ code });
     });
-    peer.on("connection", c => {
-      // Obnova po výpadku: joiner sa vracia s metadata.resume – žiadna nová
-      // hra, len prehoď spojenie a čakaj resumeReq (dosync akcií).
-      if (c.metadata && c.metadata.resume) {
-        c.on("open", () => {
-          // staré spojenie len opúšťame (viď reconnectLoop)
-          wireConn(c);
-          startPing(c);
-        });
-        wireDiag(c);
-        return;
-      }
-      wireConn(c);
-      c.on("open", () => {
-        const seed = Math.floor(Math.random() * 2 ** 31);
-        // v = verzia DRUHEJ strany: každý klient si ju porovná so svojou.
-        const joinerV = (c.metadata || {}).v;
-        c.send({ type: "start", seed, you: "p2", mut, v: myV });
-        dispatch({ type: "start", seed, you: "p1", mut, v: joinerV });
-      });
-    });
+    peer.on("connection", c => hostConnection(c, { mut, myV }));
     peer.on("error", err => {
-      if (resuming) return; // počas obnovy čakáme na joinerov reconnect
+      if (resuming || rejoinWaiting) return; // počas obnovy / čakania na návrat
       if (handlers.onPeerError) handlers.onPeerError(err && err.type);
     });
+    });
+  }
+
+  // Prichádzajúce spojenie na ID s kódom. fresh = { mut, myV } pre novú hru;
+  // null = len držíme kód pre návrat súpera (rehost), nová hra sa nezakladá.
+  function hostConnection(c, fresh) {
+    const meta = c.metadata || {};
+    // Obnova po výpadku: joiner sa vracia s metadata.resume – žiadna nová
+    // hra, len prehoď spojenie a čakaj resumeReq (dosync akcií).
+    if (meta.resume) {
+      c.on("open", () => {
+        // staré spojenie len opúšťame (viď reconnectLoop)
+        wireConn(c);
+        startPing(c);
+      });
+      wireDiag(c);
+      return;
+    }
+    // Návrat do hry: pošli log a pokračuj po novom spojení.
+    if (meta.rejoin) {
+      c.on("open", () => {
+        if (!rejoinWaiting) { try { c.close(); } catch {} return; }
+        wireConn(c);
+        startPing(c);
+        if (!sendRejoinData({ v: meta.v })) { try { c.close(); } catch {} }
+      });
+      wireDiag(c);
+      return;
+    }
+    if (!fresh || inGame) { c.on("open", () => { try { c.close(); } catch {} }); return; }
+    wireConn(c);
+    c.on("open", () => {
+      const seed = Math.floor(Math.random() * 2 ** 31);
+      // v = verzia DRUHEJ strany: každý klient si ju porovná so svojou.
+      c.send({ type: "start", seed, you: "p2", mut: fresh.mut, v: fresh.myV });
+      dispatch({ type: "start", seed, you: "p1", mut: fresh.mut, v: meta.v });
     });
   }
 
@@ -382,7 +547,9 @@ const Net = (() => {
   function joinPeer(code, h, opts) {
     handlers = h;
     transport = "peer";
+    appV = opts && opts.v;
     destroyPeer();
+    clearRejoinWait();
     role = "join";
     roomCode = code;
     // Timeout na CELÝ handshake (vrátane fetchu TURN kredencií): keď sa
@@ -439,15 +606,21 @@ const Net = (() => {
     handlers = {};
     inGame = false;
     clearAway();
+    clearRejoinWait();
+    rejoinPending = false;
     if (ws) { try { ws.close(); } catch {} ws = null; }
     destroyPeer();
     transport = null;
   }
 
+  // Info pre UI (uloženie „vrátiť sa do hry" do localStorage).
+  function info() { return { transport, code: roomCode, you: myYou }; }
+
   return {
-    connect, hostPeer, joinPeer, sendAction, sendChat, disconnect, peerAvailable,
+    connect, hostPeer, joinPeer, rejoinPeer, sendAction, sendChat, disconnect, peerAvailable, info,
     // len pre testy (test/net.test.mjs): vstup správ bez transportu
-    _test: { dispatch, setHandlers: h => { handlers = h; }, AWAY_LIMIT, CHAT_MAX },
+    _test: { dispatch, setHandlers: h => { handlers = h; }, AWAY_LIMIT, CHAT_MAX, REJOIN_LIMIT,
+      reset: () => { inGame = false; transport = null; clearRejoinWait(); clearAway(); } },
   };
 })();
 

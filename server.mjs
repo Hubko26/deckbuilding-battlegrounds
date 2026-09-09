@@ -94,6 +94,37 @@ function wsParse(state, chunk, onMessage, onClose) {
 
 // ---------- Párovanie hráčov ----------
 let waiting = null; // hráč čakajúci na súpera
+const clients = new Set();
+// Návrat do hry: hráč, ktorému spadla stránka, príde s hello { rejoin: true }.
+// Spáruje sa s „osirelým" hráčom (bol v hre, súper mu odišiel); ten dostane
+// rejoinReq a pošle mu log (klient hru prehrá). Zavretie starého socketu
+// môže prísť až po novom hello, preto vracajúci sa hráč chvíľu počká.
+const rejoiners = [];
+const REJOIN_WAIT = 10000;
+
+function pairRejoiners() {
+  for (let i = rejoiners.length - 1; i >= 0; i--) {
+    const r = rejoiners[i];
+    if (!r.socket.writable) { rejoiners.splice(i, 1); continue; }
+    const orphan = [...clients].find(c => c !== r && c.inGame && !c.peer && c.socket.writable);
+    if (!orphan) continue;
+    rejoiners.splice(i, 1);
+    r.peer = orphan; orphan.peer = r; r.inGame = true;
+    wsSend(orphan.socket, JSON.stringify({ type: "rejoinReq", v: r.v }));
+    console.log("Hráč sa vrátil do hry");
+  }
+}
+function tryRejoin(client) {
+  if (client.peer || rejoiners.includes(client)) return;
+  rejoiners.push(client);
+  pairRejoiners();
+  setTimeout(() => {
+    const i = rejoiners.indexOf(client);
+    if (i < 0) return;
+    rejoiners.splice(i, 1);
+    try { wsSend(client.socket, JSON.stringify({ type: "noGame" })); } catch {}
+  }, REJOIN_WAIT);
+}
 
 function lanUrls() {
   const urls = [];
@@ -113,15 +144,21 @@ server.on("upgrade", (req, socket) => {
     "Upgrade: websocket\r\nConnection: Upgrade\r\n" +
     `Sec-WebSocket-Accept: ${wsAccept(key)}\r\n\r\n`
   );
-  const client = { socket, peer: null, parse: { buf: Buffer.alloc(0) } };
+  const client = { socket, peer: null, inGame: false, parse: { buf: Buffer.alloc(0) } };
+  clients.add(client);
 
   const close = () => {
+    clients.delete(client);
+    const i = rejoiners.indexOf(client);
+    if (i >= 0) rejoiners.splice(i, 1);
     if (client.peer) {
       try { wsSend(client.peer.socket, JSON.stringify({ type: "peerLeft" })); } catch {}
       client.peer.peer = null;
+      client.peer = null;
     }
     if (waiting === client) waiting = null;
     socket.destroy();
+    pairRejoiners(); // osirelý súper môže hneď dostať vracajúceho sa hráča
   };
 
   socket.on("data", chunk => wsParse(client.parse, chunk, msg => {
@@ -135,7 +172,7 @@ server.on("upgrade", (req, socket) => {
       if (m && m.type === "hello") {
         client.mut = m.mut !== false;
         client.v = m.v;
-        tryPair(client);
+        if (m.rejoin) tryRejoin(client); else tryPair(client);
       }
     } catch {}
   }, close));
@@ -151,6 +188,7 @@ function tryPair(client) {
     waiting = null;
     client.peer = host;
     host.peer = client;
+    client.inGame = host.inGame = true;
     const seed = Math.floor(Math.random() * 2 ** 31);
     const mut = host.mut !== false; // zakladateľ = prvý čakajúci hráč
     // v = verzia druhej strany (klient si ju porovná so svojou)

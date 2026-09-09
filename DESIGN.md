@@ -938,6 +938,24 @@ len staty + keyword badge.
   Zavretie stránky (`pagehide`) pošle `leave` hneď – bez čakania na výpadok
   spojenia a minútu obnovy. Obnova spojenia (resumeReq/Ack) ruší away limit:
   kto obnovuje, je aktívny.
+- **Návrat do hry (rejoin)**: sieťová hra po páde stránky/telefónu nekončí.
+  Po pripojení sa do localStorage uloží `arena.rejoin` (transport, kód,
+  čas; platí 30 min) – na úvodnej obrazovke je „↩️ Vrátiť sa do hry 1234"
+  a kód je predvyplnený aj v „Pripojiť sa" (z konzoly `arenaRejoin("1234")`).
+  Preživší hráč po odchode súpera (leave, výpadok po minúte obnovy, away
+  limit) **čaká až 10 min** s otvorenou miestnosťou; vracajúci sa hráč
+  dostane `{type:"rejoin", seed, mut, you, actions}` = celý GameLog, hru
+  prehrá (`rebuildFromLog`, rovnaký postup ako `tools/replay.mjs`, vrátane
+  `doBattle`) a pokračuje sa normálnou replikáciou (poradové čísla `q` sa
+  vynulujú na oboch stranách). Roly: **kto prežil, vlastní ID s kódom** –
+  preživší joiner ho prevezme (rehost, opakuje `unavailable-id`, kým mŕtvy
+  hostiteľ ID nepustí) a vracajúci sa hráč sa vždy pripája ako joiner;
+  `MY/OPP` (p1/p2) ostávajú z pôvodnej hry. Away limit posiela
+  `leave{kick:true}`: odpojený hráč po návrate zahodí spojenie (hostiteľ tým
+  uvoľní kód) a hneď sa vracia sám. LAN: server páruje `hello{rejoin}` s
+  „osirelým" hráčom (bol v hre, súper mu odišiel) a pošle mu `rejoinReq`;
+  bez osirelého do 10 s odpovie `noGame`. Po konci hry, „Zruš"/„Nová hra"
+  a fatálnej chybe sa rejoin info maže.
 - Bot je vymeniteľný driver – UI volá len `Bot.botTurn(state, pid, difficulty)`.
   Heuristický bot má obtiažnosti easy/normal/hard. Plán: **Claude bot** – malý
   lokálny server, ktorému hra pošle serializovaný stav a ktorý vráti zoznam akcií

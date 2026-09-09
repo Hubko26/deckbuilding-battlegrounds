@@ -43,6 +43,13 @@ Zostáva:
    scroll) – rovnaké ako chat s Claudom; overiť na reálnom telefóne.
 
 10. HOTOVO (2026-09-09): hráč, ktorý prepne aplikáciu (stránka v pozadí),
-    pošle „away"; súper vidí bublinu a po 60 s bez návratu hra končí ako
-    odpojenie. Zavretie stránky = odpojenie hneď. Overiť na reálnom telefóne
-    (iOS Safari: visibilitychange/pagehide pri prepnutí aplikácie).
+    pošle „away"; súper vidí bublinu a po 60 s bez návratu ho odpojí – a čaká
+    na jeho návrat (bod 11). Overiť na reálnom telefóne (iOS Safari:
+    visibilitychange/pagehide pri prepnutí aplikácie).
+
+11. HOTOVO (2026-09-09): návrat do hry – preživší hráč má celý log, čaká
+    10 min; vrátený hráč stlačí „↩️ Vrátiť sa do hry 1234" (kód v
+    localStorage, predvyplnený aj v „Pripojiť sa") a hra sa prehrá z logu.
+    Overené v prehliadači: LAN (zavretie karty, kick po 60 s v pozadí) aj
+    PeerJS (smrť hostiteľa, joiner prevzal kód). Zostáva: reálne telefóny,
+    dvaja hráči v jednom prehliadači zdieľajú localStorage (len pri testovaní).

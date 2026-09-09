@@ -44,6 +44,8 @@
         <button id="startBtn" class="primary big-btn">Hraj!</button>
         <div class="net-row">
           <button id="netBtn">📶 Hraj s kamarátom (sieť)</button>
+          <!-- Návrat do rozohranej sieťovej hry (kód je v localStorage) -->
+          <button id="rejoinBtn" class="hidden"></button>
         </div>
         <!-- Mutácie sa dajú vypnúť; v hre po sieti rozhoduje zakladateľ. -->
         <label class="mut-toggle"><input type="checkbox" id="mutToggle"> <span id="mutToggleLbl"></span></label>
@@ -146,13 +148,13 @@
 
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
   <script src="src/i18n.js?v=6d7b8df5"></script>
-  <script src="src/net.js?v=75d4e347"></script>
+  <script src="src/net.js?v=7d070578"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=beast2"></script>
   <script src="src/engine.js?v=a17358a8"></script>
   <script src="src/bot.js?v=mut1"></script>
   <script src="src/claude-bot.js?v=mut1"></script>
-  <script src="src/game.js?v=e3979bb0"></script>
+  <script src="src/game.js?v=3112ae65"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=f4c9eb6b"></script>

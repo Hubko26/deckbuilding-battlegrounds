@@ -46,6 +46,30 @@ const L = {
     en: "📴 Your friend did not come back",
   },
   chatPhNet: { sk: "Napíš kamarátovi…", cs: "Napiš kamarádovi…", en: "Message your friend…" },
+  rejoinBtn: { sk: "↩️ Vrátiť sa do hry", cs: "↩️ Vrátit se do hry", en: "↩️ Return to the game" },
+  rejoinWait: {
+    sk: "📴 Kamarát sa odpojil. Čakám, či sa vráti (najviac 10 min)…",
+    cs: "📴 Kamarád se odpojil. Čekám, jestli se vrátí (nejvíc 10 min)…",
+    en: "📴 Your friend disconnected. Waiting for them to come back (up to 10 min)…",
+  },
+  rejoinWaitCode: {
+    sk: "Nech otvorí hru a stlačí „Vrátiť sa do hry“ – kód:",
+    cs: "Ať otevře hru a stiskne „Vrátit se do hry“ – kód:",
+    en: "They should open the game and press “Return to the game” – code:",
+  },
+  rejoining: { sk: "↩️ Vraciam sa do hry…", cs: "↩️ Vracím se do hry…", en: "↩️ Returning to the game…" },
+  rejoinNoGame: {
+    sk: "Hra na obnovenie sa nenašla – kamarát už nečaká.",
+    cs: "Hra k obnovení nenalezena – kamarád už nečeká.",
+    en: "No game to return to – your friend is no longer waiting.",
+  },
+  rejoinedMsg: { sk: "↩️ Kamarát sa vrátil do hry", cs: "↩️ Kamarád se vrátil do hry", en: "↩️ Your friend is back in the game" },
+  rejoinedMe: { sk: "↩️ Si späť v hre", cs: "↩️ Jsi zpět ve hře", en: "↩️ You are back in the game" },
+  netKicked: {
+    sk: "📵 Bol si dlho preč – vraciam ťa do hry…",
+    cs: "📵 Byl jsi dlouho pryč – vracím tě do hry…",
+    en: "📵 You were away too long – returning you to the game…",
+  },
   netDesync: {
     sk: "Hra sa rozsynchronizovala – stavy hráčov sa rozišli. Obaja obnovte stránku (Ctrl+F5) a založte novú hru.",
     cs: "Hra se rozsynchronizovala – stavy hráčů se rozešly. Oba obnovte stránku (Ctrl+F5) a založte novou hru.",
@@ -430,10 +454,13 @@ let drag = null;          // aktívne ťahanie karty
 const GameLog = (() => {
   const KEY = "arena.games";
   let cur = null;
-  function start(seed, meta) {
-    cur = { id: Date.now(), date: new Date().toISOString(), seed, ...meta, actions: [] };
+  // actions (voliteľné): log prevzatý pri návrate do hry (rejoin) – záznam
+  // pokračuje od miesta, kde preživší hráč skončil.
+  function start(seed, meta, actions) {
+    cur = { id: Date.now(), date: new Date().toISOString(), seed, ...meta, actions: (actions || []).slice() };
     persist();
   }
+  function current() { return cur; }
   function push(actor, name, args) {
     if (!cur) return;
     cur.actions.push([actor, name, ...(args || [])]);
@@ -449,9 +476,71 @@ const GameLog = (() => {
     } catch { /* plné/vypnuté úložisko – hra beží ďalej bez záznamu */ }
   }
   function dump() { try { return localStorage.getItem(KEY) || "[]"; } catch { return "[]"; } }
-  return { start, push, dump };
+  return { start, push, dump, current };
 })();
 window.arenaLog = () => GameLog.dump();
+
+// ---------- Návrat do hry (rejoin) ----------
+// Po pripojení do sieťovej hry sa uloží kód miestnosti (localStorage), takže
+// po páde stránky / telefónu stačí na úvodnej obrazovke stlačiť „Vrátiť sa
+// do hry" – kód sa nezadáva znova. Preživší hráč pošle celý log a hra sa
+// prehrá do aktuálneho stavu (engine je deterministický). Platí 30 minút.
+const REJOIN_KEY = "arena.rejoin";
+function saveRejoin() {
+  const i = Net.info();
+  try { localStorage.setItem(REJOIN_KEY, JSON.stringify({ transport: i.transport, code: i.code, at: Date.now() })); } catch {}
+  renderRejoinBtn();
+}
+function clearRejoin() {
+  try { localStorage.removeItem(REJOIN_KEY); } catch {}
+  renderRejoinBtn();
+}
+function loadRejoin() {
+  try {
+    const r = JSON.parse(localStorage.getItem(REJOIN_KEY) || "null");
+    if (r && r.at && Date.now() - r.at < 30 * 60000) return r;
+  } catch {}
+  return null;
+}
+function renderRejoinBtn() {
+  const r = loadRejoin();
+  const b = $("rejoinBtn");
+  b.classList.toggle("hidden", !r);
+  if (r) b.textContent = `${t(L.rejoinBtn)}${r.code ? " " + r.code : ""}`;
+  // kód sa predvyplní aj do „Pripojiť sa" – netreba ho písať znova
+  if (r && r.code && !$("peerCodeInput").value) $("peerCodeInput").value = r.code;
+}
+
+// Hru prehrá z logu (rovnako ako tools/replay.mjs) – vráti stav po poslednej akcii.
+function rebuildFromLog(seed, mut, actions) {
+  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined);
+  Engine.startRound(s);
+  for (const [actor, name, ...args] of actions) {
+    if (name === "doBattle") { Engine.doBattle(s); continue; }
+    if (name === "botTurn") { Bot.botTurn(s, actor, args[0] || "normal"); continue; }
+    if (typeof Engine[name] !== "function" || !Engine[name](s, actor, ...args)) {
+      throw new Error(`replay: nelegálna akcia ${actor} ${name} v kole ${s.round}`);
+    }
+  }
+  return s;
+}
+
+// Vráti sa do rozohranej hry: s kódom cez PeerJS, bez kódu cez lokálny
+// server (LAN). Z konzoly: arenaRejoin("1234").
+function startRejoin(code) {
+  const r = loadRejoin() || {};
+  if (code) { r.code = String(code); r.transport = "peer"; }
+  mode = "net";
+  $("pickScreen").classList.add("hidden");
+  $("netOverlay").classList.remove("hidden");
+  $("peerSetup").classList.add("hidden");
+  $("netUrls").textContent = "";
+  $("peerCode").textContent = r.code || "";
+  $("netMsg").textContent = t(L.rejoining);
+  if (r.transport === "peer" && r.code) Net.rejoinPeer(r.code, netHandlers(), { v: APP_V });
+  else Net.connect(netHandlers(), { v: APP_V, rejoin: true });
+}
+window.arenaRejoin = code => startRejoin(code);
 
 // Voľba „hrať bez mutácií" – checkbox na úvodnej obrazovke, pamätá sa
 // v localStorage. V hre po sieti rozhoduje zakladateľ (flag ide v "start").
@@ -475,6 +564,7 @@ function showFatal(text, detail) {
   if (fatalShown) return;
   fatalShown = true;
   Net.disconnect();
+  clearRejoin();
   $("overOverlay").classList.remove("hidden");
   $("overTitle").textContent = "⚠️";
   $("overMsg").textContent = text;
@@ -544,6 +634,7 @@ function applyI18n() {
   $("startBtn").textContent = t(L.play);
   $("netBtn").textContent = t(L.netBtn);
   $("netCancel").textContent = t(L.cancel);
+  renderRejoinBtn();
   $("peerHostBtn").textContent = t(L.peerHost);
   $("mutToggleLbl").textContent = t(L.mutToggle);
   $("peerJoinBtn").textContent = t(L.peerJoin);
@@ -676,6 +767,7 @@ function netHandlers() {
       $("chatRow").classList.remove("hidden");
       $("chatInput").placeholder = t(L.chatPhNet);
       $("chatInput").value = "";
+      saveRejoin();
       act(Engine.startRound(state));
       driveFlow();
       // msg.v = verzia druhej strany (od hostiteľa/servera); rozdiel = istý desync
@@ -688,11 +780,25 @@ function netHandlers() {
     },
     onPeerLeft: msg => {
       if (mode !== "net") return;
+      // Kamarát je preč, ale môže sa vrátiť: čakáme s otvorenou miestnosťou.
+      if (msg && msg.rejoin) {
+        document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
+        $("netOverlay").classList.remove("hidden");
+        $("peerSetup").classList.add("hidden");
+        $("netUrls").textContent = "";
+        const withCode = msg.transport === "peer" && msg.code;
+        $("netMsg").textContent = t(L.rejoinWait) + (withCode ? " " + t(L.rejoinWaitCode) : "");
+        $("peerCode").textContent = withCode ? msg.code : "";
+        log(t(L.rejoinWait));
+        return;
+      }
+      $("netOverlay").classList.add("hidden");
+      clearRejoin();
       if (state && state.phase !== "over") {
         Net.disconnect();
         document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
         $("overOverlay").classList.remove("hidden");
-        $("overTitle").textContent = t(msg && msg.away ? L.netAwayLeft : L.netLeft);
+        $("overTitle").textContent = t(msg && (msg.away || msg.expired) ? L.netAwayLeft : L.netLeft);
         $("overMsg").textContent = "";
       }
     },
@@ -717,10 +823,58 @@ function netHandlers() {
       log(t(L.netBack));
       showTauntBubble(t(L.netBack), 3000);
     },
+    // ---- návrat do hry ----
+    canRejoin: () => !!(state && state.phase !== "over" && !fatalShown),
+    getRejoin: () => {
+      const g = GameLog.current();
+      return g ? { seed: g.seed, mut: g.mut !== false, actions: g.actions } : null;
+    },
+    // Preživší: kamarát sa vrátil, log odišiel, hráme ďalej.
+    onRejoined: msg => {
+      if (mode !== "net") return;
+      $("netOverlay").classList.add("hidden");
+      log(t(L.rejoinedMsg));
+      showTauntBubble(t(L.rejoinedMsg), 3000);
+      saveRejoin();
+      if (msg.v !== APP_V) showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`);
+    },
+    // Vracajúci sa hráč: prehraj log a pokračuj.
+    onRejoin: msg => {
+      let s;
+      try { s = rebuildFromLog(msg.seed, msg.mut, msg.actions); }
+      catch (e) { fatalShown = false; showFatal(t(L.netDesync), e); return; }
+      fatalShown = false;
+      MY = msg.you;
+      OPP = msg.you === "p1" ? "p2" : "p1";
+      state = s;
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, rejoined: true }, msg.actions);
+      playerRoundActions = [];
+      lastPlayerRound = [];
+      busy = false;
+      remoteQueue = Promise.resolve();
+      enterGameScreen();
+      $("chatRow").classList.remove("hidden");
+      $("chatInput").placeholder = t(L.chatPhNet);
+      $("netOverlay").classList.add("hidden");
+      saveRejoin();
+      log(t(L.rejoinedMe));
+      driveFlow();
+      if (msg.v !== APP_V) showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`);
+    },
+    // Kamarát nás odpojil (boli sme dlho v pozadí) a čaká – vráť sa hneď.
+    onKicked: msg => {
+      if (mode !== "net") return;
+      log(t(L.netKicked));
+      startRejoin(msg.transport === "peer" ? msg.code : null);
+    },
     onPeerMode: showPeerSetup,
     onPeerError: kind => {
       console.warn("[arena] peer error:", kind); // typ chyby na diagnostiku
-      if (kind === "peer-unavailable" || kind === "timeout") {
+      if (kind === "noGame") {
+        clearRejoin();
+        $("netMsg").textContent = t(L.rejoinNoGame);
+        $("peerCode").textContent = "";
+      } else if (kind === "peer-unavailable" || kind === "timeout") {
         $("netMsg").textContent = t(kind === "timeout" ? L.peerTimeout : L.peerNotFound);
       } else if (kind === "unavailable-id") {
         $("netMsg").textContent = t(L.peerCodeTaken);
@@ -790,6 +944,7 @@ function backToPick() {
   document.body.classList.remove("playing");
   document.querySelector("header").classList.remove("open");
   Net.disconnect();
+  clearRejoin();
   state = null;
   $("chatRow").classList.add("hidden");
   $("gameScreen").classList.add("hidden");
@@ -2233,6 +2388,7 @@ async function onEndTurn() {
 function showOver() {
   const ov = $("overOverlay");
   ov.classList.remove("hidden");
+  if (mode === "net") clearRejoin();
   const w = state.winner;
   if (w === MY) Sfx.win(); else if (w === OPP) Sfx.lose();
   $("overTitle").textContent = w === "draw" ? t(L.drawGame) : w === MY ? t(L.win) : t(L.lose);
@@ -2271,6 +2427,7 @@ function logClear() { $("logEl").innerHTML = ""; }
 $("startBtn").addEventListener("click", startGame);
 $("netBtn").addEventListener("click", startNet);
 $("netCancel").addEventListener("click", backToPick);
+$("rejoinBtn").addEventListener("click", () => startRejoin());
 $("peerHostBtn").addEventListener("click", peerHost);
 $("peerJoinBtn").addEventListener("click", peerJoin);
 $("peerCodeInput").addEventListener("keydown", e => { if (e.key === "Enter") peerJoin(); });
