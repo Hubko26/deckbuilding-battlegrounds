@@ -440,6 +440,12 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   border: .7cqh solid transparent; border-bottom-color: #fff; border-top: 0;
 }
 .taunt-bubble.out { opacity: 0; transition: opacity .45s; }
+/* vlastná chatová správa (hra po sieti): bublina nad mojím hrdinom, šípka dole */
+.taunt-bubble.mine { top: auto; bottom: 16%; }
+.taunt-bubble.mine::before {
+  top: auto; bottom: -1.1cqh;
+  border-bottom: 0; border-top: .7cqh solid #fff; border-bottom-color: transparent;
+}
 
 /* ---------- Boj – animácie ---------- */
 .fight-banner {

@@ -327,9 +327,10 @@ const Engine = (() => {
   // ---------- Evolve ----------
   // 3 rovnaké (karta + stupeň) KDEKOĽVEK – plocha, ruka, balíček aj kôpka –
   // sa automaticky spoja na vyšší stupeň. Kópie sa spotrebujú v poradí
-  // plocha → ruka → balíček → kôpka. Výsledok ide na plochu (ak tam bola
-  // kópia), inak do ruky; pri plnej ruke do balíčka. hidden=true, keď sa
-  // použila aspoň jedna neviditeľná kópia (UI to ohlási hráčovi).
+  // plocha → ruka → balíček → kôpka. Výsledok ide VŽDY do ruky (aj keď bola
+  // kópia na ploche) – hráč ju vyloží znova a battlecry sa spustí už na
+  // vyššom stupni. Pri plnej ruke na uvoľnený slot plochy, inak do balíčka.
+  // hidden=true, keď sa použila aspoň jedna neviditeľná kópia (UI to ohlási).
   function checkEvolve(state, p, events) {
     // Mutácia „twinEvolve": na spojenie stačia 2 kópie namiesto 3.
     const need = state.mutator === "twinEvolve" ? 2 : 3;
@@ -422,12 +423,14 @@ const Engine = (() => {
       { a: 0, h: 0, pa: 0, ph: 0 });
   }
 
-  // Nová karta vznikne na slote prvej kópie z plochy; inak v ruke; pri plnej
-  // ruke ide ako referencia do balíčka. Vráti uid (null pre balíček).
+  // Nová karta vznikne v ruke (battlecry sa dá zahrať znova, silnejší). Pri
+  // plnej ruke ide na slot prvej kópie z plochy; keď ani ten nie je, ako
+  // referencia do balíčka. Vráti uid (null pre balíček).
   function placeEvolved(state, p, group, consumed, bonus) {
     const { defId, rank } = group;
     const { boardSlot, srcAll } = consumed;
-    if (boardSlot === null && p.hand.length >= HAND_MAX) {
+    const handFull = p.hand.length >= HAND_MAX;
+    if (handFull && boardSlot === null) {
       addToDeckRef(state, p, defId, rank + 1, bonus.pa, bonus.ph, srcAll.src);
       return null;
     }
@@ -435,7 +438,7 @@ const Engine = (() => {
     buff(evolved, bonus.a, bonus.h);
     if (bonus.pa || bonus.ph) { evolved.pa = bonus.pa; evolved.ph = bonus.ph; }
     if (srcAll.src) evolved.src = srcAll.src;
-    if (boardSlot !== null) {
+    if (handFull) {
       evolved.slot = boardSlot;
       p.board.push(evolved);
       sortBoard(p);

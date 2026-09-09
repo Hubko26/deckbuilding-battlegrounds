@@ -73,7 +73,7 @@ const Net = (() => {
     }
     if (!msg || typeof msg !== "object") return;
     if (msg.type === "waiting" && handlers.onWaiting) handlers.onWaiting(msg);
-    if (msg.type === "start") { resetSync(); if (handlers.onStart) handlers.onStart(msg); }
+    if (msg.type === "start") { resetSync(); clearAway(); inGame = true; if (handlers.onStart) handlers.onStart(msg); }
     if (msg.type === "action") {
       // resend po obnove môže duplikovať už prijaté akcie – q ich odfiltruje
       if (msg.q != null) {
@@ -85,6 +85,68 @@ const Net = (() => {
     if (msg.type === "resumeReq") resumeSync(msg, true);
     if (msg.type === "resumeAck") resumeSync(msg, false);
     if (msg.type === "peerLeft" && handlers.onPeerLeft) handlers.onPeerLeft(msg);
+    // Chat medzi hráčmi – nepatrí do hry (nereplikuje sa, nebufferuje sa).
+    if (msg.type === "chat" && typeof msg.text === "string" && handlers.onChat) {
+      const text = msg.text.slice(0, CHAT_MAX).trim();
+      if (text) handlers.onChat(text);
+    }
+    if (msg.type === "away") peerAway();
+    if (msg.type === "back") peerBack();
+    // Súper zavrel stránku (pagehide) – hra končí hneď, bez čakania na
+    // výpadok spojenia a minútu obnovy.
+    if (msg.type === "leave") { clearAway(); if (handlers.onPeerLeft) handlers.onPeerLeft(msg); }
+  }
+
+  // ---------- Prítomnosť hráča (telefón v pozadí) ----------
+  // Keď hráč prepne aplikáciu (Messenger, hovor…), prehliadač stránku uspí:
+  // časovače stoja, ťah nepríde a súper by len čakal. Preto pri skrytí stránky
+  // pošleme „away" a pri návrate „back". Súper to ukáže a keď sa hráč nevráti
+  // do AWAY_LIMIT, ukončí hru ako odpojenie (súper dostane „leave", aby to
+  // po návrate videl aj on). Zavretie stránky (pagehide) = „leave" ihneď.
+  const AWAY_LIMIT = 60000;
+  const CHAT_MAX = 200;
+  let awayTimer = null;
+  let inGame = false; // presence sa posiela až po „start"
+
+  function clearAway() {
+    if (awayTimer) { clearTimeout(awayTimer); awayTimer = null; }
+  }
+  function peerAway() {
+    if (awayTimer) return;
+    awayTimer = setTimeout(() => {
+      awayTimer = null;
+      sendRaw({ type: "leave" });
+      if (handlers.onPeerLeft) handlers.onPeerLeft({ away: true });
+    }, AWAY_LIMIT);
+    if (handlers.onPeerAway) handlers.onPeerAway(AWAY_LIMIT);
+  }
+  function peerBack() {
+    if (!awayTimer) return;
+    clearAway();
+    if (handlers.onPeerBack) handlers.onPeerBack();
+  }
+
+  // Pošle správu mimo replikácie akcií (chat, prítomnosť): bez q a bez
+  // bufferu – keď spojenie práve neexistuje, správa sa jednoducho stratí.
+  function sendRaw(msg) {
+    if (transport === "ws" && ws && ws.readyState === 1) { try { ws.send(JSON.stringify(msg)); } catch {} }
+    if (transport === "peer" && conn && conn.open) { try { conn.send(msg); } catch {} }
+  }
+  function sendChat(text) {
+    text = String(text || "").slice(0, CHAT_MAX).trim();
+    if (text && inGame) sendRaw({ type: "chat", text });
+  }
+  function sendPresence(kind) {
+    if (inGame && transport) sendRaw({ type: kind });
+  }
+
+  if (typeof document !== "undefined" && document.addEventListener) {
+    document.addEventListener("visibilitychange", () => {
+      sendPresence(document.visibilityState === "hidden" ? "away" : "back");
+    });
+    // persisted = stránka ide do bfcache (môže sa vrátiť) – to je len „away";
+    // ostré zavretie/odchod = „leave".
+    window.addEventListener("pagehide", e => sendPresence(e.persisted ? "away" : "leave"));
   }
 
   // Druhá strana hlási, po ktoré q má prijaté – pošli jej zvyšok. `ack`:
@@ -96,6 +158,7 @@ const Net = (() => {
     for (const m of missing) { try { conn.send(m); } catch {} }
     if (ack) { try { conn.send({ type: "resumeAck", q: recvSeq }); } catch {} }
     resuming = false;
+    peerBack(); // obnovu vyvolal aktívny súper – nie je „away"
     if (handlers.onResumed) handlers.onResumed();
   }
 
@@ -374,12 +437,18 @@ const Net = (() => {
 
   function disconnect() {
     handlers = {};
+    inGame = false;
+    clearAway();
     if (ws) { try { ws.close(); } catch {} ws = null; }
     destroyPeer();
     transport = null;
   }
 
-  return { connect, hostPeer, joinPeer, sendAction, disconnect, peerAvailable };
+  return {
+    connect, hostPeer, joinPeer, sendAction, sendChat, disconnect, peerAvailable,
+    // len pre testy (test/net.test.mjs): vstup správ bez transportu
+    _test: { dispatch, setHandlers: h => { handlers = h; }, AWAY_LIMIT, CHAT_MAX },
+  };
 })();
 
 if (typeof module !== "undefined") module.exports = Net;

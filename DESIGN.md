@@ -103,8 +103,11 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - **3 rovnaké príšerky (rovnaká karta, rovnaký stupeň) KDEKOĽVEK** – plocha,
   ruka, balíček aj kôpka – sa automaticky zlúčia na vyšší stupeň:
   bronz → **strieborná** → **zlatá**. Kópie sa spotrebujú v poradí
-  plocha → ruka → balíček → kôpka; výsledok ide na plochu (ak tam bola
-  kópia), inak do ruky. Spojenie zo skrytých kópií ohlási popup.
+  plocha → ruka → balíček → kôpka; **výsledok ide vždy do ruky** – aj keď
+  bola kópia na ploche (2026-09-09; predtým ostal na ploche). Hráč tak
+  evolvnutú kartu vyloží znova a **battlecry sa spustí už na vyššom
+  stupni** (silnejší buff). Pri plnej ruke ide na uvoľnený slot plochy,
+  bez slotu ako referencia do balíčka. Spojenie zo skrytých kópií ohlási popup.
 - Obchod ukazuje na kartách badge **n/3** (koľko kópií už vlastníš).
 - Zlatá je koniec (ďalší stupeň sa dá doplniť neskôr, ale je to very late game).
 - Staty: strieborná = **×2**, zlatá = **×4** základu. Čísla schopností: strieborná ×2,
@@ -923,6 +926,18 @@ len staty + keyword badge.
   (bez závislostí). Klienti replikujú akcie: oba behy dostanú rovnaký seed
   a aplikujú rovnaké Engine volania, stav je deterministicky identický
   (žiadne posielanie stavu). Server spáruje prvých dvoch čakajúcich hráčov.
+- Chat v hre po sieti (LAN aj kód miestnosti): políčko pod doskou (to isté,
+  čo chat s Claudom). Správa `{type:"chat"}` ide mimo replikácie akcií – bez
+  poradového čísla, bez bufferu, max 200 znakov (orezáva aj prijímateľ).
+  U súpera bublina pri jeho hrdinovi + log, u odosielateľa bublina dole.
+- Prítomnosť hráča: keď hráč prepne aplikáciu (Messenger, hovor), prehliadač
+  stránku uspí – ťah nepríde a súper by čakal donekonečna. Pri skrytí stránky
+  (`visibilitychange`) klient pošle `away`, pri návrate `back`; súper vidí
+  bublinu „kamarát odišiel" a keď sa hráč nevráti do **60 s**, hru ukončí ako
+  odpojenie a pošle `leave` (neprítomný hráč to po návrate uvidí tiež).
+  Zavretie stránky (`pagehide`) pošle `leave` hneď – bez čakania na výpadok
+  spojenia a minútu obnovy. Obnova spojenia (resumeReq/Ack) ruší away limit:
+  kto obnovuje, je aktívny.
 - Bot je vymeniteľný driver – UI volá len `Bot.botTurn(state, pid, difficulty)`.
   Heuristický bot má obtiažnosti easy/normal/hard. Plán: **Claude bot** – malý
   lokálny server, ktorému hra pošle serializovaný stav a ktorý vráti zoznam akcií

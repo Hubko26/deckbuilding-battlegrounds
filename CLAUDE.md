@@ -49,7 +49,8 @@ commity, UI) je slovenčina.
 - Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 50 HP.
 - Kúpená karta ide **do balíčka** (nie do ruky); ruka sa doťahuje na 5.
 - Evolve: 3 rovnaké kópie (karta + stupeň) **kdekoľvek** (plocha, ruka, balíček,
-  kôpka) sa automaticky spoja; staty ×2/×4.
+  kôpka) sa automaticky spoja; staty ×2/×4. Výsledok ide **vždy do ruky** (aj
+  z plochy) – battlecry sa dá zahrať znova, silnejší.
 - Obchod:
   - 3 **spoločné** karty (zdieľané oboma hráčmi) + **súkromné** `min(tier+1, 6)`.
   - **Tier spoločných kariet = NIŽŠÍ z tierov oboch hráčov** – hráč s nižším

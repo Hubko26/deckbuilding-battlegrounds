@@ -34,6 +34,18 @@ const L = {
     en: "📡 Connection lost – reconnecting…",
   },
   netResumed: { sk: "📡 Spojenie obnovené ✓", cs: "📡 Spojení obnoveno ✓", en: "📡 Connection restored ✓" },
+  netAway: {
+    sk: "📵 Kamarát odišiel z hry (prepol aplikáciu). Čakám {s} s…",
+    cs: "📵 Kamarád odešel ze hry (přepnul aplikaci). Čekám {s} s…",
+    en: "📵 Your friend left the game (switched apps). Waiting {s} s…",
+  },
+  netBack: { sk: "👋 Kamarát je späť", cs: "👋 Kamarád je zpět", en: "👋 Your friend is back" },
+  netAwayLeft: {
+    sk: "📴 Kamarát sa nevrátil do hry",
+    cs: "📴 Kamarád se nevrátil do hry",
+    en: "📴 Your friend did not come back",
+  },
+  chatPhNet: { sk: "Napíš kamarátovi…", cs: "Napiš kamarádovi…", en: "Message your friend…" },
   netDesync: {
     sk: "Hra sa rozsynchronizovala – stavy hráčov sa rozišli. Obaja obnovte stránku (Ctrl+F5) a založte novú hru.",
     cs: "Hra se rozsynchronizovala – stavy hráčů se rozešly. Oba obnovte stránku (Ctrl+F5) a založte novou hru.",
@@ -210,9 +222,9 @@ const L = {
       en: `🃏 You draw <i class="hl-b">5 cards</i> each turn; playing minions is <i class="hl-e">free</i> (max 5 on board). Unplayed cards go to the discard pile and cycle back.`,
     },
     {
-      sk: `✨ <i class="hl-e">Evolve</i>: 3 rovnaké karty (aj v balíčku) sa samy spoja: bronz → <i class="hl-e">strieborná ×2</i> → <i class="hl-e">zlatá ×4</i>.`,
-      cs: `✨ <i class="hl-e">Evolve</i>: 3 stejné karty (i v balíčku) se samy spojí: bronz → <i class="hl-e">stříbrná ×2</i> → <i class="hl-e">zlatá ×4</i>.`,
-      en: `✨ <i class="hl-e">Evolve</i>: 3 copies of a card (even in your deck) merge on their own: bronze → <i class="hl-e">silver ×2</i> → <i class="hl-e">gold ×4</i>.`,
+      sk: `✨ <i class="hl-e">Evolve</i>: 3 rovnaké karty (aj v balíčku) sa samy spoja: bronz → <i class="hl-e">strieborná ×2</i> → <i class="hl-e">zlatá ×4</i>. Spojená karta sa vráti do ruky – vylož ju znova.`,
+      cs: `✨ <i class="hl-e">Evolve</i>: 3 stejné karty (i v balíčku) se samy spojí: bronz → <i class="hl-e">stříbrná ×2</i> → <i class="hl-e">zlatá ×4</i>. Spojená karta se vrátí do ruky – vylož ji znovu.`,
+      en: `✨ <i class="hl-e">Evolve</i>: 3 copies of a card (even in your deck) merge on their own: bronze → <i class="hl-e">silver ×2</i> → <i class="hl-e">gold ×4</i>. The merged card returns to your hand – play it again.`,
     },
     {
       sk: `⬆️ <i class="hl-b">Upgrade tieru</i> odomkne silnejšie príšery (tier 1–6). Cena klesá každým kolom.`,
@@ -661,6 +673,9 @@ function netHandlers() {
       state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined);
       GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false });
       enterGameScreen();
+      $("chatRow").classList.remove("hidden");
+      $("chatInput").placeholder = t(L.chatPhNet);
+      $("chatInput").value = "";
       act(Engine.startRound(state));
       driveFlow();
       // msg.v = verzia druhej strany (od hostiteľa/servera); rozdiel = istý desync
@@ -671,18 +686,37 @@ function netHandlers() {
       remoteQueue = remoteQueue.then(() => applyRemote(msg))
         .catch(err => showFatal(t(L.netDesync), err));
     },
-    onPeerLeft: () => {
+    onPeerLeft: msg => {
       if (mode !== "net") return;
       if (state && state.phase !== "over") {
         Net.disconnect();
+        document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
         $("overOverlay").classList.remove("hidden");
-        $("overTitle").textContent = t(L.netLeft);
+        $("overTitle").textContent = t(msg && msg.away ? L.netAwayLeft : L.netLeft);
         $("overMsg").textContent = "";
       }
     },
     // Výpadok spojenia: hra beží ďalej (akcie sa bufferujú), len o tom vieš.
     onReconnecting: () => { if (mode === "net") log(t(L.netReconnecting)); },
     onResumed: () => { if (mode === "net") log(t(L.netResumed)); },
+    // Chat od kamaráta: bublina pri jeho hrdinovi + log (na mobile je log skrytý).
+    onChat: text => {
+      if (mode !== "net" || !state) return;
+      log(`💬 ${t(L.heroFriend)}: ${text}`);
+      showTauntBubble(text, 7000);
+    },
+    // Kamarát prepol aplikáciu: bublina visí, kým sa nevráti alebo nevyprší limit.
+    onPeerAway: limit => {
+      if (mode !== "net" || !state || state.phase === "over") return;
+      const msg = t(L.netAway).replace("{s}", Math.round(limit / 1000));
+      log(msg);
+      showTauntBubble(msg, limit);
+    },
+    onPeerBack: () => {
+      if (mode !== "net" || !state || state.phase === "over") return;
+      log(t(L.netBack));
+      showTauntBubble(t(L.netBack), 3000);
+    },
     onPeerMode: showPeerSetup,
     onPeerError: kind => {
       console.warn("[arena] peer error:", kind); // typ chyby na diagnostiku
@@ -757,6 +791,7 @@ function backToPick() {
   document.querySelector("header").classList.remove("open");
   Net.disconnect();
   state = null;
+  $("chatRow").classList.add("hidden");
   $("gameScreen").classList.add("hidden");
   $("newGameBtn").classList.add("hidden");
   $("netOverlay").classList.add("hidden");
@@ -813,10 +848,11 @@ const TAUNTS = {
   },
 };
 let lastTauntAt = 0;
-function showTauntBubble(text, ms) {
-  document.querySelectorAll(".taunt-bubble").forEach(b => b.remove());
+// `mine` = bublina pri mojom hrdinovi (vlastná chatová správa), inak pri súperovi.
+function showTauntBubble(text, ms, mine) {
+  document.querySelectorAll(mine ? ".taunt-bubble.mine" : ".taunt-bubble:not(.mine)").forEach(b => b.remove());
   const el = document.createElement("div");
-  el.className = "taunt-bubble";
+  el.className = mine ? "taunt-bubble mine" : "taunt-bubble";
   el.textContent = text;
   $("stage").appendChild(el);
   setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, ms || 3800);
@@ -843,7 +879,16 @@ let chatBusy = false;
 async function sendChat() {
   const inp = $("chatInput");
   const text = inp.value.trim();
-  if (!text || chatBusy || difficulty !== "claude" || mode !== "bot" || !state) return;
+  if (!text || !state) return;
+  // Hra po sieti: správa ide súperovi (bublina u neho), u mňa bublina dole + log.
+  if (mode === "net") {
+    inp.value = "";
+    Net.sendChat(text);
+    log(`💬 ${t(L.heroYou)}: ${text}`);
+    showTauntBubble(text, 3000, true);
+    return;
+  }
+  if (chatBusy || difficulty !== "claude" || mode !== "bot") return;
   chatBusy = true;
   inp.value = "";
   $("chatSend").disabled = true;

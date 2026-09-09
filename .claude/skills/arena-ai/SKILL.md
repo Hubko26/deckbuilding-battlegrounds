@@ -62,7 +62,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   stupeň nehrá rolu) – prežité vysoké tiery bolia, gold t1 dá stále 1.
 - Evolve: 3 rovnaké kópie (karta + stupeň) KDEKOĽVEK (plocha, ruka,
   balíček, kôpka) sa automaticky spoja: bronz → strieborná (staty ×2)
-  → zlatá (×4); efekty ×2/×3. Evolvnutá karta si nechá buffy DVOCH
+  → zlatá (×4); efekty ×2/×3. Evolvnutá karta ide VŽDY do ruky (aj keď
+  bola kópia na ploche) – vylož ju znova, battlecry sa spustí na vyššom
+  stupni. Evolvnutá karta si nechá buffy DVOCH
   najsilnejších kópií (dočasné aj perma rast) – buffnuté kópie sa
   oplatí evolvovať. Predaj karty = +1 peniaz, karta preč z hry.
 - Rasy: Beast 🐾, Elemental ✨, Undead 💀, Fairy 🧚, Dragon 🐲. Keywords: Pri

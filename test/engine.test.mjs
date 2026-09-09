@@ -230,9 +230,11 @@ test("evolve: 3 rovnaké bronzové sa spoja na striebornú so statmi ×2", () =>
   const events = [];
   E.checkEvolve(state, p, events);
   assert.equal(events.filter(e => e.type === "evolve").length, 1);
-  assert.equal(p.hand.length, 0);
-  assert.equal(p.board.length, 1);
-  const s = p.board[0];
+  // Výsledok ide do ruky aj keď bola kópia na ploche – battlecry sa dá
+  // zahrať znova na vyššom stupni.
+  assert.equal(p.board.length, 0);
+  assert.equal(p.hand.length, 1);
+  const s = p.hand[0];
   assert.equal(s.rank, 2);
   assert.equal(s.atk, C.byId["B001"].atk * 2);
   assert.equal(s.hp, C.byId["B001"].hp * 2);
@@ -264,7 +266,8 @@ test("evolve prenáša buffy DVOCH najsilnejších kópií (perma aj dočasné),
   p.board = [Object.assign(c1, { slot: 0 }), Object.assign(c2, { slot: 1 })];
   p.hand = [c3];
   E.checkEvolve(state, p, []);
-  const s = p.board[0];
+  const s = p.hand[0];
+  assert.equal(p.board.length, 0);
   assert.equal(s.rank, 2);
   assert.equal(s.atk, C.byId["B001"].atk * 2 + 2 + 1); // základ 4 + bonusy top 2 kópií
   assert.equal(s.hp, C.byId["B001"].hp * 2 + 2 + 1);
@@ -309,9 +312,58 @@ test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () 
   const events = E.buyCommon(state, "p1", 0);
   assert.ok(events.some(e => e.type === "evolve"));
   assert.equal(p.deck.length, deckBefore); // kúpená prišla a hneď sa spojila
-  assert.equal(p.hand.length, 0);
+  assert.equal(p.board.length, 0);
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].rank, 2);
+});
+
+test("evolve po vyložení tretej kópie: strieborná sa vráti do ruky a battlecry ide znova, silnejší", () => {
+  const { state, E, C } = fresh();
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  // B002 má battlecry (aura zvieratám) – po evolve sa dá zahrať znova na stupni 2.
+  const def = C.byId["B002"];
+  assert.equal(def.power && def.power.kw, "battlecry");
+  p.board = [E.makeInst(state, "B002", 1), E.makeInst(state, "B002", 1)];
+  p.board.forEach((c, i) => { c.slot = i; });
+  p.hand = [E.makeInst(state, "B002", 1)];
+  const events = E.playMinion(state, "p1", 0);
+  assert.ok(events.some(e => e.type === "evolve"));
+  assert.equal(p.board.length, 0);
+  assert.equal(p.hand.length, 1);
+  assert.equal(p.hand[0].rank, 2);
+  const ev2 = E.playMinion(state, "p1", 0);
+  assert.ok(ev2 && ev2.some(e => e.type === "play"));
   assert.equal(p.board.length, 1);
   assert.equal(p.board[0].rank, 2);
+});
+
+test("evolve pri plnej ruke: výsledok na uvoľnený slot plochy, bez slotu do balíčka", () => {
+  const { state, E } = fresh();
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  // 3 kópie na ploche, ruka plná iným – ide na plochu (slot prvej kópie)
+  p.board = [1, 2, 3].map((_, i) => Object.assign(E.makeInst(state, "B001", 1), { slot: i + 2 }));
+  p.hand = [1, 2, 3, 4, 5, 6, 7, 8].map(() => E.makeInst(state, "B002", 3)); // zlaté sa nespájajú
+  const events = [];
+  E.checkEvolve(state, p, events);
+  const ev = events.find(e => e.type === "evolve" && e.defId === "B001");
+  assert.ok(ev && ev.uid);
+  assert.equal(p.hand.length, 8);
+  const s = p.board.find(c => c.defId === "B001");
+  assert.ok(s);
+  assert.equal(s.rank, 2);
+  assert.equal(s.slot, 2);
+  // 3 kópie v balíčku, ruka plná – do balíčka ako referencia
+  p.board = [];
+  p.deck = [{ defId: "B005", rank: 1 }, { defId: "B005", rank: 1 }, { defId: "B005", rank: 1 }];
+  const ev2 = [];
+  E.checkEvolve(state, p, ev2);
+  const e2 = ev2.find(e => e.type === "evolve" && e.defId === "B005");
+  assert.ok(e2);
+  assert.equal(e2.uid, null);
+  assert.deepEqual(p.deck.map(c => [c.defId, c.rank]), [["B005", 2]]);
 });
 
 test("trojica úplne skrytá v balíčku sa spojí sama (výsledok do ruky + hidden)", () => {

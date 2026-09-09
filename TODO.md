@@ -37,3 +37,12 @@ Zostáva:
    (PlayGround-mobile-wide.webp) treba prejsť: ruka medzi rámiky, môj board
    v strede, obchod v 2 riadkoch, karty široké podľa slotu (nie podľa výšky),
    nech 5 kariet nepretečie. Overiť na reálnom telefóne aj v PWA režime.
+
+9. HOTOVO (2026-09-09): chat v hre po sieti (LAN aj PeerJS) – políčko pod
+   doskou, bubliny. Zostáva: na mobile na výšku je políčko pod doskou (treba
+   scroll) – rovnaké ako chat s Claudom; overiť na reálnom telefóne.
+
+10. HOTOVO (2026-09-09): hráč, ktorý prepne aplikáciu (stránka v pozadí),
+    pošle „away"; súper vidí bublinu a po 60 s bez návratu hra končí ako
+    odpojenie. Zavretie stránky = odpojenie hneď. Overiť na reálnom telefóne
+    (iOS Safari: visibilitychange/pagehide pri prepnutí aplikácie).
