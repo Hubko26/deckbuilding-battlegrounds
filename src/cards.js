@@ -43,7 +43,11 @@ const Cards = (() => {
 
   const DEFS = [
     // ---------- Zvieratá (Beast) ----------
-    M("B001", 1, "beast", ["Bristlebit", "Quilltail", "Ironwood Ravager"], 2, 2),
+    // B001: „Pri smrti: +1/+1 všetkým Zvieratám" (do konca boja, evolve ×2/×3)
+    // – bývalá jediná ne-ogrská vanilla. Padne skoro (2/2 bez Obrancu), kŕmi
+    // mrchožrútov B004/B009 cez raceDeath a ešte buffne zvyšok zvierat.
+    M("B001", 1, "beast", ["Bristlebit", "Quilltail", "Ironwood Ravager"], 2, 2,
+      { power: { kw: "deathrattle", fx: { type: "buffRace", race: "beast", a: 1, h: 1 } } }),
     M("B003", 1, "beast", ["Hopple", "Bogbell", "Mirethrone"], 1, 1,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1, perm: true } } }),
     M("B007", 1, "beast", ["Finwhisk", "Rapidsnout", "Riverking"], 1, 1,
@@ -91,13 +95,14 @@ const Cards = (() => {
     // s Vichorom (2 útoky) sa spúšťa dvakrát. Dôvod kupovať ⚡ v nízkych tieroch.
     M("E004", 2, "elemental", ["Whifflet", "Galeplume", "Tempestalon"], 4, 4,
       { power: { kw: "onAttack", fx: { type: "buffRace", race: "elemental", a: 1, h: 1 } } }),
-    // E005 Lovec tokenov: keď súper vyvolá token, zasiahne ho výbojom za 1
-    // (+Živelná sila); ak token padne, E005 rastie +1/+1 NAVŽDY (pa/ph).
-    // Čistý counter na hordu + jediný navždy-rast živlov mimo aur. Kostík
-    // s U002 (2/2) alebo aurou prežije – živly musia kupovať Živelnú silu.
+    // E005 Lovec tokenov: PRVÝ token, čo súper v boji vyvolá, dostane výboj
+    // za 1 (+Živelná sila); ak padne, E005 rastie +2/+2 NAVŽDY (pa/ph).
+    // Jeden výstrel za boj – pôvodný výboj na každý token s rastom +1/+1 za
+    // každý zabitý kostík decimoval undead bez stropu. Kostík s U002 (2/2)
+    // alebo aurou bronzový výboj prežije – živly musia kupovať Živelnú silu.
     // Evolve: výboj 1/2/3, rast ×stupeň. Bývalý výboj 3 bol kópia E001.
     M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 5,
-      { power: { kw: "onEnemySummon", fx: { type: "zapToken", n: 1, a: 1, h: 1 } } }),
+      { power: { kw: "onEnemySummon", fx: { type: "zapToken", n: 1, a: 2, h: 2 } } }),
     M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 4,
       { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 4 } } }),
     // E007: motor identity – Po nákupe Živelná sila +1 navždy (evolve +2/+3),
@@ -558,9 +563,9 @@ const Cards = (() => {
       en: `trigger the ability of ${f.n * m === 1 ? "a random minion" : f.n * m + " random minions"} on the battlefield – enemies too`,
     }),
     zapToken: (f, m, hl) => ({
-      sk: `zasiahni ho výbojom za ${hl(f.n * m)}; ak zomrie, +${f.a * m}/+${f.h * m} pre seba (NAVŽDY)`,
-      cs: `zasáhni ho výbojem za ${hl(f.n * m)}; když zemře, +${f.a * m}/+${f.h * m} pro sebe (NAVŽDY)`,
-      en: `zap it for ${hl(f.n * m)}; if it dies, +${f.a * m}/+${f.h * m} for itself (FOREVER)`,
+      sk: `zasiahni ho výbojom za ${hl(f.n * m)} (raz za boj); ak zomrie, +${f.a * m}/+${f.h * m} pre seba (NAVŽDY)`,
+      cs: `zasáhni ho výbojem za ${hl(f.n * m)} (jednou za boj); když zemře, +${f.a * m}/+${f.h * m} pro sebe (NAVŽDY)`,
+      en: `zap it for ${hl(f.n * m)} (once per fight); if it dies, +${f.a * m}/+${f.h * m} for itself (FOREVER)`,
     }),
     summonCharge: (f, m) => ({
       sk: `tvoje ďalšie vyvolanie v boji vyvolá o ${f.n * m} viac`,
@@ -713,7 +718,7 @@ const Cards = (() => {
       parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
     } else if (def.power && def.power.kw === "onEnemySummon") {
       // Lovec tokenov: vlastný label („Keď súper vyvolá token: …“).
-      const label = { sk: "Keď súper vyvolá token", cs: "Když soupeř vyvolá token", en: "When the enemy summons a token" };
+      const label = { sk: "Keď súper vyvolá prvý token", cs: "Když soupeř vyvolá první token", en: "When the enemy summons their first token" };
       parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
     } else if (def.power) {
       parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${fxText(def.power.fx, m, def.power.kw)}.`);

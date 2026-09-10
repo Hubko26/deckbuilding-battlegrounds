@@ -1668,16 +1668,20 @@ const Engine = (() => {
   // Lovci tokenov (onEnemySummon, E005): súperove živé príšerky s týmto
   // keywordom zasiahnu čerstvo vyvolaný token výbojom (n×stupeň + Živelná
   // sila); ak token padne, lovec rastie NAVŽDY (pa/ph na origináli, ako
-  // B004). Pretečenie sem nejde – token, čo sa nezmestil, nie je na ploche.
+  // B004). Každý lovec strieľa LEN RAZ ZA BOJ – na prvý vyvolaný token
+  // (flag `hunted` na bojovej kópii); rast bez stropu za každý kostík
+  // snowballoval proti undead. Pretečenie sem nejde – token, čo sa
+  // nezmestil, nie je na ploche.
   function huntToken(state, sides, tokPid, tok, events) {
     const hunterPid = other(tokPid);
     let hit = false;
     for (const h of sides[hunterPid]) {
       if (tok.hp <= 0) break;
-      if (h.hp <= 0 || h.silenced) continue;
+      if (h.hp <= 0 || h.silenced || h.hunted) continue;
       const pw = Cards.byId[h.defId].power;
       if (!pw || pw.kw !== "onEnemySummon") continue;
       const fx = pw.fx, m = h.rank;
+      h.hunted = true;
       events.push({ type: "proc", pid: hunterPid, uid: h.uid, kw: "onEnemySummon" });
       powerHit(tok, tokPid, scaledPowerDmg(state, hunterPid, fx, m), h.uid, events);
       hit = true;

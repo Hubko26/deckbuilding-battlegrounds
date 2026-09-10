@@ -109,9 +109,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     Aury E003 t2 (+1/+1) / E009 t5 (+2/+2) navždy; E008 (t4) = cielený
     +1/+1(+⚡) vybranej príšerke do boja.
     Counter na undead hordu, slabé proti veľkým beast telám.
-    E005 (t3) = keď súper vyvolá token, výboj za 1 (+Živelná sila) a ak
-    token padne, +1/+1 NAVŽDY – proti undead/mláďatám vykladaj vždy,
-    kupuj k nemu Živelnú silu (kostíky s U002/aurou inak prežijú).
+    E005 (t3) = na PRVÝ token, čo súper v boji vyvolá, výboj za 1
+    (+Živelná sila), raz za boj; ak token padne, +2/+2 NAVŽDY. Nie je to
+    anti-horda (1 výstrel), je to škálovač proti token rasám – proti
+    undead/mláďatám/Bublinám vykladaj, kupuj k nemu Živelnú silu (kostík
+    s U002/aurou inak prežije a E005 to kolo nerastie).
     E004 Whifflet (Pri útoku: +1/+1 všetkým ŽIVLOM vrátane Bublín) škáluje
     OBE čísla so Živelnou silou – daj ho úplne doľava a s Vichorom rozdá 2×.
   - **Fairy = Po kúzle motor**: F001 battlecry draw (1/2/3 podľa
@@ -250,7 +252,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Undead**: U002 (t1, kostíky +1/+1 v boji – vykladaj každé kolo), U001,
   U003 (t2 Pečať), U004 (t2, target U001/U006/U009), U005/U006 (t3), U008
   (t4 Pečať), U007 (t4 charga), U009 (t5), U010 (t6, Pečať pri smrti –
-  Obranca, nech padne). Proti undead: E005 lovec tokenov, E010, O003.
+  Obranca, nech padne). Proti undead: E010, O003, výboje E001/E006; E005
+  je len škálovač (jeden výstrel za boj), hordu nezastaví.
 - **Elemental**: E002 (t1 Bubliny), E001, E003 (t2 Pečať), E004 (t2 – vľavo,
   s Vichorom 2×), Živelná sila ⚡ + D005 (t3) vždy (každý +1 navždy), E005 (t3,
   proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
@@ -259,7 +262,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
   sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+0 útok), B008
   (t3 rast navždy), B006 (t4 Pečať +0/+1 život), B009 (t4 mrchožrút, vpravo), B010 (t5
-  Pečať). B001 vanilla predaj, keď máš lepšie.
+  Pečať). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám) – vykladaj vľavo, nech
+  padne skoro a buffne zvyšok; kŕmi aj B004/B009.
 - **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
   Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,

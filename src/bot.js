@@ -134,7 +134,7 @@ const Bot = (() => {
       // U002 (kostíky +1/+1 v boji) – cenný s vyvolávačmi kostíkov
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
       // Mrchožrúti (B004 navždy, B009 dočasne) – cennejší s vyvolávačmi Mláďat
-      if (def.power.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005")) * 0.8;
+      if (def.power.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005") + ownedCount(p, "B001")) * 0.8;
     }
     if (def.spell) {
       const spells = ownedSpellCount(p);

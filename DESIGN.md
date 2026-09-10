@@ -202,6 +202,11 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **🐾 Beast – telá a mrchožrút**
 
+- B001 (t1, 2/2, Pri smrti): „+1/+1 všetkým Zvieratám" do konca boja
+  (`buffRace`, evolve ×2/×3). Bola jediná ne-ogrská vanilla – vanilla telá
+  nad krivkou sú identita ogrov, tak dostala schopnosť namiesto statov.
+  Bez Obrancu padne skoro: kŕmi mrchožrútov B004/B009 (`raceDeath`) a
+  zároveň buffne zvyšok plochy – dvojitý payoff za smrť.
 - B007 (t1, Pri smrti) a B005 (t2, 2×) vyvolávajú **Mláďa** 🐣 – fixný
   token 1/1 **s Obrancom** (token má `taunt: true`), škáluje len evolvom
   rodiča (2/2, 4/4). Obranca berie údery a padne skoro → kŕmi sovu B004
@@ -255,14 +260,20 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **✨ Elemental – explozívny archetyp**
 
-- **E005 Lovec tokenov** (t3, 3/4, `onEnemySummon`): „Keď súper vyvolá
-  token: zasiahni ho výbojom za 1; ak zomrie, +1/+1 pre seba NAVŽDY."
-  Hook hneď po položení tokenu v boji (U001 2× kostík = 2 výboje), výboj
-  škáluje so Živelnou silou a stupňom (1/2/3), rast ×stupeň cez `pa/ph`.
-  Kostík 1/1 padne, kostík s U002 (2/2) alebo aurou prežije – živly musia
-  Živelnou silou držať krok s undead aurami. Pretečenie (token mimo plochy)
-  lovca nespustí – únik pre undead cez plnú plochu. Jediný navždy-rast
-  živlov mimo aur; nahradil výboj 3, ktorý bol kópia E001.
+- **E005 Lovec tokenov** (t3, 3/5, `onEnemySummon`): „Keď súper vyvolá
+  prvý token: zasiahni ho výbojom za 1 (raz za boj); ak zomrie, +2/+2 pre
+  seba NAVŽDY." Hook hneď po položení tokenu v boji; **každý lovec strieľa
+  len raz za boj** (flag `hunted` na bojovej kópii) – na prvý token, ktorý
+  súper vyvolá. Výboj škáluje so Živelnou silou a stupňom (1/2/3), rast
+  ×stupeň (+2/+4/+6) cez `pa/ph`. Pôvodne strieľal na každý token a rástol
+  +1/+1 za každý zabitý – proti undead (2–3 kostíky na kartu) to bolo +5 až
+  +9/+9 navždy za boj, snowball bez stropu. Teraz je strop +2/+2 za boj =
+  tempo B008 (t3), ale podmienené súperovými tokenmi. Kostík 1/1 padne,
+  kostík s U002 (2/2) alebo aurou bronzový výboj prežije a E005 to kolo
+  nerastie vôbec – undead má counter vlastnými kartami, živly musia
+  investovať do Živelnej sily. Pretečenie (token mimo plochy) lovca
+  nespustí. Anti-hordu už nerobí E005, ale E001/E006 výboje, Bubliny a
+  E010; trojuholník Elemental > Undead ostáva mäkký.
 - Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E006 (t3, Pri smrti
   **4**), Bublina (token, Pri smrti 1) – mieria na **náhodného** živého
   nepriateľa (predtým najslabší: spoľahlivé kosenie tokenov bolo nudné a
