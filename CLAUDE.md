@@ -47,6 +47,9 @@ commity, UI) je slovenčina.
 
 ## Kľúčové herné pravidlá (výber; detaily v DESIGN.md)
 
+- **Ban rasy** (default zapnutý, checkbox): pred prvým kolom každý hráč
+  vyberie jednu z troch rás (`Engine.pickBan`), z dvoch výberov sa jedna
+  vylosuje a jej karty v celej hre nie sú (`state.banned`, filter v `rollCard`).
 - Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 50 HP.
 - Kúpená karta ide **do balíčka** (nie do ruky); ruka sa doťahuje na 5.
 - Evolve: 3 rovnaké kópie (karta + stupeň) **kdekoľvek** (plocha, ruka, balíček,

@@ -12,6 +12,7 @@ const Engine = (() => {
   const REFRESH_COST = 1;
   const BACKSTAB_BUFF = 1; // ogr „Backstab": Pečať +1/+1 všetkým ogrom za smolný roll
   const COMMON_COUNT = 3;
+  const BAN_OFFER = 3; // fáza BAN: koľko rás dostane každý hráč na výber
   // Pooly kariet (štýl Battlegrounds, ale per hráč): každý hráč má vlastný
   // pool POOL_PRIVATE kópií každej príšery (súkromná ponuka, štartovací
   // balíček, Kniha, Zrkadlo, Klobúk), spoločná ponuka losuje zo spoločného
@@ -121,7 +122,7 @@ const Engine = (() => {
   // bez zmeny). Náhoda stále cez state.rng – determinizmus a replay platia.
   function rollCard(state, tierLimit, poolKey, filter) {
     const pool = state.pools[poolKey];
-    const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && (!filter || filter(d)));
+    const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !isBanned(state, d) && (!filter || filter(d)));
     const bias = poolKey !== "common" && state[poolKey] && state[poolKey].rollBias;
     const weighted = [];
     for (const d of defs) {
@@ -203,22 +204,68 @@ const Engine = (() => {
   function other(pid) { return pid === "p1" ? "p2" : "p1"; }
 
   // ---------- Založenie hry ----------
-  // Štartovací balíček: 10 náhodných príšer tieru 1. Max 2 kópie jednej karty –
-  // trojica by sa hneď spojila (evolve) a lámala by early game.
   // mutatorId: undefined = vyžrebuj z rng (bežná hra), null = bez mutácie
   // (testy, balance sim), string = vynútená konkrétna mutácia.
-  function newGame(rng, mutatorId) {
+  // opts.ban: true = hra začína fázou BAN (state.phase === "ban"): každý hráč
+  // dostane 3 rasy (6 rás rozdelených na dve trojice zo state.rng) a jednu
+  // z nich zabanuje (pickBan); z oboch výberov sa jedna vylosuje a jej karty
+  // v celej hre nie sú (štartovací balíček, obchod, discover, klobúk…).
+  // Štartovacie balíčky a obchod vznikajú až po vylosovaní (setupStart),
+  // inak by v nich mohla byť zabanovaná rasa. Bez ban je poradie losovania
+  // z rng rovnaké ako doteraz (staré záznamy sa prehrajú rovnako).
+  function newGame(rng, mutatorId, opts) {
     const mutator = mutatorId === null ? null : (mutatorId ?? pick(MUTATORS, rng));
     const state = {
       rng, uidSeq: 0, round: 0, phase: "shop", active: null, first: "p1",
       commons: [], winner: null, pendingDiscover: null, mutator,
+      ban: null, // { offers: { p1: [rasy], p2: [rasy] }, picks: { p1, p2 }, by } počas/po fáze BAN
+      banned: null, // id zabanovanej rasy (null = žiadna)
       pools: makePools(),
       p1: makePlayer("p1"),
       p2: makePlayer("p2"),
     };
     if (mutator === "smallArena") { state.p1.hp = 35; state.p2.hp = 35; }
     if (mutator === "marathon") { state.p1.hp = 65; state.p2.hp = 65; }
-    const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell);
+    if (opts && opts.ban) {
+      const races = shuffle(Object.keys(Cards.RACES), rng);
+      state.ban = {
+        offers: { p1: races.slice(0, BAN_OFFER), p2: races.slice(BAN_OFFER, BAN_OFFER * 2) },
+        picks: { p1: null, p2: null },
+        by: null,
+      };
+      state.phase = "ban";
+      return state;
+    }
+    setupStart(state);
+    return state;
+  }
+
+  const isBanned = (state, def) => !!(state.banned && def.race === state.banned);
+
+  // Výber rasy na ban. Legálne len vo fáze "ban", raz za hráča, z jeho
+  // trojice. Keď vyberú obaja, z dvoch rás sa jedna vylosuje (state.rng),
+  // založia sa balíčky a obchod a hra pokračuje prvým kolom (startRound) –
+  // events nesú aj draw prvého ťahu.
+  function pickBan(state, pid, race) {
+    const b = state.ban;
+    if (state.phase !== "ban" || !b || b.picks[pid] || !b.offers[pid].includes(race)) return null;
+    b.picks[pid] = race;
+    const events = [{ type: "banPick", pid, race }];
+    if (!b.picks.p1 || !b.picks.p2) return events;
+    b.by = pick(["p1", "p2"], state.rng);
+    state.banned = b.picks[b.by];
+    events.push({ type: "ban", race: state.banned, by: b.by });
+    state.phase = "shop";
+    setupStart(state);
+    events.push(...startRound(state));
+    return events;
+  }
+
+  // Štartovací balíček: 10 náhodných príšer tieru 1. Max 2 kópie jednej karty –
+  // trojica by sa hneď spojila (evolve) a lámala by early game.
+  function setupStart(state) {
+    const { rng, mutator } = state;
+    const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell && !isBanned(state, d));
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       for (let i = 0; i < 10; i++) {
@@ -235,7 +282,6 @@ const Engine = (() => {
       fillPrivate(state, pid);
       state[pid].spellShop = spellSlot(state, 1, pid);
     }
-    return state;
   }
 
   function makePlayer(id) {
@@ -1885,7 +1931,7 @@ const Engine = (() => {
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
     TIER_MAX, MUTATORS, privateCount, income, seededRng, cardCost, refreshCost,
-    newGame, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
+    newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
     pileCard, drawCards, rollCard, returnToPool, // pre testy a nástroje (cyklus balíčka, pooly, rollBias)

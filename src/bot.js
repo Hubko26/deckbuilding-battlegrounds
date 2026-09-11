@@ -524,7 +524,17 @@ const Bot = (() => {
     }
   }
 
-  return { botTurn, ownedCount, cardScore, dominantRace, isJunk, orderBoard, SUPPORT_RACES };
+  // Fáza BAN: bot zabanuje prvú HLAVNÚ rasu zo svojej trojice (beast,
+  // elemental, undead, fairy) – tie hráč stavia ako build, ban ho bolí viac
+  // než ban žoldnierov (draci, ogri). Trojica je zamiešaná zo seedu, takže
+  // výber pôsobí náhodne, ale bez rng – akcia sa loguje ako pickBan a replay
+  // ju prehrá bez ďalšieho losovania.
+  function pickBan(state, pid) {
+    const offers = (state.ban && state.ban.offers[pid]) || [];
+    return offers.find(r => !SUPPORT_RACES.has(r)) || offers[0] || null;
+  }
+
+  return { botTurn, pickBan, ownedCount, cardScore, dominantRace, isJunk, orderBoard, SUPPORT_RACES };
 })();
 
 if (typeof module !== "undefined") module.exports = Bot;

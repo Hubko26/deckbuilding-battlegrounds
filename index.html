@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=1974b41a">
+  <link rel="stylesheet" href="style.css?v=4cae253b">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -49,6 +49,8 @@
         </div>
         <!-- Mutácie sa dajú vypnúť; v hre po sieti rozhoduje zakladateľ. -->
         <label class="mut-toggle"><input type="checkbox" id="mutToggle"> <span id="mutToggleLbl"></span></label>
+        <!-- Ban rasy na začiatku hry (fáza BAN v engine); v hre po sieti rozhoduje zakladateľ. -->
+        <label class="mut-toggle"><input type="checkbox" id="banToggle"> <span id="banToggleLbl"></span></label>
       </div>
       <!-- Pravidlá hry – obsah generuje game.js (trojjazyčne). -->
       <div id="rulesBox" class="rules-box"></div>
@@ -83,6 +85,8 @@
         <div class="corner bl" id="oppDiscardBox"></div>
         <!-- Pravidlo dnešnej arény (mutácia) – medzi súperovým balíčkom a kôpkou -->
         <div class="mutator hidden" id="mutatorBox"></div>
+        <!-- Zabanovaná rasa – zrkadlovo vpravo medzi súperovou kôpkou a mojím balíčkom -->
+        <div class="mutator ban hidden" id="banBox"></div>
         <div class="corner tr" id="myDiscardBox"></div>
         <div class="corner br" id="myDeckBox"></div>
 
@@ -117,6 +121,15 @@
       </div>
     </section>
 
+    <!-- Fáza BAN: výber rasy, ktorá v hre nebude -->
+    <div id="banOverlay" class="overlay hidden">
+      <div class="win-box">
+        <div class="big" id="banTitle"></div>
+        <div id="banMsg" class="ban-msg"></div>
+        <div class="ban-row" id="banRow"></div>
+      </div>
+    </div>
+
     <!-- Discover overlay -->
     <div id="discoverOverlay" class="overlay hidden">
       <div class="win-box">
@@ -148,13 +161,13 @@
 
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
   <script src="src/i18n.js?v=6d7b8df5"></script>
-  <script src="src/net.js?v=7d070578"></script>
+  <script src="src/net.js?v=dd30d4c4"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=beast2"></script>
-  <script src="src/engine.js?v=c950b9f1"></script>
+  <script src="src/engine.js?v=6a9298ed"></script>
   <script src="src/bot.js?v=mut1"></script>
   <script src="src/claude-bot.js?v=mut1"></script>
-  <script src="src/game.js?v=95b555fc"></script>
+  <script src="src/game.js?v=251c6947"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=f4c9eb6b"></script>

@@ -56,8 +56,10 @@ const verbose = !!opts.verbose;
 const ctx = loadCtx();
 const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
 // mut:false v zázname = hra bez mutácie; staré záznamy flag nemajú (= mutácia zo seedu)
-const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined);
-E.startRound(s);
+// ban:true v zázname = hra začala fázou BAN (akcie pickBan v logu, prvé kolo
+// štartuje až po vylosovaní); staré záznamy flag nemajú (= bez banu)
+const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined, { ban: game.ban === true });
+if (s.phase !== "ban") E.startRound(s);
 
 const boardStr = p => p.board.map(x =>
   `${x.defId}:${x.rank}(${x.atk}/${x.hp}${x.taunt ? "T" : ""})`).join(" ") || "-";

@@ -819,6 +819,35 @@ pravidla v logu); texty v `game.js` (`L.mutators`).
 Zemetrasenie (smrť najslabšej príšerky po boji) zamietnuté – plocha sa po
 boji aj tak vyprázdňuje.
 
+## Ban rasy (fáza BAN na začiatku hry)
+
+Pred prvým kolom si **každý hráč vyberie jednu rasu, ktorú chce zabanovať**.
+Šesť rás sa zo `state.rng` zamieša a rozdelí na dve trojice (p1 dostane prvú,
+p2 druhú – každá rasa je v ponuke presne jedného hráča). Z dvoch vybraných rás
+sa **jedna vylosuje** (`state.rng`) a jej karty **v celej hre nie sú**:
+štartovací balíček, spoločná aj súkromná ponuka, discover (Kniha), Klobúk
+a záložné losovanie z prázdneho poolu (`rollCard` filtruje `state.banned`).
+Kúzla rasu nemajú – ban sa ich netýka.
+
+- Engine: `newGame(rng, mut, { ban: true })` → `state.phase === "ban"`,
+  `state.ban = { offers: { p1, p2 }, picks: { p1, p2 }, by }`. Balíčky a obchod
+  vznikajú až po vylosovaní (`setupStart`), inak by v nich zabanovaná rasa
+  mohla byť. `Engine.pickBan(state, pid, race)` – legálne raz za hráča, len
+  z jeho trojice; druhý výber vylosuje ban, založí balíčky a obchod a rovno
+  spustí prvé kolo (`startRound` – events nesú aj draw). `state.banned` = id
+  rasy, `state.ban.by` = čí výber vyhral. Bez `ban` je poradie losovania z rng
+  rovnaké ako doteraz (staré záznamy sa prehrajú rovnako).
+- UI: checkbox na úvodnej obrazovke (**default ZAPNUTÝ**, pamätá sa
+  `arena.ban`); v hre po sieti rozhoduje zakladateľ – flag `ban` cestuje
+  v `hello`/`start`/`rejoin` správach ako `mut` a zapisuje sa do GameLog
+  (`rebuildFromLog` a `tools/replay.mjs` volajú `startRound` len keď hra
+  nezačína fázou ban). Overlay s tromi veľkými tlačidlami; po výbere „čakám
+  na súpera“, výsledok ide do logu + bubliny. Zabanovaná rasa je počas hry
+  vidno vpravo (🚫 + ikonka rasy, zrkadlo pravidla arény).
+- Bot (aj Claude súper) banuje cez `Bot.pickBan`: prvú HLAVNÚ rasu zo svojej
+  trojice (beast/elemental/undead/fairy), žoldnierov (draci, ogri) až keď iné
+  nemá. Bez rng – akcia sa loguje ako `pickBan`, replay ju prehrá presne.
+
 ## Mobilné UI redesign + zrušenie spoločného obchodu (návrh)
 
 **Stav (2026-09-07):** portrét je prekopaný – hlavička sa počas hry

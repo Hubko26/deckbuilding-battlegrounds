@@ -2710,3 +2710,93 @@ test("Buyback: posledný predaj v ťahu sa dá raz vrátiť (tá istá karta, pe
   assert.equal(p.buyBackUsed, false);
   assert.equal(E.buyBack(state, state.active), null);
 });
+
+// ---------- Fáza BAN ----------
+function freshBan(seed = 11) {
+  const ctx = loadEngine();
+  const state = ctx.Engine.newGame(seeded(seed), null, { ban: true });
+  return { ctx, state, E: ctx.Engine, C: ctx.Cards };
+}
+
+test("ban: newGame s ban dá fázu ban, každému 3 rôzne rasy, balíčky a obchod prázdne", () => {
+  const { state, C } = freshBan();
+  assert.equal(state.phase, "ban");
+  assert.equal(state.banned, null);
+  const all = [...state.ban.offers.p1, ...state.ban.offers.p2];
+  assert.equal(state.ban.offers.p1.length, 3);
+  assert.equal(state.ban.offers.p2.length, 3);
+  assert.deepEqual([...new Set(all)].sort(), Object.keys(C.RACES).sort());
+  assert.equal(state.p1.deck.length, 0);
+  assert.equal(state.commons.length, 0);
+  assert.equal(state.round, 0);
+});
+
+test("ban: bez opts sa nič nemení – rovnaký seed dá rovnaký štart ako doteraz", () => {
+  const ctx = loadEngine();
+  const a = ctx.Engine.newGame(seeded(5), null);
+  const b = ctx.Engine.newGame(seeded(5), null, { ban: false });
+  assert.equal(a.phase, "shop");
+  assert.equal(JSON.stringify(a.p1.deck), JSON.stringify(b.p1.deck));
+  assert.equal(JSON.stringify(a.commons), JSON.stringify(b.commons));
+});
+
+test("ban: nelegálne výbery – cudzia rasa, dvojitý výber, mimo fázy", () => {
+  const { state, E } = freshBan();
+  const foreign = state.ban.offers.p2[0];
+  assert.equal(E.pickBan(state, "p1", foreign), null);
+  const ev = E.pickBan(state, "p1", state.ban.offers.p1[0]);
+  assert.ok(ev && ev[0].type === "banPick");
+  assert.equal(state.phase, "ban"); // ešte čaká na p2
+  assert.equal(E.pickBan(state, "p1", state.ban.offers.p1[1]), null);
+  // bez banu je pickBan nelegálny
+  const plain = loadEngine().Engine.newGame(seeded(1), null);
+  assert.equal(loadEngine().Engine.pickBan(plain, "p1", "beast"), null);
+});
+
+test("ban: po oboch výberoch sa vylosuje jedna z dvoch rás a hra sa rozbehne", () => {
+  const { state, E, C } = freshBan();
+  const r1 = state.ban.offers.p1[1], r2 = state.ban.offers.p2[2];
+  E.pickBan(state, "p1", r1);
+  const ev = E.pickBan(state, "p2", r2);
+  const ban = ev.find(e => e.type === "ban");
+  assert.ok(ban);
+  assert.ok([r1, r2].includes(state.banned));
+  assert.equal(ban.race, state.banned);
+  assert.equal(state.ban.picks[ban.by], state.banned);
+  assert.equal(state.phase, "shop");
+  assert.equal(state.round, 1);
+  assert.equal(state.active, "p1");
+  assert.equal(state.p1.hand.length, 5);
+  for (const pid of ["p1", "p2"]) {
+    assert.equal(state[pid].deck.length + state[pid].hand.length, 10);
+    for (const c of [...state[pid].deck, ...state[pid].hand]) assert.notEqual(C.byId[c.defId].race, state.banned);
+    for (const s of state[pid].priv) assert.notEqual(C.byId[s.defId].race, state.banned);
+  }
+  for (const id of state.commons) assert.notEqual(C.byId[id].race, state.banned);
+});
+
+test("ban: zabanovaná rasa sa nikdy nevylosuje – refreshe, upgrady, vyčerpaný pool", () => {
+  const { state, E, C } = freshBan(3);
+  E.pickBan(state, "p1", state.ban.offers.p1[0]);
+  E.pickBan(state, "p2", state.ban.offers.p2[0]);
+  const banned = state.banned;
+  const p = state.p1;
+  p.tier = 6;
+  for (let i = 0; i < 300; i++) {
+    for (const k of ["p1", "common"]) assert.notEqual(C.byId[E.rollCard(state, 6, k)].race, banned);
+    assert.notEqual(C.byId[E.rollCard(state, 1, "p2", d => d.tier === 1)].race, banned);
+  }
+  // záložné losovanie (prázdny pool) tiež rešpektuje ban
+  for (const k of Object.keys(state.pools.common)) state.pools.common[k] = 0;
+  for (let i = 0; i < 100; i++) assert.notEqual(C.byId[E.rollCard(state, 6, "common")].race, banned);
+});
+
+test("ban: losovanie ide cez state.rng – rovnaký seed a výbery dajú rovnaký výsledok", () => {
+  const run = () => {
+    const { state, E } = freshBan(77);
+    E.pickBan(state, "p2", state.ban.offers.p2[1]);
+    E.pickBan(state, "p1", state.ban.offers.p1[2]);
+    return { banned: state.banned, by: state.ban.by, deck: state.p1.deck.map(c => c.defId), commons: state.commons };
+  };
+  assert.equal(JSON.stringify(run()), JSON.stringify(run())); // (vm kontext: iné prototypy polí)
+});

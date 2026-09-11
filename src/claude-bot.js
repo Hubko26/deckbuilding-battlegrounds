@@ -127,6 +127,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         refreshCost: Engine.refreshCost(state),
       },
       mutator: state.mutator || null, // „Pravidlo dnešnej arény" – nech ho Claude zohľadní
+      bannedRace: state.banned || null, // rasa zabanovaná na začiatku hry – jej karty v hre nie sú
     };
   }
 

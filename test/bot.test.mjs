@@ -328,3 +328,14 @@ test("hard bot: +1 zlato každé kolo (raz za kolo), normal nie", () => {
   ctx.Bot.botTurn(state, "p2", "hard");
   assert.equal(p.bonusRound, state.round);
 });
+
+test("bot: pickBan vyberie hlavnú rasu zo svojej trojice (nie draka/ogra, ak má na výber)", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(61), null, { ban: true });
+  const race = B.pickBan(state, "p2");
+  assert.ok(state.ban.offers.p2.includes(race));
+  const main = state.ban.offers.p2.filter(r => !B.SUPPORT_RACES.has(r));
+  if (main.length) assert.ok(!B.SUPPORT_RACES.has(race));
+  assert.ok(E.pickBan(state, "p2", race));
+});

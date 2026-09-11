@@ -157,6 +157,25 @@ const L = {
     cs: "🎲 Pravidlo dnešní arény (náhodná mutace)",
     en: "🎲 Rule of the day (random mutation)",
   },
+  // Fáza BAN na začiatku hry (engine pickBan).
+  banToggle: {
+    sk: "🚫 Ban rasy (každý vyberie jednu, jedna z dvoch sa vylosuje)",
+    cs: "🚫 Ban rasy (každý vybere jednu, jedna ze dvou se vylosuje)",
+    en: "🚫 Race ban (each picks one, one of the two is drawn)",
+  },
+  banTitle: { sk: "🚫 Ktorá rasa dnes NEBUDE v aréne?", cs: "🚫 Která rasa dnes NEBUDE v aréně?", en: "🚫 Which race is OUT of the arena today?" },
+  banIntro: {
+    sk: "Vyber jednu z troch rás. Súper vyberá z iných troch – z vašich dvoch sa jedna vylosuje a jej karty v hre nebudú.",
+    cs: "Vyber jednu ze tří ras. Soupeř vybírá z jiných tří – z vašich dvou se jedna vylosuje a její karty ve hře nebudou.",
+    en: "Pick one of three races. Your opponent picks from the other three – one of your two picks is drawn and its cards are out of the game.",
+  },
+  banWait: { sk: "Vybrané! Čakám na súpera…", cs: "Vybráno! Čekám na soupeře…", en: "Picked! Waiting for the opponent…" },
+  banOppPicked: { sk: "Súper si vybral rasu na ban", cs: "Soupeř si vybral rasu na ban", en: "Opponent picked a race to ban" },
+  banResult: { sk: "Vylosované: dnes bez rasy", cs: "Vylosováno: dnes bez rasy", en: "Drawn: today without" },
+  banByMe: { sk: "tvoj výber", cs: "tvůj výběr", en: "your pick" },
+  banByOpp: { sk: "súperov výber", cs: "soupeřův výběr", en: "opponent's pick" },
+  banBox: { sk: "bez", cs: "bez", en: "no" },
+  banBoxTitle: { sk: "Zabanovaná rasa", cs: "Zabanovaná rasa", en: "Banned race" },
   yourTurn: { sk: "Tvoj ťah – nakupuj!", cs: "Tvůj tah – nakupuj!", en: "Your turn – go shopping!" },
   enemyTurn: { sk: "Súper nakupuje…", cs: "Soupeř nakupuje…", en: "Opponent is shopping…" },
   buyBack: { sk: "↩️ Vrátiť predaj", cs: "↩️ Vrátit prodej", en: "↩️ Undo sell" },
@@ -517,9 +536,9 @@ function renderRejoinBtn() {
 }
 
 // Hru prehrá z logu (rovnako ako tools/replay.mjs) – vráti stav po poslednej akcii.
-function rebuildFromLog(seed, mut, actions) {
-  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined);
-  Engine.startRound(s);
+function rebuildFromLog(seed, mut, ban, actions) {
+  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true });
+  if (s.phase !== "ban") Engine.startRound(s); // s banom štartuje prvé kolo až pickBan
   for (const [actor, name, ...args] of actions) {
     if (name === "doBattle") { Engine.doBattle(s); continue; }
     if (name === "botTurn") { Bot.botTurn(s, actor, args[0] || "normal"); continue; }
@@ -550,6 +569,12 @@ window.arenaRejoin = code => startRejoin(code);
 // Voľba „hrať bez mutácií" – checkbox na úvodnej obrazovke, pamätá sa
 // v localStorage. V hre po sieti rozhoduje zakladateľ (flag ide v "start").
 function mutsOn() { return $("mutToggle").checked; }
+// Ban rasy: default ZAPNUTÝ, voľba sa pamätá; v hre po sieti rozhoduje zakladateľ.
+function bansOn() { return $("banToggle").checked; }
+try { $("banToggle").checked = localStorage.getItem("arena.ban") !== "0"; } catch { $("banToggle").checked = true; }
+$("banToggle").addEventListener("change", () => {
+  try { localStorage.setItem("arena.ban", bansOn() ? "1" : "0"); } catch {}
+});
 // Default VYPNUTÉ – mutácia je opt-in („1" v localStorage = hráč si ju zapol).
 try { $("mutToggle").checked = localStorage.getItem("arena.muts") === "1"; } catch { $("mutToggle").checked = false; }
 $("mutToggle").addEventListener("change", () => {
@@ -642,6 +667,7 @@ function applyI18n() {
   renderRejoinBtn();
   $("peerHostBtn").textContent = t(L.peerHost);
   $("mutToggleLbl").textContent = t(L.mutToggle);
+  $("banToggleLbl").textContent = t(L.banToggle);
   $("peerJoinBtn").textContent = t(L.peerJoin);
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);
@@ -715,10 +741,10 @@ function startGame() {
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
-  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null);
-  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn() });
+  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn() });
+  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn() });
   enterGameScreen();
-  act(Engine.startRound(state));
+  if (state.phase !== "ban") act(Engine.startRound(state));
   driveFlow();
 }
 
@@ -733,6 +759,48 @@ function enterGameScreen() {
   $("overOverlay").classList.add("hidden");
   logClear();
   renderMutator();
+  renderBanBox();
+}
+
+// „Bez rasy" – ikonka vpravo (zrkadlo pravidla arény); ťuk = pripomenutie v logu.
+function renderBanBox() {
+  const box = $("banBox");
+  const r = state && state.banned;
+  if (!r) { box.classList.add("hidden"); return; }
+  box.classList.remove("hidden");
+  const name = Cards.RACES_NOM[r][I18N.lang];
+  box.innerHTML = `<div class="ic">🚫${Cards.RACE_ICON[r]}</div><div class="lb">${t(L.banBox)} ${name}</div>`;
+  box.title = `${t(L.banBoxTitle)}: ${name}`;
+  box.onclick = () => log(banResultMsg({ race: r, by: state.ban && state.ban.by }));
+}
+
+function banResultMsg(ev) {
+  const by = ev.by ? ` (${t(ev.by === MY ? L.banByMe : L.banByOpp)})` : "";
+  return `🚫 ${t(L.banResult)} ${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]}${by}`;
+}
+
+// Fáza BAN: overlay s trojicou rás pre mňa; po výbere čakáme na súpera.
+function renderBan() {
+  const ov = $("banOverlay");
+  if (!state || state.phase !== "ban") { ov.classList.add("hidden"); return; }
+  ov.classList.remove("hidden");
+  const b = state.ban, mine = b.picks[MY];
+  $("banTitle").textContent = t(L.banTitle);
+  $("banMsg").textContent = mine ? t(L.banWait) : t(L.banIntro);
+  const row = $("banRow");
+  row.innerHTML = "";
+  for (const r of b.offers[MY]) {
+    const btn = document.createElement("button");
+    btn.className = "ban-btn" + (mine === r ? " active" : "");
+    btn.disabled = !!mine;
+    btn.innerHTML = `<span class="ic">${Cards.RACE_ICON[r]}</span><span class="nm">${Cards.RACES_NOM[r][I18N.lang]}</span>`;
+    btn.addEventListener("click", async () => {
+      if (busy || state.phase !== "ban" || b.picks[MY]) return;
+      act(doAction("pickBan", r));
+      await driveFlow();
+    });
+    row.appendChild(btn);
+  }
 }
 
 // „Pravidlo dnešnej arény" – ikonka vľavo medzi súperovým balíčkom a kôpkou.
@@ -766,14 +834,14 @@ function netHandlers() {
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
-      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined);
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false });
+      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true });
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true });
       enterGameScreen();
       $("chatRow").classList.remove("hidden");
       $("chatInput").placeholder = t(L.chatPhNet);
       $("chatInput").value = "";
       saveRejoin();
-      act(Engine.startRound(state));
+      if (state.phase !== "ban") act(Engine.startRound(state));
       driveFlow();
       // msg.v = verzia druhej strany (od hostiteľa/servera); rozdiel = istý desync
       if (msg.v !== APP_V) showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`);
@@ -832,7 +900,7 @@ function netHandlers() {
     canRejoin: () => !!(state && state.phase !== "over" && !fatalShown),
     getRejoin: () => {
       const g = GameLog.current();
-      return g ? { seed: g.seed, mut: g.mut !== false, actions: g.actions } : null;
+      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, actions: g.actions } : null;
     },
     // Preživší: kamarát sa vrátil, log odišiel, hráme ďalej.
     onRejoined: msg => {
@@ -846,13 +914,13 @@ function netHandlers() {
     // Vracajúci sa hráč: prehraj log a pokračuj.
     onRejoin: msg => {
       let s;
-      try { s = rebuildFromLog(msg.seed, msg.mut, msg.actions); }
+      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.actions); }
       catch (e) { fatalShown = false; showFatal(t(L.netDesync), e); return; }
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = s;
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, rejoined: true }, msg.actions);
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, rejoined: true }, msg.actions);
       playerRoundActions = [];
       lastPlayerRound = [];
       busy = false;
@@ -898,7 +966,7 @@ function startNet() {
   $("netUrls").textContent = "";
   $("peerCode").textContent = "";
   $("netMsg").textContent = t(L.netConnecting);
-  Net.connect(netHandlers(), { mut: mutsOn(), v: APP_V });
+  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), v: APP_V });
 }
 
 // Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
@@ -914,7 +982,7 @@ function showPeerSetup() {
 function peerHost() {
   const code = String(1000 + Math.floor(Math.random() * 9000));
   $("peerCode").textContent = "…";
-  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), v: APP_V });
+  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), v: APP_V });
 }
 
 function peerJoin() {
@@ -956,6 +1024,7 @@ function backToPick() {
   $("newGameBtn").classList.add("hidden");
   $("netOverlay").classList.add("hidden");
   $("overOverlay").classList.add("hidden");
+  $("banOverlay").classList.add("hidden");
   $("pickScreen").classList.remove("hidden");
 }
 
@@ -963,6 +1032,19 @@ function backToPick() {
 async function driveFlow() {
   for (;;) {
     if (state.phase === "over") { renderAll(); showOver(); return; }
+    if (state.phase === "ban") {
+      // Bot si vyberie hneď (výber sa ukáže až po vylosovaní); hráč klikne
+      // v overlayi – jeho pickBan hru rozbehne (startRound je v engine).
+      if (mode === "bot" && !state.ban.picks[OPP]) {
+        const race = Bot.pickBan(state, OPP);
+        GameLog.push(OPP, "pickBan", [race]);
+        const ev = Engine.pickBan(state, OPP, race);
+        if (ev && ev.some(e => e.type === "ban")) { act(ev); continue; }
+      }
+      busy = false;
+      renderAll();
+      return; // čaká sa na výber rasy
+    }
     if (state.phase === "battle") { await runBattle(); continue; }
     if (state.active === OPP) {
       if (mode === "bot") { await runBotTurn(); continue; }
@@ -1117,6 +1199,8 @@ async function runClaudeTurn() {
 }
 
 function oppEventMsg(ev) {
+  if (ev.type === "ban") return banResultMsg(ev);
+  if (ev.type === "banPick" && ev.pid === OPP) return t(L.banOppPicked);
   if (ev.pid !== OPP) return null;
   const def = ev.defId ? Cards.byId[ev.defId] : null;
   const name = def ? Cards.nameOf(def, ev.rank || 1, I18N.lang) : "";
@@ -1742,6 +1826,8 @@ function floatText(el, text, heal, delay = 0) {
 function renderAll() {
   if (!state) return;
   hidePreview();
+  renderBan();
+  renderBanBox();
   renderHero($("oppHero"), state[OPP]);
   renderHero($("myHero"), state[MY]);
   renderCorner($("oppDeckBox"), "🂠", t(L.deck), state[OPP].deck.length);
@@ -2284,6 +2370,7 @@ function act(events) {
       log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
       if (ev.hidden) hiddenEvolves.push(Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang));
     }
+    if (ev.type === "ban") { log(banResultMsg(ev)); showTauntBubble(banResultMsg(ev), 4000); }
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
     if (ev.type === "buyBack" && ev.pid === MY) { Sfx.coin(); log(t(L.buyBackMsg)); }
     if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));

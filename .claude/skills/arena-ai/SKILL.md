@@ -17,6 +17,13 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   predaj za 2 (lacnejšie pivotovanie), `smallArena` 35 HP (tempo > scaling),
   `marathon` 65 HP (greed/scaling vyhráva), `gift` kúzlo do ruky každé kolo
   (víly profitujú), `echoCry` battlecry 2× (draci/battlecry telá raj).
+- **Ban rasy** (voliteľné, default zapnuté): pred prvým kolom dostane každý
+  hráč 3 rasy (`state.ban.offers[pid]`), jednu vyberie (`Engine.pickBan`);
+  z oboch výberov sa jedna vylosuje a jej karty v celej hre NIE SÚ
+  (`state.banned`, Claude ju dostáva v stave ako `bannedRace`). Nestavaj na
+  zabanovanej rase – v obchode sa nikdy neobjaví; rasové aury a synergie na
+  ňu sú mŕtve karty. Bot banuje hlavnú rasu zo svojej trojice
+  (`Bot.pickBan`), žoldnierov (draci, ogri) až keď inú nemá.
 - Kolo = nákupná fáza hráča A → nákupná fáza hráča B → automatický boj.
   V nepárnom kole začína p1, v párnom p2.
 - Peniaze: `min(kolo + 2, 10)` na začiatku kola, neminuté prepadnú.
@@ -306,6 +313,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
 Stav hry je `state` (deterministický engine, `src/engine.js`). Legálne
 akcie za hráča `pid` – vracajú events alebo `null` pri nelegálnom ťahu:
 
+- `Engine.pickBan(state, pid, race)` – len vo fáze ban (`state.phase === "ban"`),
+  raz za hráča, rasa z `state.ban.offers[pid]`; druhý výber vylosuje ban
+  a spustí prvé kolo
 - `Engine.buyCommon(state, pid, idx)` / `Engine.buyPrivate(state, pid, idx)` /
   `Engine.buySpell(state, pid)`
 - `Engine.refreshShop(state, pid)` / `Engine.toggleFreeze(state, pid, idx)`
