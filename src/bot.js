@@ -122,6 +122,9 @@ const Bot = (() => {
       if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;
       // F008: permanentná aura pre všetky rasy – vždy dobrá, s kúzlami lepšia
       if (fx.type === "futureAll") score += 3 + ownedSpellCount(p) * 0.4;
+      // E009: +1/+1 za každú vyloženú príšeru rasy za hru – cennejší, čím
+      // viac kariet rasy vlastní (každé kolo ich vykladá znova)
+      if (fx.type === "racePlayedScale") score += 1 + (races[fx.race] || 0) * 0.7;
       if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
       // draci, ktorí zosilňujú RASU cieľa – s dominantnou rasou majú do čoho
       if (dom && (fx.type === "futureRaceOf" || fx.type === "buffRaceOf")) score += 2;
@@ -397,6 +400,13 @@ const Bot = (() => {
         // Klobúk: premeň najslabšiu príšerku – upgrade tela o tier.
         const target = [...p.board].sort((a, b) => (a.atk + a.hp) - (b.atk + b.hp))[0];
         push(Engine.castSpell(state, pid, i, target.uid));
+      } else if (fx.type === "swapDeck" && p.board.length) {
+        // Portál: najslabšie telo (bez tokenov) späť do balíčka, náhodná
+        // príšera z balíčka na jeho miesto. Engine vráti null bez balíčka.
+        const target = [...p.board]
+          .filter(x => !Cards.byId[x.defId].token)
+          .sort((a, b) => (a.atk + a.hp) - (b.atk + b.hp))[0];
+        if (target) push(Engine.castSpell(state, pid, i, target.uid));
       }
     }
 

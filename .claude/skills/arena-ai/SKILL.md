@@ -26,8 +26,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   kúpa: `Engine.buySpell(state, pid)`). Tier spoločných = NIŽŠÍ z tierov
   oboch hráčov; súkromné idú podľa vlastného tieru. Príšera stojí 3,
   kúzla majú vlastnú cenu (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/
-  Vlna/Živelná sila/Blesk/Klobúk/Vichor/Kliatba/Ovčia premena/Poklad 2,
-  Srdce/Zrkadlo/Hviezdna moc 3;
+  Vlna/Živelná sila/Blesk/Klobúk/Vichor/Kliatba/Ovčia premena/Poklad/
+  Portál 2, Srdce/Zrkadlo/Hviezdna moc 3;
   Živelná sila (id `iskra`) = TRVALO všetky výboje/výbuchy +1 damage,
   buffy KÚZIEL +1 na každé nenulové číslo (Jablko +2/+2 → +3/+3, Koreň
   +0/+4 → +0/+5, Vlna +1/+1 → +2/+2; Štít/Svätožiara/Pierko/Vichor bez
@@ -45,11 +45,17 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   vlastnú príšerku na náhodnú o tier vyššiu – hoď na najslabšie telo;
   Zrkadlo (t5) = kópia 1. stupňa cieľa do balíčka – akcelerátor trojíc,
   cieľ vždy karta, ktorej máš najviac kópií; Poklad škriatka (t5) =
-  +2 zlato hneď a +2 v ďalšom kole). Refresh 1, freeze mrazí súkromné aj spell slot.
+  +2 zlato hneď a +2 v ďalšom kole; Kúzelný portál (id `portal`, t5) =
+  vlastná príšerka na ploche sa vymení za NÁHODNÚ príšeru z balíčka, tá
+  sa vyloží aj s battlecry – hoď na najslabšie telo (nie token), keď máš
+  v balíčku veľké karty alebo Pečate; bez príšery v balíčku a kôpke sa
+  nedá zahrať). Refresh 1, freeze mrazí súkromné aj spell slot.
   Pooly: každý hráč má vlastný pool 6 kópií každej príšery, spoločná
   ponuka 3 kópie – tretiu kópiu nevidíš častejšie než prvú, skôr menej;
   zlatá (9 kópií) z obchodu len ak súper kartu nekupuje, inak Zrkadlo/
-  Kniha. Predaj vracia kópiu do poolu. Po každom
+  Kniha. Kúzla majú vlastný súkromný pool: 3 kópie do t3, len 2 kópie
+  pre t4–t6 – Mincu/Jablko kúpiš max 3×, Hviezdnu moc/Portál/Zrkadlo max
+  2× za hru. Predaj vracia kópiu do poolu (aj pri kúzle). Po každom
   boji sa obchod rolluje nanovo; zmrazená karta prežije do nového kola
   a rozmrazí sa (freeze platí jedno kolo).
 - Tier obchodu 1–6, upgrade v štýle Battlegrounds (základ 5/8/9/11/12,
@@ -106,8 +112,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     jednou vlnou. E002 (t1) Pri smrti 2× Bublina 🫧 (1/1, pri smrti výboj
     1) – lacné telá + reťaz výbojov. E007 (t4) Po nákupe Živelná sila +1
     navždy – drž ho na ploche každé kolo, je to hlavný motor rasy.
-    Aury E003 t2 (+1/+1) / E009 t5 (+2/+2) navždy; E008 (t4) = cielený
-    +1/+1(+⚡) vybranej príšerke do boja.
+    Aura E003 t2 (+1/+1) navždy; E008 (t4) = cielený +1/+1(+⚡) vybranej
+    príšerke do boja. E009 (t5) = Pri vyložení +1/+1 pre seba za každého
+    Živla vyloženého v tejto hre (aj seba, tokeny nie; bez ⚡ a stupňa) –
+    vykladaj ho každé kolo, v neskorej hre je to najväčšie telo živlov.
     Counter na undead hordu, slabé proti veľkým beast telám.
     E005 (t3) = na PRVÝ token, čo súper v boji vyvolá, výboj za 1
     (+Živelná sila), raz za boj; ak token padne, +2/+2 NAVŽDY. Nie je to
@@ -151,8 +159,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     obráti proti tebe (chvost mince, ožratý úder do seba, chaos spúšťač na
     súperovu príšerku, divoká rana do vlastnej, zmätený obranca u súpera),
     dostanú **VŠETCI tvoji ogri Pečať +1/+1 navždy** – aj budúce kópie
-    z balíčka a obchodu. **Strop 1 Pečať za kolo.** Smola je teda payoff,
-    nie trest: ogri sú plnohodnotná hlavná rasa, keď ich máš viac.
+    z balíčka a obchodu. **Bez stropu – každý smolný roll = Pečať.** Smola
+    je teda payoff, nie trest: ogri sú plnohodnotná hlavná rasa, keď ich
+    máš viac.
     Efekty (môžu udrieť aj vlastníka):
     O001 hod mincou (battlecry +4/+4 alebo −2/−2), O006 Pri útoku 50 %
     sa trafí sám za ½ útoku, O002 (5/6) Pred bojom spustí schopnosť
@@ -218,7 +227,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
    má aspoň 4 telá. S 1–3 telami na ploche NEUPGRADUJ – telá majú prednosť.
 5. **Nakupuj podľa tejto priority** (všetko zlato, neminuté prepadne):
    a) tretia kópia = trojica (aj kópie v balíčku a kôpke – `copiesOwnedTowardTriple`),
-   b) Pečať (aura) vlastnej rasy (E003/E009, B002/B006/B010,
+   b) Pečať (aura) vlastnej rasy (E003, B002/B006/B010,
       U003/U008/U010, F008; draci D003/D009 s targetom na tvoju rasu),
    c) motor rasy (undead U002/U005/U006, elemental E007/E004 + Živelná
       sila/D005 (t3), beast B004/B007/B005/B003/B008, fairy F002/F004 + kúzla),
@@ -257,8 +266,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Elemental**: E002 (t1 Bubliny), E001, E003 (t2 Pečať), E004 (t2 – vľavo,
   s Vichorom 2×), Živelná sila ⚡ + D005 (t3) vždy (každý +1 navždy), E005 (t3,
   proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
-  E008 (t4, +1/+1(+⚡) vybranej – na najsilnejšie telo), E009 (t5 Pečať
-  +2/+2), E010 (t6). Slabí proti beast telám.
+  E008 (t4, +1/+1(+⚡) vybranej – na najsilnejšie telo), E009 (t5, +1/+1
+  za každého vyloženého Živla za hru – vykladaj každé kolo), E010 (t6).
+  Slabí proti beast telám.
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
   sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+0 útok), B008
   (t3 rast navždy), B006 (t4 Pečať +0/+1 život), B009 (t4 mrchožrút, vpravo), B010 (t5
@@ -273,8 +283,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
   **generátoroch Backstabu** – O006 (Pri útoku,
   hádže každý boj), O001 (lacný hod), O002/O007/O010. Vanilla telá
   O004/O005/O008/O009 Pečať negenerujú, len z nej žijú, takže ich ber až
-  ako doplnok. Jedna Pečať za kolo je strop, viac generátorov naraz
-  netreba – radšej jeden spoľahlivý (O006) a zvyšok telá. O003 len bez
+  ako doplnok. Pečať nemá strop – každý ožratý úder, chvost mince či
+  chaos na súperovej karte je +1/+1 celej rase, takže viac generátorov
+  (2–3× O006 vľavo, Vichor 🌪️ na O006) Pečať zrýchľuje. O003 len bez
   vlastného swarmu. Ako splash bez generátorov je ogre stále len telo.
 - **Draci** patria do každého buildu: D002/D008 buff rasy cieľa do boja,
   D003/D009 Pečať rasy cieľa, D004 discover rasy, D010 evolvne cieľ.

@@ -288,25 +288,33 @@ test("evolve: 3 strieborné dajú zlatú so statmi ×4; zlatá sa už nespája",
   assert.equal(p.hand.length, 3); // zlaté ostávajú
 });
 
-test("evolve prenáša buffy DVOCH najsilnejších kópií (perma aj dočasné), aura sa neráta dvakrát", () => {
+test("evolve: dočasné buffy prepadnú, permanentný rast DVOCH najsilnejších kópií ostáva, aura sa neráta dvakrát", () => {
   const { state, E, C } = fresh(85);
   const p = state.p1;
   p.deck = []; p.discard = [];
-  const c1 = E.makeInst(state, "B001", 1); // +2/+2 dočasný buff
-  c1.atk += 2; c1.hp += 2; c1.maxHp += 2;
-  const c2 = E.makeInst(state, "B001", 1); // +1/+1 permanentný rast
+  const c1 = E.makeInst(state, "B001", 1); // +4/+4 dočasný buff (hod mincou) – prepadne
+  c1.atk += 4; c1.hp += 4; c1.maxHp += 4;
+  const c2 = E.makeInst(state, "B001", 1); // +1/+1 permanentný rast – ostáva
   c2.atk += 1; c2.hp += 1; c2.maxHp += 1; c2.pa = 1; c2.ph = 1;
-  const c3 = E.makeInst(state, "B001", 1); // čistá – jej (nulový) bonus prepadne
+  const c3 = E.makeInst(state, "B001", 1); // +2/+2 perma – ostáva (top 2 podľa rastu)
+  c3.atk += 2; c3.hp += 2; c3.maxHp += 2; c3.pa = 2; c3.ph = 2;
   p.board = [Object.assign(c1, { slot: 0 }), Object.assign(c2, { slot: 1 })];
   p.hand = [c3];
   E.checkEvolve(state, p, []);
   const s = p.hand[0];
   assert.equal(p.board.length, 0);
   assert.equal(s.rank, 2);
-  assert.equal(s.atk, C.byId["B001"].atk * 2 + 2 + 1); // základ 4 + bonusy top 2 kópií
-  assert.equal(s.hp, C.byId["B001"].hp * 2 + 2 + 1);
-  assert.equal(s.pa, 1); // perma rast cestuje ďalej
-  assert.equal(s.ph, 1);
+  assert.equal(s.atk, C.byId["B001"].atk * 2 + 1 + 2); // základ 4 + perma rast top 2 (dočasné +4 preč)
+  assert.equal(s.hp, C.byId["B001"].hp * 2 + 1 + 2);
+  assert.equal(s.pa, 3); // perma rast cestuje ďalej
+  assert.equal(s.ph, 3);
+  // Tretí perma rast prepadne: tri kópie po +1/+1 dajú +2/+2.
+  const r = state.p2;
+  r.deck = []; r.discard = []; r.board = [];
+  r.hand = [1, 2, 3].map(() => { const x = E.makeInst(state, "B003", 1); x.pa = 1; x.ph = 1; x.atk += 1; x.hp += 1; x.maxHp += 1; return x; });
+  E.checkEvolve(state, r, []);
+  assert.equal(r.hand[0].atk, C.byId["B003"].atk * 2 + 2);
+  assert.equal(r.hand[0].pa, 2);
 
   // Aura sa neduplikuje: kópie buffnuté aurou +1/+1 dajú evolvednutej
   // presne 1× auru (z makeInst), žiadne bonusy navyše.
@@ -733,6 +741,53 @@ test("spell slot: obchod ponúka kúzlo mimo príšerích slotov, kúpa doplní 
   assert.equal(ev[0].type, "buy");
   assert.ok(p.deck.some(c => c.defId === defId));
   assert.ok(C.byId[p.spellShop.defId].spell); // slot hneď doplnený kúzlom
+});
+
+test("spell pool: 3 kópie do t3, 2 pre t4+; slot berie z poolu, refresh/predaj vracia, vypredané = záložný roll bez src", () => {
+  const { state, E, C } = fresh(33);
+  const p = state.p1;
+  assert.equal(state.pools.p1.stit, 2);      // 3 kópie, jedna už v slote (t1 = len Štít)
+  assert.equal(state.pools.p1.minca, 3);
+  assert.equal(state.pools.p1.srdce, 2);     // t4
+  assert.equal(state.pools.p1.hviezda, 2);   // t6
+  assert.equal(state.pools.p1.iskricka, undefined); // token mimo poolu
+  assert.ok(!Object.keys(state.pools.common).some(id => C.byId[id].spell)); // spoločný pool bez kúziel
+  E.startRound(state);
+  assert.equal(p.spellShop.defId, "stit");
+  assert.equal(p.spellShop.src.p1, 1);
+  // Refresh: nekúpený Štít sa vráti a nový sa vezme – pool ostáva 2.
+  p.money = 10;
+  E.refreshShop(state, "p1");
+  assert.equal(state.pools.p1.stit, 2);
+  // Kúpa: kópia nesie src do balíčka; slot doplní ďalší Štít z poolu.
+  p.hand = []; p.deck = []; p.discard = [];
+  E.buySpell(state, "p1");
+  assert.equal(p.deck.find(c => c.defId === "stit").src.p1, 1);
+  assert.equal(state.pools.p1.stit, 1);
+  E.buySpell(state, "p1");
+  assert.equal(state.pools.p1.stit, 0);
+  // Tretia kópia je v slote, pool prázdny – po kúpe záložný roll bez src.
+  E.buySpell(state, "p1");
+  assert.equal(p.spellShop.defId, "stit");
+  assert.equal(p.spellShop.src, undefined);
+  assert.equal(p.deck.filter(c => c.defId === "stit").length, 3);
+  p.money = 10;
+  E.buySpell(state, "p1"); // záložná kópia – bez src, pool ostáva 0
+  assert.equal(state.pools.p1.stit, 0);
+  assert.equal(p.deck.filter(c => c.defId === "stit" && !c.src).length, 1);
+  // Predaj kúzla z ruky vráti kópiu; zoslanie nie (src prežije cez spentSpells).
+  const s1 = E.makeInst(state, "stit", 1); s1.src = { p1: 1 };
+  const s2 = E.makeInst(state, "stit", 1); s2.src = { p1: 1 };
+  p.hand = [s1, s2];
+  E.sellCard(state, "p1", "hand", 0);
+  assert.equal(state.pools.p1.stit, 1);
+  const tgt = E.makeInst(state, "B001", 1); tgt.slot = 0; p.board = [tgt];
+  E.castSpell(state, "p1", 0, tgt.uid);
+  assert.equal(state.pools.p1.stit, 1);                      // zoslanie nevracia
+  assert.equal(p.spentSpells[0].src.p1, 1);                  // src cestuje ďalej
+  // Strop pri vracaní: t4 kúzlo max 2.
+  E.returnToPool(state, "p1", "srdce", 5);
+  assert.equal(state.pools.p1.srdce, 2);
 });
 
 test("spell slot: freeze all zmrazí aj kúzlo, prežije refresh aj koniec kola", () => {
@@ -1309,6 +1364,38 @@ test("spellScale F010: +1/+1 za každé kúzlo zahrané v tejto hre (pri vylože
   assert.equal(m.hp, C.byId["F010"].hp + 2);
 });
 
+test("racePlayedScale E009: +1/+1 za každého Živla vyloženého v tejto hre (aj seba), bez ⚡ a stupňa", () => {
+  const { state, E, C } = fresh(77);
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = []; p.discard = [];
+  p.dmgBoost = 3; // Živelná sila sa NEpočíta
+  p.hand = [E.makeInst(state, "E001", 1), E.makeInst(state, "B001", 1), E.makeInst(state, "E002", 1)];
+  E.playMinion(state, "p1", 0); // živel 1
+  E.playMinion(state, "p1", 0); // zviera – nepočíta sa
+  E.playMinion(state, "p1", 0); // živel 2
+  assert.equal(p.racePlayed.elemental, 2);
+  assert.equal(p.racePlayed.beast, 1);
+  p.hand = [E.makeInst(state, "E009", 1)];
+  E.playMinion(state, "p1", 0);
+  const m = p.board.find(x => x.defId === "E009");
+  assert.equal(p.racePlayed.elemental, 3); // počíta aj seba
+  assert.equal(m.atk, C.byId["E009"].atk + 3);
+  assert.equal(m.hp, C.byId["E009"].hp + 3);
+  // Strieborný: základ ×2, bonus sa stupňom nenásobí.
+  p.hand = [E.makeInst(state, "E009", 2)];
+  E.playMinion(state, "p1", 0);
+  const s = p.board.find(x => x.defId === "E009" && x.rank === 2);
+  assert.equal(s.atk, C.byId["E009"].atk * 2 + 4);
+  // Buff je dočasný – po boji sa kópia v kôpke vracia čistá (žiadne pa/ph).
+  E.endShopTurn(state, "p1");
+  state.p2.board = []; state.p2.hand = [];
+  E.doBattle(state);
+  assert.ok(!p.discard.some(c => c.defId === "E009" && (c.pa || c.ph)));
+  assert.equal(p.racePlayed.elemental, 4); // počítadlo prežije boj
+  assert.match(C.cardText(C.byId["E009"], 1, "sk", false, 0), /\+1\/\+1 pre seba za každého Živla \(aj seba\), ktorého si v tejto hre vyložil/);
+});
+
 test("F006 battlecry: pridá Iskričku do ruky; jednorazová – po zoslaní aj po ťahu zmizne", () => {
   const { state, E, C } = fresh(72);
   E.startRound(state);
@@ -1521,6 +1608,49 @@ test("Kúzelný klobúk: premení cieľ na náhodnú príšeru o tier vyššiu (
   assert.equal(fresh2.rank, 1);
   assert.equal(fresh2.slot, 2); // slot ostáva
   assert.ok(!p.discard.some(c => c.defId === "B001"), "originál zmizol z hry");
+});
+
+test("Kúzelný portál: vymení príšerku na ploche za náhodnú z balíčka, tá sa vyloží (battlecry, slot, pa/ph)", () => {
+  const { state, E, C } = fresh(93);
+  E.startRound(state);
+  const p = state.p1;
+  p.hand = [E.makeInst(state, "portal", 1)];
+  const weak = E.makeInst(state, "B001", 1); weak.slot = 3; weak.atk += 5; // dočasný buff padne
+  weak.pa = 1; weak.ph = 1; weak.atk += 1; weak.hp += 1; weak.maxHp += 1;   // trvalý rast cestuje
+  p.board = [weak];
+  // Balíček: kúzlo (preskočí sa) + jediná príšera – Pečať B010 so stupňom 2 a rastom.
+  p.deck = [{ defId: "minca", rank: 1 }, { defId: "B010", rank: 2, pa: 2, ph: 2 }];
+  p.discard = [];
+  const events = E.castSpell(state, "p1", 0, weak.uid);
+  assert.ok(events, "legálny ťah");
+  const sw = events.find(e => e.type === "swapDeck");
+  assert.equal(sw.fromDefId, "B001"); assert.equal(sw.toDefId, "B010");
+  assert.equal(p.board.length, 1);
+  const fresh2 = p.board[0];
+  assert.equal(fresh2.defId, "B010"); assert.equal(fresh2.rank, 2);
+  assert.equal(fresh2.slot, 3);                                     // slot ostáva
+  assert.ok(p.raceBuffs.beast && p.raceBuffs.beast.a === 2, "battlecry Pečať (strieborná +2/+2) sa spustil");
+  assert.equal(fresh2.atk, C.byId["B010"].atk * 2 + 2 + 2);         // stupeň + pa z balíčka + vlastná Pečať
+  assert.equal(p.racePlayed.beast, 1);                              // počíta sa ako vyložená
+  const out = p.deck.find(c => c.defId === "B001");
+  assert.ok(out, "B001 odišiel do balíčka");
+  assert.equal(out.pa, 1); assert.equal(out.ph, 1);                  // trvalý rast prežil
+  assert.ok(p.deck.some(c => c.defId === "minca"));                  // kúzlo ostalo v balíčku
+  assert.ok(!p.deck.some(c => c.defId === "B010"));
+  // Token vymeniť nejde; bez príšery v balíčku aj kôpke je ťah nelegálny.
+  p.hand = [E.makeInst(state, "portal", 1)];
+  const tok = E.makeInst(state, "kostik", 1, p); tok.slot = 0; p.board.push(tok);
+  assert.equal(E.castSpell(state, "p1", 0, tok.uid), null);
+  p.deck = [{ defId: "minca", rank: 1 }]; p.discard = [];
+  assert.equal(E.castSpell(state, "p1", 0, fresh2.uid), null);
+  assert.equal(p.hand.length, 1, "nelegálny ťah kúzlo neminie");
+  // Prázdny balíček sa doplní z kôpky (reshuffle).
+  p.discard = [{ defId: "O004", rank: 1 }];
+  const ev2 = E.castSpell(state, "p1", 0, fresh2.uid);
+  assert.ok(ev2.some(e => e.type === "reshuffle"));
+  assert.equal(p.board.find(x => !Cards_isToken(x)).defId, "O004");
+  assert.match(C.cardText(C.byId["portal"], 1, "sk"), /^Vymeň vlastnú príšerku na ploche za náhodnú príšeru z balíčka/);
+  function Cards_isToken(x) { return !!C.byId[x.defId].token; }
 });
 
 test("Poklad škriatka: +2 hneď a +2 na začiatku ďalšieho kola", () => {
@@ -1931,7 +2061,7 @@ test("ogr backstab: Pečať platí aj na budúce ogrie kópie", () => {
   assert.equal(fresh004.hp, 5);
 });
 
-test("ogr backstab: strop 1 Pečať za kolo aj pri viacerých smolných rolloch", () => {
+test("ogr backstab: každý smolný roll dá Pečať – bez stropu za kolo", () => {
   let seen = false;
   for (let seed = 1; seed <= 60 && !seen; seed++) {
     const { state, E } = fresh(seed);
@@ -1949,9 +2079,9 @@ test("ogr backstab: strop 1 Pečať za kolo aj pri viacerých smolných rolloch"
     const back = events.filter(e => e.type === "backstab" && e.pid === "p1");
     if (drunk.length >= 2) {
       seen = true;
-      assert.equal(back.length, 1); // strop: koľkokoľvek smoly = jedna Pečať
-      assert.equal(state.p1.raceBuffs.ogre.a, 1);
-      assert.equal(state.p1.raceBuffs.ogre.h, 1);
+      assert.equal(back.length, drunk.length); // každý ožratý úder = Pečať
+      assert.equal(state.p1.raceBuffs.ogre.a, drunk.length);
+      assert.equal(state.p1.raceBuffs.ogre.h, drunk.length);
     }
   }
   assert.ok(seen, "nenašiel sa boj s aspoň dvoma ožratými údermi");

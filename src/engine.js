@@ -21,6 +21,12 @@ const Engine = (() => {
   // zlatej: 6 vlastných + 3 spoločné = 9 = presne zlatá, ak súper nekúpi nič.
   const POOL_PRIVATE = 6;
   const POOL_COMMON = 3;
+  // Kúzla majú tiež pool – len súkromný (spell slot je súkromný): 3 kópie
+  // do t3, 2 kópie pre t4–t6 (silné kúzla, nech ich nejde spamovať).
+  // Iskrička (token) pool nemá. Predaj kúzla kópiu vráti.
+  const SPELL_POOL_LOW = 3;
+  const SPELL_POOL_HIGH = 2;
+  const spellPoolCap = def => def.tier >= 4 ? SPELL_POOL_HIGH : SPELL_POOL_LOW;
   const TIER_MAX = 6;
   // Drahšie než HS Battlegrounds (5/7/8/11/10): trojice tu chodia zadarmo
   // cyklom balíčka (netreba platiť refreshe), takže zlata zvyšuje viac.
@@ -134,8 +140,7 @@ const Engine = (() => {
   // karty pool nenafúknu).
   function returnToPool(state, poolKey, defId, n = 1) {
     const pool = state.pools[poolKey];
-    const cap = poolKey === "common" ? POOL_COMMON : POOL_PRIVATE;
-    pool[defId] = Math.min(cap, (pool[defId] || 0) + n);
+    pool[defId] = Math.min(poolCap(poolKey, defId), (pool[defId] || 0) + n);
   }
 
   // Zdroj kópií karty ({ common: 1 } / { p1: 3 }) – evolve zdroje sčíta,
@@ -154,7 +159,12 @@ const Engine = (() => {
   function makePools() {
     const pools = { p1: {}, p2: {}, common: {} };
     for (const d of Cards.DEFS) {
-      if (d.spell) continue;
+      if (d.token) continue;
+      if (d.spell) {
+        pools.p1[d.id] = spellPoolCap(d);
+        pools.p2[d.id] = spellPoolCap(d);
+        continue;
+      }
       pools.p1[d.id] = POOL_PRIVATE;
       pools.p2[d.id] = POOL_PRIVATE;
       pools.common[d.id] = POOL_COMMON;
@@ -162,10 +172,32 @@ const Engine = (() => {
     return pools;
   }
 
-  function rollSpell(state, tierLimit) {
-    const pool = Cards.DEFS.filter(d => d.spell && d.tier <= tierLimit);
-    // Tier 1 má vždy aspoň jedno kúzlo (Minca), pool nie je nikdy prázdny.
-    return pick(pool, state.rng).id;
+  function poolCap(poolKey, defId) {
+    const def = Cards.byId[defId];
+    if (def && def.spell) return spellPoolCap(def);
+    return poolKey === "common" ? POOL_COMMON : POOL_PRIVATE;
+  }
+
+  // Kúzlo do spell slotu: vážené podľa zostávajúcich kópií v súkromnom
+  // poole hráča (ako rollCard), vylosované z poolu ubudne. Vypredaný pool
+  // pre daný tier → záložné losovanie bez limitu a bez src (prázdny slot
+  // nechceme; na t1 je len Štít ×3). Vracia { defId, src? }.
+  function rollSpell(state, tierLimit, poolKey) {
+    const pool = state.pools[poolKey];
+    const defs = Cards.DEFS.filter(d => d.spell && !d.token && d.tier <= tierLimit);
+    const weighted = [];
+    for (const d of defs) for (let i = 0; i < (pool[d.id] || 0); i++) weighted.push(d.id);
+    if (weighted.length) {
+      const id = pick(weighted, state.rng);
+      pool[id]--;
+      return { defId: id, src: { [poolKey]: 1 } };
+    }
+    return { defId: pick(defs, state.rng).id };
+  }
+
+  // Nový (nezmrazený) spell slot hráča.
+  function spellSlot(state, tierLimit, pid) {
+    return { ...rollSpell(state, tierLimit, pid), frozen: false };
   }
 
   function other(pid) { return pid === "p1" ? "p2" : "p1"; }
@@ -201,7 +233,7 @@ const Engine = (() => {
     for (let i = 0; i < commonCount; i++) state.commons.push(rollCard(state, 1, "common"));
     for (const pid of ["p1", "p2"]) {
       fillPrivate(state, pid);
-      state[pid].spellShop = { defId: rollSpell(state, 1), frozen: false };
+      state[pid].spellShop = spellSlot(state, 1, pid);
     }
     return state;
   }
@@ -209,7 +241,6 @@ const Engine = (() => {
   function makePlayer(id) {
     return {
       id, hp: HERO_HP, tier: 1, reachedRound: 1, money: 0,
-      backstabRound: 0, // ogri: kolo, v ktorom naposledy padla Pečať za backstab (strop 1/kolo)
       deck: [], hand: [], board: [], discard: [], priv: [],
       bought: [], // čo nakúpil v tomto kole
       raceBuffs: {}, // permanentné aury: { beast: {a, h}, ... }
@@ -227,6 +258,7 @@ const Engine = (() => {
       goldNext: 0, // Poklad škriatka: zlato navyše na začiatku ďalšieho kola
       rollBias: null, // { race, weight } – bot: súkromná ponuka praje jeho rase (rollCard)
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
+      racePlayed: {}, // koľko príšer každej rasy hráč vyložil z ruky za celú hru (racePlayedScale)
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
       giftRound: 0, // mutácia „gift": v ktorom kole hráč naposledy dostal kúzlo
     };
@@ -268,7 +300,10 @@ const Engine = (() => {
       for (const s of p.priv) s.frozen = false;
       fillPrivate(state, pid);
       if (p.spellShop.frozen) p.spellShop.frozen = false;
-      else p.spellShop.defId = rollSpell(state, p.tier);
+      else {
+        returnSrc(state, p.spellShop.defId, p.spellShop.src); // nekúpené kúzlo späť do poolu
+        p.spellShop = spellSlot(state, p.tier, pid);
+      }
     }
     state.active = state.first;
     return beginShopTurn(state, state.active);
@@ -282,7 +317,9 @@ const Engine = (() => {
     // aby nebralo miesto normálnemu draw).
     if (state.mutator === "gift" && p.giftRound !== state.round && p.hand.length < HAND_MAX) {
       p.giftRound = state.round;
-      const inst = makeInst(state, rollSpell(state, p.tier));
+      const r = rollSpell(state, p.tier, p.id); // darované kúzlo ide z poolu (predaj ho vráti)
+      const inst = makeInst(state, r.defId);
+      if (r.src) inst.src = r.src;
       inst.slot = freeSlot(p.hand, HAND_MAX);
       p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: inst.defId });
@@ -368,25 +405,19 @@ const Engine = (() => {
   }
 
   // Odoberie `need` kópií v poradí plocha → ruka → balíček → kôpka. Pri každej
-  // si zapíše bonusy NAD základ stupňa (bez aury – tú dostane evolvnutá karta
-  // znova pri vzniku). Kópie v balíčku/kôpke nesú len permanentný rast (pa/ph).
+  // si zapíše LEN permanentný rast (pa/ph) – dočasné buffy (Jablko, hod
+  // mincou, dračí buff…) pri evolve prepadnú, rovnako ako pri cykle
+  // balíčka. Auru dostane evolvnutá karta znova pri vzniku (makeInst).
   // Vráti { copies, srcAll, boardSlot, hidden }: slot prvej kópie z plochy
   // a hidden=true, ak sa použila aspoň jedna neviditeľná kópia.
   function consumeEvolveCopies(p, group, need) {
-    const def = Cards.byId[group.defId];
-    const aura = (def.race && p.raceBuffs[def.race]) || { a: 0, h: 0 };
-    const baseA = def.atk * Cards.STAT_MULT[group.rank] + aura.a;
-    const baseH = def.hp * Cards.STAT_MULT[group.rank] + aura.h;
     const out = { copies: [], srcAll: {}, boardSlot: null, hidden: false }; // srcAll: zdroje všetkých kópií (predaj striebornej vráti 3 kópie)
     const noteInst = inst => {
-      out.copies.push({
-        a: Math.max(0, inst.atk - baseA), h: Math.max(0, inst.maxHp - baseH),
-        pa: inst.pa || 0, ph: inst.ph || 0,
-      });
+      out.copies.push({ pa: inst.pa || 0, ph: inst.ph || 0 });
       addSrc(out.srcAll, inst.src);
     };
     const noteRef = c => {
-      out.copies.push({ a: c.pa || 0, h: c.ph || 0, pa: c.pa || 0, ph: c.ph || 0 });
+      out.copies.push({ pa: c.pa || 0, ph: c.ph || 0 });
       addSrc(out.srcAll, c.src);
     };
     while (need > 0 && group.board.length) {
@@ -414,13 +445,13 @@ const Engine = (() => {
     return out;
   }
 
-  // Evolvnutá karta si nechá bonusy DVOCH najsilnejších kópií (podľa
-  // celkového bonusu) – tretia prepadne, inak by evolve staty len sčítal.
+  // Evolvnutá karta si nechá permanentný rast DVOCH najsilnejších kópií
+  // (podľa celkového rastu) – tretia prepadne, inak by evolve staty len sčítal.
   function mergeEvolveBonus(copies) {
-    const sorted = [...copies].sort((x, y) => (y.a + y.h) - (x.a + x.h));
+    const sorted = [...copies].sort((x, y) => (y.pa + y.ph) - (x.pa + x.ph));
     return sorted.slice(0, 2).reduce(
-      (s, c) => ({ a: s.a + c.a, h: s.h + c.h, pa: s.pa + c.pa, ph: s.ph + c.ph }),
-      { a: 0, h: 0, pa: 0, ph: 0 });
+      (s, c) => ({ pa: s.pa + c.pa, ph: s.ph + c.ph }),
+      { pa: 0, ph: 0 });
   }
 
   // Nová karta vznikne v ruke (battlecry sa dá zahrať znova, silnejší). Pri
@@ -435,8 +466,10 @@ const Engine = (() => {
       return null;
     }
     const evolved = makeInst(state, defId, rank + 1, p);
-    buff(evolved, bonus.a, bonus.h);
-    if (bonus.pa || bonus.ph) { evolved.pa = bonus.pa; evolved.ph = bonus.ph; }
+    if (bonus.pa || bonus.ph) {
+      buff(evolved, bonus.pa, bonus.ph);
+      evolved.pa = bonus.pa; evolved.ph = bonus.ph;
+    }
     if (srcAll.src) evolved.src = srcAll.src;
     if (handFull) {
       evolved.slot = boardSlot;
@@ -483,9 +516,9 @@ const Engine = (() => {
     if (p.money < cardCost(defId)) return null;
     p.money -= cardCost(defId);
     const events = [{ type: "buy", pid, defId }];
-    acquireCard(state, p, defId, events);
+    acquireCard(state, p, defId, events, p.spellShop.src); // src cestuje s kópiou (predaj vráti do poolu)
     p.bought.push(defId);
-    p.spellShop = { defId: rollSpell(state, p.tier), frozen: false };
+    p.spellShop = spellSlot(state, p.tier, pid);
     return events;
   }
 
@@ -522,7 +555,10 @@ const Engine = (() => {
       returnToPool(state, pid, p.priv[i].defId);
       p.priv[i] = { defId: rollCard(state, p.tier, pid), frozen: false };
     }
-    if (!p.spellShop.frozen) p.spellShop.defId = rollSpell(state, p.tier);
+    if (!p.spellShop.frozen) {
+      returnSrc(state, p.spellShop.defId, p.spellShop.src);
+      p.spellShop = spellSlot(state, p.tier, pid);
+    }
     return [{ type: "refresh", pid }];
   }
 
@@ -574,12 +610,27 @@ const Engine = (() => {
     p.board.push(inst);
     sortBoard(p);
     const events = [{ type: "play", pid, uid: inst.uid, defId: inst.defId }];
+    enterBoard(state, p, inst, events, target);
+    checkEvolve(state, p, events);
+    return events;
+  }
+
+  // Príšerka práve vstúpila na plochu (z ruky alebo cez Kúzelný portál):
+  // počítadlo rasy, dračí bojový buff a battlecry. Volajúci ju už vložil
+  // do p.board so slotom.
+  function enterBoard(state, p, inst, events, target) {
     const def = Cards.byId[inst.defId];
+    // Trvalé počítadlo vyložených príšer podľa rasy (E009) – rastie PRED
+    // battlecry, takže škálovač počíta aj seba. Tokeny sem nejdú.
+    if (def.race) {
+      if (!p.racePlayed) p.racePlayed = {};
+      p.racePlayed[def.race] = (p.racePlayed[def.race] || 0) + 1;
+    }
     // Dračí buff „do konca boja" platí aj pre karty vyložené po ňom.
     const fb = def.race && p.fightRaceBuffs[def.race];
     if (fb && (fb.a || fb.h)) {
       buff(inst, fb.a, fb.h);
-      events.push({ type: "buff", pid, uid: inst.uid, a: fb.a, h: fb.h });
+      events.push({ type: "buff", pid: p.id, uid: inst.uid, a: fb.a, h: fb.h });
     }
     if (def.power && def.power.kw === "battlecry") {
       // Mutácia „echoCry": battlecry sa spustí dvakrát.
@@ -588,8 +639,6 @@ const Engine = (() => {
         applyShopFx(state, p, def.power.fx, inst.rank, inst, events, target);
       }
     }
-    checkEvolve(state, p, events);
-    return events;
   }
 
   // Po kúzle (víly): každé úspešné zoslanie kúzla spustí schopnosti víl
@@ -627,7 +676,7 @@ const Engine = (() => {
   // Zahrané kúzlo opustí ruku; jednorazové (token – Iskrička) zmiznú z hry.
   function spendSpell(p, inst, def) {
     p.hand.splice(p.hand.indexOf(inst), 1);
-    if (!def.token) p.spentSpells.push({ defId: inst.defId, rank: 1 });
+    if (!def.token) p.spentSpells.push(pileCard(inst)); // src ostáva – predaj z ruky ho neskôr vráti
   }
 
   const ownMinion = (p, uid) => p.board.find(x => x.uid === uid);
@@ -689,6 +738,41 @@ const Engine = (() => {
         { type: "spell", pid: p.id, defId: inst.defId, targetUid },
         { type: "transform", pid: p.id, uid: targetUid, fromDefId: target.defId, toDefId: fresh.defId, newUid: fresh.uid },
       ];
+      checkEvolve(state, p, events);
+      return events;
+    },
+    // Kúzelný portál: vlastná príšerka na ploche sa vymení za NÁHODNÚ
+    // príšeru z balíčka (rng). Odchádzajúca ide do balíčka ako čistá kópia
+    // (pileCard – trvalý rast pa/ph cestuje s ňou, dočasné buffy padnú),
+    // prichádzajúca zaberie jej slot a správa sa ako vyložená (battlecry,
+    // dračí buff, počítadlo rasy). Prázdny balíček sa dopĺňa z kôpky ako
+    // pri ťahaní; bez príšery v balíčku aj kôpke je ťah nelegálny. Tokeny
+    // (kostík, Mláďa) vymeniť nejde – v balíčku neexistujú.
+    swapDeck(state, p, inst, def, targetUid) {
+      const target = ownMinion(p, targetUid);
+      if (!target || Cards.byId[target.defId].token) return null;
+      const isMinion = c => !Cards.byId[c.defId].spell;
+      if (!p.deck.some(isMinion) && !p.discard.some(isMinion)) return null;
+      spendSpell(p, inst, def);
+      const events = [{ type: "spell", pid: p.id, defId: inst.defId, targetUid }];
+      if (!p.deck.some(isMinion)) {
+        p.deck = shuffle(p.discard.splice(0), state.rng);
+        events.push({ type: "reshuffle", pid: p.id });
+      }
+      const idxs = p.deck.map((c, i) => isMinion(c) ? i : -1).filter(i => i >= 0);
+      const [c] = p.deck.splice(pick(idxs, state.rng), 1);
+      const fresh = makeInst(state, c.defId, c.rank, p);
+      if (c.src) fresh.src = c.src;
+      if (c.pa || c.ph) {
+        fresh.pa = c.pa || 0; fresh.ph = c.ph || 0;
+        fresh.atk += fresh.pa; fresh.hp += fresh.ph; fresh.maxHp += fresh.ph;
+      }
+      fresh.slot = target.slot;
+      p.board[p.board.indexOf(target)] = fresh;
+      const out = pileCard(target);
+      addToDeckRef(state, p, out.defId, out.rank, out.pa, out.ph, out.src);
+      events.push({ type: "swapDeck", pid: p.id, uid: targetUid, fromDefId: target.defId, toDefId: fresh.defId, newUid: fresh.uid });
+      enterBoard(state, p, fresh, events);
       checkEvolve(state, p, events);
       return events;
     },
@@ -855,10 +939,10 @@ const Engine = (() => {
   // (s Vichrom dvakrát) a rasa by sa rozbila. Pečať je fixne +1/+1 a
   // NEnásobí sa evolve stupňom (inak by bola útecha lepšia než výhra).
   // `sides` = volanie z boja: aura prežije boj a živé príšerky zosilnia hneď.
+  // Bez stropu: KAŽDÝ smolný roll dá Pečať (bývalý strop 1/kolo robil
+  // z ďalších backstabov v tom istom kole čistý trest).
   function backstab(state, pid, events, sides) {
     const p = state[pid];
-    if (p.backstabRound === state.round) return;
-    p.backstabRound = state.round;
     events.push({ type: "backstab", pid });
     if (sides) {
       addRaceAura(p, "ogre", BACKSTAB_BUFF, BACKSTAB_BUFF);
@@ -984,6 +1068,13 @@ const Engine = (() => {
     // NEnásobí stupňom (evolve už zdvojnásobuje základné staty).
     spellScale({ p, fx, self, events }) {
       const n = p.spellsCast;
+      if (n > 0) buffWithEvent(self, p.id, fx.a * n, fx.h * n, events);
+    },
+    // +a/+h pre seba za KAŽDÚ príšeru rasy fx.race vyloženú z ruky v tejto
+    // hre (E009, počíta aj seba). Rovnaké pravidlá ako spellScale: dočasné,
+    // bez stupňa, bez Živelnej sily – počítadlo je motor sám o sebe.
+    racePlayedScale({ p, fx, self, events }) {
+      const n = (p.racePlayed && p.racePlayed[fx.race]) || 0;
       if (n > 0) buffWithEvent(self, p.id, fx.a * n, fx.h * n, events);
     },
     growSelf({ p, fx, m, self, events }) {

@@ -115,8 +115,12 @@ const Cards = (() => {
     // číslach (⚡+2 → +3/+3), evolve ×2/×3. Živly majú aury E003 t2 / E009 t5.
     M("E008", 4, "elemental", ["Prismite", "Shardmane", "Auroraclysm"], 5, 5,
       { power: { kw: "battlecry", fx: { type: "buffOne", a: 1, h: 1 } } }),
+    // E009: „Pri vyložení: +1/+1 pre seba za každého Živla, ktorého si v tejto
+    // hre vyložil (aj seba)" – racePlayedScale, obdoba F010 spellScale. Bývalá
+    // Pečať +2/+2: živly už škálujú Živelnou silou (E007/D005/⚡), druhá
+    // rasová aura bola navyše. Dočasné, nenásobí sa stupňom ani ⚡.
     M("E009", 5, "elemental", ["Gleamwisp", "Dawnwing", "Solarchon"], 7, 6,
-      { power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 2, h: 2 } } }),
+      { power: { kw: "battlecry", fx: { type: "racePlayedScale", race: "elemental", a: 1, h: 1 } } }),
     M("E010", 6, "elemental", ["Duskdrop", "Gloamstalker", "Eclipse Sovereign"], 9, 9,
       { power: { kw: "startFight", fx: { type: "dmgAllEnemies", n: 3 } } }),
 
@@ -299,6 +303,11 @@ const Cards = (() => {
     // Zrkadlo: akcelerátor trojíc pre late game (t5+ nemal žiadne kúzlo).
     { id: "zrkadlo", cost: 3, tier: 5, emoji: "🪞", spell: true, fx: { type: "copyToDeck" },
       name: { sk: "Zrkadlo", cs: "Zrcadlo", en: "Mirror" } },
+    // Portál: vlastná príšerka na ploche sa vymení za náhodnú z balíčka –
+    // prichádzajúca sa vyloží (battlecry znova), odchádzajúca ide do balíčka.
+    // Endgame nástroj: dostaň z balíčka veľkú kartu hneď, nie o kolo neskôr.
+    { id: "portal", cost: 2, tier: 5, emoji: "🌀", spell: true, fx: { type: "swapDeck" },
+      name: { sk: "Kúzelný portál", cs: "Kouzelný portál", en: "Magic Portal" } },
     // Poklad: greed ekonomika pre najvyššie tiery – polovica zlata hneď,
     // polovica na začiatku ďalšieho kola (jediný spôsob, ako si preniesť zlato).
     { id: "poklad", cost: 2, tier: 5, emoji: "💰", spell: true, fx: { type: "goldLater", n: 2 },
@@ -589,6 +598,15 @@ const Cards = (() => {
       cs: `+${f.a}/+${f.h} pro sebe za každé kouzlo, které jsi v této hře zahrál`,
       en: `+${f.a}/+${f.h} for itself for each spell you've cast this game`,
     }),
+    // Akuzatív jednotného čísla („za každého Živla") – zatiaľ len živly (E009).
+    racePlayedScale: (f) => {
+      const acc = { elemental: { sk: "Živla", cs: "Živla", en: "Elemental" } }[f.race] || RACES[f.race];
+      return {
+        sk: `+${f.a}/+${f.h} pre seba za každého ${acc.sk} (aj seba), ktorého si v tejto hre vyložil`,
+        cs: `+${f.a}/+${f.h} pro sebe za každého ${acc.cs} (i sebe), kterého jsi v této hře vyložil`,
+        en: `+${f.a}/+${f.h} for itself for each ${acc.en} you've played this game (itself included)`,
+      };
+    },
     hex: () => ({
       sk: "v najbližšom boji sa náhodnej súperovej príšerke zmení život na 1",
       cs: "v nejbližším boji se náhodné soupeřově příšerce změní život na 1",
@@ -623,6 +641,11 @@ const Cards = (() => {
       sk: "vlož kópiu vybranej vlastnej príšerky (1. stupňa) do balíčka",
       cs: "vlož kopii vybrané vlastní příšerky (1. stupně) do balíčku",
       en: "put a rank-1 copy of a friendly minion into your deck",
+    }),
+    swapDeck: () => ({
+      sk: "vymeň vlastnú príšerku na ploche za náhodnú príšeru z balíčka (vyloží sa)",
+      cs: "vyměň vlastní příšerku na ploše za náhodnou příšeru z balíčku (vyloží se)",
+      en: "swap a friendly minion on the board with a random minion from your deck (it gets played)",
     }),
     goldLater: (f, m) => ({
       sk: `+${f.n * m} peniaze hneď a +${f.n * m} na začiatku ďalšieho kola`,

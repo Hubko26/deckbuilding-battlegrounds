@@ -418,6 +418,11 @@ const L = {
     cs: "🎩 Klobouk proměnil {a} v {b}!",
     en: "🎩 The hat turned {a} into {b}!",
   },
+  swapDeckMsg: {
+    sk: "🌀 Portál: {a} odišiel do balíčka, z balíčka prišiel {b}!",
+    cs: "🌀 Portál: {a} odešel do balíčku, z balíčku přišel {b}!",
+    en: "🌀 Portal: {a} went to the deck, {b} came out of it!",
+  },
   hexMsg: {
     sk: "dostal Žabiu kliatbu – život klesol na 1",
     cs: "dostal Žabí kletbu – život klesl na 1",
@@ -1544,6 +1549,7 @@ const SPELL_FX = {
   buffTarget:     { color: "#40c057", emoji: "✨", mode: "target" },
   copyToDeck:     { color: "#4dabf7", emoji: "🪞", mode: "target" },
   transform:      { color: "#9775fa", emoji: "🎩", mode: "target" },
+  swapDeck:       { color: "#3bc9db", emoji: "🌀", mode: "target" },
   buffAllFriends: { color: "#22b8cf", emoji: "🌊", mode: "board" },
   bolt:           { color: "#fcc419", emoji: "⚡", mode: "board", shake: 0.8 },
   hex:            { color: "#be4bdb", emoji: "🐸", mode: "board" },
@@ -2178,7 +2184,7 @@ function markZones(src, on) {
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
 const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget", "reviveAs", "buffOne"]);
 // Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
-const TARGETED_SPELL = new Set(["buffTarget", "copyToDeck", "transform"]);
+const TARGETED_SPELL = new Set(["buffTarget", "copyToDeck", "transform", "swapDeck"]);
 
 function endDrag(e) {
   const d = drag;
@@ -2351,10 +2357,10 @@ function act(events) {
     if (ev.type === "shrinkPending") log(t(L.shrinkPendingMsg));
     if (ev.type === "boltPending") log(t(L.boltPendingMsg));
     if (ev.type === "goldLater") log(t(L.goldLaterMsg).replace("{n}", ev.n));
-    if (ev.type === "transform") {
+    if (ev.type === "transform" || ev.type === "swapDeck") {
       const a = Cards.nameOf(Cards.byId[ev.fromDefId], 1, I18N.lang);
       const b = Cards.nameOf(Cards.byId[ev.toDefId], 1, I18N.lang);
-      log(t(L.transformMsg).replace("{a}", a).replace("{b}", b));
+      log(t(ev.type === "transform" ? L.transformMsg : L.swapDeckMsg).replace("{a}", a).replace("{b}", b));
     }
   }
   // Trojica zo skrytých kópií (balíček/kôpka) – ohlás popupom.

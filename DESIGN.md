@@ -21,8 +21,8 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**).
   kolo, strop 10. Neminuté peniaze prepadávajú.
 - Cena karty v obchode: príšery **3** (fixná), kúzla majú vlastnú cenu
   (Minca/Štít 1, Jablko/Umlčanie/Kniha/Koreň/Vlna/Živelná sila/Svätožiara/
-  Pierko/Kliatba/Vichor/Blesk/Klobúk/Ovčia premena/Poklad 2, Srdce/Zrkadlo/
-  Hviezdna moc 3). Minca je od **tieru 2** – na t1 bola
+  Pierko/Kliatba/Vichor/Blesk/Klobúk/Ovčia premena/Poklad/Portál 2,
+  Srdce/Zrkadlo/Hviezdna moc 3). Minca je od **tieru 2** – na t1 bola
   automatická kúpa a rozbiehala snowball.
 - Predaj karty (z ruky alebo z plochy): **+1** peniaz, karta zmizne z hry.
   **Buyback** ↩️: poslednú predanú kartu v ťahu si môžeš **raz za ťah** vziať
@@ -63,7 +63,18 @@ Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**).
   vlastníš). Zlatá z obchodu = všetkých 6 vlastných + 3 spoločné kópie, čiže
   len ak súper kartu nekupuje – inak cez Zrkadlo/Knihu/Klobúk. Prázdny pool
   pre daný tier → záložné losovanie bez limitu (prázdny slot nechceme),
-  taká karta nemá `src`. Kúzla a tokeny pool nemajú.
+  taká karta nemá `src`. Tokeny pool nemajú.
+- **Pool kúziel** (per hráč, len súkromný – spell slot je súkromný):
+  **3 kópie** každého kúzla do t3, **2 kópie** pre t4–t6 (Srdce, Vichor,
+  Kliatba, Klobúk, Ovca, Zrkadlo, Portál, Poklad, Hviezdna moc – silné,
+  nech ich nejde spamovať). Kúzlo v spell slote je z poolu vybraté
+  (`spellShop.src`), nekúpené sa vracia (refresh, nové kolo), kúpené nesie
+  `src` do balíčka a cez `spentSpells`/kôpku späť do ruky – **predaj kúzla
+  vráti kópiu do poolu**, zoslanie nie (kúzlo stále vlastníš a cykluje).
+  Vypredané kúzla daného tieru → záložné losovanie bez `src` ako pri
+  príšerách (na t1 je len Štít ×3). Iskrička (token) je mimo poolu.
+  Mutácia „gift" berie darované kúzlo tiež z poolu. Pôvodne kúzla pool
+  nemali – Minca 10× v balíčku bola legálna.
 - Hráči vidia, čo súper nakúpil (zoznam v logu po jeho ťahu) – dá sa podľa toho stavať
   stratégia.
 
@@ -115,13 +126,16 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
   deathrattle vyvolá tokeny stupňa 2 (2/2), zlatý stupňa 3 (4/4).
   **Výnimka – `dmgWeakEnemy`**: evolve škáluje POČET zásahov (1/2/3),
   nie silu – strieborný výboj dá 2× základný damage náhodným cieľom.
-- **Buffy sa pri evolve prenášajú**: evolvnutá karta si nechá bonusy
-  (dočasné aj permanentný rast `pa/ph`) **dvoch najsilnejších** zo
-  spotrebovaných kópií; bonus tretej prepadne (evolve nie je čistý
-  súčet, inak by staty inflatovali). Bonus sa počíta NAD základ stupňa
-  bez aury – auru dostane nová inštancia znova, nedupluje sa. Kópie
-  v balíčku/kôpke nesú len perma rast. Rovnako Galaxy Dragon (D010):
-  cieľ si buffy berie so sebou.
+- **Dočasné buffy pri evolve prepadnú, permanentné ostávajú**: evolvnutá
+  karta vznikne čistá (základ stupňa + aura z `makeInst`) a nechá si len
+  **permanentný rast `pa/ph`** dvoch najsilnejších zo spotrebovaných kópií
+  (tretia prepadne – evolve nie je čistý súčet). Dočasné buffy (Jablko,
+  hod mincou O001, dračí buff, bojové buffy) sa strácajú rovnako ako pri
+  cykle balíčka – karta „ide do ruky" ako nová. Pôvodne (do 2026-09-11)
+  sa prenášali aj dočasné buffy: dva O001 s hlavou (6/7) dali striebornú
+  12/14 v ruke, čo hráča mýlilo (po dotiahnutí z balíčka by buffy neboli).
+  Galaxy Dragon (D010, cielený evolve battlecry) si buffy cieľa berie so
+  sebou ďalej – je to jeho zámerná schopnosť, nie automatický evolve.
 - Kúzla sa neevolvujú.
 
 ## Boj (automatický)
@@ -225,8 +239,8 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   +1/+1 resp. +2/+2 pre seba" s `perm: true`): rast sa uloží na konkrétnu
   kópiu karty (`pa`/`ph`) a prežije boj aj cyklus kôpka → balíček → ruka.
   Bez toho boli tieto karty de facto vanilla (rast sa po boji zahodil).
-  Evolve tri kópie spája na čistú kartu – trvalý rast kópií sa pri ňom
-  stráca (rovnaké zjednodušenie ako pri buffoch).
+  Evolve prenáša trvalý rast dvoch najsilnejších kópií (dočasné buffy
+  prepadnú – pozri sekciu Evolve).
 
 **💀 Undead – horda kostríkov + Pretečenie**
 
@@ -292,7 +306,16 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - **E008 Prismite** (t4, 5/5): cielený battlecry **+1/+1 vybranej príšerke**
   (`buffOne`, do konca boja, hocijaká rasa) – dočasný buff Živla, takže ho
   Živelná sila škáluje v oboch číslach (⚡+2 → +3/+3), evolve ×2/×3. Živly
-  majú aury E003 t2 +1/+1 a **E009 t5 +2/+2**; Prismite už auru nedáva.
+  majú jedinú auru E003 t2 +1/+1; Prismite už auru nedáva.
+- **E009 Gleamwisp** (t5, 7/6): „Pri vyložení: +1/+1 pre seba za každého
+  Živla (aj seba), ktorého si v tejto hre vyložil" (`racePlayedScale`,
+  počítadlo `p.racePlayed[race]` rastie v `playMinion` pred battlecry –
+  tokeny sa nepočítajú). Bývalá Pečať +2/+2: živly škálujú Živelnou silou
+  (E007/D005/⚡), druhá rasová aura bola navyše. Rovnaké pravidlá ako F010
+  `spellScale`: dočasné do konca boja (nesnowballuje cez kópie), NEnásobí
+  sa stupňom (evolve už zdvojí telo) ani Živelnou silou (počítadlo je
+  motor sám o sebe). Kolo 6 ≈ 8 vyložených živlov → 15/14, kolo 10 ≈ 15
+  → 22/21 za jedno vyloženie.
 - Telá na krivku: E001 2/2, E004 4/4, E005 3/5, E006 4/4 (boli 1/2, 4/3,
   3/4, 4/3 – živly platili za výboje telom aj číslom).
 - AoE výbuch (`dmgAllEnemies`): len E010 (t6, Pred bojom: **3** všetkým).
@@ -518,11 +541,13 @@ UI: log hlási „👹 Backstab!" a hneď za ním rasový buff (`futureBuff`).
 Implementácia (`backstab()` v `src/engine.js`) – jedno miesto, ktoré všetky
 vetvy volajú, plus event `backstab` pre UI:
 
-- **Strop: 1 Pečať za KOLO.** Nákupná fáza aj nasledujúci boj majú rovnaké
-  `state.round`, takže `p.backstabRound` pokrýva oboje. Bez stropu by O006
-  hádzal pri každom útoku (s Vichrom 🌪️ dvakrát) – tri kópie = ~1,5 backstabu
-  za boj a cez 10 kôl +15/+15 na celú rasu. So stropom vychádza max ~+10/+10
-  za dlhú hru, porovnateľné s beast perm rastom.
+- **Bez stropu: KAŽDÝ backstab dá Pečať.** Pôvodne platil strop 1 Pečať
+  za kolo (`p.backstabRound`), lebo O006 hádže pri každom útoku (s Vichrom
+  🌪️ dvakrát) a tri kópie dávali ~1,5 backstabu za boj (+15/+15 za 10 kôl).
+  Strop zrušený: druhý smolný roll v tom istom kole bol čistý trest bez
+  kompenzácie – presne ten feelbad, ktorý má Backstab riešiť. Viac
+  generátorov naraz = rýchlejšia Pečať, to je zámer ogrieho buildu; ak sa
+  ukáže priveľa, skôr znížiť šancu O006 než vracať strop.
 - **Pečať je fixne +1/+1 a NEnásobí sa evolve stupňom** (`m`). Inak by bola
   útecha lepšia než výhra a hod mincou by stratil napätie.
 - **V boji Pečať zosilní živé ogry hneď** (rovnako ako U010): ogr z vlastnej
@@ -679,8 +704,8 @@ alebo hnevá.
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
   Beast B002 (t3, +1/+0 útok) / B006 (t4, +0/+1 život – obe boli +0/+1,
-  kópie) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok)/
-  E009, Undead U008/U010 – hra tak
+  kópie) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok;
+  E009 už auru nedáva), Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
   všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez
@@ -736,6 +761,17 @@ ruky), peniaze navyše.
   kopírovať nedajú.
 - **Poklad škriatka** 💰 (t5, cena 2): +2 peniaze hneď a +2 na začiatku
   ďalšieho kola (`p.goldNext` – jediný spôsob prenosu zlata medzi kolami).
+- **Kúzelný portál** 🌀 (t5, cena 2, `swapDeck`): vlastná príšerka na
+  ploche sa **vymení za náhodnú príšeru z balíčka** (výber cez `state.rng`,
+  kúzla v balíčku sa preskočia). Odchádzajúca ide do balíčka ako čistá
+  kópia (`pileCard` – trvalý rast `pa/ph` a stupeň cestujú s ňou, dočasné
+  buffy padnú); prichádzajúca zaberie jej slot a prejde `enterBoard` ako
+  vyložená z ruky – battlecry, dračí bojový buff aj počítadlo rasy (E009).
+  Prázdny balíček sa dopĺňa z kôpky (reshuffle) ako pri ťahaní; bez príšery
+  v balíčku aj kôpke je ťah nelegálny. Tokeny vymeniť nejde. Endgame
+  nástroj: veľká karta z balíčka hneď na plochu, alebo slabé telo preč a
+  Pečať/battlecry znova (spolu s cyklom balíčka je to jedno vyloženie
+  navyše, nie nekonečný motor).
 - Kúzla t5 boli doplnené zámerne – dovtedy spell slot na t5/t6 ponúkal len
   staré nízkotierové kúzla. Plošný buff t6 („Zlatý zvon") zámerne NEpridaný:
   víly (Po kúzle) sú už na hrane OP a veľké kúzlo by ich prestrelilo.
