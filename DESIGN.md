@@ -216,8 +216,10 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 
 **🐾 Beast – telá a mrchožrút**
 
-- B001 (t1, 2/2, Pri smrti): „+1/+1 všetkým Zvieratám" do konca boja
-  (`buffRace`, evolve ×2/×3). Bola jediná ne-ogrská vanilla – vanilla telá
+- B001 (t1, 2/2, Pri smrti): „+1/+1 všetkým Zvieratám do konca boja"
+  (`buffRace` s `lasting: true`, evolve ×2/×3) – buff sa zapíše aj do
+  `fightRaceBuffs`, takže ho dostanú aj Mláďatá vyvolané NESKÔR v boji
+  (B007/B005 Pri smrti), nie len zvieratá živé v momente smrti. Bola jediná ne-ogrská vanilla – vanilla telá
   nad krivkou sú identita ogrov, tak dostala schopnosť namiesto statov.
   Bez Obrancu padne skoro: kŕmi mrchožrútov B004/B009 (`raceDeath`) a
   zároveň buffne zvyšok plochy – dvojitý payoff za smrť.

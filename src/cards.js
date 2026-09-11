@@ -43,11 +43,12 @@ const Cards = (() => {
 
   const DEFS = [
     // ---------- Zvieratá (Beast) ----------
-    // B001: „Pri smrti: +1/+1 všetkým Zvieratám" (do konca boja, evolve ×2/×3)
+    // B001: „Pri smrti: +1/+1 všetkým Zvieratám do konca boja" (evolve ×2/×3)
     // – bývalá jediná ne-ogrská vanilla. Padne skoro (2/2 bez Obrancu), kŕmi
     // mrchožrútov B004/B009 cez raceDeath a ešte buffne zvyšok zvierat.
+    // lasting: buff dostanú aj Mláďatá vyvolané neskôr v boji (fightRaceBuffs).
     M("B001", 1, "beast", ["Bristlebit", "Quilltail", "Ironwood Ravager"], 2, 2,
-      { power: { kw: "deathrattle", fx: { type: "buffRace", race: "beast", a: 1, h: 1 } } }),
+      { power: { kw: "deathrattle", fx: { type: "buffRace", race: "beast", a: 1, h: 1, lasting: true } } }),
     M("B003", 1, "beast", ["Hopple", "Bogbell", "Mirethrone"], 1, 1,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 1, h: 1, perm: true } } }),
     M("B007", 1, "beast", ["Finwhisk", "Rapidsnout", "Riverking"], 1, 1,
@@ -435,10 +436,14 @@ const Cards = (() => {
       const el = def && def.race === "elemental";
       const a = el ? hl(f.a * m) : String(f.a * m);
       const h = el && f.h ? hl(f.h * m) : String(f.h * m);
+      // lasting (B001): aj tým, čo do boja ešte len prídu.
+      const tail = f.lasting
+        ? { sk: " do konca boja (aj tým, čo ešte prídu)", cs: " do konce boje (i těm, co ještě přijdou)", en: " for the rest of the fight (including ones that arrive later)" }
+        : { sk: "", cs: "", en: "" };
       return {
-        sk: `+${a}/+${h} všetkým ${RACES_PL[f.race].sk}`,
-        cs: `+${a}/+${h} všem ${RACES_PL[f.race].cs}`,
-        en: `+${a}/+${h} to all ${RACES_PL[f.race].en}`,
+        sk: `+${a}/+${h} všetkým ${RACES_PL[f.race].sk}${tail.sk}`,
+        cs: `+${a}/+${h} všem ${RACES_PL[f.race].cs}${tail.cs}`,
+        en: `+${a}/+${h} to all ${RACES_PL[f.race].en}${tail.en}`,
       };
     },
     // Pečať pre všetky rasy + Živelná sila naraz (kúzlo Hviezdna moc).

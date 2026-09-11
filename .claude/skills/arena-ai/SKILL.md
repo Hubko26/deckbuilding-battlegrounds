@@ -272,8 +272,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
   sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+0 útok), B008
   (t3 rast navždy), B006 (t4 Pečať +0/+1 život), B009 (t4 mrchožrút, vpravo), B010 (t5
-  Pečať). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám) – vykladaj vľavo, nech
-  padne skoro a buffne zvyšok; kŕmi aj B004/B009.
+  Pečať). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám do konca boja – aj
+  Mláďatám, čo prídu neskôr) – vykladaj vľavo, nech padne skoro a buffne
+  zvyšok; kŕmi aj B004/B009.
 - **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
   Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,

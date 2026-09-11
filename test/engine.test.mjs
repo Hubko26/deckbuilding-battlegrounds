@@ -163,6 +163,23 @@ test("B001 Pri smrti: +1/+1 všetkým živým Zvieratám (nie iným rasám), str
   // sova dostane +1/+1 z deathrattle B001 (+ prípadne svoj raceDeath rast – oba sú buff eventy)
   assert.ok(buffOwl.some(e => e.a === 1 && e.h === 1));
   assert.ok(!events.some(e => e.type === "buff" && e.uid === bone.uid)); // nemŕtvy nič
+  // Buff platí do konca boja: Mláďa vyvolané NESKÔR (B007 padne po B001) je 2/2, nie 1/1.
+  {
+    const { state: s3, E: E3 } = fresh(94);
+    E3.startRound(s3);
+    E3.endShopTurn(s3, "p1");
+    const b1 = E3.makeInst(s3, "B001", 1); b1.slot = 0;          // 2/2 padne prvý
+    const fish = E3.makeInst(s3, "B007", 1); fish.slot = 1;       // 1/1, Pri smrti Mláďa
+    s3.p1.board = [b1, fish];
+    s3.p2.board = [Object.assign(E3.makeInst(s3, "B010", 1), { slot: 0 })]; // 6/10 taunt zabije oboch
+    s3.p1.hand = []; s3.p2.hand = [];
+    const ev3 = E3.doBattle(s3);
+    const dieB1 = ev3.findIndex(e => e.type === "die" && e.uid === b1.uid);
+    const summon = ev3.find(e => e.type === "summon" && e.pid === "p1");
+    assert.ok(dieB1>= 0 && summon && ev3.indexOf(summon) > dieB1, "Mláďa prišlo až po smrti B001");
+    assert.equal(summon.atk, 2); assert.equal(summon.hp, 2);
+    assert.match(C.cardText(C.byId["B001"], 1, "sk"), /do konca boja \(aj tým, čo ešte prídu\)/);
+  }
   // Strieborný B001 dáva +2/+2.
   const { state: s2, E: E2 } = fresh(92);
   E2.startRound(s2);

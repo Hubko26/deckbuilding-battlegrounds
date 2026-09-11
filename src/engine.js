@@ -1722,10 +1722,14 @@ const Engine = (() => {
     },
     // Rasová synergia v boji – živé príšerky rovnakej rasy (okrem seba).
     // Dočasné buffy Živlov škáluje Živelná sila (ako v nákupnej fáze).
+    // fx.lasting (B001 Pri smrti): buff platí do konca boja aj pre príšerky
+    // rasy, ktoré prídu neskôr (Mláďatá z B007/B005) – cez fightRaceBuffs,
+    // rovnako ako dračí buffTopRace.
     buffRace({ state, sides, pid, self, fx, m, events }) {
       const boost = Cards.byId[self.defId].race === "elemental" ? state[pid].dmgBoost : 0;
       const { a, h } = elementalBonus(fx, m, boost);
       buffAlive(sides, pid, f => f !== self && Cards.byId[f.defId].race === fx.race, a, h, events);
+      if (fx.lasting) addFightRaceBuff(state[pid], fx.race, a, h);
     },
     // Vyvolanie tokenov vedľa zdroja. Evolvnutá karta vyvoláva SILNEJŠIE
     // tokeny (stupeň rodiča), počet sa so stupňom neškáluje. summonCharge
