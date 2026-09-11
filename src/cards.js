@@ -62,14 +62,18 @@ const Cards = (() => {
     // B005: stádo mláďat pri smrti – kŕmi B009 (rastie za smrť zvieraťa).
     M("B005", 2, "beast", ["Tuftdash", "Thornhorn", "Briarhart"], 3, 2,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "mlada", n: 2 } } }),
-    // B002 = Pečať útoku (+1/+0), B006 = Pečať života (+0/+1) – boli obe
-    // +0/+1 (kópia); medveď dáva silu, pancierový tank výdrž.
+    // B002 = skorá Pečať zvierat +1/+1 (bola +1/+0 – zvieratám chýbal
+    // t6 payoff a skorá aura bola slabá).
     M("B002", 3, "beast", ["Honeygruff", "Ambermaw", "Golden Ursarch"], 4, 5,
-      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 0 } } }),
+      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } } }),
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 2, h: 2, perm: true } } }),
-    M("B006", 4, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 4, 7,
-      { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "beast", a: 0, h: 1 } } }),
+    // B006 = t6 beast payoff (rasa nemala t6 kartu a pôsobila slabo): Obranca
+    // 7/9, Pri smrti vyvolá 2 SuperMláďatá – vlastný token (klasické Mláďa
+    // ostáva): 1/1 Obranca, ktorý Pri smrti položí Pečať +1/+1 Zvieratám.
+    // Stupeň rodiča škáluje token aj jeho Pečať. Bola t4 Pečať +0/+1.
+    M("B006", 6, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 7, 9,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "summon", token: "supermlada", n: 2 } } }),
     M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 5, 4,
       { power: { kw: "raceDeath", fx: { type: "growSelf", race: "beast", a: 2, h: 2 } } }),
     M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10,
@@ -332,6 +336,12 @@ const Cards = (() => {
     // Bublina: elemental token z E002 – pri smrti výboj 1 (+Živelná sila),
     // VŽDY jeden zásah (hits: 1 – strieborná E002 dáva tokeny stupňa 2, tie
     // majú väčšie telo, nie dvojitý výboj). Bez Pretečenia (len undead).
+    // SuperMláďa: token B006 – Obranca, Pri smrti Pečať +1/+1 Zvieratám
+    // (stupeň tokenu = stupeň rodiča; striebro +2/+2). Klasické Mláďa nemení.
+    { id: "supermlada", tier: 1, race: "beast", emoji: "🐻", atk: 1, hp: 1, token: true, taunt: true,
+      namePl: { sk: "SuperMláďatá", cs: "SuperMláďata", en: "SuperCubs" },
+      power: { kw: "deathrattle", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } },
+      name: { sk: "SuperMláďa", cs: "SuperMládě", en: "SuperCub" } },
     { id: "bublina", tier: 1, race: "elemental", emoji: "🫧", atk: 1, hp: 1, token: true,
       namePl: { sk: "Bubliny", cs: "Bubliny", en: "Bubbles" },
       power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 1, hits: 1 } },
@@ -760,17 +770,19 @@ const Cards = (() => {
       const atk = opts && opts.atk != null ? opts.atk : def.atk * STAT_MULT[rank];
       parts.push(`${b(WILD_LABEL[lang])}: ${wildText(wildRange(atk, rank))[lang]}.`);
     }
-    if (def.power && def.power.kw === "raceDeath") {
-      // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
-      const r = RACES[def.power.fx.race];
-      const label = { sk: `Keď zomrie tvoje ${r.sk}`, cs: `Když zemře tvé ${r.cs}`, en: `When your ${r.en} dies` };
-      parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
-    } else if (def.power && def.power.kw === "onEnemySummon") {
-      // Lovec tokenov: vlastný label („Keď súper vyvolá token: …“).
-      const label = { sk: "Keď súper vyvolá prvý token", cs: "Když soupeř vyvolá první token", en: "When the enemy summons their first token" };
-      parts.push(`${b(label[lang])}: ${fxText(def.power.fx, m)}.`);
-    } else if (def.power) {
-      parts.push(`${b(KW_LABEL[def.power.kw][lang])}: ${fxText(def.power.fx, m, def.power.kw)}.`);
+    for (const pw of powersOf(def)) {
+      if (pw.kw === "raceDeath") {
+        // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
+        const r = RACES[pw.fx.race];
+        const label = { sk: `Keď zomrie tvoje ${r.sk}`, cs: `Když zemře tvé ${r.cs}`, en: `When your ${r.en} dies` };
+        parts.push(`${b(label[lang])}: ${fxText(pw.fx, m)}.`);
+      } else if (pw.kw === "onEnemySummon") {
+        // Lovec tokenov: vlastný label („Keď súper vyvolá token: …“).
+        const label = { sk: "Keď súper vyvolá prvý token", cs: "Když soupeř vyvolá první token", en: "When the enemy summons their first token" };
+        parts.push(`${b(label[lang])}: ${fxText(pw.fx, m)}.`);
+      } else {
+        parts.push(`${b(KW_LABEL[pw.kw][lang])}: ${fxText(pw.fx, m, pw.kw)}.`);
+      }
     }
     if (def.spell) { const s = fxText(def.fx, 1); parts.push(s[0].toUpperCase() + s.slice(1) + "."); }
     if (def.spell && def.token) {
@@ -783,7 +795,11 @@ const Cards = (() => {
   // Staty pre stupeň: bronz ×1, striebro ×2, zlato ×4.
   const STAT_MULT = [null, 1, 2, 4];
 
-  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, IMPRINT, wildRange };
+  // Schopnosti karty: `power` (hlavná – bot, cielenie battlecry) + voliteľná
+  // `power2` (B006: Pred bojom + Pri smrti). Engine spúšťa všetky s daným kw.
+  const powersOf = def => def.power2 ? [def.power, def.power2] : def.power ? [def.power] : [];
+
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, powersOf, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, IMPRINT, wildRange };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

@@ -116,8 +116,8 @@ const Bot = (() => {
         else if (def.race !== "dragon" && def.race !== "ogre") score -= 3;
       }
     }
-    if (def.power) {
-      const fx = def.power.fx;
+    for (const pw of Cards.powersOf(def)) {
+      const fx = pw.fx;
       // aury permanentne zväčšujú celý balíček – kupuj skoro a rád
       if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;
       // F008: permanentná aura pre všetky rasy – vždy dobrá, s kúzlami lepšia
@@ -129,15 +129,15 @@ const Bot = (() => {
       // draci, ktorí zosilňujú RASU cieľa – s dominantnou rasou majú do čoho
       if (dom && (fx.type === "futureRaceOf" || fx.type === "buffRaceOf")) score += 2;
       // víly („Po kúzle“) rastú s počtom kúziel v balíčku
-      if (def.power.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
+      if (pw.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
       // Iskrička z battlecry kŕmi Po kúzle víly – hodnotnejšia s vílami
-      if (def.power.fx.type === "addSpell") score += 1 + (races.fairy || 0) * 0.5;
+      if (fx.type === "addSpell") score += 1 + (races.fairy || 0) * 0.5;
       // D005 / E007 (Živelná sila na tele) – cennejší s elementálmi
       if (fx.type === "dmgBoost") score += (races.elemental || 0) * 0.6;
       // U002 (kostíky +1/+1 v boji) – cenný s vyvolávačmi kostíkov
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
       // Mrchožrúti (B004 navždy, B009 dočasne) – cennejší s vyvolávačmi Mláďat
-      if (def.power.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005") + ownedCount(p, "B001")) * 0.8;
+      if (pw.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005") + ownedCount(p, "B001") + ownedCount(p, "B006")) * 0.8;
     }
     if (def.spell) {
       const spells = ownedSpellCount(p);
@@ -501,13 +501,16 @@ const Bot = (() => {
     return 1;
   }
 
-  function orderBoard(state, p, push) {
+  // move (voliteľné): vlastný vykonávateľ presunu – Claude bot ním presuny
+  // zároveň loguje do záznamu hry, inak by replay nesedel.
+  function orderBoard(state, p, push, move) {
+    const doMove = move || ((i, slot) => Engine.moveOnBoard(state, p.id, i, slot));
     const desired = [...p.board].sort((a, b) =>
       (attackPriority(a) - attackPriority(b)) || (b.atk - a.atk) || (a.uid - b.uid));
     for (let slot = 0; slot < desired.length; slot++) {
       const inst = desired[slot];
       if (inst.slot === slot) continue;
-      push(Engine.moveOnBoard(state, p.id, p.board.indexOf(inst), slot));
+      push(doMove(p.board.indexOf(inst), slot));
     }
   }
 

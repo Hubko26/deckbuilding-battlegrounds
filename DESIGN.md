@@ -232,6 +232,18 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   rodiča (2/2, 4/4). Obranca berie údery a padne skoro → kŕmi sovu B004
   („Keď zomrie tvoje Mláďa") a chráni mrchožrúta B009. Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
+- B006 (t6, 7/9, Obranca) je **beast t6 payoff** (rasa dovtedy t6 kartu
+  nemala a v neskorej hre pôsobila slabo): „Pri smrti: vyvolaj 2×
+  **SuperMláďa** 🐻" – vlastný token (klasické Mláďa 🐣 sa nemení): 1/1
+  s Obrancom, ktorý **Pri smrti položí Pečať +1/+1 Zvieratám**. Stupeň
+  rodiča škáluje token aj jeho Pečať (striebro: dve 2/2, každé +2/+2).
+  Reťaz smrtí kŕmi mrchožrútov B004/B009 trikrát. Bola t4 Pečať +0/+1;
+  B002 (t3) zároveň z +1/+0 na +1/+1.
+  Karty môžu mať dve schopnosti – `power` + `power2`, `Cards.powersOf(def)`
+  vracia obe a engine (`triggerPower`, battlecry/endTurn/afterSpell slučky,
+  chaos spúšťač O002, scavengery) spúšťa všetky s daným kw; text karty
+  vypíše obe, bot skóruje obe, cielenie battlecry berie len `power`. Zatiaľ
+  to žiadna karta nevyužíva.
 - B004 (t2) je **trvalý mrchožrút** (`raceDeath` + `perm`): „Keď zomrie
   tvoje Zviera: +1/+1 pre seba NAVŽDY" (evolve ×2/×3) – kŕmi ho každé
   padnuté vlastné zviera vrátane Mláďat (tokeny majú rasu). Prvý
@@ -720,8 +732,8 @@ alebo hnevá.
   balíček cykluje, po jednom kole pokrýva všetko. Aury sa sčítavajú, hráč
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
-  Beast B002 (t3, +1/+0 útok) / B006 (t4, +0/+1 život – obe boli +0/+1,
-  kópie) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok;
+  Beast B002 (t3, +1/+1 – bola +1/+0) / B006 (t6, Pečať +1/+1 ako Pri
+  smrti) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok;
   E009 už auru nedáva), Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne

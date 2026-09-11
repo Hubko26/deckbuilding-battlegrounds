@@ -683,11 +683,12 @@ const Engine = (() => {
       buff(inst, fb.a, fb.h);
       events.push({ type: "buff", pid: p.id, uid: inst.uid, a: fb.a, h: fb.h });
     }
-    if (def.power && def.power.kw === "battlecry") {
+    for (const pw of Cards.powersOf(def)) {
+      if (pw.kw !== "battlecry") continue;
       // Mutácia „echoCry": battlecry sa spustí dvakrát.
       const times = state.mutator === "echoCry" ? 2 : 1;
       for (let r = 0; r < times; r++) {
-        applyShopFx(state, p, def.power.fx, inst.rank, inst, events, target);
+        applyShopFx(state, p, pw.fx, inst.rank, inst, events, target);
       }
     }
   }
@@ -699,9 +700,10 @@ const Engine = (() => {
     p.spellsCast++;
     for (const inst of [...p.board]) {
       const def = Cards.byId[inst.defId];
-      if (def.power && def.power.kw === "afterSpell") {
+      for (const pw of Cards.powersOf(def)) {
+        if (pw.kw !== "afterSpell") continue;
         events.push({ type: "proc", pid: p.id, uid: inst.uid, kw: "afterSpell" });
-        applyShopFx(state, p, def.power.fx, inst.rank, inst, events);
+        applyShopFx(state, p, pw.fx, inst.rank, inst, events);
       }
     }
   }
@@ -1141,7 +1143,7 @@ const Engine = (() => {
     // najsilnejšia príšerka.
     reviveAs({ p, m, self, target, events }) {
       const deathrattlers = p.board.filter(x =>
-        x !== self && Cards.byId[x.defId].power?.kw === "deathrattle");
+        x !== self && Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "deathrattle"));
       const t = (target && p.board.includes(target)) ? target
         : deathrattlers.sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0] || shopTarget(p, self, target);
       if (!t) return;
@@ -1256,8 +1258,8 @@ const Engine = (() => {
     // Po nákupe (end of turn) schopnosti príšeriek na ploche.
     for (const inst of [...p.board]) {
       const def = Cards.byId[inst.defId];
-      if (def.power && def.power.kw === "endTurn") {
-        applyShopFx(state, p, def.power.fx, inst.rank, inst, events);
+      for (const pw of Cards.powersOf(def)) {
+        if (pw.kw === "endTurn") applyShopFx(state, p, pw.fx, inst.rank, inst, events);
       }
     }
     // Nezahrané karty z ruky do discard pile (jednorazové kúzla miznú).
@@ -1345,12 +1347,18 @@ const Engine = (() => {
 
   // Spustí schopnosť príšerky, ak má daný keyword a nie je umlčaná.
   // Vráti true, ak sa spustila.
+  // Spustí VŠETKY schopnosti karty s daným kw (B006 má dve – Pred bojom
+  // a Pri smrti). Vráti true, ak sa aspoň jedna spustila.
   function triggerPower(state, sides, pid, inst, kw, events) {
-    const power = Cards.byId[inst.defId].power;
-    if (!power || power.kw !== kw || inst.silenced) return false;
-    events.push({ type: "proc", pid, uid: inst.uid, kw });
-    applyBattleFx(state, sides, pid, inst, power.fx, inst.rank, events, kw);
-    return true;
+    if (inst.silenced) return false;
+    let fired = false;
+    for (const pw of Cards.powersOf(Cards.byId[inst.defId])) {
+      if (pw.kw !== kw) continue;
+      events.push({ type: "proc", pid, uid: inst.uid, kw });
+      applyBattleFx(state, sides, pid, inst, pw.fx, inst.rank, events, kw);
+      fired = true;
+    }
+    return fired;
   }
 
   // ----- Odložené kliatby z kúziel -----
@@ -1688,9 +1696,10 @@ const Engine = (() => {
         for (const sp of ["p1", "p2"]) {
           for (const x of sides[sp]) {
             if (x === self || x.hp <= 0 || x.silenced) continue;
-            const pw = Cards.byId[x.defId].power;
-            if (!pw || !BATTLE_KW.includes(pw.kw) || pw.fx.type === "triggerRandom") continue;
-            pool.push({ x, sp, pw });
+            for (const pw of Cards.powersOf(Cards.byId[x.defId])) {
+              if (!BATTLE_KW.includes(pw.kw) || pw.fx.type === "triggerRandom") continue;
+              pool.push({ x, sp, pw });
+            }
           }
         }
         if (!pool.length) break;
@@ -1923,8 +1932,7 @@ const Engine = (() => {
   function runObservers(state, sides, pid, dead, kw, matches, events) {
     for (const f of sides[pid]) {
       if (f === dead || f.hp <= 0 || f.silenced) continue;
-      const power = Cards.byId[f.defId].power;
-      if (!power || power.kw !== kw || !matches(power.fx)) continue;
+      if (!Cards.powersOf(Cards.byId[f.defId]).some(pw => pw.kw === kw && matches(pw.fx))) continue;
       triggerPower(state, sides, pid, f, kw, events);
     }
   }

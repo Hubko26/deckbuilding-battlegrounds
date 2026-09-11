@@ -284,9 +284,11 @@ plochou. Rob VŠETKY kroky, každý ťah:
   za každého vyloženého Živla za hru – vykladaj každé kolo), E010 (t6).
   Slabí proti beast telám.
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
-  sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+0 útok), B008
-  (t3 rast navždy), B006 (t4 Pečať +0/+1 život), B009 (t4 mrchožrút, vpravo), B010 (t5
-  Pečať). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám do konca boja – aj
+  sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+1), B008
+  (t3 rast navždy), B009 (t4 mrchožrút, vpravo), B010 (t5 Pečať), B006 (t6
+  Obranca 7/9: Pri smrti 2× SuperMláďa 1/1 Obranca, každé Pri smrti Pečať
+  +1/+1 Zvieratám – t6 cieľ beast buildu, tri smrti kŕmia mrchožrútov;
+  vykladaj vľavo, nech padne skoro a Pečate stihnú zvyšok boja). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám do konca boja – aj
   Mláďatám, čo prídu neskôr) – vykladaj vľavo, nech padne skoro a buffne
   zvyšok; kŕmi aj B004/B009.
 - **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
