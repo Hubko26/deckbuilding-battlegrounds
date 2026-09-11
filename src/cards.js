@@ -492,9 +492,9 @@ const Cards = (() => {
         en: "give a chosen minion Divine Shield (blocks the first damage)",
       };
       if (!f.a && !f.h && f.revive) return {
-        sk: "vybraná príšerka sa po smrti raz vráti s 1 životom",
-        cs: "vybraná příšerka se po smrti jednou vrátí s 1 životem",
-        en: "a chosen minion returns once after death with 1 health",
+        sk: "vybraná príšerka sa po smrti raz vráti s 1 životom (Pri smrti sa spustí)",
+        cs: "vybraná příšerka se po smrti jednou vrátí s 1 životem (Při smrti se spustí)",
+        en: "a chosen minion returns once after death with 1 health (Deathrattle triggers)",
       };
       if (!f.a && !f.h && f.windfury) return {
         sk: "vybraná príšerka získa Vichor (v boji útočí dvakrát)",

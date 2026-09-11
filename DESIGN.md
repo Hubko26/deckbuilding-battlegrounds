@@ -392,7 +392,10 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     prvé zranenie sa zruší, štít praskne (`inst.shield`; Žabia kliatba
     a iné ne-damage efekty ho obchádzajú),
   - **Fénixovo pierko** 🪶 (t3): vybraná príšerka sa po smrti raz vráti
-    s 1 životom (`inst.revive`; deathrattle sa pri návrate nespúšťa),
+    s 1 životom (`inst.revive`). **Smrť sa počíta: Pri smrti aj scavengery
+    (B004/B009) sa spustia**, až potom sa vráti – B007 s pierkom dá Mláďa
+    a ostane stáť (HP sa nastaví pred Pri smrti, aby token nezabral jej
+    slot). U004 reviveAs sa pri návrate nemíňa – platí až na definitívnu smrť,
   - **Žabia kliatba** 🐸 (t4): odložená kliatba – v najbližšom boji sa
     náhodnej súperovej príšerke zmení život na 1 (anti-beast tech),
   - ~~Zvitok múdrosti~~ 📜 (draw 2) **odstránený**: víly s ním každú hru

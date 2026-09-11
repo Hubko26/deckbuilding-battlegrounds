@@ -1881,7 +1881,7 @@ const Engine = (() => {
     for (const pid of ["p1", "p2"]) {
       for (const inst of [...sides[pid]]) {
         if (inst.hp > 0 || inst.dead) continue;
-        if (tryPhoenixRevive(inst, pid, events)) continue;
+        if (tryPhoenixRevive(state, sides, inst, pid, events)) continue;
         inst.dead = true;
         runDeathrattle(state, sides, pid, inst, events);
         runScavengers(state, sides, pid, inst, events);
@@ -1891,11 +1891,16 @@ const Engine = (() => {
     }
   }
 
-  // Fénixovo pierko: raz sa vráti s 1 životom namiesto smrti.
-  function tryPhoenixRevive(inst, pid, events) {
+  // Fénixovo pierko: smrť sa POČÍTA – Pri smrti aj scavengery (B004/B009)
+  // prebehnú – a potom sa príšerka raz vráti s 1 životom (nejde do kôpky,
+  // ostáva vo svojom slote). HP sa nastaví ešte PRED Pri smrti, aby tokeny
+  // z neho (Mláďa z B007) nezabrali jej slot – freeSlot počíta len živé.
+  function tryPhoenixRevive(state, sides, inst, pid, events) {
     if (!inst.revive) return false;
     inst.revive = false;
     inst.hp = 1;
+    runDeathrattle(state, sides, pid, inst, events);
+    runScavengers(state, sides, pid, inst, events);
     events.push({ type: "revive", pid, uid: inst.uid, defId: inst.defId });
     pushHp(events, pid, inst);
     return true;

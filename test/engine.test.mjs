@@ -1491,6 +1491,32 @@ test("Fénixovo pierko: príšerka sa po smrti raz vráti s 1 HP", () => {
   assert.ok(die);
 });
 
+test("Fénixovo pierko: Pri smrti sa spustí PRED návratom, token nezaberie slot vracajúcej sa karty", () => {
+  const { state, E } = fresh(75);
+  E.startRound(state);
+  const p = state.p1;
+  const fish = E.makeInst(state, "B007", 1); fish.slot = 2; // 1/1, Pri smrti: Mláďa
+  p.board = [fish];
+  p.hand = [E.makeInst(state, "pierko", 1)];
+  E.castSpell(state, "p1", 0, fish.uid);
+  assert.equal(fish.revive, true);
+  E.endShopTurn(state, "p1");
+  state.p2.board = [Object.assign(E.makeInst(state, "U010", 1), { slot: 0, hp: 1000, maxHp: 1000 })]; // 8/10 – zabije 1/1 dvakrát
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = [];
+  state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const iSummon = events.findIndex(e => e.type === "summon" && e.defId === "mlada" && e.pid === "p1");
+  const iRev = events.findIndex(e => e.type === "revive" && e.uid === fish.uid);
+  assert.ok(iSummon >= 0, "Mláďa sa vyvolalo z prvej smrti");
+  assert.ok(iRev > iSummon, "návrat až po Pri smrti");
+  assert.notEqual(events[iSummon].slot, fish.slot, "token nesmie zabrať slot vracajúcej sa karty");
+  // Druhá (definitívna) smrť dá druhé Mláďa.
+  const summons = events.filter(e => e.type === "summon" && e.defId === "mlada" && e.pid === "p1");
+  assert.equal(summons.length, 2);
+  assert.ok(events.some(e => e.type === "die" && e.uid === fish.uid));
+});
+
 test("Žabia kliatba: v najbližšom boji zmení náhodnej súperovej príšerke HP na 1", () => {
   const { state, E } = fresh(75);
   E.startRound(state);
