@@ -149,6 +149,10 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 5. Boj končí, keď jedna strana nemá príšerky (limit ťahov → remíza bez damage).
 6. Hrdina porazeného dostane damage = súčet TIEROV preživších súperových príšeriek
    (tier 1–6 karty; evolve stupeň nehrá rolu – zlatá jednotka dá stále 1).
+   **Strop damage za boj podľa kola** (`Engine.heroDmgCap(round)`): kolá 1–3
+   max 5, kolá 4–10 max 10, kolá 11–15 max 15, od 16. kola bez stropu. Skorý
+   snowball nemá hráča zložiť za tri kolá. Event `heroDmg` nesie `raw`
+   (pred stropom) a `capped` (hodnota stropu, ak zasiahol) – log to ukáže.
 7. Tokeny, ktoré prežili, ostávajú na ploche; padlé tokeny miznú z hry (nejdú do
    discard pile – nie sú súčasťou balíčka).
 

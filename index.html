@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=4cae253b">
+  <link rel="stylesheet" href="style.css?v=b4646844">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -85,8 +85,6 @@
         <div class="corner bl" id="oppDiscardBox"></div>
         <!-- Pravidlo dnešnej arény (mutácia) – medzi súperovým balíčkom a kôpkou -->
         <div class="mutator hidden" id="mutatorBox"></div>
-        <!-- Zabanovaná rasa – zrkadlovo vpravo medzi súperovou kôpkou a mojím balíčkom -->
-        <div class="mutator ban hidden" id="banBox"></div>
         <div class="corner tr" id="myDiscardBox"></div>
         <div class="corner br" id="myDeckBox"></div>
 
@@ -102,6 +100,8 @@
               <button id="freezeBtn">❄️</button>
               <button id="tierBtn">⬆️</button>
               <button id="buyBackBtn" class="hidden">↩️</button>
+              <!-- Zabanovaná rasa: preškrtnutá ikonka rasy (ťuk = pripomenutie v logu) -->
+              <button id="banBox" class="ban-ic hidden"></button>
             </span>
             <span class="aura" id="auraEl" title="Aury"></span>
             <span class="money" id="moneyEl"></span>
@@ -164,10 +164,10 @@
   <script src="src/net.js?v=dd30d4c4"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=beast2"></script>
-  <script src="src/engine.js?v=ca13716e"></script>
+  <script src="src/engine.js?v=4fe951c0"></script>
   <script src="src/bot.js?v=mut1"></script>
   <script src="src/claude-bot.js?v=mut1"></script>
-  <script src="src/game.js?v=d7b6c845"></script>
+  <script src="src/game.js?v=82ae6251"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=f4c9eb6b"></script>

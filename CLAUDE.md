@@ -51,6 +51,8 @@ commity, UI) je slovenčina.
   vyberie jednu z troch rás (`Engine.pickBan`), z dvoch výberov sa jedna
   vylosuje a jej karty v celej hre nie sú (`state.banned`, filter v `rollCard`).
 - Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 50 HP.
+  Damage hrdinovi za boj má strop podľa kola (`Engine.heroDmgCap`): 1–3 max 5,
+  4–10 max 10, 11–15 max 15, od 16. kola bez stropu.
 - Kúpená karta ide **do balíčka** (nie do ruky); ruka sa doťahuje na 5.
 - Evolve: 3 rovnaké kópie (karta + stupeň) **kdekoľvek** (plocha, ruka, balíček,
   kôpka) sa automaticky spoja; staty ×2/×4. Výsledok ide **vždy do ruky** (aj

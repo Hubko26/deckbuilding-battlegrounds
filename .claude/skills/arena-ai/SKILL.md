@@ -189,6 +189,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     buff (D002/D006/D008) tokeny v boji dostanú tiež.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
+- Damage hrdinovi = súčet tierov preživších víťaza, **so stropom podľa
+  kola**: 1–3 max 5, 4–10 max 10, 11–15 max 15, od 16. kola bez stropu.
+  Early tempo teda nezabíja – greed do tieru sa do 10. kola oplatí viac,
+  než napovedá čistý súčet tierov.
 
 ## Odporúčaná stratégia – postup v každom ťahu (v tomto poradí)
 

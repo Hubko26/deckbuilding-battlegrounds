@@ -34,6 +34,10 @@ const Engine = (() => {
   const TIER_BASE_COST = { 2: 5, 3: 8, 4: 9, 5: 11, 6: 12 };
   const TIER_MIN_COST = 2; // zľava za čakanie nikdy nezrazí cenu pod 2
   const BATTLE_CAP = 200; // poistka proti nekonečnému boju
+  // Strop damage hrdinovi za jeden boj podľa kola: 1–3 max 5, 4–10 max 10,
+  // 11–15 max 15, od 16. kola bez stropu. Skorý snowball nezabije hráča
+  // za tri kolá, deti majú čas sa dostať do hry.
+  const heroDmgCap = round => round <= 3 ? 5 : round <= 10 ? 10 : round <= 15 ? 15 : Infinity;
 
   // Mutácie – „Pravidlo dnešnej arény": jedna na hru, platí pre oboch hráčov.
   // Žrebuje sa PRVÝM ťahom z rng v newGame → multiplayer aj replay ju odvodia
@@ -1546,18 +1550,20 @@ const Engine = (() => {
   }
 
   // Hrdina porazeného dostane damage = súčet TIEROV preživších príšeriek
-  // víťaza (evolve stupeň nehrá rolu). Obe strany prázdne alebo limit ťahov
-  // = remíza bez damage.
+  // víťaza (evolve stupeň nehrá rolu), zhora orezaný stropom kola
+  // (heroDmgCap). Obe strany prázdne alebo limit ťahov = remíza bez damage.
   function resolveBattleOutcome(state, sides, events) {
     const winner = battleWinner(sides);
     if (!winner) {
       events.push({ type: "battleDraw" });
       return;
     }
-    const dmg = aliveOn(sides, winner).reduce((sum, x) => sum + Cards.byId[x.defId].tier, 0);
+    const raw = aliveOn(sides, winner).reduce((sum, x) => sum + Cards.byId[x.defId].tier, 0);
+    const cap = heroDmgCap(state.round);
+    const dmg = Math.min(raw, cap);
     const loser = other(winner);
     state[loser].hp -= dmg;
-    events.push({ type: "heroDmg", pid: loser, dmg, hp: state[loser].hp });
+    events.push({ type: "heroDmg", pid: loser, dmg, hp: state[loser].hp, raw, capped: raw > dmg ? cap : null });
   }
 
   // Po boji ide VŠETKO (padlé aj preživšie karty) do discard pile a plocha
@@ -1942,7 +1948,7 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
-    TIER_MAX, MUTATORS, privateCount, income, seededRng, cardCost, refreshCost,
+    TIER_MAX, MUTATORS, privateCount, income, seededRng, cardCost, refreshCost, heroDmgCap,
     newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,

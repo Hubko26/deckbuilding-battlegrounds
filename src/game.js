@@ -174,7 +174,6 @@ const L = {
   banResult: { sk: "Vylosované: dnes bez rasy", cs: "Vylosováno: dnes bez rasy", en: "Drawn: today without" },
   banByMe: { sk: "tvoj výber", cs: "tvůj výběr", en: "your pick" },
   banByOpp: { sk: "súperov výber", cs: "soupeřův výběr", en: "opponent's pick" },
-  banBox: { sk: "bez", cs: "bez", en: "no" },
   banBoxTitle: { sk: "Zabanovaná rasa", cs: "Zabanovaná rasa", en: "Banned race" },
   yourTurn: { sk: "Tvoj ťah – nakupuj!", cs: "Tvůj tah – nakupuj!", en: "Your turn – go shopping!" },
   enemyTurn: { sk: "Súper nakupuje…", cs: "Soupeř nakupuje…", en: "Opponent is shopping…" },
@@ -248,6 +247,11 @@ const L = {
       sk: `🎯 Cieľ: zober súperovmu hrdinovi všetkých <i class="hl-r">50 ❤️</i> – príšerky bojujú samy.`,
       cs: `🎯 Cíl: seber soupeřovu hrdinovi všech <i class="hl-r">50 ❤️</i> – příšerky bojují samy.`,
       en: `🎯 Goal: bring the enemy hero's <i class="hl-r">50 ❤️</i> to zero – your minions fight on their own.`,
+    },
+    {
+      sk: `🛡️ Damage hrdinovi za boj má <i class="hl-r">strop</i>: kolá 1–3 max 5, do 10. kola max 10, do 15. kola max 15, potom bez stropu.`,
+      cs: `🛡️ Damage hrdinovi za boj má <i class="hl-r">strop</i>: kola 1–3 max 5, do 10. kola max 10, do 15. kola max 15, pak bez stropu.`,
+      en: `🛡️ Hero damage per fight is <i class="hl-r">capped</i>: rounds 1–3 max 5, up to round 10 max 10, up to round 15 max 15, then unlimited.`,
     },
     {
       sk: `🪙 Každé kolo dostaneš <i class="hl-g">mince</i> (3, každé kolo +1, max 10). Neminuté <i class="hl-g">prepadnú</i>.`,
@@ -459,6 +463,7 @@ const L = {
     en: "returned with 1 health (Phoenix Feather)",
   },
   heroDmgMsg: { sk: "dostal", cs: "dostal", en: "took" },
+  heroDmgCapMsg: { sk: "strop kola", cs: "strop kola", en: "round cap" },
   you: { sk: "Ty", cs: "Ty", en: "You" },
   opp: { sk: "Súper", cs: "Soupeř", en: "Opponent" },
 };
@@ -763,14 +768,14 @@ function enterGameScreen() {
   renderBanBox();
 }
 
-// „Bez rasy" – ikonka vpravo (zrkadlo pravidla arény); ťuk = pripomenutie v logu.
+// „Bez rasy" – preškrtnutá ikonka rasy v hlavičke obchodu vedľa ↩️; ťuk = pripomenutie v logu.
 function renderBanBox() {
   const box = $("banBox");
   const r = state && state.banned;
   if (!r) { box.classList.add("hidden"); return; }
   box.classList.remove("hidden");
   const name = Cards.RACES_NOM[r][I18N.lang];
-  box.innerHTML = `<div class="ic">🚫${Cards.RACE_ICON[r]}</div><div class="lb">${t(L.banBox)} ${name}</div>`;
+  box.textContent = Cards.RACE_ICON[r];
   box.title = `${t(L.banBoxTitle)}: ${name}`;
   box.onclick = () => log(banResultMsg({ race: r, by: state.ban && state.ban.by }));
 }
@@ -1593,7 +1598,9 @@ async function runBattle() {
         spawnParticles(chip, { n: 12, color: "#e03131", emoji: "💥", spread: 70 });
         floatText(chip, `-${ev.dmg}`);
         renderHero(chip, { ...state[ev.pid], hp: ev.hp });
-        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}`);
+        // Strop damage podľa kola: ukáž, koľko by bolo bez stropu.
+        const capNote = ev.capped ? ` (${t(L.heroDmgCapMsg)} ${ev.capped}, bez stropu ${ev.raw})` : "";
+        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}${capNote}`);
         botTaunt(ev.pid === MY ? "win" : "lose", 0.8);
         lastBattleNote = ev.pid === MY
           ? `you WON the last battle, the human's hero took ${ev.dmg} damage (their HP: ${ev.hp})`

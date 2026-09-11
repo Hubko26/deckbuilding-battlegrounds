@@ -2871,3 +2871,47 @@ test("O009 Divoký úder: obrana bije rovnako náhodne a text karty ukazuje rozs
 test("O009 Divoký úder: rovnaký seed dá rovnaké čísla (determinizmus)", () => {
   assert.equal(JSON.stringify(wildHits(21, {})), JSON.stringify(wildHits(21, {})));
 });
+
+// ---------- Strop damage hrdinovi podľa kola ----------
+test("heroDmgCap: 1–3 → 5, 4–10 → 10, 11–15 → 15, od 16 bez stropu", () => {
+  const { E } = fresh();
+  assert.equal(E.heroDmgCap(1), 5); assert.equal(E.heroDmgCap(3), 5);
+  assert.equal(E.heroDmgCap(4), 10); assert.equal(E.heroDmgCap(10), 10);
+  assert.equal(E.heroDmgCap(11), 15); assert.equal(E.heroDmgCap(15), 15);
+  assert.equal(E.heroDmgCap(16), Infinity);
+});
+
+// Päť preživších t6 (raw 30) proti prázdnej ploche v danom kole.
+function capFight(round) {
+  const { state, E } = fresh(13);
+  E.startRound(state);
+  state.round = round;
+  E.endShopTurn(state, "p1");
+  state.p1.board = [0, 1, 2, 3, 4].map(i => Object.assign(E.makeInst(state, "O010", 1), { slot: i }));
+  state.p2.board = [];
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  return { ev: events.find(e => e.type === "heroDmg"), hp: state.p2.hp };
+}
+
+test("strop damage: v 2. kole max 5, v 7. kole max 10, v 12. kole max 15, v 16. kole plných 30", () => {
+  let r = capFight(2);
+  assert.equal(r.ev.dmg, 5); assert.equal(r.ev.raw, 30); assert.equal(r.ev.capped, 5); assert.equal(r.hp, 45);
+  r = capFight(7);
+  assert.equal(r.ev.dmg, 10); assert.equal(r.ev.capped, 10); assert.equal(r.hp, 40);
+  r = capFight(12);
+  assert.equal(r.ev.dmg, 15); assert.equal(r.ev.capped, 15); assert.equal(r.hp, 35);
+  r = capFight(16);
+  assert.equal(r.ev.dmg, 30); assert.equal(r.ev.capped, null); assert.equal(r.hp, 20);
+});
+
+test("strop damage: pod stropom sa nič nemení (raw = dmg, capped null)", () => {
+  const { state, E } = fresh(11);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  state.p1.board = [Object.assign(E.makeInst(state, "B002", 1), { slot: 0 })];
+  state.p2.board = [];
+  state.p1.hand = []; state.p2.hand = [];
+  const ev = E.doBattle(state).find(e => e.type === "heroDmg");
+  assert.equal(ev.dmg, 3); assert.equal(ev.raw, 3); assert.equal(ev.capped, null);
+});
