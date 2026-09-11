@@ -181,7 +181,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     + **Rozmach**: 50 % šanca, že úder zasiahne aj susedov cieľa – ogrí
     finišer proti širokej ploche súpera)
     Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
-    Vanilla telá nad krivkou: O004/O005/O008/O009 – bezpečný nákup.
+    Vanilla telá nad krivkou: O004/O005/O008 – bezpečný nákup. O009 (t4,
+    7/7) má Divoký úder: každý zásah náhodne 1–14 (priemer 7,5), buffy a
+    Pečať posúvajú rozsah (+1 → 2–15), striebro 2–28 – rozptyl, nie sila.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
     Mláďa s aurami škálujú; navyše škálujú stupňom rodiča. Dočasný dračí
     buff (D002/D006/D008) tokeny v boji dostanú tiež.
@@ -290,7 +292,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
   finišer, kupuj ho hneď, ako naň máš tier. Build stojí na
   **generátoroch Backstabu** – O006 (Pri útoku,
   hádže každý boj), O001 (lacný hod), O002/O007/O010. Vanilla telá
-  O004/O005/O008/O009 Pečať negenerujú, len z nej žijú, takže ich ber až
+  O004/O005/O008/O009 Pečať negenerujú, len z nej žijú (O009 ju mení na
+  posun rozsahu Divokého úderu), takže ich ber až
   ako doplnok. Pečať nemá strop – každý ožratý úder, chvost mince či
   chaos na súperovej karte je +1/+1 celej rase, takže viac generátorov
   (2–3× O006 vľavo, Vichor 🌪️ na O006) Pečať zrýchľuje. O003 len bez

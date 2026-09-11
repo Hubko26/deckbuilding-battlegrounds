@@ -187,7 +187,7 @@ test("B001 Pri smrti: +1/+1 všetkým živým Zvieratám (nie iným rasám), str
   const bird2 = E2.makeInst(s2, "B001", 2); bird2.slot = 0;     // 4/4
   const big = E2.makeInst(s2, "B010", 1); big.slot = 1;          // 6/10 beast
   s2.p1.board = [bird2, big];
-  s2.p2.board = [Object.assign(E2.makeInst(s2, "O009", 1), { slot: 0 })]; // 7/7 zabije 4/4
+  s2.p2.board = [Object.assign(E2.makeInst(s2, "O008", 1), { slot: 0, atk: 7 })]; // 7/7 zabije 4/4 (O009 bije náhodne)
   s2.p1.hand = []; s2.p2.hand = [];
   const ev2 = E2.doBattle(s2);
   assert.ok(ev2.some(e => e.type === "buff" && e.uid === big.uid && e.a === 2 && e.h === 2));
@@ -2666,7 +2666,7 @@ test("Bublina strieborného E002 strieľa pri smrti len raz (hits: 1), aj keď m
   E.endShopTurn(state, "p1");
   const bub = E.makeInst(state, "E002", 2); bub.slot = 0; // strieborná 2/6 – bubliny stupňa 2
   state.p1.board = [bub];
-  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "O009", 1), { slot: i })); // 7/7 ×3 – zabijú všetko
+  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "O008", 1), { slot: i, atk: 7 })); // 7/7 ×3 – zabijú všetko (O009 bije náhodne)
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = [];
   state.p2.deck = []; state.p2.discard = [];
@@ -2799,4 +2799,75 @@ test("ban: losovanie ide cez state.rng – rovnaký seed a výbery dajú rovnak�
     return { banned: state.banned, by: state.ban.by, deck: state.p1.deck.map(c => c.defId), commons: state.commons };
   };
   assert.equal(JSON.stringify(run()), JSON.stringify(run())); // (vm kontext: iné prototypy polí)
+});
+
+// ---------- O009 Divoký úder ----------
+// Jeden boj O009 (sám) proti terču s obrovským HP: vráti všetky čísla, ktoré O009 dalo.
+function wildHits(seed, setup) {
+  const { state, E } = fresh(seed);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const o = E.makeInst(state, "O009", setup.rank || 1); o.slot = 0;
+  if (setup.buff) o.atk += setup.buff;
+  if (setup.silenced) o.silenced = true;
+  const wall = E.makeInst(state, "O004", 1); wall.slot = 0; wall.atk = 0; wall.hp = wall.maxHp = 100000;
+  state.p1.board = [o]; state.p2.board = [wall];
+  state.p1.hand = []; state.p2.hand = []; state.p1.deck = []; state.p2.deck = []; state.p1.discard = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  return events.filter(e => e.type === "attack" && e.aUid === o.uid).map(e => e.aDmg);
+}
+
+test("O009 Divoký úder: bronz dáva náhodne 1–14, nie pevných 7", () => {
+  const hits = [];
+  for (let seed = 1; seed <= 6; seed++) hits.push(...wildHits(seed, {}));
+  assert.ok(hits.length >= 100);
+  for (const h of hits) assert.ok(h >= 1 && h <= 14, `zásah ${h} mimo 1–14`);
+  assert.ok(new Set(hits).size >= 8, "čísla sa musia líšiť");
+  assert.ok(hits.some(h => h <= 3) && hits.some(h => h >= 12));
+});
+
+test("O009 Divoký úder: buff +1 posúva rozsah na 2–15, striebro (14) na 2–28", () => {
+  const b = []; for (let seed = 1; seed <= 6; seed++) b.push(...wildHits(seed, { buff: 1 }));
+  for (const h of b) assert.ok(h >= 2 && h <= 15, `zásah ${h} mimo 2–15`);
+  assert.ok(b.includes(15) || b.includes(2));
+  const s = []; for (let seed = 1; seed <= 6; seed++) s.push(...wildHits(seed, { rank: 2 }));
+  for (const h of s) assert.ok(h >= 2 && h <= 28, `zásah ${h} mimo 2–28`);
+  assert.ok(Math.max(...s) > 14, "striebro musí vedieť dať viac než 14");
+});
+
+test("O009 Divoký úder: umlčaná bije napevno za útok; Umlčanie ju berie ako cieľ", () => {
+  const hits = wildHits(3, { silenced: true });
+  assert.ok(hits.length);
+  for (const h of hits) assert.equal(h, 7);
+  const { state, E } = fresh(4);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  state.p1.silences = 1;
+  state.p1.board = [Object.assign(E.makeInst(state, "O004", 1), { slot: 0 })];
+  state.p2.board = [Object.assign(E.makeInst(state, "O009", 1), { slot: 0 })];
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  assert.ok(events.some(e => e.type === "silence"), "O009 (bez power) je legálny cieľ Umlčania");
+});
+
+test("O009 Divoký úder: obrana bije rovnako náhodne a text karty ukazuje rozsah aj po buffe", () => {
+  const { state, E, C } = fresh(9);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const o = E.makeInst(state, "O009", 1); o.slot = 0; o.hp = o.maxHp = 100000;
+  const att = E.makeInst(state, "O004", 1); att.slot = 0; att.hp = att.maxHp = 100000;
+  state.p1.board = [att]; state.p2.board = [o];
+  state.p1.hand = []; state.p2.hand = [];
+  const events = E.doBattle(state);
+  const def = events.filter(e => e.type === "attack" && e.dUid === o.uid).map(e => e.dDmg);
+  assert.ok(def.length >= 20);
+  for (const h of def) assert.ok(h >= 1 && h <= 14);
+  assert.ok(new Set(def).size >= 5);
+  assert.match(C.cardText(C.byId["O009"], 1, "sk"), /Divoký úder: každý zásah dá náhodne 1–14/);
+  assert.match(C.cardText(C.byId["O009"], 2, "en"), /2–28/);
+  assert.match(C.cardText(C.byId["O009"], 1, "sk", false, 0, { atk: 9 }), /3–16/);
+});
+
+test("O009 Divoký úder: rovnaký seed dá rovnaké čísla (determinizmus)", () => {
+  assert.equal(JSON.stringify(wildHits(21, {})), JSON.stringify(wildHits(21, {})));
 });

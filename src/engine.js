@@ -74,6 +74,7 @@ const Engine = (() => {
     return arr;
   }
   const pick = (arr, rng) => arr[Math.floor(rng() * arr.length)];
+  const randInt = (lo, hi, rng) => lo + Math.floor(rng() * (hi - lo + 1)); // celé číslo lo..hi vrátane
 
   // Deterministický generátor náhody (mulberry32) – multiplayer replikuje
   // akcie a oba klienty musia dostať rovnaké náhodné čísla z rovnakého seedu.
@@ -1386,7 +1387,7 @@ const Engine = (() => {
     while (p.silences > 0) {
       p.silences--;
       const targets = sides[foe].filter(x =>
-        x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || x.taunt));
+        x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || Cards.byId[x.defId].wildAtk || x.taunt));
       if (!targets.length) {
         events.push({ type: "silenceFizzle", pid });
         continue;
@@ -1495,14 +1496,25 @@ const Engine = (() => {
     if (!enemies.length) return false;
     const taunts = enemies.filter(x => x.taunt);
     const d = pick(taunts.length ? taunts : enemies, state.rng);
-    events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: defender, dUid: d.uid, aDmg: a.atk, dDmg: d.atk });
-    dealDmg(a, d.atk, attacker, events);
-    dealDmg(d, a.atk, defender, events);
+    const aDmg = hitDmg(state, a), dDmg = hitDmg(state, d);
+    events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: defender, dUid: d.uid, aDmg, dDmg, aWild: aDmg !== a.atk, dWild: dDmg !== d.atk });
+    dealDmg(a, dDmg, attacker, events);
+    dealDmg(d, aDmg, defender, events);
     pushHp(events, attacker, a);
     pushHp(events, defender, d);
-    cleaveSplash(state, sides, attacker, a, d, events);
+    cleaveSplash(state, sides, attacker, a, d, aDmg, events);
     handleDeaths(state, sides, events);
     return true;
+  }
+
+  // Číslo zásahu príšerky: útok, alebo pri Divokom údere (O009, def.wildAtk)
+  // náhodné číslo z rozsahu okolo útoku (Cards.wildRange: atk−6·m … atk+7·m,
+  // bronz 7 → 1–14). Buffy a Pečať rozsah posúvajú. Umlčaná bije napevno.
+  // Losuje sa cez state.rng – replay a multiplayer sedia.
+  function hitDmg(state, inst) {
+    if (!Cards.byId[inst.defId].wildAtk || inst.silenced) return inst.atk;
+    const [lo, hi] = Cards.wildRange(inst.atk, inst.rank);
+    return randInt(lo, hi, state.rng);
   }
 
   // Rozmach (cleave, `def.cleave` = šanca 0–1): útok môže zasiahnuť aj
@@ -1511,16 +1523,16 @@ const Engine = (() => {
   // útočníka, šanca je fixná a NEnásobí sa evolve stupňom. Bez suseda sa
   // nehádže vôbec (nemíňa sa roll, boj ostáva deterministický rovnako
   // na oboch klientoch). Umlčaná príšerka Rozmach stráca.
-  function cleaveSplash(state, sides, attacker, a, d, events) {
+  function cleaveSplash(state, sides, attacker, a, d, dmg, events) {
     const chance = Cards.byId[a.defId].cleave;
     if (!chance || a.silenced) return;
     const defender = other(attacker);
     const hit = aliveOn(sides, defender).filter(x => x !== d && Math.abs(x.slot - d.slot) === 1);
     if (!hit.length) return;
     if (state.rng() >= chance) return;
-    events.push({ type: "cleave", pid: attacker, uid: a.uid, targetPid: defender, uids: hit.map(x => x.uid), n: a.atk });
+    events.push({ type: "cleave", pid: attacker, uid: a.uid, targetPid: defender, uids: hit.map(x => x.uid), n: dmg });
     for (const x of hit) {
-      dealDmg(x, a.atk, defender, events);
+      dealDmg(x, dmg, defender, events);
       pushHp(events, defender, x);
     }
   }

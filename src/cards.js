@@ -239,7 +239,10 @@ const Cards = (() => {
     M("O008", 3, "ogre", ["Bubbletusk", "Reefstomper", "Tidal Sovereign"], 5, 7),
     M("O003", 4, "ogre", ["Emberknuckle", "Cindermaul", "Volcano Chieftain"], 7, 8,
       { power: { kw: "startFight", fx: { type: "dmgAllBoth", n: 2 } } }),
-    M("O009", 4, "ogre", ["Dustnose", "Dunehammer", "Sunstone Guardian"], 7, 7),
+    // O009 Divoký úder: každý zásah (útok aj obrana, aj Rozmach) dá náhodne
+    // 1–14 namiesto 7 (wildAtk: rozsah atk−6 … atk+7, za stupeň ×2/×4).
+    // Pečať a buffy posúvajú celý rozsah (+1 → 2–15). Ogrí rozptyl na tele.
+    M("O009", 4, "ogre", ["Dustnose", "Dunehammer", "Sunstone Guardian"], 7, 7, { wildAtk: true }),
     M("O007", 5, "ogre", ["Rumbletuft", "Thundermaul", "Tempest Chieftain"], 9, 7,
       { power: { kw: "deathrattle", fx: { type: "dmgRandomAny", n: 5 } } }),
     // O010: Obranca; pri smrti 50 % šanca, že vstane s 1 HP na NÁHODNEJ
@@ -380,6 +383,19 @@ const Cards = (() => {
   };
   const TAUNT_LABEL = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
   const CLEAVE_LABEL = { sk: "Rozmach", cs: "Rozmach", en: "Cleave" };
+  const WILD_LABEL = { sk: "Divoký úder", cs: "Divoký úder", en: "Wild Strike" };
+  // Divoký úder (def.wildAtk): rozsah zásahu podľa AKTUÁLNEHO útoku (buffy
+  // ho posúvajú) a stupňa: atk − 6·m … atk + 7·m (bronz 7 → 1–14).
+  const WILD_LOW = 6, WILD_HIGH = 7;
+  const wildRange = (atk, rank) => {
+    const m = STAT_MULT[rank] || 1;
+    return [Math.max(0, atk - WILD_LOW * m), atk + WILD_HIGH * m];
+  };
+  const wildText = ([lo, hi]) => ({
+    sk: `každý zásah dá náhodne ${lo}–${hi}`,
+    cs: `každý zásah dá náhodně ${lo}–${hi}`,
+    en: `each hit deals a random ${lo}–${hi}`,
+  });
   const cleaveText = (pct) => ({
     sk: `${pct} % šanca, že úder zasiahne aj susedov cieľa`,
     cs: `${pct} % šance, že úder zasáhne i sousedy cíle`,
@@ -725,7 +741,8 @@ const Cards = (() => {
   // html=true obalí kľúčové slová (Taunt, Deathrattle…) do <strong>.
   // boost = trvalý bonus Večnej iskry majiteľa – výboje/výbuchy ukážu
   // navýšené číslo (html navyše zeleno cez <span class="boosted">).
-  function cardText(def, rank, lang, html, boost) {
+  // opts.atk: aktuálny útok inštancie (Divoký úder ukáže posunutý rozsah).
+  function cardText(def, rank, lang, html, boost, opts) {
     const m = rank; // efekty ×1/×2/×3
     const b = s => (html ? `<strong>${s}</strong>` : s);
     const hl = base => {
@@ -738,6 +755,10 @@ const Cards = (() => {
     if (def.taunt) parts.push(b(TAUNT_LABEL[lang]) + ".");
     if (def.cleave) {
       parts.push(`${b(CLEAVE_LABEL[lang])}: ${cleaveText(Math.round(def.cleave * 100))[lang]}.`);
+    }
+    if (def.wildAtk) {
+      const atk = opts && opts.atk != null ? opts.atk : def.atk * STAT_MULT[rank];
+      parts.push(`${b(WILD_LABEL[lang])}: ${wildText(wildRange(atk, rank))[lang]}.`);
     }
     if (def.power && def.power.kw === "raceDeath") {
       // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
@@ -762,7 +783,7 @@ const Cards = (() => {
   // Staty pre stupeň: bronz ×1, striebro ×2, zlato ×4.
   const STAT_MULT = [null, 1, 2, 4];
 
-  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, IMPRINT };
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, IMPRINT, wildRange };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

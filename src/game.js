@@ -382,6 +382,7 @@ const L = {
     cs: "🤫 Nabito: v nejbližším boji bude umlčena soupeřova příšerka",
     en: "🤫 Charged: an enemy minion will be silenced next fight",
   },
+  wildMsg: { sk: "🎲 Divoký úder", cs: "🎲 Divoký úder", en: "🎲 Wild Strike" },
   cleaveMsg: {
     sk: "💥 Rozmach! Úder zasiahol aj susedov",
     cs: "💥 Rozmach! Úder zasáhl i sousedy",
@@ -1275,8 +1276,11 @@ async function runBattle() {
           impactRing(d, "#ff6b6b");
           spawnParticles(d, { n: 6, color: "#ff6b6b", spread: 40 });
           if (ev.aDmg >= 6) screenShake(0.5);
-          floatText(d, `-${ev.aDmg}`);
-          if (ev.dDmg > 0) floatText(a, `-${ev.dDmg}`);
+          floatText(d, `${ev.aWild ? "🎲" : ""}-${ev.aDmg}`);
+          if (ev.dDmg > 0) floatText(a, `${ev.dWild ? "🎲" : ""}-${ev.dDmg}`);
+          // Divoký úder (O009): hodené číslo aj do logu – deti vidia, čo padlo.
+          if (ev.aWild) log(`${t(L.wildMsg)}: ${ev.aDmg}`);
+          if (ev.dWild) log(`${t(L.wildMsg)}: ${ev.dDmg}`);
           await sleep(480);
           a.style.transition = "transform .25s ease-out";
           a.style.transform = "";
@@ -1996,8 +2000,10 @@ function cardEl(instOrId, opts) {
   // výbuchy a „Pri útoku" bonus ukážu v popisku navýšené číslo (zeleno).
   const owner = state ? state[opts.owner || MY] : null;
   const boost = (owner && owner.dmgBoost) || 0;
-  const text = Cards.cardText(def, rank, I18N.lang, true, boost);
-  const plainText = Cards.cardText(def, rank, I18N.lang, false, boost);
+  // Divoký úder (O009): rozsah podľa aktuálneho útoku inštancie (buffy ho posúvajú).
+  const txOpts = isInst ? { atk: instOrId.atk } : undefined;
+  const text = Cards.cardText(def, rank, I18N.lang, true, boost, txOpts);
+  const plainText = Cards.cardText(def, rank, I18N.lang, false, boost, txOpts);
   const name = Cards.nameOf(def, rank, I18N.lang);
   const art = Cards.artOf(def, rank);
   // Príšery majú kompletnú kartu ako obrázok (rám + art); tier číslo sa

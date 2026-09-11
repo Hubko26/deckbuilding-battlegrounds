@@ -503,7 +503,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     že úder zasiahne aj susedov cieľa.** Pri smrti: 50 % šanca, že vstane
     s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Revive je raz za boj,
     pri plnej strane ostáva ležať (technicky vstáva bojová kópia).
-  - Vanilla: O004 (t1, 3/4), O005 (t2, 4/5), O008 (t3, 5/7), O009 (t4, 7/7).
+  - **O009 Divoký úder** (t4, 7/7): „Každý zásah dá náhodne 1–14" – útok,
+    obrana aj Rozmach losujú číslo z rozsahu **atk − 6·m … atk + 7·m**
+    (m = ×1/×2/×4 podľa stupňa; bronz 1–14, striebro 2–28). **Pečať a buffy
+    posúvajú celý rozsah** (+1 → 2–15, +2 → 3–16). Priemer o pol bodu nad
+    pevným útokom – hráč platí rozptylom. Umlčaná bije napevno (Umlčanie ju
+    berie ako cieľ). Losuje sa cez `state.rng` (`hitDmg` v engine); text
+    karty ukazuje rozsah podľa aktuálneho útoku inštancie. UI: 🎲 pri floate
+    a hodené číslo v logu.
+  - Vanilla: O004 (t1, 3/4), O005 (t2, 4/5), O008 (t3, 5/7).
 - Balance: očakávaná hodnota efektov mierne záporná/neutrálna, kompenzujú
   ju staty nad krivkou – hráč platí rozptylom, nie silou. UI: chaos
   momenty hlási log (🪙 hod mincou, 👹 zožratie, 🍺 vlastný zásah,
