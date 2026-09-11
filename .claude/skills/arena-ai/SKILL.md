@@ -222,12 +222,19 @@ plochou. Rob VŠETKY kroky, každý ťah:
    (heuristický bot na tom v zázname z 8. 9. 2026 prehral: 6 Štítov
    v balíčku = plocha 2–4 z 5), a od 3. kola každá karta cudzej rasy
    tieru 1–2 bez páru (od tieru 3 aj s párom; dragon t1–2 sa ráta ako
-   cudzia rasa, ogre len ak ogri nie sú tvoja hlavná rasa). Driver po pláne balast dopredá a plochu usporiada sám
-   (poistka), ale plán, čo to nerobí, je zlý plán. Štartovací balíček je 10 náhodných
-   t1 kariet – človek ich vypredá do 6. kola, ty tiež. Nechaj si toľko tiel,
-   aby si zaplnil plochu (aspoň 4); zvyšný balast zahraj a predaj nabudúce.
-   Cieľ: balíček ≤ 12–14 kariet vlastnej rasy. Každá mŕtva karta = horšia
-   ruka každé ďalšie kolo.
+   cudzia rasa – od tieru 3 aj drak t1–2, ogre len ak ogri nie sú tvoja hlavná rasa).
+   Driver po pláne dohrá jadro hard bota (predaj balastu, strop balíčka,
+   vyloženie, upgrade podľa kola, minutie zlata aj s refreshom, kúzla,
+   poradie plochy) – je to poistka, ale plán, čo to nerobí, je zlý plán.
+   Štartovací balíček je 10 náhodných t1 kariet – človek ich vypredá do
+   6. kola, ty tiež. Nechaj si toľko tiel, aby si zaplnil plochu (aspoň 4);
+   zvyšný balast zahraj a predaj nabudúce.
+   **Tvrdý strop balíčka: 14 kariet** (všetky zóny; nad ním driver predá
+   najslabšie telá z ruky bez páru). Plocha sa po boji vracia do kôpky
+   a ruka je 5 NÁHODNÝCH kariet z cyklu balíčka – s 19 kartami ležia tvoje
+   najsilnejšie karty v kôpke a bojuje náhodný balast (Claude bot, záznam
+   z 11. 9. 2026: balíček 19, 1 predaj za hru, prehra 11 : 33). Víťaz drží
+   11–13 kariet: každá karta v balíčku je taká, ktorú chce ťahať.
 2. **Vylož príšerky – najprv obyčajné (najsilnejšie), battlecry buffery
    a Pečate ako posledné**, nech zasiahnu plnú plochu. Dračí cielený
    battlecry vždy s `target` na kartu dominantnej rasy; U004 s `target`
@@ -235,8 +242,10 @@ plochou. Rob VŠETKY kroky, každý ťah:
 3. **Výmena na plnej ploche**: ak máš v ruke telo aspoň o 3 staty
    (útok + život + 2 za schopnosť) lepšie než najslabšie na ploche, predaj
    najslabšie a vylož lepšie.
-4. **Upgrade tieru podľa plánu**: t2 v 3.–4. kole, t3 v 6., t4 v 8.–9.,
-   t5 v 11., t6 v 13.+ (pravidlo: `kolo ≥ tier·2−1`). Upgraduj len keď je
+4. **Upgrade tieru podľa plánu**: t2 v 2.–3. kole, t3 v 4.–5., t4 v 7.,
+   t5 v 9.–10., t6 v 12. (pravidlo `kolo ≥ tier·2−1` je NAJNESKÔR). Tier
+   o jeden za hráčom = slabšia súkromná ponuka a spoločná ponuka sa rolluje
+   podľa NIŽŠIEHO tieru z oboch hráčov. Upgraduj len keď je
    plocha plná (5) alebo keď ti po upgrade ostanú aspoň 3 zlata a plocha
    má aspoň 4 telá. S 1–3 telami na ploche NEUPGRADUJ – telá majú prednosť.
 5. **Nakupuj podľa tejto priority** (všetko zlato, neminuté prepadne):
@@ -251,10 +260,11 @@ plochou. Rob VŠETKY kroky, každý ťah:
    NIKDY: príšera cudzej rasy tieru 1–2 po 3. kole (okrem trojice), tretie
    a ďalšie kúzlo v ne-vílovom balíčku, Vlna/Štít „lebo ostalo zlato".
    Radšej nech 1–2 zlata prepadnú, než kúpiť balast do balíčka.
-6. **Refresh len výnimočne**: max 1× za ťah, iba ak nič v ponuke nespĺňa
-   a)–e) A ostanú ti aspoň 4 zlata. Ako jednorázový plán výsledok refreshu
-   nevidíš – radšej kúp priemerné telo svojej rasy. Nikdy refresh ako
-   poslednú akciu (obchod sa po boji rolluje zadarmo).
+6. **Refresh, keď v ponuke nie je nič pre tvoju rasu**: ak nič nespĺňa
+   a)–e) a ostanú ti aspoň 4 zlata, daj `refresh` – driver z nového rollu
+   kúpi najlepšiu kartu tvojej rasy za teba (výsledok nevidíš, po refreshi
+   neplánuj nákupy). Neminuté zlato prepadne: 1–2 zlata v 11 kolách je
+   14 zlata v koši. Nikdy refresh ako poslednú akciu s menej než 4 zlatami.
 7. **Freeze**: dobrá karta v súkromnej ponuke (trojica, Pečať tvojej rasy),
    na ktorú už nemáš → `freeze`, kúpiš ju v novom kole.
 8. **Kúzla až po vyložení**: buffy (Jablko, Srdce, Koreň) na najsilnejšiu

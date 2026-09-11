@@ -339,3 +339,74 @@ test("bot: pickBan vyberie hlavnú rasu zo svojej trojice (nie draka/ogra, ak m�
   if (main.length) assert.ok(!B.SUPPORT_RACES.has(race));
   assert.ok(E.pickBan(state, "p2", race));
 });
+
+test("bot: withExecutor – každá akcia jadra ťahu ide cez executor a zalogovaná sekvencia dá po replayi rovnaký stav", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const play = (log) => {
+    const state = E.newGame(seeded(77), null);
+    E.startRound(state);
+    E.endShopTurn(state, "p1");
+    if (log) {
+      B.withExecutor((name, s, pid, ...args) => { const ev = E[name](s, pid, ...args); if (ev) log.push([name, args]); return ev; },
+        () => B.completeTurn(state, "p2", B.HYGIENE, () => {}));
+      E.endShopTurn(state, "p2");
+    }
+    return state;
+  };
+  const log = [];
+  const a = play(log);
+  assert.ok(log.length > 0);
+  assert.ok(log.some(([n]) => n === "playMinion"));
+  // replay zo záznamu (bez bota) musí skončiť v rovnakom stave
+  const b = play(null);
+  for (const [name, args] of log) assert.ok(E[name](b, "p2", ...args) !== null, name);
+  E.endShopTurn(b, "p2");
+  const view = s => JSON.stringify([s.p2.board.map(x => [x.defId, x.rank, x.atk, x.hp, x.slot]), s.p2.deck.map(c => c.defId), s.p2.money, s.p2.tier]);
+  assert.equal(view(a), view(b));
+});
+
+test("hard bot: strop balíčka – nad DECK_CAP predá najslabšie telo z ruky bez páru, pod stropom nepredáva", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const setup = deckLen => {
+    const state = E.newGame(seeded(78), null);
+    E.startRound(state); E.startRound(state); E.startRound(state);
+    E.endShopTurn(state, "p1");
+    const p = state.p2;
+    p.money = 0;
+    p.discard = [];
+    p.deck = Array.from({ length: deckLen }, (_, i) => ({ defId: ["B002", "B004", "B005", "B008", "B009", "B010"][i % 6], rank: 1 }));
+    p.board = ["B008", "B004", "B005", "B002", "B009"].map((id, i) => Object.assign(E.makeInst(state, id, 1), { slot: i }));
+    const weak = E.makeInst(state, "B007", 1);  // 1/1 zviera bez páru – kandidát na predaj
+    const strong = E.makeInst(state, "B010", 1); // 6/10 taunt – hodnotné telo
+    p.hand = [strong, weak];
+    return { state, p };
+  };
+  const over = setup(12); // 12 + 5 + 2 = 19 > 14
+  assert.ok(B.deckSize(over.p) > B.DECK_CAP);
+  const evOver = B.botTurn(over.state, "p2", "hard");
+  assert.ok(evOver.some(e => e.type === "sell" && e.defId === "B007"), "B007 sa mal predať");
+  assert.ok(!evOver.some(e => e.type === "sell" && e.defId === "B010"), "B010 sa nemal predať");
+
+  const under = setup(3); // 3 + 5 + 2 = 10 <= 14
+  assert.ok(B.deckSize(under.p) <= B.DECK_CAP);
+  const evUnder = B.botTurn(under.state, "p2", "hard");
+  // pod stropom B007 ostáva (predaj B005 z plochy je bežná výmena za silnejšie B010)
+  assert.ok(!evUnder.some(e => e.type === "sell" && e.defId === "B007"), "pod stropom sa B007 nepredáva");
+});
+
+test("bot: drak tieru 1–2 je od tieru 3 balast (predtým žoldnier)", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(79), null);
+  E.startRound(state); E.startRound(state); E.startRound(state);
+  const p = state.p2;
+  p.deck = [{ defId: "B001", rank: 1 }, { defId: "B003", rank: 1 }, { defId: "B004", rank: 1 }];
+  p.discard = []; p.hand = []; p.board = [];
+  const drake = E.makeInst(state, "D001", 1);
+  p.tier = 2;
+  assert.equal(B.isJunk(state, p, drake), false);
+  p.tier = 3;
+  assert.equal(B.isJunk(state, p, drake), true);
+});

@@ -431,6 +431,16 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   pravidlá; Claude vráti JSON `{actions, taunt}`. Akcie sa vykonajú cez
   Engine API, nelegálne sa ticho preskočia; každá úspešná sa loguje
   jednotlivo → `tools/replay.mjs` prehrá hru presne bez API.
+- **Hygiena po pláne**: po Claudových akciách driver dohrá jadro hard bota
+  bez handicapov (`Bot.completeTurn` s `Bot.HYGIENE`) – predá balast, drží
+  strop balíčka, vyloží zvyšné telá, upgraduje podľa kola, minie zlato aj
+  s refreshom, zahrá kúzla a usporiada plochu (ak ju Claude neusporiadal
+  sám). Nákup cudzej karty t1–2 bez páru po zafixovaní rasy driver z plánu
+  vyhodí. Všetky akcie hygieny idú cez `Bot.withExecutor`, takže sa logujú
+  a replay sedí (predtým sa presuny z `orderBoard` nelogovali a replay
+  Claude hier sa od 7. kola rozchádzal). Dôvod: záznam z 11. 9. 2026 –
+  Claude 15 kôl bez refreshu, 1 predaj, balíček 19 kariet, tier vždy
+  o jeden pozadu, nevyužité zlato v 11 kolách; prehra 11 : 33.
 - **Trash-talk bublina = reálna Claudova hláška** – hráč na pick obrazovke
   vyplní len MENO; profily hráčov (meme texty pre kamošov) sú natvrdo
   v `PLAYER_PROFILES` v claude-bot.js (kľúč = meno malými písmenami).
@@ -1017,6 +1027,13 @@ len staty + keyword badge.
   Heuristika sama hráča neporazí – toto mu vyrovnáva šance. Druhý
   handicap: hard bot má **+1 zlato každé kolo** od prvého (pridá si ho na
   začiatku svojho ťahu, `p.bonusRound` stráži jedno pridanie za kolo).
+  **Strop balíčka** (`Bot.DECK_CAP` = 14 kariet vo všetkých zónach bez
+  tokenov): nad ním bot predá z ruky najslabšie telá stupňa 1 bez páru
+  a bez aury – po boji ide plocha do kôpky a ruka sa ťahá náhodne, takže
+  nafúknutý balíček znamená najsilnejšie karty v kôpke. Draci t1–2 sú od
+  tieru 3 balast ako iné cudzie karty. Jadro ťahu je `Bot.completeTurn`
+  (bez handicapov a bez `endShopTurn`), mutácie idú cez vymeniteľný
+  executor (`Bot.withExecutor`) – Claude bot ním hygienu loguje.
 - `src/cards.js` – dáta kariet, texty schopností sa generujú zo šablón (SK/CZ/EN).
 - `src/game.js` – UI, animácie boja prehrávajú event log z enginu.
 - Grafika: emoji príšerky + farebné rámy podľa stupňa (bronz/striebro/zlato). Neskôr

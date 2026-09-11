@@ -23,6 +23,28 @@ const Bot = (() => {
     },
   };
 
+  // Hygiena pre Claude bota: hard heuristika bez handicapov (zlato navyše,
+  // rollBias) – dohrá, čo Claudov plán vynechal.
+  const HYGIENE = { ...DIFF.hard, rollBias: 0, goldBonus: 0 };
+
+  // Vykonávateľ akcií: všetky mutácie stavu idú cez act(), takže volajúci
+  // (Claude bot) si ho vie vymeniť za verziu, ktorá každú akciu aj zaloguje
+  // do záznamu hry – replay potom sedí. Predvolene volá Engine priamo.
+  const direct = (name, ...args) => Engine[name](...args);
+  let act = direct;
+  function withExecutor(exec, fn) {
+    const prev = act;
+    act = exec;
+    try { return fn(); } finally { act = prev; }
+  }
+
+  // Strop veľkosti balíčka (všetky zóny, bez tokenov): nad ním sa najslabšie
+  // telá z ruky predávajú. Plocha sa po boji vracia do kôpky a ruka sa ťahá
+  // náhodne – s 19 kartami v balíčku ležia najsilnejšie karty v kôpke
+  // (Claude bot, záznam z 11. 9. 2026: balíček 19, plocha z náhodného balastu,
+  // hráč s balíčkom 11–13 hral rastúce zvieratá každé kolo).
+  const DECK_CAP = 14;
+
   // Od tohto kola sa bot zafixuje na dominantnú rasu (predtým skladá, čo príde).
   const RACE_LOCK_ROUND = 3;
   // Podporné rasy: nikdy nie sú hlavný build. Draci = žoldnieri s battlecry
@@ -238,8 +260,11 @@ const Bot = (() => {
     }
     // Pár cudzej rasy sa oplatí držať len kým je t1 telo relevantné – od
     // tieru 3 je aj strieborná t1 karta balast (log: O004×2 v undead builde).
-    return !!dom && def.race !== dom && def.race !== "dragon" && def.tier <= 2 &&
-      inst.rank === 1 && (ownedCount(p, inst.defId) < 2 || p.tier >= 3);
+    // Draci t1–2 sú žoldnieri, kým je telo relevantné – od tieru 3 balast
+    // ako ostatné cudzie karty (záznam z 11. 9. 2026: D001, D006×2, D007×2
+    // sa točili v balíčku do konca hry).
+    return !!dom && def.race !== dom && def.tier <= 2 && inst.rank === 1 &&
+      (def.race === "dragon" ? p.tier >= 3 : (ownedCount(p, inst.defId) < 2 || p.tier >= 3));
   }
 
   function botTurn(state, pid, difficulty) {
@@ -260,6 +285,18 @@ const Bot = (() => {
     const domNow = dominantRace(state, p);
     p.rollBias = cfg.rollBias && domNow ? { race: domNow, weight: cfg.rollBias } : null;
 
+    completeTurn(state, pid, cfg, push);
+    push(act("endShopTurn", state, pid));
+    return events;
+  }
+
+  // Jadro ťahu (bez handicapov a bez ukončenia ťahu): predaj balastu,
+  // vyloženie, výmena slabých tiel, strop balíčka, upgrade, nákupy, kúzla,
+  // poradie plochy. Hard bot ho hrá celé; Claude bot ním po svojom pláne
+  // dohrá, čo vynechal (nepredal, neupgradol, nechal zlato, plochu neusporiadal).
+  function completeTurn(state, pid, cfg, push) {
+    const p = state[pid];
+
     // 0. Hard: balast z ruky predaj EŠTE PRED vyložením (+1 zlato, tenší
     //    balíček = lepšie ruky do konca hry). Štartovací balíček je 10
     //    náhodných t1 kariet – človek ich postupne vypredá, bot musí tiež.
@@ -274,6 +311,7 @@ const Bot = (() => {
     //     tenší balíček). Pred nákupmi, nech peniaze z predaja idú do obchodu.
     if (cfg.swapBoard) swapWeakBodies(state, p, push);
     if (cfg.sellJunk) sellJunk(state, p, push);
+    if (cfg.sellJunk) trimDeck(state, p, push);
 
     // 1. Kúzla na peniaze zahraj hneď (viac na nákupy).
     playGoldSpells(state, p, push);
@@ -294,7 +332,7 @@ const Bot = (() => {
         (cost <= 2 || (onSchedule && (p.board.length >= Engine.BOARD_MAX ||
           p.money - cost >= Engine.CARD_COST)));
       if (!worth || p.money < cost) break;
-      push(Engine.upgradeTier(state, pid));
+      push(act("upgradeTier", state, pid));
     }
 
     // 3. Nakupuj, kým sú peniaze. Easy kupuje náhodne, inak podľa skóre.
@@ -333,20 +371,20 @@ const Bot = (() => {
           // cudzia rasa) – balast v balíčku je horší než prepadnuté zlato.
           if (best < 0) break;
         }
-        push(choice.kind === "common" ? Engine.buyCommon(state, pid, choice.i)
-          : choice.kind === "priv" ? Engine.buyPrivate(state, pid, choice.i)
-          : Engine.buySpell(state, pid));
+        push(choice.kind === "common" ? act("buyCommon", state, pid, choice.i)
+          : choice.kind === "priv" ? act("buyPrivate", state, pid, choice.i)
+          : act("buySpell", state, pid));
       }
       if (rerolls-- <= 0) break;
       if (p.money < Engine.refreshCost(state) + Engine.CARD_COST) break;
-      push(Engine.refreshShop(state, pid));
+      push(act("refreshShop", state, pid));
     }
 
     // 3b. Hard: na dobrú súkromnú kartu (trojica, aura mojej rasy), na ktorú
     //     nie je, zmraz ponuku – v novom kole ju dokúpi.
     if (cfg.freeze && bestUnaffordable && p.priv.length && !p.priv.some(s => s.frozen) &&
         cardScore(state, p, bestUnaffordable.defId, cfg) >= p.tier + 6) {
-      push(Engine.toggleFreezeAll(state, pid));
+      push(act("toggleFreezeAll", state, pid));
     }
 
     // 4a. Kúzla, ktoré dávajú zdroje/karty (pred vykladaním).
@@ -355,7 +393,7 @@ const Bot = (() => {
       const inst = p.hand[i];
       if (!inst || !inst.spell) continue;
       if (Cards.byId[inst.defId].fx.type === "discover") {
-        push(Engine.castSpell(state, pid, i));
+        push(act("castSpell", state, pid, i));
         if (state.pendingDiscover) {
           const opts = state.pendingDiscover.options;
           let bestIdx = Math.floor(state.rng() * opts.length);
@@ -363,7 +401,7 @@ const Bot = (() => {
             bestIdx = 0;
             opts.forEach((d, j) => { if (cardScore(state, p, d, cfg) > cardScore(state, p, opts[bestIdx], cfg)) bestIdx = j; });
           }
-          push(Engine.pickDiscover(state, pid, bestIdx));
+          push(act("pickDiscover", state, pid, bestIdx));
         }
       }
     }
@@ -371,6 +409,7 @@ const Bot = (() => {
     // 4b. Príšerky dokúpené/dotiahnuté počas ťahu (zvyšok ruky).
     deployMinions(state, p, cfg, push);
     if (cfg.swapBoard) swapWeakBodies(state, p, push);
+    if (cfg.sellJunk) trimDeck(state, p, push);
 
     // 4c. Buff kúzla až po vyložení – cieľ = najsilnejšia príšera.
     for (let i = p.hand.length - 1; i >= 0; i--) {
@@ -385,28 +424,28 @@ const Bot = (() => {
         const target = cfg.smartSpells
           ? [...p.board].sort((a, b) => score(b) - score(a))[0]
           : p.board[Math.floor(state.rng() * p.board.length)];
-        push(Engine.castSpell(state, pid, i, target.uid));
+        push(act("castSpell", state, pid, i, target.uid));
       } else if (fx.type === "buffAllFriends" && p.board.length >= (cfg.smartSpells ? 2 : 1)) {
-        push(Engine.castSpell(state, pid, i));
+        push(act("castSpell", state, pid, i));
       } else if (["silence", "dmgBoost", "hex", "bolt", "polymorph", "starPower"].includes(fx.type)) {
-        push(Engine.castSpell(state, pid, i)); // bez cieľa, vždy hodnota
+        push(act("castSpell", state, pid, i)); // bez cieľa, vždy hodnota
       } else if (fx.type === "copyToDeck" && p.board.length) {
         // Zrkadlo: kopíruj kartu najbližšie k trojici (tiebreak najsilnejšia).
         const target = [...p.board]
           .filter(x => !Cards.byId[x.defId].token)
           .sort((a, b) => (ownedCount(p, b.defId) - ownedCount(p, a.defId)) || ((b.atk + b.hp) - (a.atk + a.hp)))[0];
-        if (target) push(Engine.castSpell(state, pid, i, target.uid));
+        if (target) push(act("castSpell", state, pid, i, target.uid));
       } else if (fx.type === "transform" && p.board.length) {
         // Klobúk: premeň najslabšiu príšerku – upgrade tela o tier.
         const target = [...p.board].sort((a, b) => (a.atk + a.hp) - (b.atk + b.hp))[0];
-        push(Engine.castSpell(state, pid, i, target.uid));
+        push(act("castSpell", state, pid, i, target.uid));
       } else if (fx.type === "swapDeck" && p.board.length) {
         // Portál: najslabšie telo (bez tokenov) späť do balíčka, náhodná
         // príšera z balíčka na jeho miesto. Engine vráti null bez balíčka.
         const target = [...p.board]
           .filter(x => !Cards.byId[x.defId].token)
           .sort((a, b) => (a.atk + a.hp) - (b.atk + b.hp))[0];
-        if (target) push(Engine.castSpell(state, pid, i, target.uid));
+        if (target) push(act("castSpell", state, pid, i, target.uid));
       }
     }
 
@@ -414,9 +453,6 @@ const Bot = (() => {
     //    telá, pomalé škálovače (mrchožrúti, lovci, rast Po nákupe) vpravo,
     //    nech útočia posledné a prežijú.
     if (cfg.orderBoard) orderBoard(state, p, push);
-
-    push(Engine.endShopTurn(state, pid));
-    return events;
   }
 
   // Vyloženie príšer: obyčajné prvé (najsilnejšie), battlecry buffery na
@@ -441,14 +477,14 @@ const Bot = (() => {
         choice = minions[0];
       }
       const tgt = battlecryTarget(state, p, choice.inst.defId);
-      push(Engine.playMinion(state, p.id, choice.i, tgt));
+      push(act("playMinion", state, p.id, choice.i, tgt));
       // Dračí battlecry (discoverRace) môže otvoriť discover – dovyber,
       // inak by sa ťah zasekol na pendingDiscover.
       if (state.pendingDiscover && state.pendingDiscover.pid === p.id) {
         const opts = state.pendingDiscover.options;
         let best = 0;
         opts.forEach((d, j) => { if (cardScore(state, p, d, cfg) > cardScore(state, p, opts[best], cfg)) best = j; });
-        push(Engine.pickDiscover(state, p.id, best));
+        push(act("pickDiscover", state, p.id, best));
       }
     }
   }
@@ -467,9 +503,9 @@ const Bot = (() => {
         .map((inst, i) => ({ inst, i }))
         .sort((a, b) => bodyValue(a.inst) - bodyValue(b.inst))[0];
       if (bodyValue(handBest.inst) < bodyValue(weakIdx.inst) + 3) break;
-      push(Engine.sellCard(state, p.id, "board", weakIdx.i));
+      push(act("sellCard", state, p.id, "board", weakIdx.i));
       const handIdx = p.hand.indexOf(handBest.inst);
-      push(Engine.playMinion(state, p.id, handIdx));
+      push(act("playMinion", state, p.id, handIdx));
     }
   }
 
@@ -486,7 +522,32 @@ const Bot = (() => {
         const bodies = p.hand.filter(x => x && !x.spell).length - 1;
         if (p.board.length + bodies < Engine.BOARD_MAX - 1) continue;
       }
-      push(Engine.sellCard(state, p.id, "hand", i));
+      push(act("sellCard", state, p.id, "hand", i));
+    }
+  }
+
+  // Veľkosť balíčka vo všetkých zónach (bez tokenov – tie po boji zmiznú).
+  function deckSize(p) {
+    let n = p.deck.length + p.discard.length;
+    for (const x of [...p.hand, ...p.board]) if (x && !Cards.byId[x.defId].token) n++;
+    return n;
+  }
+
+  // Nad stropom balíčka predaj z ruky najslabšie telá, ktoré nič nerozbiehajú
+  // (stupeň 1, bez páru na trojicu, bez aury). Pri deravej ploche ostanú
+  // v ruke telá na jej doplnenie – predáva sa až to, čo by aj tak ležalo.
+  function trimDeck(state, p, push) {
+    let guard = 5;
+    while (deckSize(p) > DECK_CAP && guard-- > 0) {
+      const spare = p.hand
+        .map((inst, i) => ({ inst, i }))
+        .filter(({ inst }) => inst && !inst.spell && inst.rank === 1 &&
+          ownedCount(p, inst.defId) < 2 && !Cards.powersOf(Cards.byId[inst.defId]).some(pw => pw.fx.type === "futureRace"))
+        .sort((a, b) => bodyValue(a.inst) - bodyValue(b.inst));
+      if (!spare.length) break;
+      const bodies = p.hand.filter(x => x && !x.spell).length;
+      if (p.board.length + bodies <= Engine.BOARD_MAX) break; // všetko sa ešte zmestí na plochu
+      push(act("sellCard", state, p.id, "hand", spare[0].i));
     }
   }
 
@@ -501,16 +562,13 @@ const Bot = (() => {
     return 1;
   }
 
-  // move (voliteľné): vlastný vykonávateľ presunu – Claude bot ním presuny
-  // zároveň loguje do záznamu hry, inak by replay nesedel.
-  function orderBoard(state, p, push, move) {
-    const doMove = move || ((i, slot) => Engine.moveOnBoard(state, p.id, i, slot));
+  function orderBoard(state, p, push) {
     const desired = [...p.board].sort((a, b) =>
       (attackPriority(a) - attackPriority(b)) || (b.atk - a.atk) || (a.uid - b.uid));
     for (let slot = 0; slot < desired.length; slot++) {
       const inst = desired[slot];
       if (inst.slot === slot) continue;
-      push(doMove(p.board.indexOf(inst), slot));
+      push(act("moveOnBoard", state, p.id, p.board.indexOf(inst), slot));
     }
   }
 
@@ -522,7 +580,7 @@ const Bot = (() => {
       if (!inst || !inst.spell) continue;
       const fxType = Cards.byId[inst.defId].fx.type;
       if (fxType === "gold" || fxType === "goldLater" || fxType === "draw") {
-        push(Engine.castSpell(state, p.id, i));
+        push(act("castSpell", state, p.id, i));
       }
     }
   }
@@ -537,7 +595,8 @@ const Bot = (() => {
     return offers.find(r => !SUPPORT_RACES.has(r)) || offers[0] || null;
   }
 
-  return { botTurn, pickBan, ownedCount, cardScore, dominantRace, isJunk, orderBoard, SUPPORT_RACES };
+  return { botTurn, completeTurn, withExecutor, pickBan, ownedCount, cardScore, dominantRace, isJunk, orderBoard,
+    deckSize, SUPPORT_RACES, HYGIENE, DECK_CAP };
 })();
 
 if (typeof module !== "undefined") module.exports = Bot;

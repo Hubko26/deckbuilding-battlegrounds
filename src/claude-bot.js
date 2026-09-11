@@ -62,12 +62,12 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"freeze","id":"<cardId in your private shop>"}  freeze that private-shop card so it survives into next round
 
 STRATEGY – do ALL of these every turn, in this order (derived from logs of winning games; bots lost on mixed races, bloated decks, 3-4 minion boards and upgrading with an empty board):
-1. SELL JUNK FROM HAND FIRST (before playing): the state lists junkInHand – emit {"a":"sell","zone":"hand","id":...} for EVERY card in it as your first actions (rule: 0 attack; from round 3 on every off-race tier 1-2 minion without a pair, from tier 3 on even pairs; ogre/dragon tier 1-2 count as off-race). Your starting deck is 10 random tier-1 cards – winners sell them all by round 6. Keep enough bodies to field at least 4. Target deckSize: 12-14 cards of your race. A game with zero sells is a lost game.
+1. SELL JUNK FROM HAND FIRST (before playing): the state lists junkInHand – emit {"a":"sell","zone":"hand","id":...} for EVERY card in it as your first actions (rule: 0 attack; from round 3 on every off-race tier 1-2 minion without a pair, from tier 3 on even pairs and tier 1-2 dragons; ogre/dragon tier 1-2 count as off-race). Your starting deck is 10 random tier-1 cards – winners sell them all by round 6. Keep enough bodies to field at least 4. HARD CAP deckSize 14 (the driver sells your weakest hand bodies above it): your board returns to the discard pile after every battle and the next hand is 5 RANDOM cards from your deck cycle, so a bloated deck means your best cards sit in the pile while random junk fights. Winners keep deckSize 11-13: every card in the deck is one they want to draw. A game with zero sells is a lost game.
 2. PLAY MINIONS: plain bodies first (strongest first), battlecry buffers and Imprint cards LAST so they hit a full board. Dragons: "target" = your best minion of dominantRace. U004: target U001/U006/U009. Always fight with 5 minions.
 3. SWAP ON A FULL BOARD: if a hand minion is >= 3 points better (atk+hp, +2 if it has an ability) than your weakest board minion, sell the weakest and play the better one.
-4. UPGRADE TIER on schedule: tier 2 by round 3-4, tier 3 by 6, tier 4 by 8-9, tier 5 by 11 (rule: round >= tier*2-1). Only when your board is full (5), or you keep >= 3 gold after upgrading AND have >= 4 bodies. With 1-3 bodies on board do NOT upgrade – bodies first.
-5. BUY in this priority, spending ALL gold: (a) the 3rd copy of anything (triple – check copiesOwnedTowardTriple, deck copies count); (b) an Imprint/aura of your race (E003, B002/B006/B010, U003/U008/U010, F008, dragons D003/D009 targeted at your race); (c) your race's engine (undead U002/U005/U006; elemental E007, E004, E009 (+1/+1 per Elemental you have played this game, itself included), Elemental Power spell "iskra" and D007; beast B004/B007/B005/B003/B008; fairy F002/F004 + spells); (d) the 2nd copy toward a triple; (e) the best same-race body of the highest tier offered; (f) a dragon whose battlecry feeds your race (D002/D008/D004). NEVER buy: an off-race tier 1-2 minion after round 3 (except a triple), a 3rd+ spell in a non-fairy deck, Shield/Wave/Silence "because gold was left". Better to lose 1-2 gold than to put junk into your deck.
-6. REFRESH almost never: at most once per turn, only if nothing in the shop satisfies (a)-(e) AND you keep >= 4 gold – and you cannot see the reroll, so prefer buying an average body of your race. Never refresh as the last action (the shop rerolls for free after the battle).
+4. UPGRADE TIER on schedule: tier 2 by round 2-3, tier 3 by 4-5, tier 4 by 7, tier 5 by 9-10, tier 6 by 12 (rule: round >= tier*2-1 is the LATEST). Being a tier behind the human means weaker private offers AND the shared common row is rolled at the LOWER tier of the two players. Upgrade when your board is full (5), or you keep >= 3 gold after upgrading AND have >= 4 bodies. With 1-3 bodies on board do NOT upgrade – bodies first.
+5. BUY in this priority, spending ALL gold (permanent growers of your race – beast B003/B008 "end of turn +X/+X", B004 scavenger – are the scaling engine: bought early and drawn every round they reach 20-30 stats by round 12; the winner's B003 went 6/6 (round 3) -> 26/22 (round 12)): (a) the 3rd copy of anything (triple – check copiesOwnedTowardTriple, deck copies count); (b) an Imprint/aura of your race (E003, B002/B006/B010, U003/U008/U010, F008, dragons D003/D009 targeted at your race); (c) your race's engine (undead U002/U005/U006; elemental E007, E004, E009 (+1/+1 per Elemental you have played this game, itself included), Elemental Power spell "iskra" and D007; beast B004/B007/B005/B003/B008; fairy F002/F004 + spells); (d) the 2nd copy toward a triple; (e) the best same-race body of the highest tier offered; (f) a dragon whose battlecry feeds your race (D002/D008/D004). NEVER buy: an off-race tier 1-2 minion after round 3 (except a triple), a 3rd+ spell in a non-fairy deck, Shield/Wave/Silence "because gold was left". Better to lose 1-2 gold than to put junk into your deck.
+6. REFRESH when the shop has nothing for your race: if no offer satisfies (a)-(e) and you keep >= 4 gold, {"a":"refresh"} – the driver then buys the best card of your race from the new roll for you (you cannot see it, so plan no buys after a refresh). Leftover gold is lost, and 1-2 gold left in 11 rounds is 14 gold thrown away; never refresh as the very last action with < 4 gold.
 7. FREEZE a private-shop card you want but cannot afford (triple piece, Imprint of your race).
 8. SPELLS after minions are down: stat buffs on your strongest minion; Windfury ("vichor") on an onAttack minion (E004, O006) or your highest attack; Elemental Power, Silence, Frog Curse, Lightning immediately; Gold Coin first thing; fairies must be on board BEFORE casting.
 9. ORDER THE BOARD with "move" (slot 0 attacks first): onAttack minions (E004, O006) leftmost -> hard bodies by attack -> Taunts where they shield the engine -> scalers (B004, B009, E005, E007, F002, F004) rightmost so they attack last and survive.
@@ -192,6 +192,14 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       return ev;
     };
     const p = state[pid];
+    // Nákup, ktorý by hard bot nikdy neurobil: po zafixovaní rasy cudzia
+    // karta tieru 1–2 (aj drak/ogre) bez rozbehnutej trojice. Claude v logoch
+    // takto miešal rasy (D001, D006×2, D007×2, O009, F003, F005 v beast builde).
+    const junkBuy = defId => {
+      const def = Cards.byId[defId];
+      const dom = Bot.dominantRace(state, p);
+      return !!dom && !!def.race && def.race !== dom && def.tier <= 2 && Bot.ownedCount(p, defId) < 2;
+    };
     let guard = 40;
     for (const act of Array.isArray(plan.actions) ? plan.actions : []) {
       if (guard-- <= 0 || state.phase !== "shop" || state.active !== pid) break;
@@ -200,6 +208,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         case "upgrade": run("upgradeTier", []); break;
         case "refresh": run("refreshShop", []); break;
         case "buy": {
+          if (junkBuy(act.id)) break; // cudzia t1–2 karta po 3. kole bez páru – balast do balíčka
           const ci = state.commons.indexOf(act.id);
           if (ci >= 0 && run("buyCommon", [ci])) break;
           const vi = p.priv.findIndex(s => s.defId === act.id);
@@ -256,34 +265,18 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         run("pickDiscover", [best]);
       }
     }
-    // Poistka „hygieny" (Claude v logoch nepredával ani neusporadúval):
-    // 1) balast z ruky predaj, kým z ruky + plochy ostanú aspoň 4 telá,
-    // 2) dohraj zvyšné príšerky (plán s dierami nesmie nechať prázdny board),
-    // 3) čo ostalo v ruke a je balast, predaj (plocha je plná),
-    // 4) keď Claude plochu neusporiadal sám, usporiadaj ju ako hard bot.
+    // Hygiena po pláne: jadro hard bota bez handicapov dohrá, čo Claude
+    // vynechal – predá balast, drží strop balíčka, vyloží zvyšné telá,
+    // upgraduje podľa kola, minie zlato (aj s refreshom), zahrá kúzla
+    // a usporiada plochu (ak ju Claude neusporiadal sám). Záznam z 11. 9. 2026:
+    // Claude 15 kôl bez refreshu, 1 predaj, balíček 19 kariet, tier vždy
+    // o jeden pozadu, 1–2 zlato nevyužité v 11 kolách. Každá akcia ide cez
+    // executor → run(), takže sa loguje a replay sedí.
     const movedByPlan = (Array.isArray(plan.actions) ? plan.actions : []).some(a => a && a.a === "move");
-    const sellJunk = keepBodies => {
-      for (let i = p.hand.length - 1; i >= 0; i--) {
-        const x = p.hand[i];
-        if (!x || x.spell || !Bot.isJunk(state, p, x)) continue;
-        if (keepBodies) {
-          const bodies = p.hand.filter(y => y && !y.spell).length - 1;
-          if (p.board.length + bodies < Engine.BOARD_MAX - 1) continue;
-        }
-        run("sellCard", ["hand", i]);
-      }
-    };
     if (state.phase === "shop" && state.active === pid) {
-      sellJunk(true);
-      let dg = 10;
-      while (p.board.length < Engine.BOARD_MAX && dg-- > 0) {
-        const i = p.hand.findIndex(x => x && !x.spell);
-        if (i < 0) break;
-        run("playMinion", [i]);
-        if (state.pendingDiscover && state.pendingDiscover.pid === pid) run("pickDiscover", [0]);
-      }
-      sellJunk(false);
-      if (!movedByPlan) Bot.orderBoard(state, p, ev => { if (ev) events.push(...ev); });
+      const cfg = { ...Bot.HYGIENE, orderBoard: !movedByPlan };
+      Bot.withExecutor((name, _state, _pid, ...args) => run(name, args),
+        () => Bot.completeTurn(state, pid, cfg, () => {}));
     }
     run("endShopTurn", []);
     return { events, taunt: typeof plan.taunt === "string" ? plan.taunt.slice(0, 250) : null };
