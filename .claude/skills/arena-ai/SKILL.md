@@ -132,7 +132,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     jednou vlnou. E002 (t1) Pri smrti 2× Bublina 🫧 (1/1, pri smrti výboj
     1) – lacné telá + reťaz výbojov. E007 (t4) Po nákupe Živelná sila +1
     navždy – drž ho na ploche každé kolo, je to hlavný motor rasy.
-    Aura E003 t2 (+1/+1) navždy; E008 (t4) = cielený +1/+1(+⚡) vybranej
+    Aura E003 t3 (+1/+1) navždy; E008 (t4) = cielený +1/+1(+⚡) vybranej
     príšerke do boja. E009 (t5) = Pri vyložení +1/+1 pre seba za každého
     Živla vyloženého v tejto hre (aj seba, tokeny nie; bez ⚡ a stupňa) –
     vykladaj ho každé kolo, v neskorej hre je to najväčšie telo živlov.
@@ -309,9 +309,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
   (t4 Pečať), U007 (t4 charga), U009 (t5), U010 (t6, Pečať pri smrti –
   Obranca, nech padne). Proti undead: E010, O003, výboje E001/E006; E005
   je len škálovač (jeden výstrel za boj), hordu nezastaví.
-- **Elemental**: E002 (t1 Bubliny), E001, E003 (t2 Pečať), E004 (t2 – vľavo,
+- **Elemental**: E002 (t1 Bubliny), E001, E006 (t2 výboj), E003 (t3 Pečať), E004 (t2 – vľavo,
   s Vichorom 2×), Živelná sila ⚡ + D005 (t3) vždy (každý +1 navždy), E005 (t3,
-  proti tokenom), E006, E007 (t4 – hlavný motor, drž na ploche každé kolo),
+  proti tokenom), E007 (t4 – hlavný motor, drž na ploche každé kolo),
   E008 (t4, +1/+1(+⚡) vybranej – na najsilnejšie telo), E009 (t5, +1/+1
   za každého vyloženého Živla za hru – vykladaj každé kolo), E010 (t6).
   Slabí proti beast telám.

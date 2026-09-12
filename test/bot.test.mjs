@@ -422,7 +422,7 @@ test("cardPower: každá karta má konečnú silu; Pečať a rast NAVŽDY prebij
   const power = id => B.cardPower(C.byId[id]).total;
   assert.ok(power("B002") > power("O008"), "Pečať t3 > vanilla t3");
   assert.ok(power("B008") > power("O008"), "rast navždy t3 > vanilla t3");
-  assert.ok(power("E003") > power("O005"), "Pečať t2 > vanilla t2");
+  assert.ok(power("E003") > power("O005"), "Pečať t3 > vanilla t2");
   assert.ok(power("B006") > power("B010"), "B006 (2× SuperMláďa s Pečaťou) > B010");
   assert.ok(power("hviezda") > power("srdce"), "Pečať všetkým > jednorazový buff");
 });

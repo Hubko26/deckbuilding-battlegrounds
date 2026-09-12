@@ -91,9 +91,10 @@ const Cards = (() => {
     // živly konečne majú telá navyše a každá padnutá Bublina strieľa.
     M("E002", 1, "elemental", ["Bubbleskip", "Tideripple", "Abyssalume"], 1, 3,
       { taunt: true, power: { kw: "deathrattle", fx: { type: "summon", token: "bublina", n: 2 } } }),
-    // E003: skorá živelná aura +1/+1 (bola +0/+1) – živly potrebujú útok,
-    // nie len životy; ostatné rasy majú skorú auru +0/+1.
-    M("E003", 2, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
+    // E003: živelná Pečať +1/+1 (bola +0/+1) – živly potrebujú útok, nie
+    // len životy. Na t3 ako B002 (bola t2 – Pečať v 2. kole bola priskoro),
+    // tiery vymenené so Zappipom E006.
+    M("E003", 3, "elemental", ["Pebblit", "Craggleback", "Mountainheart"], 3, 5,
       { taunt: true, power: { kw: "battlecry", fx: { type: "futureRace", race: "elemental", a: 1, h: 1 } } }),
     // E004: buffuje LEN Živly (vrátane Bublín – tokeny majú rasu), nie celú
     // plochu. Bonus škáluje so Živelnou silou (dmgBoost) v oboch číslach;
@@ -108,7 +109,7 @@ const Cards = (() => {
     // Evolve: výboj 1/2/3, rast ×stupeň. Bývalý výboj 3 bol kópia E001.
     M("E005", 3, "elemental", ["Nibblfrost", "Glacihorn", "Wintercrown"], 3, 5,
       { power: { kw: "onEnemySummon", fx: { type: "zapToken", n: 1, a: 2, h: 2 } } }),
-    M("E006", 3, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 4,
+    M("E006", 2, "elemental", ["Zappip", "Voltclaw", "Stormregent"], 4, 4,
       { power: { kw: "deathrattle", fx: { type: "dmgWeakEnemy", n: 4 } } }),
     // E007: motor identity – Po nákupe Živelná sila +1 navždy (evolve +2/+3),
     // kým je na ploche. Živly už nezávisia od spell slotu; kúp-vylož-predaj

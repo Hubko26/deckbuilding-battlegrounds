@@ -310,7 +310,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   investovať do Živelnej sily. Pretečenie (token mimo plochy) lovca
   nespustí. Anti-hordu už nerobí E005, ale E001/E006 výboje, Bubliny a
   E010; trojuholník Elemental > Undead ostáva mäkký.
-- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E006 (t3, Pri smrti
+- Výboje (`dmgWeakEnemy`): E001 (t1, Pred bojom 3), E006 (t2, Pri smrti
   **4**), Bublina (token, Pri smrti 1) – mieria na **náhodného** živého
   nepriateľa (predtým najslabší: spoľahlivé kosenie tokenov bolo nudné a
   proti veľkým telám úplne mŕtve). Evolve = **viac zásahov po základnej
@@ -328,7 +328,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 - **E008 Prismite** (t4, 5/5): cielený battlecry **+1/+1 vybranej príšerke**
   (`buffOne`, do konca boja, hocijaká rasa) – dočasný buff Živla, takže ho
   Živelná sila škáluje v oboch číslach (⚡+2 → +3/+3), evolve ×2/×3. Živly
-  majú jedinú auru E003 t2 +1/+1; Prismite už auru nedáva.
+  majú jedinú auru E003 t3 +1/+1; Prismite už auru nedáva.
 - **E009 Gleamwisp** (t5, 7/6): „Pri vyložení: +1/+1 pre seba za každého
   Živla (aj seba), ktorého si v tejto hre vyložil" (`racePlayedScale`,
   počítadlo `p.racePlayed[race]` rastie v `playMinion` pred battlecry –
@@ -761,8 +761,8 @@ alebo hnevá.
   ich vidí v hlavičke obchodu (🐾 ✨ 💀 +a/+h) a buffnuté staty na kartách
   svietia zelenou. Každá rasa má dve aury (skorú malú a neskorú veľkú):
   Beast B002 (t3, +1/+1 – bola +1/+0) / B006 (t6, Pečať +1/+1 ako Pri
-  smrti) / B010, Elemental E003 (+1/+1 už na t2 – živlom chýbal útok;
-  E009 už auru nedáva), Undead U008/U010 – hra tak
+  smrti) / B010, Elemental E003 (+1/+1 na t3 ako B002 – bola t2, Pečať
+  v 2. kole bola priskoro, tiery vymenené s E006 Zappip; E009 už auru nedáva), Undead U008/U010 – hra tak
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
   všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez
