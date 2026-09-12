@@ -1724,7 +1724,7 @@ const Engine = (() => {
     // Ogr O007 (Pri smrti): veľký zásah ÚPLNE náhodnej živej príšerke –
     // hocijakej na ploche, aj vlastnej (ruská ruleta).
     dmgRandomAny({ state, sides, pid, self, fx, m, events }) {
-      // Strana sa losuje ČISTÝM hodom mincou 50/50 (ako O010), nie rovnomerne
+      // Strana sa losuje ČISTÝM hodom mincou 50/50, nie rovnomerne
       // cez všetky príšerky – inak by šanca na vlastný zásah závisela od počtu
       // tiel na plochách a backstab by bol nespoľahlivý. Prázdna strana =
       // zásah ide na druhú (efekt nikdy neprepadne naprázdno).
@@ -1737,24 +1737,32 @@ const Engine = (() => {
       handleDeaths(state, sides, events);
       if (side === pid) backstab(state, pid, events, sides); // trafil vlastnú = backstab
     },
-    // Ogr O010 (Pri smrti): 50 % šanca, že vstane s 1 HP na NÁHODNEJ strane
-    // plochy (aj u súpera!). Raz za boj; pri plnej strane ostáva ležať.
-    // Technicky vstáva kópia – originál normálne zomrie.
-    confusedRevive({ state, sides, pid, self, events }) {
-      if (self.confusedUsed) return;
-      self.confusedUsed = true;
-      if (state.rng() >= 0.5) return;
-      const side = state.rng() < 0.5 ? pid : other(pid);
-      const aliveThere = aliveOn(sides, side);
-      if (aliveThere.length >= BOARD_MAX) return;
-      const copy = {
-        ...self, uid: ++state.uidSeq, hp: 1, dead: false, shield: false,
-        confusedUsed: true, slot: freeSlot(aliveThere, BOARD_MAX),
-      };
-      sides[side].push(copy);
-      events.push({ type: "confusedRevive", pid: side, fromPid: pid, uid: copy.uid, defId: copy.defId, swapped: side !== pid });
-      events.push({ type: "summon", pid: side, uid: copy.uid, defId: copy.defId, slot: copy.slot, rank: copy.rank, atk: copy.atk, hp: 1 });
-      if (side !== pid) backstab(state, pid, events, sides); // vstal u súpera = backstab
+    // Ogr O010 Ogrí hazard (Pred bojom): hod mincou. Hlava: Pečať +oa/+oh
+    // VŠETKÝM Ogrom (permanentná aura, živé ogry hneď). Chvost: Pečať +a/+h
+    // rase NÁHODNEJ súperovej príšerky – súper dostane trvalú auru; je to
+    // backstab (pomohol som súperovi), takže Ogri dostanú aj +1/+1. Bez
+    // súperovej príšerky s rasou nie je komu dať – hod padá vždy na hlavu.
+    // Evolve násobí obe Pečate (m). Losuje sa cez state.rng (replay sedí).
+    ogreGamble({ state, sides, pid, self, fx, m, events }) {
+      const foe = other(pid);
+      const foes = aliveOn(sides, foe).filter(f => !!Cards.byId[f.defId].race);
+      const heads = state.rng() < 0.5;
+      if (!heads && foes.length) {
+        const target = foes[Math.floor(state.rng() * foes.length)];
+        const race = Cards.byId[target.defId].race;
+        const a = fx.a * m, h = fx.h * m;
+        addRaceAura(state[foe], race, a, h);
+        buffAlive(sides, foe, f => Cards.byId[f.defId].race === race, a, h, events);
+        events.push({ type: "ogreGamble", pid, uid: self.uid, heads: false, race, a, h });
+        events.push({ type: "futureBuff", pid: foe, race, a, h });
+        backstab(state, pid, events, sides); // Pečať súperovi = backstab
+      } else {
+        const a = fx.oa * m, h = fx.oh * m;
+        addRaceAura(state[pid], "ogre", a, h);
+        buffAlive(sides, pid, f => Cards.byId[f.defId].race === "ogre", a, h, events);
+        events.push({ type: "ogreGamble", pid, uid: self.uid, heads: true, race: "ogre", a, h });
+        events.push({ type: "futureBuff", pid, race: "ogre", a, h });
+      }
     },
     // Rast seba; perm (B004) = rast NAVŽDY aj z boja (na originál na ploche).
     growSelf({ state, pid, self, fx, m, events }) {

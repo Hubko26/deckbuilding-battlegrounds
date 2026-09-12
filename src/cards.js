@@ -249,14 +249,14 @@ const Cards = (() => {
     M("O009", 4, "ogre", ["Dustnose", "Dunehammer", "Sunstone Guardian"], 7, 7, { wildAtk: true }),
     M("O007", 5, "ogre", ["Rumbletuft", "Thundermaul", "Tempest Chieftain"], 9, 7,
       { power: { kw: "deathrattle", fx: { type: "dmgRandomAny", n: 5 } } }),
-    // O010: Obranca; pri smrti 50 % šanca, že vstane s 1 HP na NÁHODNEJ
-    // strane plochy (aj u súpera). Raz za boj.
-    // O010: Obranca + Rozmach (50 % šanca zasiahnuť aj susedov cieľa) –
-    // ogrí endgame. Rasa mala pomalý záver: vanilla telá a chaos efekty,
-    // ale žiadnu kartu, čo hru ukončí. 10 útoku do troch tiel naraz je
-    // hrozba hodná t6; s Vichrom 🌪️ sa hádže dvakrát.
+    // O010 Ogrí hazard (t6): Rozmach (50 % šanca zasiahnuť aj susedov cieľa)
+    // + Pred bojom hod mincou – hlava: Pečať +2/+2 Ogrom, chvost: Pečať +1/+1
+    // rase náhodnej SÚPEROVEJ príšerky (a chvost je backstab → aj Ogri +1/+1).
+    // Každá rasa má na t6 Pečať-kartu (U010, B006, F008), ogri mali len telo
+    // s Rozmachom; toto je ich uber t6 s ogrím rozptylom. Evolve ×2/×3
+    // (striebro: +4/+4 alebo +2/+2 súperovi). Bez Obrancu (2026-09-12).
     M("O010", 6, "ogre", ["Twinklebrow", "Moonmaul", "Celestial Titan"], 10, 10,
-      { taunt: true, cleave: 0.5, power: { kw: "deathrattle", fx: { type: "confusedRevive" } } }),
+      { cleave: 0.5, power: { kw: "startFight", fx: { type: "ogreGamble", a: 1, h: 1, oa: 2, oh: 2 } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     // Minca od t2 – na t1 bola automatická kúpa a rozbiehala snowball.
@@ -740,10 +740,11 @@ const Cards = (() => {
       cs: `vyber příšerku – po smrti vstane jako ${m}/${m} (aury se přidají)`,
       en: `pick a minion – after it dies it gets back up as a ${m}/${m} (auras apply)`,
     }),
-    confusedRevive: () => ({
-      sk: `50 % šanca, že vstane s 1 životom na NÁHODNEJ strane plochy`,
-      cs: `50% šance, že vstane s 1 životem na NÁHODNÉ straně plochy`,
-      en: `50% chance to get up with 1 health on a RANDOM side of the board`,
+    // O010: hod mincou – hlava Pečať Ogrom, chvost Pečať rase súperovej príšerky.
+    ogreGamble: (f, m) => ({
+      sk: `hoď mincou 🪙 – ${IMPRINT.sk} +${f.oa * m}/+${f.oh * m} Ogrom, alebo ${IMPRINT.sk} +${f.a * m}/+${f.h * m} rase náhodnej SÚPEROVEJ príšerky`,
+      cs: `hoď mincí 🪙 – ${IMPRINT.cs} +${f.oa * m}/+${f.oh * m} Zlobrům, nebo ${IMPRINT.cs} +${f.a * m}/+${f.h * m} rase náhodné SOUPEŘOVY příšerky`,
+      en: `flip a coin 🪙 – ${IMPRINT.en} +${f.oa * m}/+${f.oh * m} to Ogres, or ${IMPRINT.en} +${f.a * m}/+${f.h * m} to the race of a random ENEMY minion`,
     }),
   };
 

@@ -1213,7 +1213,7 @@ test("U010: undead aura sa položí PRI SMRTI – živí nemŕtvi hneď, budúce
   const tank = E.makeInst(state, "U010", 1); tank.slot = 0;   // 8/10 taunt, Pri smrti aura
   const bone = E.makeInst(state, "kostik", 1); bone.slot = 1;  // 1/1 undead
   state.p1.board = [tank, bone];
-  state.p2.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10 – zabije tank
+  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 10, hp: 10, maxHp: 10 })]; // 10/10 vanilla – zabije tank
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = [];
   state.p2.deck = []; state.p2.discard = [];
@@ -2198,7 +2198,7 @@ test("ogr O010 rozmach: 50 % šanca, že úder zasiahne aj susedov cieľa", () =
     const { state, E } = fresh(seed);
     E.startRound(state);
     E.endShopTurn(state, "p1");
-    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10 Obranca
+    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10
     state.p2.board = [0, 1, 2].map(slot =>
       Object.assign(E.makeInst(state, "U008", 2), { slot }));                     // 6/16 taunt
     state.p1.hand = []; state.p2.hand = [];
@@ -2208,7 +2208,9 @@ test("ogr O010 rozmach: 50 % šanca, že úder zasiahne aj susedov cieľa", () =
     const cl = events.filter(e => e.type === "cleave");
     if (cl.length) {
       cleaved = true;
-      assert.equal(cl[0].n, 10);            // susedia dostanú celý útok
+      // susedia dostanú celý útok – 10 + Pečať z Ogrieho hazardu (hlava +2, chvost = backstab +1)
+      const g = events.find(e => e.type === "ogreGamble");
+      assert.equal(cl[0].n, g.heads ? 12 : 11);
       assert.ok(cl[0].uids.length >= 1);
     } else clean = true;
   }
@@ -2306,29 +2308,55 @@ test("ogr O007 divoká rana: pri smrti 5 dmg náhodnej príšerke", () => {
   assert.ok(events.some(e => e.type === "battleDraw")); // obe plochy prázdne
 });
 
-test("ogr O010 zmätený obranca: 50 % vstane s 1 HP na náhodnej strane, raz za boj", () => {
-  const sides = new Set();
-  let none = false;
-  for (let seed = 1; seed <= 60; seed++) {
-    const { state, E } = fresh(seed);
+test("ogr O010 Ogrí hazard (Pred bojom): hlava Pečať +2/+2 Ogrom, chvost Pečať +1/+1 rase súperovej príšerky + backstab", () => {
+  const seen = new Set();
+  for (let seed = 1; seed <= 40; seed++) {
+    const { state, E, C } = fresh(seed);
     E.startRound(state);
     E.endShopTurn(state, "p1");
-    state.p1.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0 })]; // 10/10
-    state.p2.board = [Object.assign(E.makeInst(state, "E010", 2), { slot: 0 })]; // 18/18
+    const ogre = E.makeInst(state, "O010", 1); ogre.slot = 0;
+    assert.equal(ogre.taunt, false, "bez Obrancu");
+    state.p1.board = [ogre, Object.assign(E.makeInst(state, "O004", 1), { slot: 1 })];
+    state.p2.board = [Object.assign(E.makeInst(state, "U001", 1), { slot: 0 }), Object.assign(E.makeInst(state, "B001", 1), { slot: 1 })];
     state.p1.hand = []; state.p2.hand = [];
-    state.p1.deck = []; state.p1.discard = [];
-    state.p2.deck = []; state.p2.discard = [];
+    state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
     const events = E.doBattle(state);
-    const rev = events.filter(e => e.type === "confusedRevive");
-    assert.ok(rev.length <= 1, "vstal viac než raz");
-    if (!rev.length) { none = true; continue; }
-    sides.add(rev[0].swapped ? "enemy" : "own");
-    // Hneď za tým summon kópie s 1 HP na ohlásenej strane.
-    const s = events.find(e => e.type === "summon" && e.uid === rev[0].uid);
-    assert.ok(s && s.hp === 1 && s.pid === rev[0].pid);
+    const g = events.find(e => e.type === "ogreGamble");
+    assert.ok(g && g.pid === "p1");
+    const iStart = events.findIndex(e => e.type === "battleStart");
+    const iAttack = events.findIndex(e => e.type === "attack");
+    assert.ok(events.indexOf(g) > iStart && (iAttack < 0 || events.indexOf(g) < iAttack), "Pred bojom");
+    if (g.heads) {
+      seen.add("heads");
+      assert.deepEqual({ ...state.p1.raceBuffs.ogre }, { a: 2, h: 2 });
+      assert.ok(!events.some(e => e.type === "backstab"));
+      assert.equal(Object.keys(state.p2.raceBuffs).length, 0, "súper nič nedostal");
+    } else {
+      seen.add("tails");
+      assert.ok(["undead", "beast"].includes(g.race), g.race);
+      assert.deepEqual({ ...state.p2.raceBuffs[g.race] }, { a: 1, h: 1 }, "súperova rasa dostala Pečať");
+      assert.ok(events.some(e => e.type === "futureBuff" && e.pid === "p2" && e.race === g.race));
+      assert.ok(events.some(e => e.type === "backstab" && e.pid === "p1"), "chvost = backstab");
+      assert.deepEqual({ ...state.p1.raceBuffs.ogre }, { a: 1, h: 1 }, "backstab: Ogri +1/+1");
+    }
+    assert.match(C.cardText(C.byId["O010"], 1, "sk"), /Pečať \+2\/\+2 Ogrom, alebo Pečať \+1\/\+1 rase náhodnej SÚPEROVEJ príšerky/);
+    assert.match(C.cardText(C.byId["O010"], 2, "sk"), /\+4\/\+4 Ogrom, alebo Pečať \+2\/\+2/);
   }
-  assert.ok(none);                 // niekedy nevstane
-  assert.equal(sides.size, 2);     // vstal aj doma, aj u súpera
+  assert.equal(seen.size, 2, "padla hlava aj chvost");
+});
+
+test("ogr O010 Ogrí hazard: bez súperovej príšerky padá vždy hlava; strieborný dáva +4/+4", () => {
+  const { state, E } = fresh(44);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  state.p1.board = [Object.assign(E.makeInst(state, "O010", 2), { slot: 0 })];
+  state.p2.board = [];
+  state.p1.hand = []; state.p2.hand = [];
+  state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
+  const events = E.doBattle(state);
+  const g = events.find(e => e.type === "ogreGamble");
+  assert.ok(g && g.heads);
+  assert.deepEqual({ ...state.p1.raceBuffs.ogre }, { a: 4, h: 4 });
 });
 
 test("Mláďa je fixný token: každé vyvolanie 1/1 (žiadny trvalý rast)", () => {
@@ -2967,7 +2995,7 @@ test("B006 (t6): Pri smrti 2× SuperMláďa (striebro 3×, stupeň 1), každé P
   E.endShopTurn(state, "p1");
   const tank = E.makeInst(state, "B006", 2); tank.slot = 0; // strieborná 14/18
   state.p1.board = [tank];
-  state.p2.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })]; // zabije všetko, sám prežije
+  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })]; // vanilla: zabije všetko, sám prežije
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
@@ -2991,7 +3019,7 @@ test("B006: umlčanie vypne Pri smrti – žiadne SuperMláďatá ani Pečať", 
   state.p2.silences = 1; // Umlčanie na B006 pred bojom
   const tank = E.makeInst(state, "B006", 1); tank.slot = 0;
   state.p1.board = [tank];
-  state.p2.board = [Object.assign(E.makeInst(state, "O010", 1), { slot: 0, atk: 50 })];
+  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 50 })];
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);

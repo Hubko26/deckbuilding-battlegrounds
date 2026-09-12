@@ -541,10 +541,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     zásah závisela od počtu príšeriek na plochách a backstab by bol
     nespoľahlivý. Prázdna strana = zásah ide na druhú (efekt neprepadne).
     Ruská ruleta s veľkým číslom.
-  - **O010 Zmätený obranca** (t6, 10/10): „Obranca. **Rozmach: 50 % šanca,
-    že úder zasiahne aj susedov cieľa.** Pri smrti: 50 % šanca, že vstane
-    s 1 HP na NÁHODNEJ strane plochy" – aj u súpera! Revive je raz za boj,
-    pri plnej strane ostáva ležať (technicky vstáva bojová kópia).
+  - **O010 Ogrí hazard** (t6, 10/10, bez Obrancu; 2026-09-12): „**Rozmach:
+    50 % šanca, že úder zasiahne aj susedov cieľa.** Pred bojom: hoď
+    mincou – Pečať +2/+2 Ogrom, alebo Pečať +1/+1 rase náhodnej SÚPEROVEJ
+    príšerky." Každá rasa mala na t6 Pečať-kartu (U010, B006, F008), ogri
+    len telo – toto je ich uber t6 s ogrím rozptylom. Chvost je backstab
+    (pomohol som súperovi), takže Ogri dostanú aj +1/+1; bez súperovej
+    príšerky s rasou padá vždy hlava. Evolve ×2/×3 (striebro +4/+4 alebo
+    +2/+2 súperovi). Nahradil „Zmäteného obrancu" (Obranca + Pri smrti 50 %
+    vstane s 1 HP na náhodnej strane).
   - **O009 Divoký úder** (t4, 7/7): „Každý zásah dá náhodne 1–14" – útok,
     obrana aj Rozmach losujú číslo z rozsahu **atk − 6·m … atk + 7·m**
     (m = ×1/×2/×4 podľa stupňa; bronz 1–14, striebro 2–28). **Pečať a buffy
@@ -567,7 +572,7 @@ Nemŕtvi hordu, Živly škálovanie damage, Víly Po kúzle, Draci cross-race
 boost – ogri nemajú ani jednu kartu, ktorá by sa starala o iných ogrov.
 Preto sa nikdy nestavia „ogr build"; ogr je len občasné veľké telo do inak
 postavenej plochy. Druhý problém: viaceré ogrie efekty **pomáhajú súperovi**
-(O002 spustí súperov deathrattle, O010 vstane na súperovej strane), čo je
+(O002 spustí súperov deathrattle, O010 dá Pečať súperovej rase), čo je
 pre dieťa čistý feelbad bez kompenzácie.
 
 Riešenie: **„backstab" (nešťastný roll, ktorý sa obrátil proti vlastníkovi)
@@ -585,7 +590,7 @@ práve tie sú teraz zdroj rastu.
 | O006 Ožratý úder | trafil sám seba |
 | O002 Chaos spúšťač | spustil schopnosť **súperovej** príšerky |
 | O007 Divoká rana | hod mincou poslal 5 damage na **vlastnú** stranu (50 %) |
-| O010 Zmätený obranca | vstal na **súperovej** strane |
+| O010 Ogrí hazard | chvost – Pečať +1/+1 **súperovej** rase |
 | O003 Chaos výbuch | **nepočíta sa** – friendly fire je deterministický, nie roll |
 
 UI: log hlási „👹 Backstab!" a hneď za ním rasový buff (`futureBuff`).
@@ -1040,7 +1045,10 @@ len staty + keyword badge.
   Heuristika sama hráča neporazí – toto mu vyrovnáva šance. Druhý
   handicap: hard bot má **+1 zlato každé kolo** od prvého (pridá si ho na
   začiatku svojho ťahu, `p.bonusRound` stráži jedno pridanie za kolo).
-  **Sila karty v heuristike** (`Bot.cardPower`, tabuľka `npm run power`):
+  **Sila karty v heuristike** (`Bot.cardPower(def, {rank, p})`, tabuľka
+  `npm run power`; vyvolanie = (n + stupeň − 1) × hodnota tokenu, token
+  nesie aj Pečať rasy majiteľa – strieborný U009 s U003/U008 je 4 × 4 = 16
+  bodov schopnosti, bronzový bez aury 6):
   základ nákupného skóre je sila / 8 namiesto tieru (B004 2/3 s rastom
   navždy > B005 3/2, Pečať > vanilla); hodnota tela pri výmene na ploche
   a strope balíčka = staty + schopnosť × stupeň (B003 1/1 nie je

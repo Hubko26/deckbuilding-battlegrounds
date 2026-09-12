@@ -167,7 +167,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     keď je telo nad krivkou alebo battlecry živí tvoju rasu.
   - **Ogre = veľké staty, chaos efekty + Backstab.** Keď sa ogrí roll
     obráti proti tebe (chvost mince, ožratý úder do seba, chaos spúšťač na
-    súperovu príšerku, divoká rana do vlastnej, zmätený obranca u súpera),
+    súperovu príšerku, divoká rana do vlastnej, chvost Ogrieho hazardu),
     dostanú **VŠETCI tvoji ogri Pečať +1/+1 navždy** – aj budúce kópie
     z balíčka a obchodu. **Bez stropu – každý smolný roll = Pečať.** Smola
     je teda payoff, nie trest: ogri sú plnohodnotná hlavná rasa, keď ich
@@ -180,10 +180,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     proti undead horde), O003 Pred bojom 2 dmg
     VŠETKÝM (aj tvojim – zlé so swarm buildmi, dobré proti nim),
     O007 Pri smrti 5 dmg náhodnej príšerke – hod mincou 50 % tvoja strana,
-    50 % súperova (vlastný zásah = backstab, čiže Pečať), O010 (t6 taunt
-    + **Rozmach**: 50 % šanca, že úder zasiahne aj susedov cieľa – ogrí
-    finišer proti širokej ploche súpera)
-    Pri smrti 50 % vstane s 1 HP na NÁHODNEJ strane (aj u súpera!).
+    50 % súperova (vlastný zásah = backstab, čiže Pečať), O010 (t6, bez
+    Obrancu, **Rozmach**: 50 % šanca, že úder zasiahne aj susedov cieľa;
+    **Pred bojom hod mincou**: Pečať +2/+2 Ogrom, alebo Pečať +1/+1 rase
+    náhodnej SÚPEROVEJ príšerky – chvost je backstab, Ogri +1/+1 aj tak;
+    striebro ×2 – ogrí uber t6, každý boj na ploche = nová Pečať).
     Vanilla telá nad krivkou: O004/O005/O008 – bezpečný nákup. O009 (t4,
     7/7) má Divoký úder: každý zásah náhodne 1–14 (priemer 7,5), buffy a
     Pečať posúvajú rozsah (+1 → 2–15), striebro 2–28 – rozptyl, nie sila.
@@ -312,8 +313,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
   Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,
   Svätožiara…), cast až keď sú víly na ploche. Strop kúziel neplatí.
-- **Ogre**: endgame je **O010** (t6, Obranca + Rozmach) – proti swarmu je to
-  finišer, kupuj ho hneď, ako naň máš tier. Build stojí na
+- **Ogre**: endgame je **O010** (t6, Rozmach + Pred bojom hod mincou o
+  Pečať +2/+2 Ogrom / +1/+1 súperovej rase) – Pečať každý boj, kupuj ho
+  hneď, ako naň máš tier, a drž ho na ploche. Build stojí na
   **generátoroch Backstabu** – O006 (Pri útoku,
   hádže každý boj), O001 (lacný hod), O002/O007/O010. Vanilla telá
   O004/O005/O008/O009 Pečať negenerujú, len z nej žijú (O009 ju mení na

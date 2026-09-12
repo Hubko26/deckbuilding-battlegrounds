@@ -499,3 +499,16 @@ test("hard bot: lov rasy podľa sily – t1 zvieratá bez rastu na t4 nie sú re
   const events = B.botTurn(state, "p2", "hard");
   assert.ok(events.some(e => e.type === "refresh"), "t1 zvieratá bez rastu na t4 nie sú relevantné – refresh");
 });
+
+test("cardPower: vyvolávač škáluje počtom (+1 token za stupeň) a tokeny nesú Pečať majiteľa", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
+  const u9 = C.byId["U009"];
+  assert.equal(B.cardPower(u9).ability, 6);                   // 3 Kostíky × 2
+  assert.equal(B.cardPower(u9, { rank: 2 }).ability, 8);      // 4 Kostíky × 2, nie 12
+  const state = E.newGame(seeded(94), null);
+  const p = state.p2;
+  p.raceBuffs.undead = { a: 1, h: 1 };                        // U003 + U008
+  assert.equal(B.cardPower(u9, { rank: 2, p }).ability, 16);  // 4 Kostíky × (2 + 2 aura)
+  assert.ok(B.cardScore(state, p, "U009") > B.cardScore(state, state.p1, "U009"), "s Pečaťou nemŕtvych je vyvolávač cennejší");
+});

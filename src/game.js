@@ -346,15 +346,15 @@ const L = {
     cs: "🦋 vstal jako",
     en: "🦋 got back up as",
   },
-  confusedOwnMsg: {
-    sk: "🎲 vstal s 1 životom na vlastnej strane",
-    cs: "🎲 vstal s 1 životem na vlastní straně",
-    en: "🎲 got up with 1 health on its own side",
+  ogreGambleWinMsg: {
+    sk: "🪙 Ogrí hazard vyšiel! Všetci Ogri +{a}/+{h} navždy",
+    cs: "🪙 Zlobří hazard vyšel! Všichni Zlobři +{a}/+{h} navždy",
+    en: "🪙 Ogre gamble paid off! All Ogres +{a}/+{h} forever",
   },
-  confusedSwapMsg: {
-    sk: "🎲 vstal s 1 životom NA STRANE SÚPERA!",
-    cs: "🎲 vstal s 1 životem NA STRANĚ SOUPEŘE!",
-    en: "🎲 got up with 1 health ON THE ENEMY SIDE!",
+  ogreGambleLoseMsg: {
+    sk: "🪙 Ogrí hazard nevyšiel – súperove {race} +{a}/+{h} navždy",
+    cs: "🪙 Zlobří hazard nevyšel – soupeřovy {race} +{a}/+{h} navždy",
+    en: "🪙 Ogre gamble backfired – enemy {race} +{a}/+{h} forever",
   },
   silencedMsg: {
     sk: "je umlčaný – stratil schopnosť aj Obrancu",
@@ -1576,10 +1576,14 @@ async function runBattle() {
         }
         break;
       }
-      case "confusedRevive": {
-        // Zmätený obranca vstal – summon event hneď za tým kartu vykreslí.
-        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
-        log(`${name} ${t(ev.swapped ? L.confusedSwapMsg : L.confusedOwnMsg)}`);
+      case "ogreGamble": {
+        // Ogrí hazard (O010, Pred bojom) – hod mincou; futureBuff (a pri
+        // chvoste backstab) idú hneď za ním.
+        const el = cardById(ev.uid);
+        if (el) floatText(el, "🪙", true);
+        const race = Cards.RACES_NOM[ev.race][I18N.lang];
+        log(t(ev.heads ? L.ogreGambleWinMsg : L.ogreGambleLoseMsg)
+          .replace("{race}", race).replace("{a}", ev.a).replace("{h}", ev.h));
         await sleep(400);
         break;
       }

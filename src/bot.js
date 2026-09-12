@@ -122,7 +122,7 @@ const Bot = (() => {
     // Základ = teoretická sila karty (telo + schopnosť, cardPower) v mierke
     // ~tier: t1 telo ≈ 1, Pečať t3 ≈ 4, vanilla t3 ≈ 1,5. Predtým bol základ
     // len tier a O008 5/7 vyšiel rovnako ako B008 s rastom navždy.
-    let score = cardPower(def).total / 8;
+    let score = cardPower(def, { p }).total / 8;
     const owned = ownedCount(p, defId);
     if (!def.spell) {
       if (owned === 2) score += 6;      // dokončí trojicu
@@ -242,11 +242,12 @@ const Bot = (() => {
 
   // Hodnota tela na ploche/v ruke pre výmeny: staty + niečo za schopnosť.
   // Hodnota tela na ploche/v ruke: aktuálne staty + schopnosť podľa
-  // cardPower (× stupeň – efekty sa stupňom násobia). B003 1/1 s rastom
-  // navždy tak nie je „najslabšie telo", Mláďa alebo D001 áno.
-  function bodyValue(inst) {
+  // cardPower pre daný stupeň a majiteľa (vyvolávače aj s Pečaťou na
+  // tokenoch). B003 1/1 s rastom navždy tak nie je „najslabšie telo",
+  // Mláďa alebo D001 áno.
+  function bodyValue(inst, p) {
     const def = Cards.byId[inst.defId];
-    return inst.atk + inst.hp + (inst.taunt ? 1 : 0) + cardPower(def).ability * (inst.rank || 1);
+    return inst.atk + inst.hp + (inst.taunt ? 1 : 0) + cardPower(def, { rank: inst.rank || 1, p }).ability;
   }
 
   // „Balast": telo, ktoré sa neoplatí držať v cykle balíčka – 0 útoku
@@ -510,12 +511,12 @@ const Bot = (() => {
       const handBest = p.hand
         .map((inst, i) => ({ inst, i }))
         .filter(x => x.inst && !x.inst.spell)
-        .sort((a, b) => bodyValue(b.inst) - bodyValue(a.inst))[0];
+        .sort((a, b) => bodyValue(b.inst, p) - bodyValue(a.inst, p))[0];
       if (!handBest) break;
       const weakIdx = p.board
         .map((inst, i) => ({ inst, i }))
-        .sort((a, b) => bodyValue(a.inst) - bodyValue(b.inst))[0];
-      if (bodyValue(handBest.inst) < bodyValue(weakIdx.inst) + 3) break;
+        .sort((a, b) => bodyValue(a.inst, p) - bodyValue(b.inst, p))[0];
+      if (bodyValue(handBest.inst, p) < bodyValue(weakIdx.inst, p) + 3) break;
       push(act("sellCard", state, p.id, "board", weakIdx.i));
       const handIdx = p.hand.indexOf(handBest.inst);
       push(act("playMinion", state, p.id, handIdx));
@@ -556,7 +557,7 @@ const Bot = (() => {
         .map((inst, i) => ({ inst, i }))
         .filter(({ inst }) => inst && !inst.spell && inst.rank === 1 &&
           ownedCount(p, inst.defId) < 2 && !Cards.powersOf(Cards.byId[inst.defId]).some(pw => pw.fx.type === "futureRace"))
-        .sort((a, b) => bodyValue(a.inst) - bodyValue(b.inst));
+        .sort((a, b) => bodyValue(a.inst, p) - bodyValue(b.inst, p));
       if (!spare.length) break;
       const bodies = p.hand.filter(x => x && !x.spell).length;
       if (p.board.length + bodies <= Engine.BOARD_MAX) break; // všetko sa ešte zmestí na plochu
@@ -608,14 +609,23 @@ const Bot = (() => {
   // skóre bota (cardScore) ostáva samostatné – to zohľadňuje aj stav hry.
   const PW_BOARD = 4, PW_DEATHS = 2, PW_ATTACKS = 2, PW_SPELLS = 1, PW_HORIZON = 6, PW_PERM = 3;
   const PW_BOOST = 3; // hodnota +1 Živelnej sily (výboje, výbuchy, buffy)
-  function tokenValue(id) {
+  // Hodnota jedného tokenu: základ + Obranca + schopnosť + PEČAŤ RASY
+  // majiteľa (každý token dostane celú auru – viac tokenov = aura sa
+  // vypláca viackrát; U002 a Pretečenie tiež rastú s počtom). Bez majiteľa
+  // (katalóg, ponuka) sa aura neráta.
+  function tokenValue(id, p) {
     const t = Cards.byId[id];
     if (!t) return 0;
-    return t.atk + t.hp + (t.taunt ? 1 : 0) + (t.power ? powerValue(t.power) : 0);
+    const aura = (p && t.race && p.raceBuffs && p.raceBuffs[t.race]) || { a: 0, h: 0 };
+    return t.atk + t.hp + aura.a + aura.h + (t.taunt ? 1 : 0) + (t.power ? powerValue(t.power, 1, p) : 0);
   }
-  function powerValue(pw) {
+  // rank: stupeň karty – efekty sa násobia (Pečať striebro +2/+2), vyvolanie
+  // dáva o 1 token viac za stupeň (n + rank − 1), nie väčšie tokeny.
+  function powerValue(pw, rank = 1, p = null) {
     const f = pw.fx, kw = pw.kw;
-    const ab = (f.a || 0) + (f.h || 0);
+    if (f.type === "summon") return (f.n + rank - 1) * tokenValue(f.token, p);
+    const m = rank;
+    const ab = ((f.a || 0) + (f.h || 0)) * m;
     const perTrigger = kw === "onAttack" ? PW_ATTACKS : kw === "afterSpell" ? PW_SPELLS : kw === "raceDeath" ? PW_DEATHS : 1;
     switch (f.type) {
       case "futureRace": case "futureRaceOf": return ab * PW_BOARD * PW_PERM;
@@ -625,29 +635,30 @@ const Bot = (() => {
       case "buffRandomRace": return ab * (PW_BOARD / 2) * perTrigger;
       case "buffAllFriends": return ab * (PW_BOARD + 1) * perTrigger;
       case "buffFriend": case "buffOne": return ab * perTrigger;
-      case "summon": return f.n * tokenValue(f.token);
       case "fightToken": return ab * PW_BOARD;                 // kostíky v najbližšom boji
       case "reviveAs": return 4;                                // druhý život ako m/m
-      case "summonCharge": return f.n * 3;
-      case "zapToken": return f.n + ab * 0.5 * PW_HORIZON;      // výboj + 50 % šanca na rast navždy
-      case "dmgWeakEnemy": return f.n * 1.5;
-      case "dmgAllEnemies": return f.n * (PW_BOARD + 1);
-      case "dmgAllBoth": return f.n;                            // zabíja drobné oboch – tempo, nie zisk
-      case "dmgRandomAny": return f.n * 0.5;
-      case "dmgBoost": return f.n * PW_BOOST * (kw === "endTurn" ? PW_HORIZON : 1);
+      case "summonCharge": return f.n * m * 3;
+      case "zapToken": return f.n * m + ab * 0.5 * PW_HORIZON;  // výboj + 50 % šanca na rast navždy
+      case "dmgWeakEnemy": return f.n * m * 1.5;              // evolve = viac zásahov
+      case "dmgAllEnemies": return f.n * m * (PW_BOARD + 1);
+      case "dmgAllBoth": return f.n * m;                        // zabíja drobné oboch – tempo, nie zisk
+      case "dmgRandomAny": return f.n * m * 0.5;
+      case "dmgBoost": return f.n * m * PW_BOOST * (kw === "endTurn" ? PW_HORIZON : 1);
       case "racePlayedScale": return ab * 8;                    // ~8 Živlov vyložených za hru
       case "spellScale": return ab * 6;                         // ~6 kúziel za hru
       case "discoverRace": case "discover": return 6;           // karta zadarmo (~3 zlatá + výber)
-      case "draw": return f.n * 3;
+      case "draw": return f.n * m * 3;
       case "addSpell": return 2;
-      case "gold": return f.n * 1.5 * perTrigger;
+      case "gold": return f.n * m * 1.5 * perTrigger;
       case "goldLater": return f.n * 1.5;
       case "evolveTarget": return 10;
       case "shrinkEnemy": return ab;
-      case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) / 2; // očakávaná hodnota hodu
+      case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu
       case "drunkStrike": return -2;
-      case "triggerRandom": return f.n * 2;
-      case "confusedRevive": return 2;
+      case "triggerRandom": return f.n * m * 2;
+      // O010: hlava = Pečať Ogrom (50 %); chvost = Pečať súperovi, ale backstab
+      // dá Ogrom +1/+1 – tie dve sa zhruba vyrušia.
+      case "ogreGamble": return ((f.oa + f.oh) * m * PW_BOARD * PW_PERM) / 2;
       case "silence": return 4; case "bolt": return 4; case "hex": return 6; case "polymorph": return 6;
       case "transform": return 3; case "copyToDeck": return 6; case "swapDeck": return 2;
       case "starPower": return ab * (PW_BOARD + 1) * PW_PERM + (f.n || 0) * PW_BOOST; // Pečať všetkým + Živelná sila
@@ -655,14 +666,19 @@ const Bot = (() => {
       default: return 0;
     }
   }
-  function cardPower(def) {
+  // opts.rank: stupeň (telo ×2/×4, efekty podľa powerValue); opts.p: majiteľ –
+  // tokeny sa rátajú aj s jeho Pečaťou (evolvnutý undead vyvolávač so
+  // U003/U008 je preto výrazne silnejší než jeho bronzová verzia bez aury).
+  function cardPower(def, opts) {
+    const rank = (opts && opts.rank) || 1, p = (opts && opts.p) || null;
     if (def.spell) {
-      const ability = powerValue({ kw: null, fx: def.fx });
+      const ability = powerValue({ kw: null, fx: def.fx }, rank, p);
       return { body: 0, ability, total: ability };
     }
-    const body = def.atk + def.hp + (def.taunt ? 1 : 0) + (def.cleave ? 5 : 0); // Divoký úder: priemer 1–14 ≈ útok, bez bonusu
+    const mult = Cards.STAT_MULT[rank] || 1;
+    const body = (def.atk + def.hp) * mult + (def.taunt ? 1 : 0) + (def.cleave ? 5 : 0); // Divoký úder: priemer 1–14 ≈ útok, bez bonusu
     let ability = 0;
-    for (const pw of Cards.powersOf(def)) ability += powerValue(pw);
+    for (const pw of Cards.powersOf(def)) ability += powerValue(pw, rank, p);
     return { body, ability: Math.round(ability * 10) / 10, total: Math.round((body + ability) * 10) / 10 };
   }
 
