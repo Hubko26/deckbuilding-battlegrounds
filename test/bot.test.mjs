@@ -512,3 +512,45 @@ test("cardPower: vyvolávač škáluje počtom (+1 token za stupeň) a tokeny ne
   assert.equal(B.cardPower(u9, { rank: 2, p }).ability, 16);  // 4 Kostíky × (2 + 2 aura)
   assert.ok(B.cardScore(state, p, "U009") > B.cardScore(state, state.p1, "U009"), "s Pečaťou nemŕtvych je vyvolávač cennejší");
 });
+
+test("hard bot: po zafixovaní rasy predá cudzí balast hneď, aj keď plocha ostane tenká (do 8. kola)", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(95), null);
+  E.startRound(state); E.startRound(state); E.startRound(state); E.startRound(state); // kolo 4
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0; p.tier = 3;
+  p.deck = [{ defId: "E001", rank: 1 }, { defId: "E003", rank: 1 }, { defId: "E002", rank: 1 }];
+  p.discard = []; p.board = [];
+  const own = E.makeInst(state, "E004", 1);
+  const pair1 = E.makeInst(state, "B003", 1);   // pár cudzej t1 – tiež balast
+  const pair2 = E.makeInst(state, "B003", 1);
+  const silver = E.makeInst(state, "B001", 2);  // strieborná cudzia t1 – balast až od tieru 4
+  p.hand = [own, pair1, pair2, silver];
+  assert.equal(B.isJunk(state, p, pair1), true);
+  assert.equal(B.isJunk(state, p, silver), false);
+  p.tier = 4;
+  assert.equal(B.isJunk(state, p, silver), true);
+  const events = B.botTurn(state, "p2", "hard");
+  const sold = events.filter(e => e.type === "sell").map(e => e.defId);
+  assert.deepEqual([...sold].sort(), ["B001", "B003", "B003"]); // spread: pole z vm kontextu má iný prototyp
+  assert.deepEqual([...p.board.map(x => x.defId)], ["E004"], "plocha ostala tenká, balast nešiel na plochu");
+});
+
+test("hard bot: od 9. kola nechá pri predaji balastu aspoň 2 telá", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(96), null);
+  for (let i = 0; i < 9; i++) E.startRound(state); // kolo 9
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.money = 0; p.tier = 4;
+  p.deck = [{ defId: "E001", rank: 1 }, { defId: "E003", rank: 1 }, { defId: "E002", rank: 1 }];
+  p.discard = []; p.board = [];
+  p.hand = [E.makeInst(state, "E004", 1), E.makeInst(state, "B003", 1), E.makeInst(state, "B007", 1)];
+  const events = B.botTurn(state, "p2", "hard");
+  const sold = events.filter(e => e.type === "sell").map(e => e.defId);
+  assert.equal(sold.length, 1, "jedno cudzie telo ostalo, aby boli 2 telá na ploche");
+  assert.equal(p.board.length, 2);
+});

@@ -1058,6 +1058,11 @@ len staty + keyword badge.
   ≥ 1,5× priemeru môjho tieru (B002 na t3, E007 na t4, B010 na t5), hard
   bot upgraduje skôr než káže kolo, ak mu ostane na kartu a plocha má
   aspoň 4 telá.
+  **Balast po zafixovaní rasy sa predáva hneď** (2026-09-12): každá cudzia
+  karta t1–2 vrátane páru (strieborná od tieru 4, drak t1–2 od tieru 3) ide
+  z ruky preč ešte pred vyložením, do 8. kola bez ohľadu na počet tiel, od
+  9. kola ostanú aspoň 2 telá. Bývalý strop „aspoň 4 telá“ nechával balast
+  hrať namiesto predaja (záznam: 8 kôl s cudzími kartami na ploche).
   **Strop balíčka** (`Bot.DECK_CAP` = 14 kariet vo všetkých zónach bez
   tokenov): nad ním bot predá z ruky najslabšie telá stupňa 1 bez páru
   a bez aury – po boji ide plocha do kôpky a ruka sa ťahá náhodne, takže

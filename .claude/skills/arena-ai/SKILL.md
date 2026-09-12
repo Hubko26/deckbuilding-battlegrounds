@@ -232,8 +232,11 @@ plochou. Rob VŠETKY kroky, každý ťah:
    vyloženie, upgrade podľa kola, minutie zlata aj s refreshom, kúzla,
    poradie plochy) – je to poistka, ale plán, čo to nerobí, je zlý plán.
    Štartovací balíček je 10 náhodných t1 kariet – človek ich vypredá do
-   6. kola, ty tiež. Nechaj si toľko tiel, aby si zaplnil plochu (aspoň 4);
-   zvyšný balast zahraj a predaj nabudúce.
+   6. kola, ty tiež. Po zafixovaní rasy predaj cudzie karty HNEĎ, aj za
+   cenu tenšej plochy: damage hrdinovi je skoro stropovaný (kolo 1–3 max 5,
+   do 10. kola max 10), balast v balíčku bolí každé ďalšie kolo. Balast je
+   od 3. kola každá cudzia karta t1–2 (aj pár; strieborná od tieru 4; drak
+   t1–2 od tieru 3).
    **Tvrdý strop balíčka: 14 kariet** (všetky zóny; nad ním driver predá
    najslabšie telá z ruky bez páru). Plocha sa po boji vracia do kôpky
    a ruka je 5 NÁHODNÝCH kariet z cyklu balíčka – s 19 kartami ležia tvoje

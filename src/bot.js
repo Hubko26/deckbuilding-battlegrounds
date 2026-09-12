@@ -48,6 +48,9 @@ const Bot = (() => {
 
   // Od tohto kola sa bot zafixuje na dominantnú rasu (predtým skladá, čo príde).
   const RACE_LOCK_ROUND = 3;
+  // Predaj balastu pred vyložením: do JUNK_GUARD_ROUND − 1 bez ohľadu na
+  // plochu, potom nechá aspoň JUNK_MIN_BODIES tiel (ruka + plocha).
+  const JUNK_GUARD_ROUND = 9, JUNK_MIN_BODIES = 2;
   // Podporné rasy: nikdy nie sú hlavný build. Draci = žoldnieri s battlecry
   // pre rasu cieľa, ogri = veľké telá na doplnenie plochy. Log Claude bota:
   // O004×3 + O001×2 spravili z ogrov „dominantnú rasu" a build sa rozpadol.
@@ -267,13 +270,15 @@ const Bot = (() => {
       if (def.fx.type === "gold" || def.fx.type === "discover") return false;
       return ownedSpellCount(p) > (dom === "fairy" ? SPELL_CAP_FAIRY : SPELL_CAP);
     }
-    // Pár cudzej rasy sa oplatí držať len kým je t1 telo relevantné – od
-    // tieru 3 je aj strieborná t1 karta balast (log: O004×2 v undead builde).
-    // Draci t1–2 sú žoldnieri, kým je telo relevantné – od tieru 3 balast
-    // ako ostatné cudzie karty (záznam z 11. 9. 2026: D001, D006×2, D007×2
-    // sa točili v balíčku do konca hry).
-    return !!dom && def.race !== dom && def.tier <= 2 && inst.rank === 1 &&
-      (def.race === "dragon" ? p.tier >= 3 : (ownedCount(p, inst.defId) < 2 || p.tier >= 3));
+    // Po zafixovaní rasy je KAŽDÁ cudzia karta t1–2 balast, aj pár (trojica
+    // cudzej t1 = strieborné 4/4, stále balast) – záznam z 12. 9. 2026: hard
+    // bot v elemental builde hral B003×2, B007, B001:2 až do 14. kola, lebo
+    // pár a striebro balast neboli. Strieborná cudzia t1–2 je balast od
+    // tieru 4. Draci t1–2 sú žoldnieri, kým je telo relevantné – od tieru 3
+    // balast (záznam z 11. 9. 2026: D001, D006×2, D007×2 v balíčku do konca).
+    if (!dom || def.race === dom || def.tier > 2) return false;
+    if (def.race === "dragon") return inst.rank === 1 && p.tier >= 3;
+    return inst.rank === 1 || (inst.rank === 2 && p.tier >= 4);
   }
 
   function botTurn(state, pid, difficulty) {
@@ -309,7 +314,9 @@ const Bot = (() => {
     // 0. Hard: balast z ruky predaj EŠTE PRED vyložením (+1 zlato, tenší
     //    balíček = lepšie ruky do konca hry). Štartovací balíček je 10
     //    náhodných t1 kariet – človek ich postupne vypredá, bot musí tiež.
-    //    Obetuje najviac 1 slot plochy za ťah (ostane aspoň 4 tiel).
+    //    Po zafixovaní rasy HNEĎ, aj za cenu tenšej plochy: skoro je damage
+    //    hrdinovi stropovaný (kolo 1–3 max 5, do 10. kola max 10), balast
+    //    v balíčku bolí celú hru. Od 9. kola nechá aspoň 2 telá.
     if (cfg.sellJunk) sellJunk(state, p, push, true);
     //    Príšerky na plochu HNEĎ – víly („Po kúzle“) tak zachytia triggery
     //    zo všetkých kúziel zahraných v tomto ťahu.
@@ -524,17 +531,20 @@ const Bot = (() => {
   }
 
   // Balast z ruky predaj (nehrá sa, len by sa točil v balíčku).
-  // keepBodies: pred vyložením predaj len toľko, aby z ruky + plochy ostali
-  // aspoň 4 telá (max 1 obetovaný slot za ťah).
+  // keepBodies: pred vyložením. Do 8. kola sa predáva všetko hneď (damage
+  // hrdinovi je stropovaný, balast v balíčku bolí dlhšie); od 9. kola ostanú
+  // z ruky + plochy aspoň JUNK_MIN_BODIES telá. Bývalý strop „aspoň 4 telá“
+  // nechával balast hrať namiesto predaja (záznam z 12. 9. 2026: 8 kôl
+  // s cudzími kartami na ploche, balíček 22).
   function sellJunk(state, p, push, keepBodies) {
     for (let i = p.hand.length - 1; i >= 0; i--) {
       const inst = p.hand[i];
       if (!inst || !isJunk(state, p, inst)) continue;
       // Strážiť počet tiel treba len pri predaji tela – predaj kúzla žiadny
       // slot plochy nestojí, naopak uvoľňuje miesto v budúcich rukách.
-      if (keepBodies && !inst.spell) {
+      if (keepBodies && !inst.spell && state.round >= JUNK_GUARD_ROUND) {
         const bodies = p.hand.filter(x => x && !x.spell).length - 1;
-        if (p.board.length + bodies < Engine.BOARD_MAX - 1) continue;
+        if (p.board.length + bodies < JUNK_MIN_BODIES) continue;
       }
       push(act("sellCard", state, p.id, "hand", i));
     }
