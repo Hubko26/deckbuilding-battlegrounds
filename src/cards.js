@@ -374,8 +374,15 @@ const Cards = (() => {
     return n[lang] ?? n.sk;
   }
 
-  // Cesta k obrázku pre daný stupeň; kúzla a tokeny majú emoji.
+  // Kúzla s kompletnou kartou (assets/cards/<id>_1.webp, rovnaký rám ako
+  // príšery: kryštál s tierom vľavo hore, banner mena, textový box, kruh na
+  // cenu dole). Ostatné kúzla (vichor, ovca, portal, hviezda) majú zatiaľ emoji.
+  const SPELL_ART = new Set(["minca", "stit", "jablko", "ticho", "kniha", "koren", "vlna", "iskra",
+    "svatoziara", "pierko", "srdce", "kliatba", "iskricka", "zrkadlo", "blesk", "klobuk", "poklad"]);
+
+  // Cesta k obrázku pre daný stupeň; kúzla bez artu a tokeny majú emoji.
   function artOf(def, rank) {
+    if (def.spell) return SPELL_ART.has(def.id) ? `assets/cards/${def.id}_1.webp` : null;
     if (!def.stageNames) return null;
     return `assets/cards/${def.id}_${Math.min(rank, 3)}.webp`;
   }

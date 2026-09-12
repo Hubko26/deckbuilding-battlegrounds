@@ -833,6 +833,15 @@ ruky), peniaze navyše.
   staré nízkotierové kúzla. Plošný buff t6 („Zlatý zvon") zámerne NEpridaný:
   víly (Po kúzle) sú už na hrane OP a veľké kúzlo by ich prestrelilo.
 
+### Art kúziel
+
+Kúzla majú kompletnú kartu ako príšery (`assets/cards/<id>_1.webp`, 520×723,
+rovnaký rám: kryštál s tierom vľahore, banner mena, textový box, zlatý kruh
+dole = cena v obchode). Zoznam kúziel s artom je `Cards.SPELL_ART`
+(`artOf` vracia cestu len pre ne); zdroj `Fantasy_Spell_Cards_SK_18_BLANK_DYNAMIC.zip`
+(neverzuje sa, S005 Zvitok múdrosti je odstránená karta). **Bez artu
+(emoji):** Vichor, Ovčia premena, Kúzelný portál, Hviezdna moc.
+
 ## Bez class – superschopnosti (hero powers)
 
 Classy nie sú: **každý hráč hrá z rovnakého poolu kariet**, aby sa nemusel
@@ -902,6 +911,79 @@ Kúzla rasu nemajú – ban sa ich netýka.
 - Bot (aj Claude súper) banuje cez `Bot.pickBan`: prvú HLAVNÚ rasu zo svojej
   trojice (beast/elemental/undead/fairy), žoldnierov (draci, ogri) až keď iné
   nemá. Bez rng – akcia sa loguje ako `pickBan`, replay ju prehrá presne.
+
+## Trinkety (trvalé bonusy per hráč)
+
+Mutácia je jedno globálne pravidlo pre oboch; **trinket je trvalý bonus
+jedného hráča**. V **kole 4 a 8** (`Engine.TRINKET_ROUNDS`) dostane každý
+hráč na začiatku kola ponuku **3 trinketov** (`p.trinketOffer`, losuje sa
+zo `state.rng`, p1 prvý) a vo **vlastnej nákupnej fáze** si jeden vyberie
+(`Engine.pickTrinket(state, pid, id)`). Nevybraný do konca ťahu = prvý
+z ponuky (`endShopTurn`, event `trinketPick` s `auto: true`) – hra sa nikdy
+nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
+`Engine.hasTrinket(state, pid, id)`.
+
+- **Default ZAPNUTÉ** (checkbox na úvodnej obrazovke, `arena.trinkets`);
+  v hre po sieti rozhoduje zakladateľ – flag `trinkets` cestuje v
+  `hello`/`start`/`rejoin` ako `ban` a zapisuje sa do GameLog (staré
+  záznamy bez flagu = bez trinketov, rng poradie sa nemení).
+- **Ponuka** (`trinketPool`): rasový trinket len hráčovi, ktorý má aspoň
+  **3 karty rasy** vo všetkých zónach (`TRINKET_RACE_MIN`); zabanovaná rasa
+  nikdy; `late` (Hrobárova lopata, Dračia krv, Krvavý mesiac) až v kole 8;
+  Ogrí kľúč len keď súper už trinket má; trinket s id zhodným s mutáciou hry
+  (`richSell`, `bloodMoon`) sa neponúka – nestackujú sa. Z prípustných sa
+  zamieša a vezmú prvé 3.
+- **Ogrí kľúč** hodí na začiatku každého kola mincou (`sabotage` event):
+  chvost = súperove trinkety to kolo (nákup aj boj) nefungujú
+  (`p.trinketOff = kolo`); p1 hádže prvý – ak vypne p2 kľúč, p2 nehádže.
+  Štít hrdinu sa vo vypnutom kole nedá zapnúť.
+- **Štít hrdinu** je jediný aktívny trinket: `Engine.useHeroShield(state, pid)`
+  vo vlastnej nákupnej fáze, raz za hru (`p.heroShieldUsed`,
+  `p.heroShieldRound`); v boji toho kola dostane porazený 0 damage
+  (`heroDmg.shielded`). UI: tlačidlo 🛡️ vedľa ↩️; bot ho zapína pod 15 HP.
+- **Opatrný ogr**: rng sa pri ogrích hodoch preskočí (nie prepíše) – staré
+  záznamy bez trinketu sa prehrajú rovnako.
+- **Dračia krv**: drak spĺňa `isRace` pre každú rasu (Pečate, dračie
+  bojové aury, rasové buffy, mrchožrúti, Zákon svorky); `makeInst` mu dá
+  súčet všetkých Pečatí. Cielený efekt „rasa cieľa" na drakovi ostáva
+  len drak; D007 najpočetnejšia rasa ráta draka ako draka.
+- Bot (`Bot.pickTrinket`): rasový trinket dominantnej rasy, inak pevná
+  priorita (Krvavý mesiac, Zľava, Veľká ruka, Rýchly štart…); Claude dostáva
+  `trinketOffer`/`yourTrinkets`/`opponentTrinkets` v stave a akcie
+  `{"a":"trinket","id"}`, `{"a":"shield"}`; hygiena hard bota vyberie za
+  neho, ak plán nevybral. Texty a emoji (log): `game.js` `L.trinkets`.
+- **Art**: okrúhle medailóny s rámom `assets/trinkets/<id>.webp` (512 px,
+  priehľadné rohy; zdroj `Fantasy_Trinkets_UI.zip`, neverzuje sa) – ponuka
+  v overlayi, ikonky za menom hrdinu a tlačidlo Štítu (`trinketArt(id)`).
+
+| id | rasa | pravidlo |
+|---|---|---|
+| `beastPups` | 🐾 | Mláďatá a SuperMláďatá +1/+1 (`makeFightToken`) |
+| `beastPack` | 🐾 | smrť Zvieraťa: náhodné živé ne-tokenové Zviera +1/+1 navždy (`pa/ph`) |
+| `undeadGrave` | 💀 late | prvé vyvolanie v boji +1 token (`p.graveUsed`, reset po boji) |
+| `undeadBones` | 💀 | Kostíky +1/+0 |
+| `undeadOverflow` | 💀 | Pretečenie buffne dve rôzne príšerky |
+| `elemSpark` | ✨ | pri výbere Živelná sila +1 |
+| `elemStorm` | ✨ | pred každým bojom `p.bolts++` (Blesk 3 + Živelná sila) |
+| `fairyDiscount` | 🧚 | prvé kúzlo kúpené v kole o 1 lacnejšie (`Engine.spellCost`) |
+| `dragonBlood` | 🐲 late | draci sú každá rasa |
+| `dragonPact` | 🐲 | dračie bojové aury (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) +1/+1 |
+| `ogreSabotage` | 👹 | Pečať +1/+0 Ogrom; minca za súperove trinkety |
+| `ogreCareful` | 👹 | hody padnú vždy dobre, bonusy polovičné (min. 1) |
+| `cheapUpgrade` | – | upgrade o 2 lacnejší (min. 2) |
+| `richSell` | – | predaj dáva 2 |
+| `twinEvolve1` | – | kartám tieru 1 stačia 2 kópie |
+| `freeRefresh1` | – | prvý refresh v kole zadarmo (`Engine.refreshCost(state, pid)`) |
+| `bigHand` | – | ruka 6 (`Engine.handDraw`) |
+| `buybackAny` | – | buyback bez limitu za ťah |
+| `heroShield` | – | raz za hru boj bez zranenia (aktívny) |
+| `initiative` | – | v boji začína tá strana (obaja = bežné pravidlo) |
+| `strongTokens` | – | tokeny +1/+1 |
+| `healWin` | – | po výhre +2 HP (strop `p.maxHp`) |
+| `bloodMoon` | – late | preživšie +1/+1 navždy (ako mutácia) |
+
+Zámerne vynechané: kumulatívne zlato („+1 každé kolo") a trvalé stackujúce
+boosty (Živelná sila v štartovacom balíčku by cyklom balíčka snowballovala).
 
 ## Mobilné UI redesign + zrušenie spoločného obchodu (návrh)
 

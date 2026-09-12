@@ -24,6 +24,17 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   zabanovanej rase – v obchode sa nikdy neobjaví; rasové aury a synergie na
   ňu sú mŕtve karty. Bot banuje hlavnú rasu zo svojej trojice
   (`Bot.pickBan`), žoldnierov (draci, ogri) až keď inú nemá.
+- **Trinkety** (voliteľné, default zapnuté): v kole 4 a 8 dostane každý
+  hráč ponuku 3 trvalých bonusov (`p.trinketOffer`), jeden si vyberie vo
+  vlastnej nákupnej fáze (`Engine.pickTrinket`); nevybraný = prvý z ponuky.
+  Claude ich dostáva v stave ako `trinketOffer` (s anglickým textom),
+  `yourTrinkets`, `opponentTrinkets`, `trinketsOffThisRound` (súperov Ogrí
+  kľúč) a `heroShieldReady`. Vyberaj: rasový trinket dominantnej rasy
+  > ekonomika/telá (Zľava tavernára, Veľká ruka, Rýchly štart, Silné tokeny
+  pri vyvolávačoch) > Krvavý mesiac v kole 8 pri stabilnej ploche. Štít
+  hrdinu (`Engine.useHeroShield`) zapni raz, keď hrozí veľká prehra
+  (nízke HP, súperova plocha zjavne silnejšia). Zoznam a pravidlá: DESIGN.md
+  „Trinkety".
 - Kolo = nákupná fáza hráča A → nákupná fáza hráča B → automatický boj.
   V nepárnom kole začína p1, v párnom p2.
 - Peniaze: `min(kolo + 2, 10)` na začiatku kola, neminuté prepadnú.
@@ -359,6 +370,10 @@ akcie za hráča `pid` – vracajú events alebo `null` pri nelegálnom ťahu:
 - `Engine.discardCard(state, pid, "hand"|"board", idx)` – do kôpky bez
   peňazí (karta ostáva v balíčku; napr. battlecry telo pred bojom)
 - `Engine.moveOnBoard(state, pid, boardIdx, slot)`
+- `Engine.pickTrinket(state, pid, trinketId)` – výber z `p.trinketOffer`
+  (kolo 4 a 8), len vo vlastnej nákupnej fáze; Claude: `{"a":"trinket","id"}`
+- `Engine.useHeroShield(state, pid)` – trinket Štít hrdinu, raz za hru;
+  Claude: `{"a":"shield"}`
 - `Engine.endShopTurn(state, pid)` – povinný záver ťahu
 
 Multiplayer replikuje akcie: rovnaký seed + rovnaká sekvencia volaní musí

@@ -311,6 +311,13 @@ const Bot = (() => {
   function completeTurn(state, pid, cfg, push) {
     const p = state[pid];
 
+    // Trinkety: ponuka sa vyberá hneď (bez výberu by ju koniec ťahu vzal
+    // automaticky); Štít hrdinu bot zapne, keď mu dochádzajú životy.
+    if (p.trinketOffer) push(act("pickTrinket", state, pid, pickTrinket(state, pid)));
+    if (Engine.hasTrinket(state, pid, "heroShield") && !p.heroShieldUsed && p.hp <= HERO_SHIELD_HP) {
+      push(act("useHeroShield", state, pid));
+    }
+
     // 0. Hard: balast z ruky predaj EŠTE PRED vyložením (+1 zlato, tenší
     //    balíček = lepšie ruky do konca hry). Štartovací balíček je 10
     //    náhodných t1 kariet – človek ich postupne vypredá, bot musí tiež.
@@ -374,9 +381,10 @@ const Bot = (() => {
         if (!cfg.randomBuy) options.sort((a, b) => cardScore(state, p, b.defId, cfg) - cardScore(state, p, a.defId, cfg));
         // Lov rasy (hard): keď v ponuke nie je relevantná karta mojej rasy
         // ani trojica, radšej refreshni než kupovať t1 telá „lebo sú moje".
-        if (cfg.raceHunt && dom && rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST &&
+        if (cfg.raceHunt && dom && rerolls > 0 && p.money >= Engine.refreshCost(state, pid) + Engine.CARD_COST &&
             !options.some(o => isWanted(state, p, o.defId, dom))) break;
-        const affordable = options.filter(o => Engine.cardCost(o.defId) <= p.money);
+        const costOf = o => o.kind === "spell" ? Engine.spellCost(state, pid, o.defId) : Engine.cardCost(o.defId);
+        const affordable = options.filter(o => costOf(o) <= p.money);
         if (!affordable.length) {
           bestUnaffordable = options.find(o => o.kind !== "common") || null;
           break;
@@ -387,7 +395,7 @@ const Bot = (() => {
         } else {
           choice = affordable[0];
           const best = cardScore(state, p, choice.defId, cfg);
-          if (rerolls > 0 && p.money >= Engine.refreshCost(state) + Engine.CARD_COST && best < bar) break;
+          if (rerolls > 0 && p.money >= Engine.refreshCost(state, pid) + Engine.CARD_COST && best < bar) break;
           // Zvyšné zlato nemíňaj na kartu so záporným skóre (kúzlo nad strop,
           // cudzia rasa) – balast v balíčku je horší než prepadnuté zlato.
           if (best < 0) break;
@@ -397,7 +405,7 @@ const Bot = (() => {
           : act("buySpell", state, pid));
       }
       if (rerolls-- <= 0) break;
-      if (p.money < Engine.refreshCost(state) + Engine.CARD_COST) break;
+      if (p.money < Engine.refreshCost(state, pid) + Engine.CARD_COST) break;
       push(act("refreshShop", state, pid));
     }
 
@@ -716,12 +724,33 @@ const Bot = (() => {
   // než ban žoldnierov (draci, ogri). Trojica je zamiešaná zo seedu, takže
   // výber pôsobí náhodne, ale bez rng – akcia sa loguje ako pickBan a replay
   // ju prehrá bez ďalšieho losovania.
+  // Výber trinketu (ponuka 1 z 3): rasový trinket dominantnej rasy má
+  // prednosť, inak pevná priorita neutrálnych (ekonomika a telá pred
+  // poistkami). Bez rng – akcia sa loguje ako pickTrinket, replay sedí.
+  const TRINKET_PRIO = {
+    bloodMoon: 9, cheapUpgrade: 7, bigHand: 7, initiative: 6, strongTokens: 5, healWin: 5,
+    richSell: 5, freeRefresh1: 4, twinEvolve1: 3, heroShield: 3, buybackAny: 1,
+  };
+  const HERO_SHIELD_HP = 15; // Štít hrdinu zapne pod touto hranicou životov
+  function pickTrinket(state, pid) {
+    const p = state[pid];
+    const offer = p.trinketOffer || [];
+    if (!offer.length) return null;
+    const dom = dominantRace(state, p);
+    const score = id => {
+      const def = Engine.TRINKETS.find(t => t.id === id);
+      if (def && def.race) return def.race === dom ? 8 : SUPPORT_RACES.has(def.race) ? 2 : 3;
+      return TRINKET_PRIO[id] ?? 4;
+    };
+    return [...offer].sort((a, b) => score(b) - score(a))[0];
+  }
+
   function pickBan(state, pid) {
     const offers = (state.ban && state.ban.offers[pid]) || [];
     return offers.find(r => !SUPPORT_RACES.has(r)) || offers[0] || null;
   }
 
-  return { botTurn, completeTurn, withExecutor, pickBan, ownedCount, cardScore, cardPower, dominantRace, isJunk, orderBoard,
+  return { botTurn, completeTurn, withExecutor, pickBan, pickTrinket, ownedCount, cardScore, cardPower, dominantRace, isJunk, orderBoard,
     deckSize, SUPPORT_RACES, HYGIENE, DECK_CAP };
 })();
 

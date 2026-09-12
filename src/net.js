@@ -189,7 +189,7 @@ const Net = (() => {
     if (!data) return false;
     clearRejoinWait();
     resetSync();
-    sendRaw({ type: "rejoin", seed: data.seed, mut: data.mut, ban: data.ban, actions: data.actions,
+    sendRaw({ type: "rejoin", seed: data.seed, mut: data.mut, ban: data.ban, trinkets: data.trinkets, actions: data.actions,
       you: myYou === "p1" ? "p2" : "p1", v: appV });
     if (handlers.onRejoined) handlers.onRejoined({ v: meta && meta.v });
     return true;
@@ -373,7 +373,7 @@ const Net = (() => {
     sock.addEventListener("open", () => {
       opened = true;
       // Voľba mutácií – server ju vezme od hráča, ktorý čaká prvý (zakladateľ).
-      sock.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), ban: !(opts && opts.ban === false), v: opts && opts.v, rejoin: !!(opts && opts.rejoin) }));
+      sock.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), ban: !(opts && opts.ban === false), trinkets: !(opts && opts.trinkets === false), v: opts && opts.v, rejoin: !!(opts && opts.rejoin) }));
     });
     sock.addEventListener("message", e => { if (ws === sock) dispatch(e.data); });
     sock.addEventListener("close", () => {
@@ -486,6 +486,7 @@ const Net = (() => {
     transport = "peer";
     const mut = !(opts && opts.mut === false);
     const ban = !(opts && opts.ban === false);
+    const trinkets = !(opts && opts.trinkets === false);
     const myV = opts && opts.v;
     appV = myV;
     destroyPeer();
@@ -500,7 +501,7 @@ const Net = (() => {
       console.info("[arena] signalizácia OK (host, kód " + code + ")");
       if (handlers.onWaiting) handlers.onWaiting({ code });
     });
-    peer.on("connection", c => hostConnection(c, { mut, ban, myV }));
+    peer.on("connection", c => hostConnection(c, { mut, ban, trinkets, myV }));
     peer.on("error", err => {
       if (resuming || rejoinWaiting) return; // počas obnovy / čakania na návrat
       if (handlers.onPeerError) handlers.onPeerError(err && err.type);
@@ -508,7 +509,7 @@ const Net = (() => {
     });
   }
 
-  // Prichádzajúce spojenie na ID s kódom. fresh = { mut, ban, myV } pre novú hru;
+  // Prichádzajúce spojenie na ID s kódom. fresh = { mut, ban, trinkets, myV } pre novú hru;
   // null = len držíme kód pre návrat súpera (rehost), nová hra sa nezakladá.
   function hostConnection(c, fresh) {
     const meta = c.metadata || {};
@@ -539,8 +540,8 @@ const Net = (() => {
     c.on("open", () => {
       const seed = Math.floor(Math.random() * 2 ** 31);
       // v = verzia DRUHEJ strany: každý klient si ju porovná so svojou.
-      c.send({ type: "start", seed, you: "p2", mut: fresh.mut, ban: fresh.ban, v: fresh.myV });
-      dispatch({ type: "start", seed, you: "p1", mut: fresh.mut, ban: fresh.ban, v: meta.v });
+      c.send({ type: "start", seed, you: "p2", mut: fresh.mut, ban: fresh.ban, trinkets: fresh.trinkets, v: fresh.myV });
+      dispatch({ type: "start", seed, you: "p1", mut: fresh.mut, ban: fresh.ban, trinkets: fresh.trinkets, v: meta.v });
     });
   }
 

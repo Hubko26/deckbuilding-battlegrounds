@@ -58,7 +58,9 @@ const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
 // mut:false v zázname = hra bez mutácie; staré záznamy flag nemajú (= mutácia zo seedu)
 // ban:true v zázname = hra začala fázou BAN (akcie pickBan v logu, prvé kolo
 // štartuje až po vylosovaní); staré záznamy flag nemajú (= bez banu)
-const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined, { ban: game.ban === true });
+// trinkets:true v zázname = ponuka trinketov v kole 4 a 8 (akcie pickTrinket,
+// useHeroShield v logu); staré záznamy flag nemajú (= bez trinketov)
+const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined, { ban: game.ban === true, trinkets: game.trinkets === true });
 if (s.phase !== "ban") E.startRound(s);
 
 const boardStr = p => p.board.map(x =>

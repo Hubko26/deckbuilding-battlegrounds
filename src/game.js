@@ -230,6 +230,78 @@ const L = {
       d: { sk: "Battlecry sa spúšťa 2×.", cs: "Battlecry se spouští 2×.", en: "Battlecries trigger twice." },
     },
   },
+  // Trinkety (engine TRINKETS) – ikonka e, meno, popis d. Ponuka 1 z 3 v kole 4 a 8.
+  trinketToggle: {
+    sk: "🧿 Trinkety (kolo 4 a 8: každý si vyberie trvalý bonus)",
+    cs: "🧿 Trinkety (kolo 4 a 8: každý si vybere trvalý bonus)",
+    en: "🧿 Trinkets (round 4 and 8: each player picks a permanent bonus)",
+  },
+  trinketTitle: { sk: "🧿 Vyber si trinket", cs: "🧿 Vyber si trinket", en: "🧿 Pick a trinket" },
+  trinketIntro: {
+    sk: "Trvalý bonus na celú hru. Vyber jeden z troch – ak nevyberieš, na konci ťahu dostaneš prvý.",
+    cs: "Trvalý bonus na celou hru. Vyber jeden ze tří – když nevybereš, na konci tahu dostaneš první.",
+    en: "A permanent bonus for the whole game. Pick one of three – if you don't, you get the first one at end of turn.",
+  },
+  trinketPicked: { sk: "🧿 Tvoj trinket:", cs: "🧿 Tvůj trinket:", en: "🧿 Your trinket:" },
+  trinketAuto: { sk: "🧿 Nevybral si – dostal si", cs: "🧿 Nevybral jsi – dostal jsi", en: "🧿 No pick – you got" },
+  trinketOppPicked: { sk: "🤖 Súper si vybral trinket:", cs: "🤖 Soupeř si vybral trinket:", en: "🤖 Opponent picked a trinket:" },
+  trinketOffMsg: { sk: "🔧 Ogrí kľúč: trinkety nefungujú toto kolo", cs: "🔧 Obří klíč: trinkety nefungují toto kolo", en: "🔧 Ogre Key: trinkets are off this round" },
+  sabotageHeads: { sk: "🔧 Ogrí kľúč: hlava – súperov trinket funguje", cs: "🔧 Obří klíč: hlava – soupeřův trinket funguje", en: "🔧 Ogre Key: heads – the opponent's trinkets work" },
+  sabotageTails: { sk: "🔧 Ogrí kľúč: chvost – súperove trinkety toto kolo NEFUNGUJÚ", cs: "🔧 Obří klíč: orel – soupeřovy trinkety toto kolo NEFUNGUJÍ", en: "🔧 Ogre Key: tails – the opponent's trinkets are OFF this round" },
+  sabotagedMsg: { sk: "🔧 Súperov Ogrí kľúč: tvoje trinkety toto kolo nefungujú!", cs: "🔧 Soupeřův Obří klíč: tvoje trinkety toto kolo nefungují!", en: "🔧 Enemy Ogre Key: your trinkets are off this round!" },
+  heroShieldBtn: { sk: "🛡️ Štít hrdinu", cs: "🛡️ Štít hrdiny", en: "🛡️ Hero Shield" },
+  heroShieldArmed: { sk: "🛡️ Štít aktívny", cs: "🛡️ Štít aktivní", en: "🛡️ Shield active" },
+  heroShieldArmMsg: { sk: "🛡️ Štít hrdinu zapnutý – v tomto boji nedostaneš žiadne zranenie", cs: "🛡️ Štít hrdiny zapnutý – v tomto boji nedostaneš žádné zranění", en: "🛡️ Hero Shield up – no damage in this fight" },
+  heroShieldBlockMsg: { sk: "🛡️ Štít hrdinu zablokoval zranenie", cs: "🛡️ Štít hrdiny zablokoval zranění", en: "🛡️ Hero Shield blocked the damage" },
+  healWinMsg: { sk: "❤️‍🩹 Liečivé víťazstvo", cs: "❤️‍🩹 Léčivé vítězství", en: "❤️‍🩹 Healing Victory" },
+  trinkets: {
+    beastPups: { e: "🐣", sk: "Vypasené mláďatá", cs: "Vypasená mláďata", en: "Plump Cubs",
+      d: { sk: "Tvoje Mláďatá a SuperMláďatá majú +1/+1.", cs: "Tvá Mláďata a SuperMláďata mají +1/+1.", en: "Your Cubs and SuperCubs have +1/+1." } },
+    beastPack: { e: "🐺", sk: "Zákon svorky", cs: "Zákon smečky", en: "Law of the Pack",
+      d: { sk: "Keď zomrie tvoje Zviera, náhodné živé Zviera dostane +1/+1 navždy.", cs: "Když zemře tvé Zvíře, náhodné živé Zvíře dostane +1/+1 navždy.", en: "When your Beast dies, a random living Beast gets +1/+1 forever." } },
+    undeadGrave: { e: "⛏️", sk: "Hrobárova lopata", cs: "Hrobníkova lopata", en: "Gravedigger's Shovel",
+      d: { sk: "Prvé vyvolanie v každom boji vyvolá o 1 viac.", cs: "První vyvolání v každém boji vyvolá o 1 víc.", en: "Your first summon in each fight summons 1 more." } },
+    undeadBones: { e: "🦴", sk: "Ostré kosti", cs: "Ostré kosti", en: "Sharp Bones",
+      d: { sk: "Tvoje Kostíky majú +1/+0.", cs: "Tvoje Kostíky mají +1/+0.", en: "Your Skeletons have +1/+0." } },
+    undeadOverflow: { e: "⚰️", sk: "Dvojité pretečenie", cs: "Dvojité přetečení", en: "Double Overflow",
+      d: { sk: "Pretečenie dá staty dvom príšerkám namiesto jednej.", cs: "Přetečení dá staty dvěma příšerkám místo jedné.", en: "Overflow gives its stats to two minions instead of one." } },
+    elemSpark: { e: "✨", sk: "Iskra na štart", cs: "Jiskra na start", en: "Starting Spark",
+      d: { sk: "Hneď dostaneš Živelnú silu +1.", cs: "Hned dostaneš Živelnou sílu +1.", en: "You get Elemental Power +1 right away." } },
+    elemStorm: { e: "🌩️", sk: "Búrkový mrak", cs: "Bouřkový mrak", en: "Storm Cloud",
+      d: { sk: "Pred každým bojom udrie Blesk za 3 do náhodnej súperovej príšerky.", cs: "Před každým bojem udeří Blesk za 3 do náhodné soupeřovy příšerky.", en: "Before every fight, Lightning hits a random enemy minion for 3." } },
+    fairyDiscount: { e: "🪄", sk: "Lacné čary", cs: "Levná kouzla", en: "Cheap Charms",
+      d: { sk: "Prvé kúzlo v každom kole stojí o 1 menej.", cs: "První kouzlo v každém kole stojí o 1 méně.", en: "The first spell you buy each round costs 1 less." } },
+    dragonBlood: { e: "🩸", sk: "Dračia krv", cs: "Dračí krev", en: "Dragon Blood",
+      d: { sk: "Tvoji Draci sa počítajú ako KAŽDÁ rasa.", cs: "Tvoji Draci se počítají jako KAŽDÁ rasa.", en: "Your Dragons count as EVERY race." } },
+    dragonPact: { e: "📜", sk: "Žoldnierska zmluva", cs: "Žoldnéřská smlouva", en: "Mercenary Contract",
+      d: { sk: "Dračie bojové aury dávajú +1/+1 navyše.", cs: "Dračí bojové aury dávají +1/+1 navíc.", en: "Dragon fight auras give +1/+1 extra." } },
+    ogreSabotage: { e: "🔧", sk: "Ogrí kľúč", cs: "Obří klíč", en: "Ogre Key",
+      d: { sk: "Tvoji Ogri majú +1/+0. Každé kolo hod mincou: chvost = súperov trinket to kolo nefunguje.", cs: "Tvoji Obři mají +1/+0. Každé kolo hod mincí: orel = soupeřův trinket to kolo nefunguje.", en: "Your Ogres have +1/+0. Each round flip a coin: tails = the opponent's trinket is off that round." } },
+    ogreCareful: { e: "⛑️", sk: "Opatrný ogr", cs: "Opatrný obr", en: "Careful Ogre",
+      d: { sk: "Backstab sa ti nikdy nestane, ale ogrie bonusy sú polovičné.", cs: "Backstab se ti nikdy nestane, ale obří bonusy jsou poloviční.", en: "Backstab never happens to you, but ogre bonuses are halved." } },
+    cheapUpgrade: { e: "🏷️", sk: "Zľava tavernára", cs: "Sleva hospodského", en: "Tavern Discount",
+      d: { sk: "Upgrade obchodu stojí o 2 menej (minimum 2).", cs: "Upgrade obchodu stojí o 2 méně (minimum 2).", en: "Shop upgrades cost 2 less (minimum 2)." } },
+    richSell: { e: "💰", sk: "Výhodný predaj", cs: "Výhodný prodej", en: "Good Bargain",
+      d: { sk: "Predaj karty dáva 2 mince.", cs: "Prodej karty dává 2 mince.", en: "Selling a card gives 2 coins." } },
+    twinEvolve1: { e: "🥚", sk: "Dvojičky", cs: "Dvojčátka", en: "Twinsies",
+      d: { sk: "Kartám tieru 1 stačia na evolve 2 kópie.", cs: "Kartám tieru 1 stačí na evolve 2 kopie.", en: "Tier 1 cards evolve from 2 copies." } },
+    freeRefresh1: { e: "🔄", sk: "Čerstvý tovar", cs: "Čerstvé zboží", en: "Fresh Goods",
+      d: { sk: "Prvý refresh obchodu v kole je zadarmo.", cs: "První refresh obchodu v kole je zdarma.", en: "The first shop refresh each round is free." } },
+    bigHand: { e: "🖐️", sk: "Veľká ruka", cs: "Velká ruka", en: "Big Hand",
+      d: { sk: "Ruka sa doťahuje na 6 kariet.", cs: "Ruka se dotahuje na 6 karet.", en: "Your hand refills to 6 cards." } },
+    buybackAny: { e: "↩️", sk: "Ľutovanie", cs: "Litování", en: "Second Thoughts",
+      d: { sk: "Buyback nie je obmedzený na raz za ťah.", cs: "Buyback není omezený na jednou za tah.", en: "Buyback is not limited to once per turn." } },
+    heroShield: { e: "🛡️", sk: "Štít hrdinu", cs: "Štít hrdiny", en: "Hero Shield",
+      d: { sk: "Raz za hru: pred bojom stlač štít a v tom boji nedostaneš žiadne zranenie.", cs: "Jednou za hru: před bojem stiskni štít a v tom boji nedostaneš žádné zranění.", en: "Once per game: press the shield before a fight and take no damage in it." } },
+    initiative: { e: "👟", sk: "Rýchly štart", cs: "Rychlý start", en: "Quick Start",
+      d: { sk: "V boji vždy začína tvoja strana.", cs: "V boji vždy začíná tvoje strana.", en: "Your side always attacks first." } },
+    strongTokens: { e: "🏋️", sk: "Silné tokeny", cs: "Silné tokeny", en: "Strong Tokens",
+      d: { sk: "Tvoje tokeny majú +1/+1.", cs: "Tvoje tokeny mají +1/+1.", en: "Your tokens have +1/+1." } },
+    healWin: { e: "❤️‍🩹", sk: "Liečivé víťazstvo", cs: "Léčivé vítězství", en: "Healing Victory",
+      d: { sk: "Po vyhranom boji sa hrdina vylieči o 2.", cs: "Po vyhraném boji se hrdina vyléčí o 2.", en: "After a won fight your hero heals 2." } },
+    bloodMoon: { e: "🌕", sk: "Krvavý mesiac", cs: "Krvavý měsíc", en: "Blood Moon",
+      d: { sk: "Príšerky, ktoré prežijú boj, dostanú +1/+1 navždy.", cs: "Příšerky, které přežijí boj, dostanou +1/+1 navždy.", en: "Minions that survive a fight get +1/+1 forever." } },
+  },
   discoverTitle: { sk: "📖 Vyber si kartu", cs: "📖 Vyber si kartu", en: "📖 Pick a card" },
   win: { sk: "🏆 Vyhral si!", cs: "🏆 Vyhrál jsi!", en: "🏆 You win!" },
   lose: { sk: "😢 Prehral si…", cs: "😢 Prohrál jsi…", en: "😢 You lose…" },
@@ -542,8 +614,8 @@ function renderRejoinBtn() {
 }
 
 // Hru prehrá z logu (rovnako ako tools/replay.mjs) – vráti stav po poslednej akcii.
-function rebuildFromLog(seed, mut, ban, actions) {
-  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true });
+function rebuildFromLog(seed, mut, ban, trinkets, actions) {
+  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true, trinkets: trinkets === true });
   if (s.phase !== "ban") Engine.startRound(s); // s banom štartuje prvé kolo až pickBan
   for (const [actor, name, ...args] of actions) {
     if (name === "doBattle") { Engine.doBattle(s); continue; }
@@ -577,6 +649,12 @@ window.arenaRejoin = code => startRejoin(code);
 function mutsOn() { return $("mutToggle").checked; }
 // Ban rasy: default ZAPNUTÝ, voľba sa pamätá; v hre po sieti rozhoduje zakladateľ.
 function bansOn() { return $("banToggle").checked; }
+// Trinkety: default ZAPNUTÉ, voľba sa pamätá; v hre po sieti rozhoduje zakladateľ.
+function trinketsOn() { return $("trinketToggle").checked; }
+try { $("trinketToggle").checked = localStorage.getItem("arena.trinkets") !== "0"; } catch { $("trinketToggle").checked = true; }
+$("trinketToggle").addEventListener("change", () => {
+  try { localStorage.setItem("arena.trinkets", trinketsOn() ? "1" : "0"); } catch {}
+});
 try { $("banToggle").checked = localStorage.getItem("arena.ban") !== "0"; } catch { $("banToggle").checked = true; }
 $("banToggle").addEventListener("change", () => {
   try { localStorage.setItem("arena.ban", bansOn() ? "1" : "0"); } catch {}
@@ -674,6 +752,7 @@ function applyI18n() {
   $("peerHostBtn").textContent = t(L.peerHost);
   $("mutToggleLbl").textContent = t(L.mutToggle);
   $("banToggleLbl").textContent = t(L.banToggle);
+  $("trinketToggleLbl").textContent = t(L.trinketToggle);
   $("peerJoinBtn").textContent = t(L.peerJoin);
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);
@@ -747,8 +826,8 @@ function startGame() {
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
-  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn() });
-  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn() });
+  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn() });
+  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn() });
   enterGameScreen();
   if (state.phase !== "ban") act(Engine.startRound(state));
   driveFlow();
@@ -840,8 +919,8 @@ function netHandlers() {
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
-      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true });
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true });
+      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true, trinkets: msg.trinkets === true });
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true });
       enterGameScreen();
       $("chatRow").classList.remove("hidden");
       $("chatInput").placeholder = t(L.chatPhNet);
@@ -906,7 +985,7 @@ function netHandlers() {
     canRejoin: () => !!(state && state.phase !== "over" && !fatalShown),
     getRejoin: () => {
       const g = GameLog.current();
-      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, actions: g.actions } : null;
+      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, actions: g.actions } : null;
     },
     // Preživší: kamarát sa vrátil, log odišiel, hráme ďalej.
     onRejoined: msg => {
@@ -920,13 +999,13 @@ function netHandlers() {
     // Vracajúci sa hráč: prehraj log a pokračuj.
     onRejoin: msg => {
       let s;
-      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.actions); }
+      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions); }
       catch (e) { fatalShown = false; showFatal(t(L.netDesync), e); return; }
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = s;
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, rejoined: true }, msg.actions);
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, rejoined: true }, msg.actions);
       playerRoundActions = [];
       lastPlayerRound = [];
       busy = false;
@@ -972,7 +1051,7 @@ function startNet() {
   $("netUrls").textContent = "";
   $("peerCode").textContent = "";
   $("netMsg").textContent = t(L.netConnecting);
-  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), v: APP_V });
+  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), v: APP_V });
 }
 
 // Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
@@ -988,7 +1067,7 @@ function showPeerSetup() {
 function peerHost() {
   const code = String(1000 + Math.floor(Math.random() * 9000));
   $("peerCode").textContent = "…";
-  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), v: APP_V });
+  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), v: APP_V });
 }
 
 function peerJoin() {
@@ -1190,6 +1269,7 @@ async function runClaudeTurn() {
       humanLastRound: lastPlayerRound,
       recentChat: chatHistory.slice(-6),
       onAction: (name, args) => GameLog.push(OPP, name, args),
+      trinketText: id => { const x = L.trinkets[id]; return x ? `${x.en}: ${x.d.en}` : id; },
     });
   } catch (e) {
     console.warn("ClaudeBot zlyhal:", e);
@@ -1219,10 +1299,17 @@ function oppEventMsg(ev) {
     case "discard": msg = `${t(L.botDiscard)} ${emoji}${name}`; break;
     case "tierUp": msg = `${t(L.botTier)} ${ev.tier}`; break;
     case "evolve": msg = `${t(L.botEvolve)} ${emoji}${name}!`; break;
+    case "trinketPick": { const x = L.trinkets[ev.id]; msg = `${t(L.trinketOppPicked)} ${x.e} ${t(x)} – ${t(x.d)}`; break; }
     default: return null;
   }
   // v sieťovej hre je súper človek, nie robot
   return mode === "net" ? msg.replace("🤖", "🧑") : msg;
+}
+
+// Ogrí kľúč: hod mincou za súperove trinkety (z pohľadu hráča).
+function sabotageMsg(ev) {
+  if (ev.pid === MY) return t(ev.heads ? L.sabotageHeads : L.sabotageTails);
+  return ev.heads ? null : t(L.sabotagedMsg);
 }
 
 // ---------- Boj ----------
@@ -1604,7 +1691,7 @@ async function runBattle() {
         renderHero(chip, { ...state[ev.pid], hp: ev.hp });
         // Strop damage podľa kola: ukáž, koľko by bolo bez stropu.
         const capNote = ev.capped ? ` (${t(L.heroDmgCapMsg)} ${ev.capped}, bez stropu ${ev.raw})` : "";
-        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}${capNote}`);
+        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}${capNote}${ev.shielded ? " – " + t(L.heroShieldBlockMsg) : ""}`);
         botTaunt(ev.pid === MY ? "win" : "lose", 0.8);
         lastBattleNote = ev.pid === MY
           ? `you WON the last battle, the human's hero took ${ev.dmg} damage (their HP: ${ev.hp})`
@@ -1616,6 +1703,26 @@ async function runBattle() {
         log(t(L.battleDraw));
         await sleep(500);
         break;
+      case "heal": {
+        // Liečivé víťazstvo (trinket) – jediné liečenie v boji.
+        const chip = ev.pid === MY ? $("myHero") : $("oppHero");
+        floatText(chip, `+${ev.n} ❤️`, true);
+        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.healWinMsg)} +${ev.n} ❤️`);
+        await sleep(400);
+        break;
+      }
+      case "trinketProc": {
+        const x = L.trinkets[ev.id];
+        if (x) log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${x.e} ${t(x)}`);
+        if (ev.uid) { const el = cardById(ev.uid); if (el) floatText(el, x ? x.e : "🧿", true); }
+        await sleep(300);
+        break;
+      }
+      case "sabotage": {
+        const m = sabotageMsg(ev);
+        if (m) log(m);
+        break;
+      }
       case "gameOver":
         endBattleUI();
         return; // driveFlow ukáže výsledok
@@ -1843,6 +1950,7 @@ function renderAll() {
   hidePreview();
   renderBan();
   renderBanBox();
+  renderTrinketOffer();
   renderHero($("oppHero"), state[OPP]);
   renderHero($("myHero"), state[MY]);
   renderCorner($("oppDeckBox"), "🂠", t(L.deck), state[OPP].deck.length);
@@ -1869,10 +1977,49 @@ function renderHero(el, p) {
       : { emoji: "🤖", name: t(L.heroBot) };
   // Počas animácie boja active už ukazuje na nové kolo – peniaze ešte neukazuj.
   const gold = p.id === MY && state.active === MY && !busy ? ` · 🪙 ${p.money}` : "";
-  el.innerHTML = `<span class="who">${hero.emoji} ${hero.name}</span>` +
+  // Trinkety hráča: ikonky za menom (ťuk = pripomenutie v logu); počas
+  // súperovho Ogrieho kľúča (trinketOff = toto kolo) sú stlmené.
+  const off = state && p.trinketOff === state.round;
+  const tks = (p.trinkets || []).map(id => {
+    const x = L.trinkets[id];
+    return x ? `<button class="tk${off ? " off" : ""}" data-id="${id}" title="${t(x)}: ${t(x.d)}"><img src="${trinketArt(id)}" alt="${x.e}"></button>` : "";
+  }).join("");
+  el.innerHTML = `<span class="who">${hero.emoji} ${hero.name}${tks ? `<span class="trinkets">${tks}</span>` : ""}</span>` +
     `<span class="tier-shield">${p.tier}</span>` +
     `<span class="nums">❤️ ${Math.max(0, p.hp)}${gold}</span>`;
+  for (const b of el.querySelectorAll(".tk")) {
+    b.addEventListener("click", () => { const x = L.trinkets[b.dataset.id]; log(`${x.e} ${t(x)}: ${t(x.d)}${off ? " – " + t(L.trinketOffMsg) : ""}`); });
+  }
 }
+
+// Art trinketu: okrúhly medailón s rámom (assets/trinkets/<id>.webp, 512 px).
+const trinketArt = id => `assets/trinkets/${id}.webp`;
+
+// Ponuka trinketov (kolo 4 a 8): overlay s tromi kartami, len vo vlastnom ťahu.
+function renderTrinketOffer() {
+  const ov = $("trinketOverlay");
+  const p = state && state[MY];
+  const show = p && state.phase === "shop" && state.active === MY && p.trinketOffer && !busy;
+  if (!show) { ov.classList.add("hidden"); return; }
+  ov.classList.remove("hidden");
+  $("trinketTitle").textContent = t(L.trinketTitle);
+  $("trinketMsg").textContent = t(L.trinketIntro);
+  const row = $("trinketRow");
+  row.innerHTML = "";
+  for (const id of p.trinketOffer) {
+    const x = L.trinkets[id];
+    if (!x) continue;
+    const btn = document.createElement("button");
+    btn.className = "trinket-btn";
+    btn.innerHTML = `<img class="ic" src="${trinketArt(id)}" alt="${x.e}"><span class="nm">${t(x)}</span><span class="ds">${t(x.d)}</span>`;
+    btn.addEventListener("click", () => {
+      if (busy || !state[MY].trinketOffer) return;
+      act(doAction("pickTrinket", id));
+    });
+    row.appendChild(btn);
+  }
+}
+$("shieldBtn").addEventListener("click", () => act(doAction("useHeroShield")));
 
 // mine = drag&drop; ownerPid (voliteľné) = koho boost/aury popisok ukáže.
 // V boji je mine=false aj pre vlastnú plochu – owner treba poslať explicitne,
@@ -1991,6 +2138,15 @@ function renderShop() {
   $("buyBackBtn").textContent = `${t(L.buyBack)}${ls ? ` (${ls.gain}🪙)` : ""}`;
   $("buyBackBtn").disabled = !myTurn || !ls || p.buyBackUsed || p.money < ls.gain;
   $("buyBackBtn").classList.toggle("hidden", !ls && !!p.buyBackUsed);
+  // Štít hrdinu (trinket): tlačidlo kým je nepoužitý; po zapnutí ostáva
+  // do konca kola ako „aktívny", potom zmizne.
+  const sb = $("shieldBtn");
+  const armed = p.heroShieldRound === state.round;
+  const hasShield = p.trinkets.includes("heroShield") && (!p.heroShieldUsed || armed);
+  sb.classList.toggle("hidden", !hasShield);
+  sb.classList.toggle("armed", armed);
+  sb.innerHTML = `<img src="${trinketArt("heroShield")}" alt="🛡️"> ${t(armed ? L.heroShieldArmed : L.heroShieldBtn).replace("🛡️ ", "")}`;
+  sb.disabled = !myTurn || armed || !Engine.hasTrinket(state, MY, "heroShield");
   $("endTurnBtn").textContent = t(L.endTurn);
   $("endTurnBtn").disabled = !myTurn || !!state.pendingDiscover;
 }
@@ -2026,6 +2182,7 @@ function cardEl(instOrId, opts) {
   if (opts.owned && !def.spell) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
   if (art) {
     el.classList.add("full-art");
+    if (def.spell) el.classList.add("spell-art"); // cena v kruhu dole, bez pilulky „Kúzlo"
     el.style.backgroundImage = `url("${art}")`;
   } else {
     inner += `<div class="em">${def.emoji}</div>`;
@@ -2038,7 +2195,7 @@ function cardEl(instOrId, opts) {
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
   if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
   inner += `<div class="nm">${name}</div>`;
-  inner += `<div class="race">${raceLine(def, rank)}</div>`;
+  if (!(art && def.spell)) inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
   if (!def.spell) {
     const atk = isInst ? instOrId.atk : def.atk;
@@ -2390,6 +2547,13 @@ function act(events) {
     if (ev.type === "ban") { log(banResultMsg(ev)); showTauntBubble(banResultMsg(ev), 4000); }
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
     if (ev.type === "buyBack" && ev.pid === MY) { Sfx.coin(); log(t(L.buyBackMsg)); }
+    if (ev.type === "trinketPick" && ev.pid === MY) {
+      const x = L.trinkets[ev.id];
+      Sfx.evolve();
+      log(`${t(ev.auto ? L.trinketAuto : L.trinketPicked)} ${x.e} ${t(x)} – ${t(x.d)}`);
+    }
+    if (ev.type === "heroShieldArm" && ev.pid === MY) log(t(L.heroShieldArmMsg));
+    if (ev.type === "sabotage") log(sabotageMsg(ev));
     if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));
     if (ev.type === "backstab" && ev.pid === MY) { Sfx.drunk(); log(t(L.backstabMsg)); }
     if (ev.type === "futureBuff" && ev.pid === MY) {

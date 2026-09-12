@@ -325,6 +325,11 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   position: absolute; top: 2%; right: 4%; font-size: .55em; font-weight: 800;
   color: #ffd76a; text-shadow: 0 1px 2px #000; pointer-events: none;
 }
+/* Kúzlo s artom: cena v zlatom kruhu dole (stred ~(50 %, 92.6 %) karty). */
+.card.spell-art .cost {
+  top: 92.6%; left: 50%; right: auto; transform: translate(-50%, -50%);
+  font-size: .62em; color: #3a2a10; text-shadow: 0 1px 1px rgba(255,255,255,.6);
+}
 /* Koľko kópií hráč už vlastní – kúpa tretej hneď evolvne. */
 .card .owned {
   position: absolute; top: 12%; right: 4%; font-size: .55em; font-weight: 900;
@@ -438,6 +443,29 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .ban-btn:not(:disabled):hover { background: #ffd9d9; transform: translateY(-2px); }
 .ban-btn.active { background: #ff6b6b; color: #fff; border-color: #c33; }
 .ban-btn:disabled:not(.active) { opacity: .45; }
+
+/* Ponuka trinketov: tri karty s ikonkou, menom a popisom */
+.trinket-row { display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+.trinket-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
+  width: 190px; padding: 14px 12px; border-radius: 14px; font-size: 1rem; font-weight: 700;
+  background: #f3f6ff; box-shadow: 0 2px 0 #5a6fc6; border: 2px solid #8fa3e8; color: #123;
+}
+.trinket-btn .ic { width: 130px; height: 130px; filter: drop-shadow(0 3px 4px rgba(0,0,0,.35)); }
+.trinket-btn .ds { font-size: .8rem; font-weight: 500; color: #345; line-height: 1.25; }
+.trinket-btn:not(:disabled):hover { background: #e2e9ff; transform: translateY(-2px); }
+/* Ikonky trinketov za menom hrdinu; stlmené = vypnuté Ogrím kľúčom */
+.hero-plate .trinkets { margin-left: .6cqw; display: inline-flex; gap: .3cqw; vertical-align: middle; }
+.hero-plate .tk {
+  pointer-events: auto; cursor: help; line-height: 0; padding: 0; margin: 0;
+  background: none; border: none; box-shadow: none;
+}
+.hero-plate .tk img { height: 4.6cqh; width: 4.6cqh; filter: drop-shadow(0 .2cqh .3cqh rgba(0,0,0,.6)); }
+.hero-plate .tk.off { opacity: .35; filter: grayscale(1); }
+/* Štít hrdinu (trinket) vedľa ↩️ */
+.head-btns button.shield-btn { background: #e6f0ff; box-shadow: 0 .3cqh 0 #4a6fb5; display: inline-flex; align-items: center; gap: .4cqw; }
+.head-btns button.shield-btn img { height: 2.6cqh; width: 2.6cqh; }
+.head-btns button.shield-btn.armed { background: #ffd76a; box-shadow: 0 .3cqh 0 #b98a00; }
 
 /* ---------- Trash-talk bublina bota (nad jeho bannerom) ---------- */
 .taunt-bubble {
