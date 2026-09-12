@@ -122,8 +122,12 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - Obchod ukazuje na kartách badge **n/3** (koľko kópií už vlastníš).
 - Zlatá je koniec (ďalší stupeň sa dá doplniť neskôr, ale je to very late game).
 - Staty: strieborná = **×2**, zlatá = **×4** základu. Čísla schopností: strieborná ×2,
-  zlatá ×3. Vyvolávané tokeny sa škálujú SILOU, nie počtom: strieborný
-  deathrattle vyvolá tokeny stupňa 2 (2/2), zlatý stupňa 3 (4/4).
+  zlatá ×3. **Vyvolávané tokeny sa škálujú POČTOM, nie silou** (2026-09-12;
+  predtým stupeň rodiča): strieborný vyvolávač dá o 1 token viac, zlatý
+  o 2, tokeny sú vždy stupňa 1 (Kostík 1/1, Mláďa 1/1) – undead je horda,
+  evolve ju zväčší, Pretečenie ju využije. Platí pre všetky vyvolania
+  (U001/U005/U006/U009, B007/B005/B006, E002); strieborný B006 = 3
+  SuperMláďatá = 3 Pečate +1/+1.
   **Výnimka – `dmgWeakEnemy`**: evolve škáluje POČET zásahov (1/2/3),
   nie silu – strieborný výboj dá 2× základný damage náhodným cieľom.
 - **Dočasné buffy pri evolve prepadnú, permanentné ostávajú**: evolvnutá

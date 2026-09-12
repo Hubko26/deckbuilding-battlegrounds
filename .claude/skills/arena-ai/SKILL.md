@@ -90,7 +90,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   navždy") – aury sa sčítavajú a aplikujú aj hneď na plochu a ruku.
 - Rasové archetypy (trojuholník counterov):
   - **Beast = telá a mrchožrút**: B007 (1×) a B005 (t2, 2×) vyvolávajú
-    Mláďa 🐣 s Obrancom (1/1, škáluje len evolvom) – Obranca ho nechá
+    Mláďa 🐣 s Obrancom (1/1; evolve vyvolávača dá o 1 Mláďa viac, nie
+    väčšie) – Obranca ho nechá
     padnúť skoro, combo s B004 (rast navždy) a B009 (chránený mrchožrút).
     B004 (t2) = „Keď zomrie tvoje Zviera: +1/+1 NAVŽDY" (aj Mláďatá; rast ostáva na
     kópii karty cez balíček) – vykladaj ho vedľa B007/B005 každé kolo.
@@ -99,7 +100,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     (B005/B007 mláďatá = lacné smrti zvierat).
     B003/B008 rastú Po nákupe NAVŽDY (rast sa drží na kópii karty cez
     cyklus balíčka) – kupuj ich skoro a vykladaj každé kolo.
-  - **Undead = horda + Pretečenie**: U001 2×, U005 2× (Pred bojom),
+  - **Undead = horda + Pretečenie** (evolve vyvolávača = +1 Kostík za
+    stupeň, nie väčší Kostík): U001 2×, U005 2× (Pred bojom),
     U006 2×, U009 3× kostík (1/1); U002 (t1 battlecry) = v najbližšom
     boji všetky kostíky +1/+1 (stackuje sa, každé kolo znova – vykladaj ho
     pred bojom vždy, keď máš vyvolávačov); undead token, čo sa nezmestí na plnú
@@ -186,7 +188,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     7/7) má Divoký úder: každý zásah náhodne 1–14 (priemer 7,5), buffy a
     Pečať posúvajú rozsah (+1 → 2–15), striebro 2–28 – rozptyl, nie sila.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
-    Mláďa s aurami škálujú; navyše škálujú stupňom rodiča. Dočasný dračí
+    Mláďa s aurami škálujú. Stupeň vyvolávača škáluje POČET tokenov (+1
+    za stupeň: U009 3× Kostík, strieborný 4×, zlatý 5×), tokeny sú vždy
+    stupňa 1 – evolve undead = väčšia horda + viac Pretečenia. Dočasný dračí
     buff (D002/D006/D008) tokeny v boji dostanú tiež.
 - Boj: útoky sa striedajú, útočí ďalšia príšera zľava doprava; cieľ
   náhodný, Obrancovia majú prednosť; damage obojstranný.
@@ -299,7 +303,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Beast**: B003 (t1 rast navždy), B007 (t1 Mláďa s Obrancom) + B004 (t2
   sova – rastie navždy za padnuté Mláďa), B005 (t2), B002 (t3 Pečať +1/+1), B008
   (t3 rast navždy), B009 (t4 mrchožrút, vpravo), B010 (t5 Pečať), B006 (t6
-  Obranca 7/9: Pri smrti 2× SuperMláďa 1/1 Obranca, každé Pri smrti Pečať
+  Obranca 7/9: Pri smrti 2× SuperMláďa 1/1 Obranca (striebro 3×), každé Pri smrti Pečať
   +1/+1 Zvieratám – t6 cieľ beast buildu, tri smrti kŕmia mrchožrútov;
   vykladaj vľavo, nech padne skoro a Pečate stihnú zvyšok boja). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám do konca boja – aj
   Mláďatám, čo prídu neskôr) – vykladaj vľavo, nech padne skoro a buffne

@@ -334,10 +334,10 @@ const Cards = (() => {
       namePl: { sk: "Kostíky", cs: "Kůstky", en: "Bonelets" }, // množné číslo (U002 text)
       name: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" } },
     // Bublina: elemental token z E002 – pri smrti výboj 1 (+Živelná sila),
-    // VŽDY jeden zásah (hits: 1 – strieborná E002 dáva tokeny stupňa 2, tie
-    // majú väčšie telo, nie dvojitý výboj). Bez Pretečenia (len undead).
+    // jeden zásah (hits: 1). Tokeny sú vždy stupňa 1 – evolvnutý vyvolávač
+    // ich dáva viac (+1 za stupeň), nie väčšie. Bez Pretečenia (len undead).
     // SuperMláďa: token B006 – Obranca, Pri smrti Pečať +1/+1 Zvieratám
-    // (stupeň tokenu = stupeň rodiča; striebro +2/+2). Klasické Mláďa nemení.
+    // (strieborný B006 = 3 SuperMláďatá = 3 Pečate). Klasické Mláďa nemení.
     { id: "supermlada", tier: 1, race: "beast", emoji: "🐻", atk: 1, hp: 1, token: true, taunt: true,
       namePl: { sk: "SuperMláďatá", cs: "SuperMláďata", en: "SuperCubs" },
       power: { kw: "deathrattle", fx: { type: "futureRace", race: "beast", a: 1, h: 1 } },
@@ -554,17 +554,17 @@ const Cards = (() => {
       cs: `výbuch: ${hl(f.n * m)} damage VŠEM nepřátelům`,
       en: `explosion: ${hl(f.n * m)} damage to ALL enemies`,
     }),
+    // Evolve škáluje POČET tokenov (+1 za stupeň), nie ich staty.
     summon: (f, m, hl) => {
       const tok = byId[f.token];
-      const a = tok.atk * STAT_MULT[m];
-      const h = tok.hp * STAT_MULT[m];
+      const n = f.n + m - 1;
       const base = {
-        sk: `vyvolaj ${f.n}× ${tok.name.sk} (${a}/${h})`,
-        cs: `vyvolej ${f.n}× ${tok.name.cs} (${a}/${h})`,
-        en: `summon ${f.n}× ${tok.name.en} (${a}/${h})`,
+        sk: `vyvolaj ${n}× ${tok.name.sk} (${tok.atk}/${tok.hp})`,
+        cs: `vyvolej ${n}× ${tok.name.cs} (${tok.atk}/${tok.hp})`,
+        en: `summon ${n}× ${tok.name.en} (${tok.atk}/${tok.hp})`,
       };
-      if (tok.power) { // token so schopnosťou (Bublina: Pri smrti výboj)
-        const inner = FX_TEXT[tok.power.fx.type](tok.power.fx, m, hl);
+      if (tok.power) { // token so schopnosťou (Bublina: Pri smrti výboj) – stupeň 1
+        const inner = FX_TEXT[tok.power.fx.type](tok.power.fx, 1, hl);
         base.sk += `; každá ${KW_LABEL[tok.power.kw].sk.toLowerCase()}: ${inner.sk}`;
         base.cs += `; každá ${KW_LABEL[tok.power.kw].cs.toLowerCase()}: ${inner.cs}`;
         base.en += `; each one ${KW_LABEL[tok.power.kw].en.toLowerCase()}: ${inner.en}`;

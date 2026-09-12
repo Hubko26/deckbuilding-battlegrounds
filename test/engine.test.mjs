@@ -1934,8 +1934,8 @@ test("Mláďa má Obrancu (B007 aj B005) – súper ho musí biť, kŕmi sovu B0
   assert.match(C.cardText(C.byId["B005"], 1, "sk", false, 0), /vyvolaj 2× Mláďa \(1\/1\) s Obrancom/);
 });
 
-test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie viac", () => {
-  const { state, E } = fresh(15);
+test("evolvnutý deathrattle vyvoláva VIAC tokenov (+1 za stupeň), tokeny ostávajú 1/1", () => {
+  const { state, E, C } = fresh(15);
   E.startRound(state);
   E.endShopTurn(state, "p1");
   const hound = E.makeInst(state, "U009", 2); hound.slot = 0; // strieborný: vyvolaj 3× Kostík
@@ -1946,12 +1946,14 @@ test("evolvnutý deathrattle vyvoláva silnejšie tokeny (stupeň rodiča), nie 
   state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
   const summons = events.filter(e => e.type === "summon" && e.defId === "kostik");
-  assert.equal(summons.length, 3);        // počet = základ (3), nie 3×2
+  assert.equal(summons.length, 4);        // základ 3 + 1 za striebro
   for (const s of summons) {
-    assert.equal(s.rank, 2);              // stupeň rodiča
-    assert.equal(s.atk, 2);               // 1/1 → 2/2
-    assert.equal(s.hp, 2);
+    assert.equal(s.rank, 1);              // token vždy stupňa 1
+    assert.equal(s.atk, 1);
+    assert.equal(s.hp, 1);
   }
+  assert.match(C.cardText(C.byId["U009"], 2, "sk"), /vyvolaj 4× Kostík \(1\/1\)/);
+  assert.match(C.cardText(C.byId["U009"], 3, "sk"), /vyvolaj 5× Kostík \(1\/1\)/);
 });
 
 test("Pretečenie: undead token, čo sa nezmestí, dá celé staty jednému kamarátovi", () => {
@@ -2686,7 +2688,7 @@ test("rollBias: súkromná ponuka hráča s biasom praje jeho rase, spoločná n
   assert.ok(hitC / N < base * 1.5, `spoločná ${hitC / N} vs základ ${base.toFixed(2)}`);
 });
 
-test("Bublina strieborného E002 strieľa pri smrti len raz (hits: 1), aj keď má stupeň 2", () => {
+test("Bublina strieborného E002: 3 Bubliny stupňa 1, každá strieľa pri smrti len raz (hits: 1)", () => {
   const { state, E, C } = fresh(71);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -2698,8 +2700,8 @@ test("Bublina strieborného E002 strieľa pri smrti len raz (hits: 1), aj keď m
   state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
   const bubbles = events.filter(e => e.type === "summon" && e.defId === "bublina");
-  assert.equal(bubbles.length, 2);
-  assert.equal(bubbles[0].rank, 2);
+  assert.equal(bubbles.length, 3); // 2 + 1 za striebro
+  assert.equal(bubbles[0].rank, 1);
   for (const b of bubbles) {
     const zaps = events.filter(e => e.type === "powerDmg" && e.from === b.uid);
     assert.equal(zaps.length, 1, "každá Bublina presne 1 výboj");
@@ -2953,7 +2955,7 @@ test("B002: Pečať +1/+1 Zvieratám (bola +1/+0)", () => {
   assert.match(C.cardText(C.byId["B002"], 1, "sk"), /Pečať \+1\/\+1 Zvieratám/);
 });
 
-test("B006 (t6): Pri smrti 2× SuperMláďa (stupeň rodiča), každé Pri smrti Pečať +1/+1 Zvieratám", () => {
+test("B006 (t6): Pri smrti 2× SuperMláďa (striebro 3×, stupeň 1), každé Pri smrti Pečať +1/+1 Zvieratám", () => {
   const { state, E, C } = fresh(82);
   const def = C.byId["B006"];
   assert.equal(def.tier, 6);
@@ -2970,16 +2972,16 @@ test("B006 (t6): Pri smrti 2× SuperMláďa (stupeň rodiča), každé Pri smrti
   state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
   const cubs = events.filter(e => e.type === "summon" && e.pid === "p1" && e.defId === "supermlada");
-  assert.equal(cubs.length, 2, "Pri smrti vyvolá 2 SuperMláďatá");
-  for (const c of cubs) { assert.equal(c.rank, 2); assert.equal(c.atk, 2); }
+  assert.equal(cubs.length, 3, "strieborný B006 vyvolá 3 SuperMláďatá (2 + 1 za stupeň)");
+  for (const c of cubs) { assert.equal(c.rank, 1); assert.equal(c.atk, 1); }
   const iDie = events.findIndex(e => e.type === "die" && e.uid === tank.uid);
   const iCub = events.findIndex(e => e.type === "summon" && e.defId === "supermlada");
   assert.ok(iCub >= 0 && iCub < iDie, "Mláďatá prídu z Pri smrti B006");
   assert.ok(!events.some(e => e.type === "summon" && e.defId === "mlada"));
   const seals = events.filter(e => e.type === "futureBuff" && e.pid === "p1" && e.race === "beast");
-  assert.equal(seals.length, 2, "každé SuperMláďa dá Pečať");
-  for (const sl of seals) { assert.equal(sl.a, 2); assert.equal(sl.h, 2); }
-  assert.deepEqual({ ...state.p1.raceBuffs.beast }, { a: 4, h: 4 }, "dve strieborné Pečate = +4/+4 navždy");
+  assert.equal(seals.length, 3, "každé SuperMláďa dá Pečať");
+  for (const sl of seals) { assert.equal(sl.a, 1); assert.equal(sl.h, 1); }
+  assert.deepEqual({ ...state.p1.raceBuffs.beast }, { a: 3, h: 3 }, "tri Pečate stupňa 1 = +3/+3 navždy");
 });
 
 test("B006: umlčanie vypne Pri smrti – žiadne SuperMláďatá ani Pečať", () => {

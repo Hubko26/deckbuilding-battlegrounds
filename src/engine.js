@@ -1804,8 +1804,9 @@ const Engine = (() => {
       buffAlive(sides, pid, f => f !== self && Cards.byId[f.defId].race === fx.race, a, h, events);
       if (fx.lasting) addFightRaceBuff(state[pid], fx.race, a, h);
     },
-    // Vyvolanie tokenov vedľa zdroja. Evolvnutá karta vyvoláva SILNEJŠIE
-    // tokeny (stupeň rodiča), počet sa so stupňom neškáluje. summonCharge
+    // Vyvolanie tokenov vedľa zdroja. Evolvnutá karta vyvoláva VIAC tokenov
+    // (+1 za každý stupeň: striebro n+1, zlato n+2), tokeny majú vždy
+    // základné staty (stupeň 1) – horda namiesto veľkých tokenov. summonCharge
     // (U007) jednorazovo pridá +n tokenov, potom sa minie. Pretečenie
     // (undead): token, čo sa nezmestí na plnú plochu, dá celé staty jednej
     // náhodnej živej vlastnej príšerke; iné rasy pri plnej ploche končia.
@@ -1813,14 +1814,14 @@ const Engine = (() => {
       const board = sides[pid];
       const idx = board.indexOf(self);
       const p = state[pid];
-      const count = fx.n + p.summonCharge;
+      const count = fx.n + (m - 1) + p.summonCharge;
       p.summonCharge = 0;
       const overflows = Cards.byId[fx.token].race === "undead";
       for (let i = 0; i < count; i++) {
         const alive = aliveOn(sides, pid);
         const full = alive.length >= BOARD_MAX;
         if (full && !overflows) break;
-        const tok = makeFightToken(state, p, fx.token, Math.min(m, 3));
+        const tok = makeFightToken(state, p, fx.token, 1);
         if (full) {
           overflowStats(state, alive, tok, pid, events);
           continue;
