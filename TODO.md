@@ -53,3 +53,18 @@ Zostáva:
     Overené v prehliadači: LAN (zavretie karty, kick po 60 s v pozadí) aj
     PeerJS (smrť hostiteľa, joiner prevzal kód). Zostáva: reálne telefóny,
     dvaja hráči v jednom prehliadači zdieľajú localStorage (len pri testovaní).
+
+12. Boss fights (nápad 2026-09-12): jeden boss za každú rasu (6), hráč ho
+    musí poraziť. Boss = bot s pevným build: v jeho obchode sú len karty jeho
+    rasy (rollCard s filtrom rasy pre p2), pevný „boss balíček" alebo skript
+    nákupov, možno vlastný handicap (zlato navyše, štartovacia Pečať, bossí
+    trinket). Otázky: má trinket hráčovi stačiť na výhru (balance cez
+    scenario/sim), či boss začína na vyššom tieri, či má vlastné HP a či sa
+    dá vybrať obtiažnosť. UI: výber bossa na úvodnej obrazovke (portrét +
+    popis), progres „porazení bossovia" v localStorage.
+    - Neskôr COOP bossovia: dvaja hráči (sieť) proti jednému silnejšiemu
+      bossovi – spojené plochy (2×5 = 10 slotov, alebo dva boardy bijúce sa
+      striedavo) a vzájomné synergie (aury hráča A platia aj na kartách
+      hráča B, spoločné trinkety). Vyžaduje nový bojový režim v engine
+      (tri strany, poradie útokov, damage hrdinom) a sieťovú replikáciu
+      troch účastníkov (boss beží u hostiteľa, druhý klient len replikuje).
