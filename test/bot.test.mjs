@@ -410,3 +410,92 @@ test("bot: drak tieru 1–2 je od tieru 3 balast (predtým žoldnier)", () => {
   p.tier = 3;
   assert.equal(B.isJunk(state, p, drake), true);
 });
+
+test("cardPower: každá karta má konečnú silu; Pečať a rast NAVŽDY prebijú vanilla telo rovnakého tieru", () => {
+  const ctx = loadEngine();
+  const B = ctx.Bot, C = ctx.Cards;
+  for (const d of C.DEFS) {
+    const pw = B.cardPower(d);
+    assert.ok(Number.isFinite(pw.total) && pw.total > 0, d.id + " " + JSON.stringify(pw));
+    if (!d.spell) assert.equal(pw.body, d.atk + d.hp + (d.taunt ? 1 : 0) + (d.cleave ? 5 : 0), d.id);
+  }
+  const power = id => B.cardPower(C.byId[id]).total;
+  assert.ok(power("B002") > power("O008"), "Pečať t3 > vanilla t3");
+  assert.ok(power("B008") > power("O008"), "rast navždy t3 > vanilla t3");
+  assert.ok(power("E003") > power("O005"), "Pečať t2 > vanilla t2");
+  assert.ok(power("B006") > power("B010"), "B006 (2× SuperMláďa s Pečaťou) > B010");
+  assert.ok(power("hviezda") > power("srdce"), "Pečať všetkým > jednorazový buff");
+});
+
+test("Claude bot: katalóg kariet obsahuje všetky karty s tierom a silou, zabanovanú rasu vynechá", async () => {
+  const fs = await import("node:fs");
+  const path = await import("node:path");
+  const vm = await import("node:vm");
+  const { ROOT } = await import("./harness.mjs");
+  const ctx = loadEngine();
+  ctx.fetch = () => { throw new Error("no net"); };
+  ctx.AbortController = class { constructor() { this.signal = null; } abort() {} };
+  ctx.setTimeout = setTimeout; ctx.clearTimeout = clearTimeout;
+  const src = fs.readFileSync(path.join(ROOT, "src/claude-bot.js"), "utf8").replace(/^(?:const|let) (\w+)(?= *[=,;])/gm, "var $1");
+  vm.runInContext(src, ctx, { filename: "src/claude-bot.js" });
+  const state = ctx.Engine.newGame(seeded(5), null);
+  const all = ctx.ClaudeBot.catalogue(state);
+  for (const d of ctx.Cards.DEFS) assert.ok(all.includes(`${d.id} t${d.tier}`), d.id);
+  assert.ok(/B002 t3 4\/5 power \d+/.test(all));
+  state.banned = "ogre";
+  const noOgre = ctx.ClaudeBot.catalogue(state);
+  assert.ok(!noOgre.includes("O001 t1"));
+  assert.ok(noOgre.includes("B001 t1"));
+});
+
+test("bot skóre: sila karty je základ – B004 (rast navždy) > B005 a Pečať B002 > vanilla O008 aj bez rasy", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(91), null);
+  const p = state.p2;
+  p.deck = []; p.discard = []; p.hand = []; p.board = [];
+  assert.ok(B.cardScore(state, p, "B004") > B.cardScore(state, p, "B005"));
+  assert.ok(B.cardScore(state, p, "B002") > B.cardScore(state, p, "O008"));
+});
+
+test("hard bot: lákadlo tieru – Pečať B002 na t3 upgraduje pred plánom (normal nie)", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const setup = () => {
+    const state = E.newGame(seeded(92), null);
+    E.startRound(state); E.startRound(state); // kolo 2
+    E.endShopTurn(state, "p1");
+    const p = state.p2;
+    p.tier = 2; p.reachedRound = 1; // upgrade na t3 stojí 8 − 1 = 7, plán káže až kolo 5
+    p.money = 10;
+    p.deck = [{ defId: "B001", rank: 1 }, { defId: "B003", rank: 1 }, { defId: "B007", rank: 1 }];
+    p.discard = [];
+    p.board = ["B001", "B003", "B004", "B005"].map((id, i) => Object.assign(E.makeInst(state, id, 1), { slot: i }));
+    p.hand = [];
+    return { state, p };
+  };
+  // dominantná rasa sa fixuje od 3. kola – kolo 2 ju ešte nemá, nastav 3
+  const hard = setup(); hard.state.round = 3; hard.p.reachedRound = 2;
+  assert.ok(E.upgradeCost(hard.state, "p2") > 2);
+  B.botTurn(hard.state, "p2", "hard");
+  assert.equal(hard.p.tier, 3, "hard: lákadlo B002 na t3");
+  const normal = setup(); normal.state.round = 3; normal.p.reachedRound = 2;
+  B.botTurn(normal.state, "p2", "normal");
+  assert.equal(normal.p.tier, 2, "normal: bez lákadla, tier ostáva");
+});
+
+test("hard bot: lov rasy podľa sily – t1 zvieratá bez rastu na t4 nie sú relevantné, refreshne", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(93), null);
+  E.startRound(state); E.startRound(state); E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.tier = 4; p.money = 10;
+  p.discard = []; p.hand = []; p.board = [];
+  p.deck = [{ defId: "B001", rank: 1 }, { defId: "B005", rank: 1 }, { defId: "B008", rank: 1 }, { defId: "B009", rank: 1 }];
+  p.priv = [{ defId: "B007", frozen: false }, { defId: "B001", frozen: false }, { defId: "B005", frozen: false }];
+  state.commons = ["O004", "O005", "F003"];
+  const events = B.botTurn(state, "p2", "hard");
+  assert.ok(events.some(e => e.type === "refresh"), "t1 zvieratá bez rastu na t4 nie sú relevantné – refresh");
+});

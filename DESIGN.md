@@ -431,6 +431,15 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   pravidlá; Claude vráti JSON `{actions, taunt}`. Akcie sa vykonajú cez
   Engine API, nelegálne sa ticho preskočia; každá úspešná sa loguje
   jednotlivo → `tools/replay.mjs` prehrá hru presne bez API.
+- **Katalóg kariet v prompte**: Claude videl len aktuálnu ponuku a karty
+  v ruke bez textu, takže nevedel, čo vyšší tier prinesie (Pečať B002 na
+  t3, B010 na t5) ani čo robí jeho vlastná karta. Teraz dostáva v system
+  prompte katalóg všetkých kariet (bez zabanovanej rasy) s tierom, statmi,
+  textom a **teoretickou silou** (`Bot.cardPower`: telo atk+hp+Taunt plus
+  odhad schopnosti v stat bodoch – Pečať = (a+h) × 4 telá × 3 za trvalosť,
+  rast NAVŽDY × 6 kôl horizont, tokeny podľa statov atď.; tabuľka
+  `npm run power`). Katalóg je statický počas hry → `cache_control`
+  (prompt caching), ruka a plocha v stave majú aj text schopnosti.
 - **Hygiena po pláne**: po Claudových akciách driver dohrá jadro hard bota
   bez handicapov (`Bot.completeTurn` s `Bot.HYGIENE`) – predá balast, drží
   strop balíčka, vyloží zvyšné telá, upgraduje podľa kola, minie zlato aj
@@ -1027,6 +1036,16 @@ len staty + keyword badge.
   Heuristika sama hráča neporazí – toto mu vyrovnáva šance. Druhý
   handicap: hard bot má **+1 zlato každé kolo** od prvého (pridá si ho na
   začiatku svojho ťahu, `p.bonusRound` stráži jedno pridanie za kolo).
+  **Sila karty v heuristike** (`Bot.cardPower`, tabuľka `npm run power`):
+  základ nákupného skóre je sila / 8 namiesto tieru (B004 2/3 s rastom
+  navždy > B005 3/2, Pečať > vanilla); hodnota tela pri výmene na ploche
+  a strope balíčka = staty + schopnosť × stupeň (B003 1/1 nie je
+  „najslabšie telo“); lov rasy refreshne, keď v ponuke nie je karta
+  vlastnej rasy so silou ≥ 0,9× priemeru môjho tieru; **lákadlo tieru**
+  (`tierLure`): keď ďalší tier má pre dominantnú rasu kartu so silou
+  ≥ 1,5× priemeru môjho tieru (B002 na t3, E007 na t4, B010 na t5), hard
+  bot upgraduje skôr než káže kolo, ak mu ostane na kartu a plocha má
+  aspoň 4 telá.
   **Strop balíčka** (`Bot.DECK_CAP` = 14 kariet vo všetkých zónach bez
   tokenov): nad ním bot predá z ruky najslabšie telá stupňa 1 bez páru
   a bez aury – po boji ide plocha do kôpky a ruka sa ťahá náhodne, takže

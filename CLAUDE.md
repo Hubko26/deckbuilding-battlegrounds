@@ -12,6 +12,9 @@ commity, UI) je slovenčina.
   winrate). Púšťaj pri zmene kariet/balance.
 - `npm run scenario -- "B002:2 B001" "U009 U005" [n=500]` – odohrá N bojov
   zadaného mid-game scenára (boardy, aury, chargy).
+- `npm run power [-- race=beast md=1]` – tabuľka teoretickej sily kariet
+  (`Bot.cardPower`: telo + odhad schopnosti v stat bodoch). Rovnaké čísla
+  dostáva Claude bot v katalógu; pri zmene kariet si tabuľku pozri.
 - `npm run replay -- arena-games.json [last|<id>] [round=N] [verbose=1]` –
   presný replay zaznamenanej hry. Hra loguje seed + akcie do localStorage
   (posledných 10 hier); hráč ich stiahne v konzole prehliadača cez

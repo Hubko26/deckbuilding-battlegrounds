@@ -248,7 +248,10 @@ plochou. Rob VŠETKY kroky, každý ťah:
    podľa NIŽŠIEHO tieru z oboch hráčov. Upgraduj len keď je
    plocha plná (5) alebo keď ti po upgrade ostanú aspoň 3 zlata a plocha
    má aspoň 4 telá. S 1–3 telami na ploche NEUPGRADUJ – telá majú prednosť.
-5. **Nakupuj podľa tejto priority** (všetko zlato, neminuté prepadne):
+5. **Nakupuj podľa tejto priority** (všetko zlato, neminuté prepadne;
+   v system prompte máš katalóg všetkých kariet s teoretickou silou
+   `power` – telo + schopnosť v stat bodoch, Pečať a rast NAVŽDY sa rátajú
+   na zvyšok hry – podľa neho porovnávaj ponuku a to, čo prinesie vyšší tier):
    a) tretia kópia = trojica (aj kópie v balíčku a kôpke – `copiesOwnedTowardTriple`),
    b) Pečať (aura) vlastnej rasy (E003, B002/B006/B010,
       U003/U008/U010, F008; draci D003/D009 s targetom na tvoju rasu),

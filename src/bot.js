@@ -18,6 +18,7 @@ const Bot = (() => {
     hard: {
       randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 3, raceFocus: 1.0, buyBar: 3,
       sellJunk: true, swapBoard: true, orderBoard: true, freeze: true, raceHunt: true,
+      tierLure: true, // upgrade skôr, keď ďalší tier má silnú kartu mojej rasy (cardPower)
       rollBias: 3, // súkromná ponuka losuje karty dominantnej rasy 3× častejšie (handicap)
       goldBonus: 1, // +1 zlato každé kolo od prvého (handicap)
     },
@@ -118,7 +119,10 @@ const Bot = (() => {
 
   function cardScore(state, p, defId, cfg) {
     const def = Cards.byId[defId];
-    let score = def.tier;
+    // Základ = teoretická sila karty (telo + schopnosť, cardPower) v mierke
+    // ~tier: t1 telo ≈ 1, Pečať t3 ≈ 4, vanilla t3 ≈ 1,5. Predtým bol základ
+    // len tier a O008 5/7 vyšiel rovnako ako B008 s rastom navždy.
+    let score = cardPower(def).total / 8;
     const owned = ownedCount(p, defId);
     if (!def.spell) {
       if (owned === 2) score += 6;      // dokončí trojicu
@@ -190,14 +194,15 @@ const Bot = (() => {
   }
 
   // „Relevantná" karta pre lov rasy: tretia kópia, alebo príšera dominantnej
-  // rasy s tierom aspoň (môj tier − 1) alebo s Pečaťou/motorom (schopnosťou).
-  // t1 vanilla vlastnej rasy na tieri 4 relevantná nie je – človek refreshne.
+  // rasy so silou aspoň 0,9× priemeru môjho tieru (cardPower). t1 vanilla
+  // vlastnej rasy na tieri 4 relevantná nie je – človek refreshne; Pečať
+  // alebo rast navždy z nižšieho tieru relevantné sú.
   function isWanted(state, p, defId, dom) {
     const def = Cards.byId[defId];
     if (def.spell) return false;
     if (ownedCount(p, defId) === 2) return true;
     if (!dom || def.race !== dom) return false;
-    return def.tier >= Math.max(1, p.tier - 1) || !!def.power;
+    return cardPower(def).total >= tierAvgPower(p.tier) * 0.9;
   }
 
   // Battlecry buffery hraj až po ostatných – zasiahnu plnú plochu. Cielené
@@ -236,9 +241,12 @@ const Bot = (() => {
   }
 
   // Hodnota tela na ploche/v ruke pre výmeny: staty + niečo za schopnosť.
+  // Hodnota tela na ploche/v ruke: aktuálne staty + schopnosť podľa
+  // cardPower (× stupeň – efekty sa stupňom násobia). B003 1/1 s rastom
+  // navždy tak nie je „najslabšie telo", Mláďa alebo D001 áno.
   function bodyValue(inst) {
     const def = Cards.byId[inst.defId];
-    return inst.atk + inst.hp + (def.power ? 2 : 0) + (inst.taunt ? 1 : 0);
+    return inst.atk + inst.hp + (inst.taunt ? 1 : 0) + cardPower(def).ability * (inst.rank || 1);
   }
 
   // „Balast": telo, ktoré sa neoplatí držať v cykle balíčka – 0 útoku
@@ -326,10 +334,15 @@ const Bot = (() => {
       const cost = Engine.upgradeCost(state, pid);
       if (cost === null) break;
       const onSchedule = state.round >= p.tier * 2 - 1;
+      // Lákadlo (hard): ďalší tier má pre moju rasu kartu výrazne nad
+      // priemerom môjho tieru (Pečať B002 na t3, E007 na t4, B010 na t5) –
+      // upgraduj skôr než káže kolo, ak ostane na kartu a plocha nie je deravá.
+      const lure = cfg.tierLure && nextTierLure(state, p) &&
+        p.money - cost >= Engine.CARD_COST && p.board.length >= Engine.BOARD_MAX - 1;
       const worth =
         cfg.upgradeAggro === 0 ? cost === 0 :
         cfg.upgradeAggro === 1 ? (cost <= 1 || (p.money - cost >= Engine.CARD_COST && state.round >= p.tier * 2)) :
-        (cost <= 2 || (onSchedule && (p.board.length >= Engine.BOARD_MAX ||
+        (cost <= 2 || lure || (onSchedule && (p.board.length >= Engine.BOARD_MAX ||
           p.money - cost >= Engine.CARD_COST)));
       if (!worth || p.money < cost) break;
       push(act("upgradeTier", state, pid));
@@ -585,6 +598,93 @@ const Bot = (() => {
     }
   }
 
+  // Teoretická sila karty v „stat bodoch" (1 = jeden bod útoku alebo života).
+  // Telo = atk + hp (+1 Taunt). Schopnosť = odhad stat bodov, ktoré efekt
+  // prinesie v typickom boji (PW_BOARD tiel vlastnej rasy, PW_DEATHS smrtí
+  // vlastnej rasy, PW_ATTACKS útokov na príšerku, PW_SPELLS kúziel za ťah);
+  // trvalé efekty (Pečať, rast NAVŽDY) sa násobia horizontom PW_HORIZON kôl,
+  // globálne (Pečať – platí aj keď karta nie je na ploche) ešte PW_PERM.
+  // Slúži katalógu pre Claude bota a nástroju `npm run power`; nákupné
+  // skóre bota (cardScore) ostáva samostatné – to zohľadňuje aj stav hry.
+  const PW_BOARD = 4, PW_DEATHS = 2, PW_ATTACKS = 2, PW_SPELLS = 1, PW_HORIZON = 6, PW_PERM = 3;
+  const PW_BOOST = 3; // hodnota +1 Živelnej sily (výboje, výbuchy, buffy)
+  function tokenValue(id) {
+    const t = Cards.byId[id];
+    if (!t) return 0;
+    return t.atk + t.hp + (t.taunt ? 1 : 0) + (t.power ? powerValue(t.power) : 0);
+  }
+  function powerValue(pw) {
+    const f = pw.fx, kw = pw.kw;
+    const ab = (f.a || 0) + (f.h || 0);
+    const perTrigger = kw === "onAttack" ? PW_ATTACKS : kw === "afterSpell" ? PW_SPELLS : kw === "raceDeath" ? PW_DEATHS : 1;
+    switch (f.type) {
+      case "futureRace": case "futureRaceOf": return ab * PW_BOARD * PW_PERM;
+      case "futureAll": return ab * (PW_BOARD + 1) * PW_PERM * perTrigger;
+      case "growSelf": return f.perm ? ab * perTrigger * PW_HORIZON : ab * perTrigger;
+      case "buffRace": case "buffRaceOf": case "buffTopRace": return ab * PW_BOARD * perTrigger;
+      case "buffRandomRace": return ab * (PW_BOARD / 2) * perTrigger;
+      case "buffAllFriends": return ab * (PW_BOARD + 1) * perTrigger;
+      case "buffFriend": case "buffOne": return ab * perTrigger;
+      case "summon": return f.n * tokenValue(f.token);
+      case "fightToken": return ab * PW_BOARD;                 // kostíky v najbližšom boji
+      case "reviveAs": return 4;                                // druhý život ako m/m
+      case "summonCharge": return f.n * 3;
+      case "zapToken": return f.n + ab * 0.5 * PW_HORIZON;      // výboj + 50 % šanca na rast navždy
+      case "dmgWeakEnemy": return f.n * 1.5;
+      case "dmgAllEnemies": return f.n * (PW_BOARD + 1);
+      case "dmgAllBoth": return f.n;                            // zabíja drobné oboch – tempo, nie zisk
+      case "dmgRandomAny": return f.n * 0.5;
+      case "dmgBoost": return f.n * PW_BOOST * (kw === "endTurn" ? PW_HORIZON : 1);
+      case "racePlayedScale": return ab * 8;                    // ~8 Živlov vyložených za hru
+      case "spellScale": return ab * 6;                         // ~6 kúziel za hru
+      case "discoverRace": case "discover": return 6;           // karta zadarmo (~3 zlatá + výber)
+      case "draw": return f.n * 3;
+      case "addSpell": return 2;
+      case "gold": return f.n * 1.5 * perTrigger;
+      case "goldLater": return f.n * 1.5;
+      case "evolveTarget": return 10;
+      case "shrinkEnemy": return ab;
+      case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) / 2; // očakávaná hodnota hodu
+      case "drunkStrike": return -2;
+      case "triggerRandom": return f.n * 2;
+      case "confusedRevive": return 2;
+      case "silence": return 4; case "bolt": return 4; case "hex": return 6; case "polymorph": return 6;
+      case "transform": return 3; case "copyToDeck": return 6; case "swapDeck": return 2;
+      case "starPower": return ab * (PW_BOARD + 1) * PW_PERM + (f.n || 0) * PW_BOOST; // Pečať všetkým + Živelná sila
+      case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0);
+      default: return 0;
+    }
+  }
+  function cardPower(def) {
+    if (def.spell) {
+      const ability = powerValue({ kw: null, fx: def.fx });
+      return { body: 0, ability, total: ability };
+    }
+    const body = def.atk + def.hp + (def.taunt ? 1 : 0) + (def.cleave ? 5 : 0); // Divoký úder: priemer 1–14 ≈ útok, bez bonusu
+    let ability = 0;
+    for (const pw of Cards.powersOf(def)) ability += powerValue(pw);
+    return { body, ability: Math.round(ability * 10) / 10, total: Math.round((body + ability) * 10) / 10 };
+  }
+
+  // Priemerná sila príšer daného tieru (cache – karty sa počas hry nemenia).
+  const tierAvgCache = {};
+  function tierAvgPower(tier) {
+    if (tierAvgCache[tier] === undefined) {
+      const vals = Cards.DEFS.filter(d => !d.spell && d.tier === tier).map(d => cardPower(d).total);
+      tierAvgCache[tier] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+    }
+    return tierAvgCache[tier];
+  }
+
+  // Ďalší tier má pre dominantnú rasu kartu so silou ≥ 1,5× priemeru
+  // môjho tieru (a nie je zabanovaná – dominantná rasa zabanovaná nebýva).
+  function nextTierLure(state, p) {
+    const dom = dominantRace(state, p);
+    if (!dom || p.tier >= Engine.TIER_MAX) return false;
+    const bar = tierAvgPower(p.tier) * 1.5;
+    return Cards.DEFS.some(d => !d.spell && d.race === dom && d.tier === p.tier + 1 && cardPower(d).total >= bar);
+  }
+
   // Fáza BAN: bot zabanuje prvú HLAVNÚ rasu zo svojej trojice (beast,
   // elemental, undead, fairy) – tie hráč stavia ako build, ban ho bolí viac
   // než ban žoldnierov (draci, ogri). Trojica je zamiešaná zo seedu, takže
@@ -595,7 +695,7 @@ const Bot = (() => {
     return offers.find(r => !SUPPORT_RACES.has(r)) || offers[0] || null;
   }
 
-  return { botTurn, completeTurn, withExecutor, pickBan, ownedCount, cardScore, dominantRace, isJunk, orderBoard,
+  return { botTurn, completeTurn, withExecutor, pickBan, ownedCount, cardScore, cardPower, dominantRace, isJunk, orderBoard,
     deckSize, SUPPORT_RACES, HYGIENE, DECK_CAP };
 })();
 

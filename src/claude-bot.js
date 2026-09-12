@@ -65,7 +65,7 @@ STRATEGY – do ALL of these every turn, in this order (derived from logs of win
 1. SELL JUNK FROM HAND FIRST (before playing): the state lists junkInHand – emit {"a":"sell","zone":"hand","id":...} for EVERY card in it as your first actions (rule: 0 attack; from round 3 on every off-race tier 1-2 minion without a pair, from tier 3 on even pairs and tier 1-2 dragons; ogre/dragon tier 1-2 count as off-race). Your starting deck is 10 random tier-1 cards – winners sell them all by round 6. Keep enough bodies to field at least 4. HARD CAP deckSize 14 (the driver sells your weakest hand bodies above it): your board returns to the discard pile after every battle and the next hand is 5 RANDOM cards from your deck cycle, so a bloated deck means your best cards sit in the pile while random junk fights. Winners keep deckSize 11-13: every card in the deck is one they want to draw. A game with zero sells is a lost game.
 2. PLAY MINIONS: plain bodies first (strongest first), battlecry buffers and Imprint cards LAST so they hit a full board. Dragons: "target" = your best minion of dominantRace. U004: target U001/U006/U009. Always fight with 5 minions.
 3. SWAP ON A FULL BOARD: if a hand minion is >= 3 points better (atk+hp, +2 if it has an ability) than your weakest board minion, sell the weakest and play the better one.
-4. UPGRADE TIER on schedule: tier 2 by round 2-3, tier 3 by 4-5, tier 4 by 7, tier 5 by 9-10, tier 6 by 12 (rule: round >= tier*2-1 is the LATEST). Being a tier behind the human means weaker private offers AND the shared common row is rolled at the LOWER tier of the two players. Upgrade when your board is full (5), or you keep >= 3 gold after upgrading AND have >= 4 bodies. With 1-3 bodies on board do NOT upgrade – bodies first.
+4. UPGRADE TIER on schedule: tier 2 by round 2-3, tier 3 by 4-5, tier 4 by 7, tier 5 by 9-10, tier 6 by 12 (rule: round >= tier*2-1 is the LATEST). Being a tier behind the human means weaker private offers AND the shared common row is rolled at the LOWER tier of the two players. Check the CARD CATALOGUE: if the next tier holds your race's Imprint or engine (e.g. beast B002 at t3, B010 at t5; elemental E003 at t2, E007 at t4; undead U008 at t4; fairy F007 at t4), upgrade EARLY to reach it. Upgrade when your board is full (5), or you keep >= 3 gold after upgrading AND have >= 4 bodies. With 1-3 bodies on board do NOT upgrade – bodies first.
 5. BUY in this priority, spending ALL gold (permanent growers of your race – beast B003/B008 "end of turn +X/+X", B004 scavenger – are the scaling engine: bought early and drawn every round they reach 20-30 stats by round 12; the winner's B003 went 6/6 (round 3) -> 26/22 (round 12)): (a) the 3rd copy of anything (triple – check copiesOwnedTowardTriple, deck copies count); (b) an Imprint/aura of your race (E003, B002/B006/B010, U003/U008/U010, F008, dragons D003/D009 targeted at your race); (c) your race's engine (undead U002/U005/U006; elemental E007, E004, E009 (+1/+1 per Elemental you have played this game, itself included), Elemental Power spell "iskra" and D007; beast B004/B007/B005/B003/B008; fairy F002/F004 + spells); (d) the 2nd copy toward a triple; (e) the best same-race body of the highest tier offered; (f) a dragon whose battlecry feeds your race (D002/D008/D004). NEVER buy: an off-race tier 1-2 minion after round 3 (except a triple), a 3rd+ spell in a non-fairy deck, Shield/Wave/Silence "because gold was left". Better to lose 1-2 gold than to put junk into your deck.
 6. REFRESH when the shop has nothing for your race: if no offer satisfies (a)-(e) and you keep >= 4 gold, {"a":"refresh"} – the driver then buys the best card of your race from the new roll for you (you cannot see it, so plan no buys after a refresh). Leftover gold is lost, and 1-2 gold left in 11 rounds is 14 gold thrown away; never refresh as the very last action with < 4 gold.
 7. FREEZE a private-shop card you want but cannot afford (triple piece, Imprint of your race).
@@ -75,6 +75,32 @@ STRATEGY – do ALL of these every turn, in this order (derived from logs of win
 Key mechanics: "Imprint" = permanent race aura. Cubs (B007/B005 tokens) have Taunt and feed B004 forever. Bubbles (E002 tokens) zap 1 (+Elemental Power) on death. E005 zaps only the FIRST enemy token summoned each fight and grows +2/+2 forever if it dies. E007 gives +1 Elemental Power every end of turn it is on board. O002 triggers a random ability on the battlefield (enemy too). U010 imprints undead +1/+1 when it DIES. Each player has a private pool of 6 copies per minion and the common shop has 3 – a gold card (9 copies) needs Mirror/Wish Book. Spells have a private pool too: 3 copies each up to tier 3, only 2 copies for tier 4-6 spells; selling a spell returns the copy. Your plan executes blindly in order – you will NOT see what a refresh rolls, so never plan buys after a refresh.
 
 TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders in a small speech bubble – longer gets cut, so keep it a single snappy sentence), addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
+
+  // Katalóg všetkých kariet v hre (bez zabanovanej rasy) – Claude videl len
+  // aktuálnu ponuku, takže nevedel, čo mu vyšší tier prinesie (Pečať na t3,
+  // B010 na t5…) ani čo robí karta v jeho ruke. Text je statický počas hry,
+  // ide do system promptu s cache_control (platí sa raz, nie každý ťah).
+  // Sila = Bot.cardPower: telo + odhad schopnosti v stat bodoch (tabuľka:
+  // `npm run power`).
+  function catalogue(state) {
+    const order = ["beast", "elemental", "undead", "fairy", "dragon", "ogre"];
+    const defs = Cards.DEFS.filter(d => !state.banned || d.race !== state.banned);
+    const lines = [];
+    for (const race of order) {
+      const rows = defs.filter(d => d.race === race).sort((a, b) => a.tier - b.tier || a.id.localeCompare(b.id));
+      if (!rows.length) continue;
+      lines.push(`${race.toUpperCase()}:`);
+      for (const d of rows) {
+        const pw = Bot.cardPower(d);
+        lines.push(`${d.id} t${d.tier} ${d.atk}/${d.hp} power ${pw.total}: ${Cards.cardText(d, 1, "en")}`);
+      }
+    }
+    lines.push("SPELLS:");
+    for (const d of defs.filter(d => d.spell).sort((a, b) => a.tier - b.tier)) {
+      lines.push(`${d.id} t${d.tier} cost ${d.cost} power ${Bot.cardPower(d).total}: ${Cards.cardText(d, 1, "en")}`);
+    }
+    return `CARD CATALOGUE (every card in this game; tN = shop tier where it appears; "power" = theoretical strength in stat points: body atk+hp plus the ability's expected stat value – permanent Imprints and FOREVER growth count for the rest of the game, so a t3 Imprint (~34) outweighs any t3 body; use it to judge what a tier upgrade unlocks and which offer to take):\n` + lines.join("\n");
+  }
 
   // Kompaktný pohľad na stav – len to, čo súper legálne vidí.
   function snapshot(state, pid, Cards, Engine) {
@@ -91,7 +117,8 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         cost: Engine.cardCost(defId),
       };
     };
-    const inst = x => ({ id: x.defId, rank: x.rank, atk: x.atk, hp: x.hp, spell: !!x.spell });
+    const inst = x => ({ id: x.defId, rank: x.rank, atk: x.atk, hp: x.hp, spell: !!x.spell,
+      text: Cards.cardText(Cards.byId[x.defId], x.rank || 1, "en") || undefined });
     const ownedCounts = {};
     for (const zone of [p.deck, p.discard]) for (const c of zone) if (c.rank === 1) ownedCounts[c.defId] = (ownedCounts[c.defId] || 0) + 1;
     for (const zone of [p.hand, p.board]) for (const c of zone) if (!c.spell && c.rank === 1) ownedCounts[c.defId] = (ownedCounts[c.defId] || 0) + 1;
@@ -169,7 +196,10 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
           model: MODEL,
           max_tokens: 3000,
           output_config: { effort: "medium" }, // viac rozmyslu na ťah (low hral slabo)
-          system: SYSTEM,
+          system: [
+            { type: "text", text: SYSTEM },
+            { type: "text", text: catalogue(state), cache_control: { type: "ephemeral" } },
+          ],
           messages: [{ role: "user", content: userMsg }],
         }),
       });
@@ -319,7 +349,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
     return out.slice(0, 250);
   }
 
-  return { turn, chat, isAllowed, langFor, MODEL };
+  return { turn, chat, isAllowed, langFor, MODEL, catalogue };
 })();
 
 if (typeof module !== "undefined") module.exports = ClaudeBot;

@@ -7,7 +7,8 @@
     "test": "node --test",
     "sim": "node tools/balance-sim.mjs",
     "scenario": "node tools/scenario.mjs",
-    "replay": "node tools/replay.mjs"
+    "replay": "node tools/replay.mjs",
+    "power": "node tools/card-power.mjs"
   },
   "engines": {
     "node": ">=20"
