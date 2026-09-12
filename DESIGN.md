@@ -836,11 +836,11 @@ ruky), peniaze navyše.
 ### Art kúziel
 
 Kúzla majú kompletnú kartu ako príšery (`assets/cards/<id>_1.webp`, 520×723,
-rovnaký rám: kryštál s tierom vľahore, banner mena, textový box, zlatý kruh
-dole = cena v obchode). Zoznam kúziel s artom je `Cards.SPELL_ART`
-(`artOf` vracia cestu len pre ne); zdroj `Fantasy_Spell_Cards_SK_18_BLANK_DYNAMIC.zip`
-(neverzuje sa, S005 Zvitok múdrosti je odstránená karta). **Bez artu
-(emoji):** Vichor, Ovčia premena, Kúzelný portál, Hviezdna moc.
+rovnaký rám: kryštál s tierom vľavo hore, banner mena, textový box, zlatý kruh
+dole = cena v obchode). Všetky kúzlá art majú; nové kúzlo bez artu daj do
+`Cards.SPELL_NO_ART` (dostane emoji). Zdroj
+`Fantasy_Spell_Cards_SK_18_BLANK_DYNAMIC.zip` + `..._S019-S022_BLANK.zip`
+(neverzujú sa, S005 Zvitok múdrosti je odstránená karta).
 
 ## Bez class – superschopnosti (hero powers)
 
