@@ -554,3 +554,20 @@ test("hard bot: od 9. kola nechá pri predaji balastu aspoň 2 telá", () => {
   assert.equal(sold.length, 1, "jedno cudzie telo ostalo, aby boli 2 telá na ploche");
   assert.equal(p.board.length, 2);
 });
+
+test("bot skóre: po zafixovaní rasy sa schopnosť cudzej hlavnej rasy neráta – undead bot nekúpi B006 ani B010", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(97), null);
+  E.startRound(state); E.startRound(state); E.startRound(state);
+  const p = state.p2;
+  p.tier = 6;
+  p.deck = ["U001", "U003", "U005", "U006", "U008"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(B.dominantRace(state, p), "undead");
+  assert.ok(B.cardScore(state, p, "B006") < 0, "B006 (Pečať Zvieratám) je v undead builde balast");
+  assert.ok(B.cardScore(state, p, "B010") < 0);
+  assert.ok(B.cardScore(state, p, "U010") > B.cardScore(state, p, "B006") + 5);
+  // ogr ako podporná rasa ostáva neutrálny (telo + schopnosť)
+  assert.ok(B.cardScore(state, p, "O010") > 0);
+});

@@ -125,7 +125,13 @@ const Bot = (() => {
     // Základ = teoretická sila karty (telo + schopnosť, cardPower) v mierke
     // ~tier: t1 telo ≈ 1, Pečať t3 ≈ 4, vanilla t3 ≈ 1,5. Predtým bol základ
     // len tier a O008 5/7 vyšiel rovnako ako B008 s rastom navždy.
-    let score = cardPower(def, { p }).total / 8;
+    // Cudzia HLAVNÁ rasa po zafixovaní: schopnosť sa neráta – Pečať Zvieratám
+    // alebo Mláďatá sú v undead balíčku bezcenné (záznam z 13. 9. 2026: undead
+    // bot kúpil B006 4×, B002, B010, lebo sila 71 prebila −3 za cudziu rasu).
+    const domEarly = dominantRace(state, p);
+    const pw = cardPower(def, { p });
+    const foreignMain = !!domEarly && !!def.race && def.race !== domEarly && !SUPPORT_RACES.has(def.race);
+    let score = (foreignMain ? pw.body : pw.total) / 8;
     const owned = ownedCount(p, defId);
     if (!def.spell) {
       if (owned === 2) score += 6;      // dokončí trojicu
@@ -145,7 +151,9 @@ const Bot = (() => {
         else if (def.race !== "dragon" && def.race !== "ogre") score -= 3;
       }
     }
-    for (const pw of Cards.powersOf(def)) {
+    // Synergické bonusy za schopnosť – nie pre cudziu hlavnú rasu (jej Pečať
+    // ani motor v tomto balíčku nič nekŕmi).
+    for (const pw of foreignMain ? [] : Cards.powersOf(def)) {
       const fx = pw.fx;
       // aury permanentne zväčšujú celý balíček – kupuj skoro a rád
       if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;

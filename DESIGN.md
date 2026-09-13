@@ -1140,6 +1140,10 @@ len staty + keyword badge.
   ≥ 1,5× priemeru môjho tieru (B002 na t3, E007 na t4, B010 na t5), hard
   bot upgraduje skôr než káže kolo, ak mu ostane na kartu a plocha má
   aspoň 4 telá.
+  **Cudzia hlavná rasa po zafixovaní: v nákupnom skóre sa ráta len telo**
+  (2026-09-13) – Pečať Zvieratám alebo Mláďatá sú v undead balíčku bezcenné;
+  undead bot v zázname kúpil B006 4×, B002 a B010, lebo sila 71 prebila −3
+  za cudziu rasu. Podporné rasy (drak, ogr) ostávajú s celou silou.
   **Balast po zafixovaní rasy sa predáva hneď** (2026-09-12): každá cudzia
   karta t1–2 vrátane páru (strieborná od tieru 4, drak t1–2 od tieru 3) ide
   z ruky preč ešte pred vyložením, do 8. kola bez ohľadu na počet tiel, od
