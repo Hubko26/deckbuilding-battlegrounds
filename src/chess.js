@@ -14,19 +14,7 @@ const ArenaChess = (() => {
     b: { k: "♚", q: "♛", r: "♜", b: "♝", n: "♞", p: "♟" },
   };
   const VALUE = { p: 1, n: 3, b: 3, r: 5, q: 9, k: 0 };
-  const T = {
-    title: { sk: "♟️ Šach popri hre", cs: "♟️ Šachy při hře", en: "♟️ Side chess" },
-    newGame: { sk: "Nová partia", cs: "Nová partie", en: "New game" },
-    white: { sk: "Biely", cs: "Bílý", en: "White" },
-    black: { sk: "Čierny", cs: "Černý", en: "Black" },
-    turn: { sk: "na ťahu", cs: "na tahu", en: "to move" },
-    you: { sk: "(ty)", cs: "(ty)", en: "(you)" },
-    check: { sk: "Šach!", cs: "Šach!", en: "Check!" },
-    mate: { sk: "Mat – vyhral", cs: "Mat – vyhrál", en: "Checkmate – winner:" },
-    draw: { sk: "Remíza", cs: "Remíza", en: "Draw" },
-    wait: { sk: "čaká sa na súpera…", cs: "čeká se na soupeře…", en: "waiting for opponent…" },
-    toggle: { sk: "Šach popri hre", cs: "Šachy při hře", en: "Side chess" },
-  };
+  const T = L.chess; // texty sú v src/i18n.js
 
   let game = null;      // inštancia chess.js
   let myColor = "w";    // "w" | "b" – farba lokálneho hráča

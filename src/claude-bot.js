@@ -175,7 +175,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
   async function turn(state, pid, opts) {
     const { apiKey, lang, playerName, lastBattle, humanLastRound, recentChat, onAction, trinketText } = opts;
     const name = (playerName || "").trim();
-    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[langFor(name, lang)] || "Slovak";
+    const langName = L.langNames[langFor(name, lang)] || "Slovak";
 
     const userMsg = JSON.stringify({
       state: snapshot(state, pid, Cards, Engine, trinketText),
@@ -327,7 +327,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
   async function chat(opts) {
     const { apiKey, lang, playerName, text, history, gameSummary } = opts;
     const name = (playerName || "").trim();
-    const langName = { sk: "Slovak", cs: "Czech", en: "English" }[langFor(name, lang)] || "Slovak";
+    const langName = L.langNames[langFor(name, lang)] || "Slovak";
     const resp = await fetch(API_URL, {
       method: "POST",
       headers: {

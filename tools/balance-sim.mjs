@@ -24,7 +24,7 @@ function seeded(seed) {
 function loadCtx() {
   const ctx = { console, Math, JSON, Object, Array, module: undefined };
   vm.createContext(ctx);
-  for (const f of ["src/cards.js", "src/engine.js"]) {
+  for (const f of ["src/i18n.js", "src/cards.js", "src/engine.js"]) {
     vm.runInContext(toVar(fs.readFileSync(path.join(ROOT, f), "utf8")), ctx, { filename: f });
   }
   // Bot s injektovaným race-force a per-card biasom (číta p.forceRace / p.cardBias).

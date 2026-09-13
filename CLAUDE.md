@@ -25,7 +25,10 @@ commity, UI) je slovenčina.
 ## Štruktúra
 
 - `src/engine.js` – **celá herná logika bez DOM**. Sem patria pravidlá.
-- `src/cards.js` – dáta kariet (rasy, schopnosti, ceny), trojjazyčne SK/CZ/EN.
+- `src/i18n.js` – prepínač jazyka + **všetky texty hry** (`L`: UI, `L.botTaunts`,
+  `L.chess`, `L.cards`: rasy, mená kúziel/tokenov, šablóny schopností) SK/CZ/EN.
+  Nový text patrí SEM, nie do cards.js/game.js.
+- `src/cards.js` – dáta kariet (rasy, schopnosti, ceny); texty ťahá z `L.cards`.
 - `src/bot.js` – heuristický súper (easy/normal/hard); hrá len cez Engine API.
 - `src/game.js` – UI, animácie, prehrávanie eventov z engine.
 - `src/net.js` – multiplayer (replikácia akcií, chat, prítomnosť hráča,

@@ -865,7 +865,7 @@ z `state.rng` v `newGame`**, takže multiplayer aj replay ju odvodia zo seedu
 bez extra synchronizácie. `newGame(rng, null)` = bez mutácie (testy, balance
 sim), `newGame(rng, "id")` = vynútená (testy konkrétnej mutácie). UI ukazuje
 ikonku s názvom vľavo medzi súperovým balíčkom a kôpkou (ťuk = pripomenutie
-pravidla v logu); texty v `game.js` (`L.mutators`).
+pravidla v logu); texty v `src/i18n.js` (`L.mutators`).
 
 | id | pravidlo |
 |---|---|
@@ -951,7 +951,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
   priorita (Krvavý mesiac, Zľava, Veľká ruka, Rýchly štart…); Claude dostáva
   `trinketOffer`/`yourTrinkets`/`opponentTrinkets` v stave a akcie
   `{"a":"trinket","id"}`, `{"a":"shield"}`; hygiena hard bota vyberie za
-  neho, ak plán nevybral. Texty a emoji (log): `game.js` `L.trinkets`.
+  neho, ak plán nevybral. Texty a emoji (log): `src/i18n.js` `L.trinkets`.
 - **Art**: okrúhle medailóny s rámom `assets/trinkets/<id>.webp` (512 px,
   priehľadné rohy; zdroj `Fantasy_Trinkets_UI.zip`, neverzuje sa) – ponuka
   v overlayi, ikonky za menom hrdinu a tlačidlo Štítu (`trinketArt(id)`).
@@ -1156,7 +1156,8 @@ len staty + keyword badge.
   tieru 3 balast ako iné cudzie karty. Jadro ťahu je `Bot.completeTurn`
   (bez handicapov a bez `endShopTurn`), mutácie idú cez vymeniteľný
   executor (`Bot.withExecutor`) – Claude bot ním hygienu loguje.
-- `src/cards.js` – dáta kariet, texty schopností sa generujú zo šablón (SK/CZ/EN).
+- `src/i18n.js` – prepínač jazyka + VŠETKY texty hry (UI, hlášky bota, šach, rasy, mená kúziel/tokenov, šablóny textov schopností) v SK/CZ/EN.
+- `src/cards.js` – dáta kariet; texty schopností sa generujú zo šablón v `i18n.js` (`L.cards`).
 - `src/game.js` – UI, animácie boja prehrávajú event log z enginu.
 - Grafika: emoji príšerky + farebné rámy podľa stupňa (bronz/striebro/zlato). Neskôr
   vymeniteľné za vlastné obrázky.

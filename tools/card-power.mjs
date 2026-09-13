@@ -14,7 +14,7 @@ const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const toVar = src => src.replace(/^(?:const|let) (\w+)(?= *[=,;])/gm, "var $1");
 const ctx = { console, Math, JSON, Object, Array, module: undefined };
 vm.createContext(ctx);
-for (const f of ["src/cards.js", "src/engine.js", "src/bot.js"]) {
+for (const f of ["src/i18n.js", "src/cards.js", "src/engine.js", "src/bot.js"]) {
   vm.runInContext(toVar(fs.readFileSync(path.join(ROOT, f), "utf8")), ctx, { filename: f });
 }
 const { Cards, Bot } = ctx;
