@@ -1988,8 +1988,22 @@ function renderHero(el, p) {
     `<span class="tier-shield">${p.tier}</span>` +
     `<span class="nums">❤️ ${Math.max(0, p.hp)}${gold}</span>`;
   for (const b of el.querySelectorAll(".tk")) {
-    b.addEventListener("click", () => { const x = L.trinkets[b.dataset.id]; log(`${x.e} ${t(x)}: ${t(x.d)}${off ? " – " + t(L.trinketOffMsg) : ""}`); });
+    b.addEventListener("click", e => { e.stopPropagation(); showTrinketInfo(b.dataset.id, off); });
   }
+}
+
+// Ťuk na ikonku trinketu: veľký medailón s menom a popisom (na mobile je
+// log skrytý, popis inak nevidno). Ťuk kdekoľvek zavrie; log dostane riadok.
+function showTrinketInfo(id, off) {
+  const x = L.trinkets[id];
+  if (!x) return;
+  document.querySelectorAll(".trinket-pop").forEach(el => el.remove());
+  const pop = document.createElement("div");
+  pop.className = "trinket-pop";
+  pop.innerHTML = `<div class="box"><img src="${trinketArt(id)}" alt="${x.e}"><div class="nm">${t(x)}</div><div class="ds">${t(x.d)}</div>${off ? `<div class="off">${t(L.trinketOffMsg)}</div>` : ""}</div>`;
+  pop.addEventListener("click", () => pop.remove());
+  document.body.appendChild(pop);
+  log(`${x.e} ${t(x)}: ${t(x.d)}${off ? " – " + t(L.trinketOffMsg) : ""}`);
 }
 
 // Art trinketu: okrúhly medailón s rámom (assets/trinkets/<id>.webp, 512 px).
@@ -2011,7 +2025,7 @@ function renderTrinketOffer() {
     if (!x) continue;
     const btn = document.createElement("button");
     btn.className = "trinket-btn";
-    btn.innerHTML = `<img class="ic" src="${trinketArt(id)}" alt="${x.e}"><span class="nm">${t(x)}</span><span class="ds">${t(x.d)}</span>`;
+    btn.innerHTML = `<img class="ic" src="${trinketArt(id)}" alt="${x.e}"><span class="tb"><span class="nm">${t(x)}</span><span class="ds">${t(x.d)}</span></span>`;
     btn.addEventListener("click", () => {
       if (busy || !state[MY].trinketOffer) return;
       act(doAction("pickTrinket", id));
