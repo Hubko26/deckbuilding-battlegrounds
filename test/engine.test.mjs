@@ -2586,6 +2586,31 @@ test("mutácie: newGame bez parametra žrebuje, null = žiadna, string = vynúte
   assert.equal(forced.mutator, "gift");
 });
 
+test("trinkety: dračie a ogrie trinkety sa ponúkajú aj bez kariet rasy, trinket hlavnej rasy až od 3 kariet", () => {
+  const { E, state } = fresh(61);
+  state.round = 8; // late trinkety (dragonBlood) už dostupné
+  const p = state.p1;
+  p.deck = ["U001", "U002", "E001", "E002", "F001"].map(id => ({ defId: id, rank: 1 }));
+  p.hand = []; p.board = []; p.discard = [];
+  const ids = E.trinketPool(state, "p1").map(t => t.id);
+  assert.ok(ids.includes("dragonPact") && ids.includes("dragonBlood"), ids.join(","));
+  assert.ok(ids.includes("ogreCareful"), ids.join(","));
+  assert.ok(!ids.includes("undeadBones") && !ids.includes("fairyDiscount"), ids.join(",")); // < 3 karty rasy
+  p.deck.push({ defId: "U003", rank: 1 });
+  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "undeadBones"));
+  state.banned = "dragon";
+  assert.ok(!E.trinketPool(state, "p1").some(t => t.race === "dragon")); // zabanovaná rasa nikdy
+});
+
+test("newGame opts.hpBonus: životy navyše po mutácii, dvíha aj maxHp", () => {
+  const { E } = fresh();
+  const s = E.newGame(E.seededRng(1), null, { hpBonus: { p2: 20 } });
+  assert.equal(s.p1.hp, 50); assert.equal(s.p1.maxHp, 50);
+  assert.equal(s.p2.hp, 70); assert.equal(s.p2.maxHp, 70);
+  const m = E.newGame(E.seededRng(1), "marathon", { hpBonus: { p2: 20 } });
+  assert.equal(m.p2.hp, 85); assert.equal(m.p2.maxHp, 85);
+});
+
 test("mutácia smallArena/marathon: životy hrdinov 25/45", () => {
   const { E } = fresh();
   assert.equal(E.newGame(E.seededRng(1), "smallArena").p1.hp, 35);

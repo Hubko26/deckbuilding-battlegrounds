@@ -301,7 +301,8 @@ function startGame() {
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
-  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn() });
+  // Hard/Claude bot štartuje so 70 HP (Bot.hpBonus) – replay to odvodí z difficulty v logu.
+  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn(), hpBonus: Bot.hpBonus(difficulty) });
   GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn() });
   enterGameScreen();
   if (state.phase !== "ban") act(Engine.startRound(state));
@@ -317,9 +318,9 @@ function enterGameScreen() {
   document.querySelector("header").classList.remove("open");
   $("newGameBtn").classList.remove("hidden");
   $("overOverlay").classList.add("hidden");
-  logClear();
   $("deckOverlay").classList.add("hidden");
   $("deckDdList").classList.add("hidden");
+  logClear();
   renderMutator();
   renderBanBox();
 }
@@ -1413,7 +1414,6 @@ function renderAll() {
   renderHand();
   renderShop();
   renderDiscover();
-}
   renderDeckList();
 }
 
@@ -1506,6 +1506,7 @@ function openDeckOverlay() {
   if (!state) return;
   fillDeckList($("deckOvList"));
   $("deckOverlay").classList.remove("hidden");
+}
 
 function renderCorner(el, icon, label, count) {
   el.innerHTML = `<span class="ic">${icon}</span><span class="lb">${label}</span><span class="ct">${count}</span>`;
@@ -2269,13 +2270,13 @@ $("menuBtn").addEventListener("click", () => document.querySelector("header").cl
 document.querySelector("header").addEventListener("click", e => {
   if (e.target.tagName === "BUTTON" || e.target === e.currentTarget) e.currentTarget.classList.remove("open");
 });
-$("endTurnBtn").addEventListener("click", onEndTurn);
 // Môj balíček: desktop dropdown / mobilný dialóg (z ☰ menu – hlavička sa sama zavrie).
 $("deckDdBtn").addEventListener("click", toggleDeckDd);
 $("deckBtn").addEventListener("click", openDeckOverlay);
 $("deckClose").addEventListener("click", () => { hidePreview(); $("deckOverlay").classList.add("hidden"); });
 $("deckOverlay").addEventListener("click", e => { if (e.target === e.currentTarget) { hidePreview(); e.currentTarget.classList.add("hidden"); } });
 window.addEventListener("resize", () => { if (state) positionDeckDd(); });
+$("endTurnBtn").addEventListener("click", onEndTurn);
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
 $("chatSend").addEventListener("click", sendChat);

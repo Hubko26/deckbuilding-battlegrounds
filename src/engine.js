@@ -60,8 +60,10 @@ const Engine = (() => {
   // dostane každý hráč v startRound ponuku TRINKET_OFFER trinketov (zo
   // state.rng, p1 prvý) a vo VLASTNEJ nákupnej fáze si jeden vyberie
   // (pickTrinket); nevybraný do konca ťahu = prvý z ponuky (hra sa nesmie
-  // zaseknúť). Rasový trinket sa ponúka len hráčovi, ktorý má aspoň
-  // TRINKET_RACE_MIN kariet rasy (všetky zóny), zabanovaná rasa nikdy;
+  // zaseknúť). Rasový trinket HLAVNEJ rasy sa ponúka len hráčovi, ktorý má
+  // aspoň TRINKET_RACE_MIN kariet rasy (všetky zóny); trinkety podporných
+  // rás (SUPPORT_RACES: drak, ogr) sa ponúkajú každému – drak je žoldnier
+  // do každého balíčka, hráč ich nemusí držať vopred; zabanovaná rasa nikdy;
   // `late` až v poslednom kole ponuky (silné); `needFoeTrinket` len keď
   // súper už trinket má; trinket s id zhodným s mutáciou hry sa neponúka
   // (nestackujú sa). Texty a ikonky rieši UI (game.js L.trinkets).
@@ -70,6 +72,7 @@ const Engine = (() => {
   const TRINKET_ROUNDS = [4, 8];
   const TRINKET_OFFER = 3;
   const TRINKET_RACE_MIN = 3;
+  const SUPPORT_RACES = new Set(["dragon", "ogre"]); // podporné rasy (aj Bot.SUPPORT_RACES)
   const TRINKETS = [
     { id: "beastPups", race: "beast" },          // Mláďatá a SuperMláďatá +1/+1
     { id: "beastPack", race: "beast" },          // smrť Zvieraťa: náhodné Zviera +1/+1 navždy
@@ -307,6 +310,8 @@ const Engine = (() => {
   // Štartovacie balíčky a obchod vznikajú až po vylosovaní (setupStart),
   // inak by v nich mohla byť zabanovaná rasa. Bez ban je poradie losovania
   // z rng rovnaké ako doteraz (staré záznamy sa prehrajú rovnako).
+  // opts.hpBonus: { p1?: n, p2?: n } – životy navyše k štartu (po mutácii),
+  // napr. handicap hard/Claude bota (Bot.hpBonus). Dvíha aj strop liečenia.
   function newGame(rng, mutatorId, opts) {
     const mutator = mutatorId === null ? null : (mutatorId ?? pick(MUTATORS, rng));
     const state = {
@@ -321,6 +326,8 @@ const Engine = (() => {
     };
     if (mutator === "smallArena") { state.p1.hp = 35; state.p2.hp = 35; }
     if (mutator === "marathon") { state.p1.hp = 65; state.p2.hp = 65; }
+    const hpBonus = (opts && opts.hpBonus) || {};
+    state.p1.hp += hpBonus.p1 || 0; state.p2.hp += hpBonus.p2 || 0;
     state.p1.maxHp = state.p1.hp; state.p2.maxHp = state.p2.hp; // strop liečenia
     if (opts && opts.ban) {
       const races = shuffle(Object.keys(Cards.RACES), rng);
@@ -438,7 +445,8 @@ const Engine = (() => {
     const p = state[pid], foe = state[other(pid)];
     return TRINKETS.filter(t => !p.trinkets.includes(t.id)
       && t.id !== state.mutator
-      && !(t.race && (state.banned === t.race || raceCardCount(p, t.race) < TRINKET_RACE_MIN))
+      && !(t.race && (state.banned === t.race
+        || (!SUPPORT_RACES.has(t.race) && raceCardCount(p, t.race) < TRINKET_RACE_MIN)))
       && !(t.late && state.round < TRINKET_ROUNDS[TRINKET_ROUNDS.length - 1])
       && !(t.needFoeTrinket && !foe.trinkets.length));
   }
@@ -2205,7 +2213,7 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
-    TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
+    TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_RACE_MIN, SUPPORT_RACES, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
     handDraw, heroDmgCap, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,

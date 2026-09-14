@@ -8,6 +8,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 ## Pravidlá v skratke
 
 - 1v1 autobattler + deckbuilding. Hrdina má 50 HP; prehráva, kto klesne na 0.
+  Hard bot a Claude súper (ty) štartujú so 70 HP (handicap) – hráč má 50.
 - **Mutácia („Pravidlo dnešnej arény")**: každá hra má jedno náhodné globálne
   pravidlo pre oboch hráčov (`state.mutator`, Claude ho dostáva v stave ako
   `mutator`). Prispôsob stratégiu: `echoDeath` deathrattly 2× (undead/summon
@@ -29,7 +30,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   vlastnej nákupnej fáze (`Engine.pickTrinket`); nevybraný = prvý z ponuky.
   Claude ich dostáva v stave ako `trinketOffer` (s anglickým textom),
   `yourTrinkets`, `opponentTrinkets`, `trinketsOffThisRound` (súperov Ogrí
-  kľúč) a `heroShieldReady`. Vyberaj: rasový trinket dominantnej rasy
+  kľúč) a `heroShieldReady`. Trinket hlavnej rasy dostane len hráč s ≥ 3
+  kartami rasy, dračie/ogrie trinkety dostane každý. Vyberaj: rasový trinket dominantnej rasy
   > ekonomika/telá (Zľava tavernára, Veľká ruka, Rýchly štart, Silné tokeny
   pri vyvolávačoch) > Krvavý mesiac v kole 8 pri stabilnej ploche. Štít
   hrdinu (`Engine.useHeroShield`) zapni raz, keď hrozí veľká prehra
@@ -150,10 +152,14 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     balíčka, po ťahu zmizne; spúšťa Po kúzle), F009 (t5, 6/6) Po kúzle
     +2/+2 všetkým kamarátom (dočasné, aj iné rasy), F008 (t6) Po kúzle
     VŠETKY tvoje príšerky každej rasy +1/+1 NAVŽDY (aj balíček, tokeny –
-    každé kúzlo s ňou na ploche = permanentná aura; na t6 kupuj kúzla
-    húfne). Self-rast F002/F004 je
+    každé kúzlo s ňou na ploche = permanentná aura). Self-rast F002/F004 je
     PERMANENTNÝ (prežije cyklus balíčka) – kúzla do nich sú investícia
-    navždy. Kupuj kúzla húfne – každé kúzlo spustí všetky víly na
+    navždy. **Kúzla NEkupuj húfne** (14. 9. 2026): motor stačí F005 (zlato
+    za kúzlo) + F006 (Iskrička zadarmo) + F001 (draw) + Minca; kupuj len
+    SILNÉ kúzla (`Bot.FAIRY_STRONG_SPELLS`: Minca, Poklad, Živelná sila,
+    Ovčia premena, Hviezdna moc), slabé (dočasné buffy Jablko/Koreň/Vlna/
+    Srdce…) len pri unlucky rolle – nič vlastnej rasy v ponuke a nie je za čo
+    refreshnúť. Každé kúzlo spustí všetky víly na
     ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský
     štít), Fénixovo pierko (revive 1 HP; Pri smrti sa pritom spustí – hoď
     na B007/U-karty s Pri smrti = deathrattle dvakrát za boj), Žabia kliatba (HP súperovej
@@ -174,8 +180,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     buildmi; rovnako D007 Pred bojom aj D006 Po nákupe),
     D003/D009 permanentná aura +1/+1, D004 discover rasy, D010 (t6)
     evolvne cieľ o stupeň. Ako bot VŽDY cieľ smeruj na svoju dominantnú
-    rasu (akcia `play` s `target`); draka kupuj do hocijakého buildu,
-    keď je telo nad krivkou alebo battlecry živí tvoju rasu.
+    rasu (akcia `play` s `target`); D004 kupuj vždy, D010 na t6, ostatných
+    drakov len ako telo, keď nič vlastnej rasy nie je v ponuke.
   - **Ogre = veľké staty, chaos efekty + Backstab.** Keď sa ogrí roll
     obráti proti tebe (chvost mince, ožratý úder do seba, chaos spúšťač na
     súperovu príšerku, divoká rana do vlastnej, chvost Ogrieho hazardu),
@@ -219,14 +225,15 @@ Boti prehrávali na 4 veciach: miešanie rás, nafúknutý balíček plný
 štartovacieho balastu a kúziel, plocha s 3–4 telami, upgrade s deravou
 plochou. Rob VŠETKY kroky, každý ťah:
 
-0. **Hlavná rasa je beast / elemental / undead / fairy / ogre. Dragon je
-   PODPORNÝ** – drak je žoldnier s battlecry pre rasu cieľa. Ogri sú po
-   reworku Backstab plnohodnotný build, ale len ako **zámer**: potrebujú
-   rolly, ktoré Pečať generujú (O001, O006, O002, O007, O010), nie štyri
-   vanilla telá. Tri náhodné ogry v balíčku z ogrov hlavnú rasu nerobia
-   (Claude bot v logu z 8. 9. 2026 takto prehral: O004×3, O001×2, nula
-   predajov, 22 kariet v balíčku). Ak je `dominantRace` null, vyber rasu,
-   ktorej máš najviac, alebo tú, ktorej Pečať/motor je v ponuke.
+0. **Hlavná rasa je beast / elemental / undead / fairy. Dragon a ogre sú
+   PODPORNÉ** – drak je žoldnier s battlecry pre rasu cieľa. **Ogrov bot
+   NIKDY nekupuje, neobjavuje z Knihy a nedrží** (od 14. 9. 2026; driver
+   nákup ogra odmietne, `Bot.cardScore` dáva ogrovi −100): v cudzom balíčku
+   je ogr balast, ktorý vytláča skutočné karty z 5-kartovej ruky (Claude
+   bot hral víly s O001×2 na ploche do 9. kola a O009 z Knihy v 11. kole;
+   8. 9. 2026 prehral „ogrí build" O004×3, O001×2, 22 kariet). Ak je
+   `dominantRace` null, vyber rasu, ktorej máš najviac, alebo tú, ktorej
+   Pečať/motor je v ponuke.
 1. **Predaj balast z ruky ešte pred vykladaním.** Stav ti posiela
    `junkInHand` – predaj všetko z neho ako prvé akcie ťahu. Balast = telo
    s 0 útoku (prehratý hod mincou), **každý Štít 🛡️** (výplňové kúzlo, pridanú
@@ -325,8 +332,9 @@ plochou. Rob VŠETKY kroky, každý ťah:
   zvyšok; kŕmi aj B004/B009.
 - **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
-  Pečať všetkým za každé kúzlo). Kúzla kupuj húfne (Minca, Jablko, Koreň,
-  Svätožiara…), cast až keď sú víly na ploche. Strop kúziel neplatí.
+  Pečať všetkým za každé kúzlo). Kúzla len silné (Minca, Poklad, Živelná
+  sila, Ovčia premena, Hviezdna moc), s F005 ideš rýchlo na t5 a kupuješ
+  Ovcu + Živelnú silu; cast až keď sú víly na ploche. Strop kúziel 4.
 - **Ogre**: endgame je **O010** (t6, Rozmach + Pred bojom hod mincou o
   Pečať +2/+2 Ogrom / +1/+1 súperovej rase) – Pečať každý boj, kupuj ho
   hneď, ako naň máš tier, a drž ho na ploche. Build stojí na
@@ -338,9 +346,13 @@ plochou. Rob VŠETKY kroky, každý ťah:
   chaos na súperovej karte je +1/+1 celej rase, takže viac generátorov
   (2–3× O006 vľavo, Vichor 🌪️ na O006) Pečať zrýchľuje. O003 len bez
   vlastného swarmu. Ako splash bez generátorov je ogre stále len telo.
-- **Draci** patria do každého buildu: D002/D008 buff rasy cieľa do boja,
-  D003/D009 Pečať rasy cieľa, D004 discover rasy, D010 evolvne cieľ.
-  Vždy `target` na najlepšiu kartu dominantnej rasy.
+- **Draci**: **D004 (discover karty rasy cieľa) je VŽDY, absolútne vždy,
+  najsilnejšia karta** – karta vlastnej rasy zadarmo s výberom z troch a
+  odhodením z plochy sa battlecry zahrá znova; kupuj vždy, keď ho vidíš.
+  D010 (t6, evolvne cieľ) má silu tiež. Ostatní draci (D002/D008 buff,
+  D003/D009 Pečať) takú power nemajú – bot im ráta len telo, kupuje ich
+  len keď nič vlastnej rasy nie je. Vždy `target` na najlepšiu kartu
+  dominantnej rasy.
 
 ### Čo NEROBIŤ (z logov)
 

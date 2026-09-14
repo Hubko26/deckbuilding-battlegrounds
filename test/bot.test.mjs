@@ -138,7 +138,7 @@ test("hard bot: poradie útoku – Pri útoku vľavo, škálovač vpravo", () =>
   assert.deepEqual(order, ["E004", "O005", "B009"]);
 });
 
-test("bot: ogre a dragon nie sú dominantná rasa; s dominantnou rasou je ogr len mierne horší, cudzia hlavná rasa výrazne", () => {
+test("bot: ogre a dragon nie sú dominantná rasa; ogra bot nikdy nekupuje (skóre −100), cudzia hlavná rasa výrazne horšia", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;
   const state = E.newGame(seeded(35), null);
@@ -150,7 +150,8 @@ test("bot: ogre a dragon nie sú dominantná rasa; s dominantnou rasou je ogr le
   const own = ctx.Bot.cardScore(state, p, "U006");   // t3 undead
   const ogre = ctx.Bot.cardScore(state, p, "O008");  // t3 ogr (podporná)
   const beast = ctx.Bot.cardScore(state, p, "B008"); // t3 beast (cudzia hlavná)
-  assert.ok(own > ogre && ogre > beast, `${own} / ${ogre} / ${beast}`);
+  assert.ok(own > beast && beast > ogre && ogre < 0, `${own} / ${beast} / ${ogre}`);
+  assert.ok(ctx.Bot.cardScore(state, p, "O001") < 0); // ani t1 ogr, ani bez dominantnej rasy
   p.deck = ["O004", "O004", "O001", "D001", "D007"].map(id => ({ defId: id, rank: 1 }));
   assert.equal(ctx.Bot.dominantRace(state, p), null);
   const o1 = E.makeInst(state, "O001", 1);
@@ -568,6 +569,106 @@ test("bot skóre: po zafixovaní rasy sa schopnosť cudzej hlavnej rasy neráta 
   assert.ok(B.cardScore(state, p, "B006") < 0, "B006 (Pečať Zvieratám) je v undead builde balast");
   assert.ok(B.cardScore(state, p, "B010") < 0);
   assert.ok(B.cardScore(state, p, "U010") > B.cardScore(state, p, "B006") + 5);
-  // ogr ako podporná rasa ostáva neutrálny (telo + schopnosť)
-  assert.ok(B.cardScore(state, p, "O010") > 0);
+  // ogra bot nekupuje nikdy (od 14. 9. 2026), ani t6 telo nad krivkou
+  assert.ok(B.cardScore(state, p, "O010") < 0);
+});
+
+test("Bot.hpBonus: hard a Claude štartujú so 70 HP, easy/normal bez bonusu", () => {
+  const { Bot: B, Engine: E } = loadEngine();
+  assert.equal(B.hpBonus("hard").p2, 20);
+  assert.equal(B.hpBonus("claude").p2, 20);
+  assert.equal(B.hpBonus("easy"), null);
+  assert.equal(B.hpBonus("normal"), null);
+  const s = E.newGame(seeded(1), null, { hpBonus: B.hpBonus("hard") });
+  assert.equal(s.p1.hp, 50);
+  assert.equal(s.p2.hp, 70);
+});
+
+test("bot (hard): ogra nekúpi ani ako tretí kus trojice, ani z Knihy prianí", () => {
+  const { Engine: E, Bot: B } = loadEngine();
+  const state = E.newGame(seeded(95), null);
+  E.startRound(state);
+  E.endShopTurn(state, "p1");
+  const p = state.p2;
+  p.deck = ["O001", "O001", "U001", "U002", "U003", "U001"].map(id => ({ defId: id, rank: 1 }));
+  p.hand = []; p.board = []; p.discard = [];
+  p.money = 9;
+  state.commons = ["O001", "O004", "O006"];
+  p.priv = [{ defId: "O001", frozen: false }, { defId: "O004", frozen: false }];
+  B.botTurn(state, "p2", "hard");
+  for (const c of [...p.deck, ...p.hand, ...p.board, ...p.discard]) {
+    assert.ok(!(c.defId === "O004" || c.defId === "O006"), "kúpil ogra " + c.defId);
+  }
+  assert.equal(B.ownedCount(p, "O001"), 2); // trojicu O001 nedokončil
+  assert.ok(B.cardScore(state, p, "U005") > B.cardScore(state, p, "O008")); // discover: undead pred ogrom
+});
+
+test("bot skóre: D004 (discover rasy) je vždy najsilnejší drak, ostatní draci len telo, D010 má silu na t6", () => {
+  const { Engine: E, Bot: B, Cards: C } = loadEngine();
+  const state = E.newGame(seeded(96), null);
+  state.round = 4;
+  const p = state.p2;
+  p.deck = ["U001", "U002", "U003", "U005"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(B.dominantRace(state, p), "undead");
+  const d004 = B.cardScore(state, p, "D004");
+  for (const id of ["D002", "D003", "D005", "D008", "D009"]) {
+    assert.ok(d004 > B.cardScore(state, p, id) + 4, `D004 ${d004} vs ${id} ${B.cardScore(state, p, id)}`);
+  }
+  assert.ok(d004 > B.cardScore(state, p, "U006"), "D004 pred bežným telom vlastnej rasy");
+  assert.ok(B.cardScore(state, p, "D010") > B.cardScore(state, p, "D009"), "D010 (t6) nad D009");
+  assert.ok(B.cardScore(state, p, "D003") < B.cardScore(state, p, "U006"), "D003 je len telo");
+  assert.ok(B.cardPower(C.byId.D004).ability >= 14, "discoverRace v tabuľke sily ≥ 14");
+  // bez dominantnej rasy (kolo 1) je D004 stále top
+  state.round = 1;
+  assert.ok(B.cardScore(state, p, "D004") > B.cardScore(state, p, "D003"));
+});
+
+test("bot skóre (víly): silné kúzla (Minca, Živelná sila, Ovca) nad slabými; slabé pod latkou hard bota", () => {
+  const { Engine: E, Bot: B } = loadEngine();
+  const state = E.newGame(seeded(98), null);
+  state.round = 5;
+  const p = state.p2;
+  p.tier = 5;
+  p.deck = ["F002", "F004", "F005", "F006", "F001"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(B.dominantRace(state, p), "fairy");
+  const cfg = B.HYGIENE;
+  const strong = ["minca", "iskra", "ovca"].map(id => B.cardScore(state, p, id, cfg));
+  const weak = ["jablko", "koren", "vlna", "srdce", "kliatba"].map(id => B.cardScore(state, p, id, cfg));
+  assert.ok(Math.min(...strong) > Math.max(...weak), `${strong} vs ${weak}`);
+  for (const w of weak) assert.ok(w > 0 && w < p.tier + 3, "slabé kúzlo pod latkou, ale kúpiteľné"); // unlucky roll
+  assert.ok(B.cardScore(state, p, "stit", cfg) < 0); // Štít nikdy
+  assert.ok(B.cardScore(state, p, "F007", cfg) > Math.max(...weak), "víla vlastnej rasy pred slabým kúzlom");
+});
+
+test("bot (hard, víly): silné kúzlo kúpi; slabé len keď nie je za čo refreshnúť (unlucky roll)", () => {
+  const { Engine: E, Bot: B } = loadEngine();
+  const setup = (seed, spell, money) => {
+    const state = E.newGame(seeded(seed), null);
+    E.startRound(state);
+    state.round = 5;
+    E.endShopTurn(state, "p1");
+    const p = state.p2;
+    p.tier = 3;
+    p.deck = ["F002", "F004", "F005", "F006", "F001", "F003"].map(id => ({ defId: id, rank: 1 }));
+    p.discard = []; p.hand = []; p.board = [];
+    p.money = money; // hard si pridá +1 (handicap)
+    state.commons = ["O004", "O006", "O001"]; // samé ogry – nekúpi nič
+    p.priv = [];
+    p.spellShop = { defId: spell, frozen: false };
+    return { state, p };
+  };
+  // 2 (+1) zlata: na refresh + kartu nie je → Mincu (silná) kúpi
+  let { state, p } = setup(99, "minca", 2);
+  B.botTurn(state, "p2", "hard");
+  assert.equal(B.ownedCount(p, "minca"), 1, "silné kúzlo kúpi");
+  // 2 (+1) zlata, Koreň (slabý): unlucky roll – nie je za čo refreshnúť, kúpi ho
+  ({ state, p } = setup(99, "koren", 2));
+  B.botTurn(state, "p2", "hard");
+  assert.equal(B.ownedCount(p, "koren"), 1, "slabé kúzlo pri unlucky rolle kúpi");
+  // 4 (+1) zlata, Koreň: radšej refreshne a kúpi vílu z nového rollu
+  ({ state, p } = setup(99, "koren", 4));
+  B.botTurn(state, "p2", "hard");
+  assert.equal(B.ownedCount(p, "koren"), 0, "slabé kúzlo nekúpi, keď môže refreshnúť");
 });

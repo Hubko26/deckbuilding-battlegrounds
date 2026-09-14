@@ -13,7 +13,8 @@ Hra sa hrá na kolá. Každé kolo:
 2. **Nákupná fáza hráča B**
 3. **Automatický boj** – príšerky sa bijú samy, hrdina porazeného dostane damage
 
-Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**).
+Hrá sa, kým jeden z hrdinov nepríde o všetky životy (štart: **50 HP**;
+hard bot a Claude súper štartujú so **70 HP** – handicap, pozri Architektúra).
 
 ## Ekonomika
 
@@ -236,7 +237,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   rodiča (2/2, 4/4). Obranca berie údery a padne skoro → kŕmi sovu B004
   („Keď zomrie tvoje Mláďa") a chráni mrchožrúta B009. Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
-- B006 (t6, 7/9, bez Obrancu â€“ odstrĂˇnenĂ˝ 2026-09-14) je **beast t6 payoff** (rasa dovtedy t6 kartu
+- B006 (t6, 7/9, bez Obrancu – odstránený 2026-09-14) je **beast t6 payoff** (rasa dovtedy t6 kartu
   nemala a v neskorej hre pôsobila slabo): „Pri smrti: vyvolaj 2×
   **SuperMláďa** 🐻" – vlastný token (klasické Mláďa 🐣 sa nemení): 1/1
   s Obrancom, ktorý **Pri smrti položí Pečať +1/+1 Zvieratám**. Stupeň
@@ -927,9 +928,12 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
   v hre po sieti rozhoduje zakladateľ – flag `trinkets` cestuje v
   `hello`/`start`/`rejoin` ako `ban` a zapisuje sa do GameLog (staré
   záznamy bez flagu = bez trinketov, rng poradie sa nemení).
-- **Ponuka** (`trinketPool`): rasový trinket len hráčovi, ktorý má aspoň
-  **3 karty rasy** vo všetkých zónach (`TRINKET_RACE_MIN`); zabanovaná rasa
-  nikdy; `late` (Hrobárova lopata, Dračia krv, Krvavý mesiac) až v kole 8;
+- **Ponuka** (`trinketPool`): trinket HLAVNEJ rasy len hráčovi, ktorý má
+  aspoň **3 karty rasy** vo všetkých zónach (`TRINKET_RACE_MIN`); trinkety
+  podporných rás (drak, ogr – `Engine.SUPPORT_RACES`) dostane každý bez
+  ohľadu na balíček (drak je žoldnier do každého buildu, hráč ho nemusí
+  držať vopred – 14. 9. 2026: hráč 12 hier nevidel dračí trinket, lebo
+  drakov nekupoval); zabanovaná rasa nikdy; `late` (Hrobárova lopata, Dračia krv, Krvavý mesiac) až v kole 8;
   Ogrí kľúč len keď súper už trinket má; trinket s id zhodným s mutáciou hry
   (`richSell`, `bloodMoon`) sa neponúka – nestackujú sa. Z prípustných sa
   zamieša a vezmú prvé 3.
@@ -1127,6 +1131,15 @@ len staty + keyword badge.
   Heuristika sama hráča neporazí – toto mu vyrovnáva šance. Druhý
   handicap: hard bot má **+1 zlato každé kolo** od prvého (pridá si ho na
   začiatku svojho ťahu, `p.bonusRound` stráži jedno pridanie za kolo).
+  **Ogrov bot nikdy nekupuje** (`cardScore` −100 pre každého ogra, `isWanted`
+  ich ignoruje, Claude driver odmietne `buy` ogra, Kniha prianí ich nevyberá,
+  kým je iná možnosť): ogr je podporná rasa a v cudzom balíčku len balast –
+  Claude bot 14. 9. 2026 hral víly s O001×2 na ploche do 9. kola a O009
+  z Knihy v 11. kole, ruku 5 kariet mu to zapchalo.
+  Tretí handicap: hard bot aj Claude súper štartujú so **70 HP** (hráč 50;
+  `Bot.hpBonus(difficulty)` → `opts.hpBonus` v `Engine.newGame`, pripočíta
+  sa po mutácii – marathon 85, smallArena 55 – a dvíha aj strop liečenia).
+  Replay to odvodí z `difficulty` v zázname; easy/normal bez bonusu.
   **Sila karty v heuristike** (`Bot.cardPower(def, {rank, p})`, tabuľka
   `npm run power`; vyvolanie = (n + stupeň − 1) × hodnota tokenu, token
   nesie aj Pečať rasy majiteľa – strieborný U009 s U003/U008 je 4 × 4 = 16
@@ -1143,7 +1156,22 @@ len staty + keyword badge.
   **Cudzia hlavná rasa po zafixovaní: v nákupnom skóre sa ráta len telo**
   (2026-09-13) – Pečať Zvieratám alebo Mláďatá sú v undead balíčku bezcenné;
   undead bot v zázname kúpil B006 4×, B002 a B010, lebo sila 71 prebila −3
-  za cudziu rasu. Podporné rasy (drak, ogr) ostávajú s celou silou.
+  za cudziu rasu. **Draci** (2026-09-14, hráčova skúsenosť): D004 (discover
+  karty rasy cieľa) je vždy najsilnejšia karta – v skóre +8 vždy, `isWanted`
+  (lov rasy) ho vždy berie, `cardPower` discoverRace 14; D010 (t6 evolve
+  cieľa) +3 s dominantnou rasou, sila 16; ostatní draci majú len telo
+  (battlecry sa neráta, −1 po zafixovaní rasy) – kupujú sa, len keď nič
+  vlastnej rasy nie je. Dračia Pečať D003/D009 má v tabuľke sily polovicu
+  vlastnej Pečate.
+  **Kúzla vo vílom builde** (2026-09-14): trigger „Po kúzle" dáva každé
+  kúzlo rovnako, rozdiel je v tom, čo ostane po cykle balíčka – slot v ruke
+  stojí príšerku. Silné (`Bot.FAIRY_STRONG_SPELLS`: Minca, Poklad = zlato
+  s F005 čistý zisk; Živelná sila = trvalé; Ovčia premena = vyhrá boj;
+  Hviezdna moc) dostanú vílí bonus, slabé (dočasné buffy Jablko, Koreň,
+  Vlna, Srdce, Svätožiara, Pierko, Vichor, Blesk, Kliatba, Kniha, Klobúk,
+  Zrkadlo, Portál) majú pevné skóre 0,5 pod latkou hard bota – kúpi ich len
+  pri unlucky rolle (nič vlastnej rasy v ponuke a nie je za čo refreshnúť).
+  Motor víl: F005 + F006 + F001 + Minca; endgame Ovca + Živelná sila.
   **Balast po zafixovaní rasy sa predáva hneď** (2026-09-12): každá cudzia
   karta t1–2 vrátane páru (strieborná od tieru 4, drak t1–2 od tieru 3) ide
   z ruky preč ešte pred vyložením, do 8. kola bez ohľadu na počet tiel, od

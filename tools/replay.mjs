@@ -60,7 +60,9 @@ const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
 // štartuje až po vylosovaní); staré záznamy flag nemajú (= bez banu)
 // trinkets:true v zázname = ponuka trinketov v kole 4 a 8 (akcie pickTrinket,
 // useHeroShield v logu); staré záznamy flag nemajú (= bez trinketov)
-const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined, { ban: game.ban === true, trinkets: game.trinkets === true });
+// difficulty hard/claude = bot (p2) štartuje so 70 HP (Bot.hpBonus)
+const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined,
+  { ban: game.ban === true, trinkets: game.trinkets === true, hpBonus: B.hpBonus(game.difficulty) });
 if (s.phase !== "ban") E.startRound(s);
 
 const boardStr = p => p.board.map(x =>

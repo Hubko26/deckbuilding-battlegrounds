@@ -28,6 +28,13 @@ const Bot = (() => {
   // rollBias) – dohrá, čo Claudov plán vynechal.
   const HYGIENE = { ...DIFF.hard, rollBias: 0, goldBonus: 0 };
 
+  // Tretí handicap: hard bot a Claude súper štartujú so 70 HP (hráč 50).
+  // Vracia opts.hpBonus pre Engine.newGame (bot je vždy p2); easy/normal null.
+  const BOSS_HP_BONUS = 20;
+  function hpBonus(difficulty) {
+    return difficulty === "hard" || difficulty === "claude" ? { p2: BOSS_HP_BONUS } : null;
+  }
+
   // Vykonávateľ akcií: všetky mutácie stavu idú cez act(), takže volajúci
   // (Claude bot) si ho vie vymeniť za verziu, ktorá každú akciu aj zaloguje
   // do záznamu hry – replay potom sedí. Predvolene volá Engine priamo.
@@ -60,6 +67,20 @@ const Bot = (() => {
   // 5 kariet a slabina vílieho buildu je práve ťahanie kariet.
   const SPELL_CAP = 2;
   const SPELL_CAP_FAIRY = 4;
+
+  // Potenciálna sila kúzla vo VÍLOM builde (hráčova skúsenosť, 14. 9. 2026):
+  // trigger „Po kúzle" dáva každé kúzlo rovnako, rozdiel robí to, čo kúzlo
+  // nechá po sebe, keď prejde cyklom balíčka. Slot v ruke stojí príšerku,
+  // preto sa oplatí len kúzlo, ktoré sa buď samo zaplatí (zlato – s F005 je
+  // Minca čistý zisk), alebo je TRVALÉ (Živelná sila zosilňuje Iskričky aj
+  // buffy kúziel navždy, Hviezdna moc = Pečať všetkým), alebo vyhrá boj
+  // (Ovčia premena zoberie súperovi najväčšiu kartu). Dočasné buffy (Jablko,
+  // Koreň, Vlna, Srdce…) sú po boji preč a na ďalší cyklus zase zaberajú
+  // ruku – kupujú sa len ako „unlucky roll": nič vlastnej rasy v ponuke
+  // a nie je za čo refreshnúť. Motor víl stačí: F005 (zlato) + F006
+  // (Iskrička zadarmo) + F001 (draw) + Minca; endgame Ovca + Živelná sila.
+  const FAIRY_STRONG_SPELLS = new Set(["minca", "poklad", "iskra", "ovca", "hviezda"]);
+  const FAIRY_WEAK_SPELL_SCORE = 0.5; // pod latkou hard bota (tier + buyBar) → radšej refresh
 
   // VÝPLŇOVÉ kúzlo: nedá staty, kartu ani zlato (Štít – iba Obranca). Je
   // v hre zámerne ako slabá možnosť, aby v spell slote neboli samé dobré
@@ -128,10 +149,22 @@ const Bot = (() => {
     // Cudzia HLAVNÁ rasa po zafixovaní: schopnosť sa neráta – Pečať Zvieratám
     // alebo Mláďatá sú v undead balíčku bezcenné (záznam z 13. 9. 2026: undead
     // bot kúpil B006 4×, B002, B010, lebo sila 71 prebila −3 za cudziu rasu).
+    // Ogrov bot NIKDY nekupuje ani neobjavuje (Kniha prianí): ogr je podporná
+    // rasa a v cudzom balíčku len balast – Claude bot v zázname zo 14. 9. 2026
+    // hral víly s O001×2 na ploche do 9. kola a O009 z Knihy v 11. kole.
+    if (def.race === "ogre") return -100;
     const domEarly = dominantRace(state, p);
     const pw = cardPower(def, { p });
     const foreignMain = !!domEarly && !!def.race && def.race !== domEarly && !SUPPORT_RACES.has(def.race);
-    let score = (foreignMain ? pw.body : pw.total) / 8;
+    // Draci: D004 (discover karty rasy cieľa) je VŽDY najsilnejšia karta –
+    // karta vlastnej rasy zadarmo s výberom z troch, battlecry sa dá
+    // odhodením zahrať znova. D010 (t6, evolve cieľa) má silu tiež. Ostatní
+    // draci sú len telá – ich battlecry sa v skóre neráta (hráč: „ostatní
+    // draci nemajú takú power").
+    const dragonFx = def.race === "dragon" ? Cards.powersOf(def).map(x => x.fx.type) : [];
+    const topDragon = dragonFx.includes("discoverRace") || dragonFx.includes("evolveTarget");
+    const plainDragon = def.race === "dragon" && !topDragon;
+    let score = (foreignMain || plainDragon ? pw.body : pw.total) / 8;
     const owned = ownedCount(p, defId);
     if (!def.spell) {
       if (owned === 2) score += 6;      // dokončí trojicu
@@ -149,11 +182,14 @@ const Bot = (() => {
       if (dom) {
         if (def.race === dom) score += 3;
         else if (def.race !== "dragon" && def.race !== "ogre") score -= 3;
+        else if (plainDragon) score -= 1; // žoldnier bez tej power – len keď nič lepšie
       }
+      if (dragonFx.includes("discoverRace")) score += 8; // D004: vždy top nákup
+      if (dom && dragonFx.includes("evolveTarget")) score += 3; // D010 (t6)
     }
     // Synergické bonusy za schopnosť – nie pre cudziu hlavnú rasu (jej Pečať
     // ani motor v tomto balíčku nič nekŕmi).
-    for (const pw of foreignMain ? [] : Cards.powersOf(def)) {
+    for (const pw of foreignMain || plainDragon ? [] : Cards.powersOf(def)) {
       const fx = pw.fx;
       // aury permanentne zväčšujú celý balíček – kupuj skoro a rád
       if (fx.type === "futureRace") score += 2 + (races[fx.race] || 0) * 0.7;
@@ -163,8 +199,6 @@ const Bot = (() => {
       // viac kariet rasy vlastní (každé kolo ich vykladá znova)
       if (fx.type === "racePlayedScale") score += 1 + (races[fx.race] || 0) * 0.7;
       if (fx.type === "buffRace") score += (races[fx.race] || 0) * 0.4;
-      // draci, ktorí zosilňujú RASU cieľa – s dominantnou rasou majú do čoho
-      if (dom && (fx.type === "futureRaceOf" || fx.type === "buffRaceOf")) score += 2;
       // víly („Po kúzle“) rastú s počtom kúziel v balíčku
       if (pw.kw === "afterSpell") score += ownedSpellCount(p) * 0.4;
       // Iskrička z battlecry kŕmi Po kúzle víly – hodnotnejšia s vílami
@@ -196,7 +230,13 @@ const Bot = (() => {
       // V zázname z 8. 9. 2026 tak kúpil 5 Štítov v druhom kole; rasa sa
       // v treťom zamkla na beast a 6 kúziel mu do konca hry vytláčalo
       // príšerky z ruky (plocha 2–4 z 5, tier o dva pozadu, prehra).
-      if (dom === "fairy") score += (races.fairy || 0) * 0.5;
+      if (dom === "fairy") {
+        // Víly: len SILNÉ kúzlo (FAIRY_STRONG_SPELLS) dostane vílí bonus;
+        // slabé kúzlo má pevné nízke skóre – hard bot radšej refreshne
+        // (latka tier + buyBar), kúpi ho len keď je „unlucky" (nie je za čo).
+        if (FAIRY_STRONG_SPELLS.has(def.id)) score += 3 + (races.fairy || 0) * 0.5;
+        else score = FAIRY_WEAK_SPELL_SCORE;
+      }
       score -= Math.max(0, spells + 1 - (dom === "fairy" ? SPELL_CAP_FAIRY : SPELL_CAP)) * 3;
       // Výplňové kúzlo (Štít) je vždy posledná voľba – nikdy sa nekupuje.
       if (fillerSpell(def)) score -= FILLER_PENALTY;
@@ -210,8 +250,9 @@ const Bot = (() => {
   // alebo rast navždy z nižšieho tieru relevantné sú.
   function isWanted(state, p, defId, dom) {
     const def = Cards.byId[defId];
-    if (def.spell) return false;
+    if (def.spell || def.race === "ogre") return false;
     if (ownedCount(p, defId) === 2) return true;
+    if (Cards.powersOf(def).some(x => x.fx.type === "discoverRace")) return true; // D004 vždy
     if (!dom || def.race !== dom) return false;
     return cardPower(def).total >= tierAvgPower(p.tier) * 0.9;
   }
@@ -654,7 +695,10 @@ const Bot = (() => {
     const ab = ((f.a || 0) + (f.h || 0)) * m;
     const perTrigger = kw === "onAttack" ? PW_ATTACKS : kw === "afterSpell" ? PW_SPELLS : kw === "raceDeath" ? PW_DEATHS : 1;
     switch (f.type) {
-      case "futureRace": case "futureRaceOf": return ab * PW_BOARD * PW_PERM;
+      case "futureRace": return ab * PW_BOARD * PW_PERM;
+      // Dračia Pečať (D003/D009) – polovica hodnoty vlastnej Pečate: drak
+      // musí mať cieľ na ploche a hráčova skúsenosť ho radí pod D004.
+      case "futureRaceOf": return ab * PW_BOARD * PW_PERM / 2;
       case "futureAll": return ab * (PW_BOARD + 1) * PW_PERM * perTrigger;
       case "growSelf": return f.perm ? ab * perTrigger * PW_HORIZON : ab * perTrigger;
       case "buffRace": case "buffRaceOf": case "buffTopRace": return ab * PW_BOARD * perTrigger;
@@ -672,12 +716,15 @@ const Bot = (() => {
       case "dmgBoost": return f.n * m * PW_BOOST * (kw === "endTurn" ? PW_HORIZON : 1);
       case "racePlayedScale": return ab * 8;                    // ~8 Živlov vyložených za hru
       case "spellScale": return ab * 6;                         // ~6 kúziel za hru
-      case "discoverRace": case "discover": return 6;           // karta zadarmo (~3 zlatá + výber)
+      case "discover": return 6;                                // karta zadarmo (~3 zlatá + výber)
+      // D004: karta VLASTNEJ rasy zadarmo, výber z troch, battlecry sa dá
+      // odhodením zahrať znova – hráč: „vždy, absolútne vždy najsilnejšia karta".
+      case "discoverRace": return 14;
       case "draw": return f.n * m * 3;
       case "addSpell": return 2;
       case "gold": return f.n * m * 1.5 * perTrigger;
       case "goldLater": return f.n * 1.5;
-      case "evolveTarget": return 10;
+      case "evolveTarget": return 16;                           // D010 (t6): striebro zadarmo
       case "shrinkEnemy": return ab;
       case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu
       case "drunkStrike": return -2;
@@ -758,8 +805,8 @@ const Bot = (() => {
     return offers.find(r => !SUPPORT_RACES.has(r)) || offers[0] || null;
   }
 
-  return { botTurn, completeTurn, withExecutor, pickBan, pickTrinket, ownedCount, cardScore, cardPower, dominantRace, isJunk, orderBoard,
-    deckSize, SUPPORT_RACES, HYGIENE, DECK_CAP };
+  return { botTurn, completeTurn, withExecutor, pickBan, pickTrinket, hpBonus, ownedCount, cardScore, cardPower, dominantRace, isJunk, orderBoard,
+    deckSize, SUPPORT_RACES, HYGIENE, DECK_CAP, BOSS_HP_BONUS, FAIRY_STRONG_SPELLS };
 })();
 
 if (typeof module !== "undefined") module.exports = Bot;
