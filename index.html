@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=29543c31">
+  <link rel="stylesheet" href="style.css?v=40c10718">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -24,6 +24,8 @@
       <button id="fsBtn" aria-label="Celá obrazovka">⛶</button>
       <button id="muteBtn" aria-label="Zvuk">🔊</button>
       <button id="newGameBtn" class="danger hidden">Nová hra</button>
+      <!-- Môj balíček: na mobile v ☰ menu (desktop má dropdown vpravo od dosky) -->
+      <button id="deckBtn" class="deck-btn"></button>
     </div>
   </header>
 
@@ -79,6 +81,11 @@
     <!-- Herná obrazovka: doska (stage) s pozadím PlayGround.png -->
     <section id="gameScreen" class="hidden">
       <div class="log" id="logEl"></div>
+      <!-- Môj balíček (desktop): scrollovací dropdown vpravo vedľa dosky -->
+      <div class="deck-dd" id="deckDd">
+        <button id="deckDdBtn"></button>
+        <div id="deckDdList" class="deck-list hidden"></div>
+      </div>
       <div id="stage">
         <div class="hero-plate top" id="oppHero"></div>
         <div class="board opp" id="oppBoard"></div>
@@ -161,6 +168,15 @@
     </div>
 
     <!-- Koniec hry -->
+    <!-- Môj balíček (mobil): dialóg so scrollom, zavrie sa a hra pokračuje -->
+    <div id="deckOverlay" class="overlay hidden">
+      <div class="win-box">
+        <div class="big" id="deckTitle"></div>
+        <div id="deckHint" class="ban-msg"></div>
+        <div id="deckOvList" class="deck-list"></div>
+        <button id="deckClose" class="primary"></button>
+      </div>
+    </div>
     <div id="overOverlay" class="overlay hidden">
       <div class="win-box">
         <div class="big" id="overTitle"></div>
@@ -173,14 +189,14 @@
   <footer><span id="footNote"></span></footer>
 
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=d0f024f2"></script>
+  <script src="src/i18n.js?v=ad1f9384"></script>
   <script src="src/net.js?v=96c2da75"></script>
   <script src="src/sfx.js?v=00b87990"></script>
-  <script src="src/cards.js?v=bb2c1c9e"></script>
-  <script src="src/engine.js?v=cf9887d4"></script>
-  <script src="src/bot.js?v=30322d45"></script>
-  <script src="src/claude-bot.js?v=37d5b936"></script>
-  <script src="src/game.js?v=e4914373"></script>
+  <script src="src/cards.js?v=b6cf348b"></script>
+  <script src="src/engine.js?v=9d6cc286"></script>
+  <script src="src/bot.js?v=17a4bf92"></script>
+  <script src="src/claude-bot.js?v=bcfbab20"></script>
+  <script src="src/game.js?v=e71ab8c7"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=24b5cf89"></script>

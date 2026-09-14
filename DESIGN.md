@@ -236,7 +236,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   rodiča (2/2, 4/4). Obranca berie údery a padne skoro → kŕmi sovu B004
   („Keď zomrie tvoje Mláďa") a chráni mrchožrúta B009. Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
-- B006 (t6, 7/9, Obranca) je **beast t6 payoff** (rasa dovtedy t6 kartu
+- B006 (t6, 7/9, bez Obrancu â€“ odstrĂˇnenĂ˝ 2026-09-14) je **beast t6 payoff** (rasa dovtedy t6 kartu
   nemala a v neskorej hre pôsobila slabo): „Pri smrti: vyvolaj 2×
   **SuperMláďa** 🐻" – vlastný token (klasické Mláďa 🐣 sa nemení): 1/1
   s Obrancom, ktorý **Pri smrti položí Pečať +1/+1 Zvieratám**. Stupeň
