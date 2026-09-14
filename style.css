@@ -930,3 +930,34 @@ body.fs footer { display: none; }
 .chess-board .sq.pb { color: #111; }
 .chess-board .sq.check { background: #e77 !important; }
 .chess-status { font-weight: 700; color: #345; font-size: .9rem; min-height: 1.3em; text-align: center; }
+
+/* ---------- Môj balíček – zoznam vlastných kariet ----------
+   Desktop: dropdown vpravo vedľa dosky (pozíciu ráta game.js positionDeckDd).
+   Mobil (☰ menu): tlačidlo v hlavičke otvorí dialóg so scrollom. Riadok =
+   miniatúra karty (len art) + meno ×počet + staty; hover/podržanie = veľká karta. */
+#gameScreen { position: relative; }
+.deck-dd { position: absolute; top: 0; left: 0; width: 240px; z-index: 6; }
+.deck-dd button { width: 100%; font-weight: 700; font-size: .95rem; padding: 7px 10px; }
+.deck-list {
+  max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain;
+  background: rgba(255,255,255,.94); border-radius: 12px; padding: 6px; margin-top: 5px;
+  display: grid; gap: 3px; box-shadow: 0 6px 18px rgba(0,20,40,.3); text-align: left;
+}
+.deck-list .hdr { font-size: .75rem; font-weight: 800; color: #567; padding: 6px 4px 2px; text-transform: uppercase; letter-spacing: .04em; }
+.deck-row { display: flex; align-items: center; gap: 8px; padding: 3px 5px; border-radius: 9px; cursor: pointer; }
+.deck-row:hover { background: #e2e9ff; }
+.deck-row .card { width: 40px; flex: none; font-size: 6px; pointer-events: none; cursor: default; transition: none; }
+.deck-row .card > * { display: none; }
+.deck-row .card .em { display: block; font-size: 3.4em; top: 22%; }
+.deck-row .dn { font-size: .9rem; font-weight: 700; color: #123; line-height: 1.2; min-width: 0; }
+.deck-row .dn b { color: #2f7cff; }
+.deck-row .ds { display: block; font-size: .72rem; font-weight: 600; color: #567; }
+.deck-empty { font-size: .85rem; color: #567; padding: 10px; text-align: center; }
+.deck-btn { display: none; }
+#deckOverlay .win-box { width: min(94vw, 420px); padding: 14px 12px; }
+#deckOverlay .deck-list { max-height: calc(100dvh - 190px); box-shadow: none; background: #f3f6ff; margin-top: 8px; }
+@media (orientation: portrait),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
+  .deck-dd { display: none !important; }
+  body.playing .deck-btn { display: inline-block; }
+}

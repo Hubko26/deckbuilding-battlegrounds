@@ -442,6 +442,11 @@ const L = {
     en: "Three copies from your deck merged:",
   },
   ok: { sk: "OK", cs: "OK", en: "OK" },
+  // Zoznam vlastných kariet (balíček + kôpka): dropdown vpravo od dosky, na mobile dialóg z ☰ menu.
+  deckView: { sk: "🂠 Môj balíček", cs: "🂠 Můj balíček", en: "🂠 My deck" },
+  deckEmpty: { sk: "Balíček aj kôpka sú prázdne.", cs: "Balíček i hromádka jsou prázdné.", en: "Your deck and discard pile are empty." },
+  deckHint: { sk: "Podrž kartu – ukáže sa veľká s popisom.", cs: "Podrž kartu – ukáže se velká s popisem.", en: "Hold a card to see it large with its text." },
+  close: { sk: "Zavrieť", cs: "Zavřít", en: "Close" },
   begins: { sk: "začína", cs: "začíná", en: "begins" },
   battleDraw: { sk: "Boj skončil remízou.", cs: "Boj skončil remízou.", en: "The fight was a draw." },
   overflowMsg: {

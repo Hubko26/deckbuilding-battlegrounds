@@ -227,6 +227,11 @@ function applyI18n() {
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);
   $("overAgain").textContent = t(L.again);
+  $("deckBtn").textContent = t(L.deckView);
+  $("deckDdBtn").textContent = t(L.deckView);
+  $("deckTitle").textContent = t(L.deckView);
+  $("deckHint").textContent = t(L.deckHint);
+  $("deckClose").textContent = t(L.close);
   $("footNote").textContent = t(L.footNote);
 }
 
@@ -313,6 +318,8 @@ function enterGameScreen() {
   $("newGameBtn").classList.remove("hidden");
   $("overOverlay").classList.add("hidden");
   logClear();
+  $("deckOverlay").classList.add("hidden");
+  $("deckDdList").classList.add("hidden");
   renderMutator();
   renderBanBox();
 }
@@ -1407,6 +1414,98 @@ function renderAll() {
   renderShop();
   renderDiscover();
 }
+  renderDeckList();
+}
+
+// ---------- Môj balíček – zoznam vlastných kariet ----------
+// Desktop: dropdown vpravo vedľa dosky (#deckDd), mobil: dialóg z ☰ menu
+// (#deckOverlay). Riadok = miniatúra + meno (×počet); hover / podržanie
+// ukáže veľkú kartu s popisom. Balíček je zoradený (tier, meno) – poradie
+// ťahania sa neprezradí. Kôpka je druhá sekcia.
+function deckRows(list) {
+  const groups = new Map();
+  for (const c of list) {
+    const key = c.defId + "#" + c.rank;
+    const g = groups.get(key);
+    if (g) g.n++;
+    else groups.set(key, { defId: c.defId, rank: c.rank, n: 1 });
+  }
+  const arr = [...groups.values()];
+  arr.sort((a, b) => {
+    const da = Cards.byId[a.defId], db = Cards.byId[b.defId];
+    return (da.tier - db.tier) || (a.rank - b.rank) ||
+      Cards.nameOf(da, a.rank, I18N.lang).localeCompare(Cards.nameOf(db, b.rank, I18N.lang));
+  });
+  return arr;
+}
+
+function fillDeckList(el) {
+  el.innerHTML = "";
+  const p = state[MY];
+  const sections = [[t(L.deck), p.deck], [t(L.discardPile), p.discard]];
+  let any = false;
+  for (const [label, list] of sections) {
+    if (!list.length) continue;
+    any = true;
+    const hdr = document.createElement("div");
+    hdr.className = "hdr";
+    hdr.textContent = `${label} · ${list.length}`;
+    el.appendChild(hdr);
+    for (const g of deckRows(list)) {
+      const def = Cards.byId[g.defId];
+      const m = Cards.STAT_MULT[g.rank];
+      // Karty v balíčku/kôpke sú len { defId, rank } – pre náhľad postavíme
+      // inštanciu so základnými statmi stupňa.
+      const inst = def.spell
+        ? { uid: "dk", defId: g.defId, rank: 1, spell: true }
+        : { uid: "dk", defId: g.defId, rank: g.rank, atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m, taunt: !!def.taunt };
+      const row = document.createElement("div");
+      row.className = "deck-row";
+      row.appendChild(cardEl(inst, { noPreview: true }));
+      const stats = def.spell ? t(L.spellWord) : `⚔️${inst.atk} ❤️${inst.hp} · ${raceLine(def, g.rank)}`;
+      const dn = document.createElement("span");
+      dn.className = "dn";
+      dn.innerHTML = `${Cards.nameOf(def, g.rank, I18N.lang)}${g.n > 1 ? ` <b>×${g.n}</b>` : ""}<span class="ds">${stats}</span>`;
+      row.appendChild(dn);
+      attachPreview(row, inst, {});
+      el.appendChild(row);
+    }
+  }
+  if (!any) el.innerHTML = `<div class="deck-empty">${t(L.deckEmpty)}</div>`;
+}
+
+function renderDeckList() {
+  positionDeckDd();
+  const dd = $("deckDdList"), ov = $("deckOvList");
+  if (!dd.classList.contains("hidden")) fillDeckList(dd);
+  if (!$("deckOverlay").classList.contains("hidden")) fillDeckList(ov);
+}
+
+// Dropdown sedí vpravo tesne vedľa dosky; keď sa tam nezmestí (úzke okno),
+// prilepí sa k pravému okraju nad dosku.
+function positionDeckDd() {
+  const dd = $("deckDd"), stage = $("stage");
+  if (!stage.offsetWidth) return;
+  // Voľné miesto vpravo od dosky: dropdown sa zúži až na 150 px; keď ani
+  // to nestačí, prekryje pravý okraj dosky.
+  const avail = window.innerWidth - stage.getBoundingClientRect().right - 16;
+  const fits = avail >= 150;
+  dd.style.width = (fits ? Math.min(240, avail) : 240) + "px";
+  dd.style.left = fits ? (stage.offsetLeft + stage.offsetWidth + 10) + "px" : "auto";
+  dd.style.right = fits ? "auto" : "6px";
+  dd.style.top = stage.offsetTop + "px";
+}
+
+function toggleDeckDd() {
+  const list = $("deckDdList");
+  list.classList.toggle("hidden");
+  if (!list.classList.contains("hidden") && state) fillDeckList(list);
+}
+
+function openDeckOverlay() {
+  if (!state) return;
+  fillDeckList($("deckOvList"));
+  $("deckOverlay").classList.remove("hidden");
 
 function renderCorner(el, icon, label, count) {
   el.innerHTML = `<span class="ic">${icon}</span><span class="lb">${label}</span><span class="ct">${count}</span>`;
@@ -1669,7 +1768,7 @@ function cardEl(instOrId, opts) {
       `<span class="hp${hurt ? " hurt" : hp > baseHp ? " buffed" : ""}">${hp}</span>`;
   }
   el.innerHTML = inner;
-  if (!opts.big) {
+  if (!opts.big && !opts.noPreview) {
     el.title = `${name}${plainText ? " – " + plainText : ""}`;
     attachPreview(el, instOrId, opts);
   }
@@ -2171,6 +2270,12 @@ document.querySelector("header").addEventListener("click", e => {
   if (e.target.tagName === "BUTTON" || e.target === e.currentTarget) e.currentTarget.classList.remove("open");
 });
 $("endTurnBtn").addEventListener("click", onEndTurn);
+// Môj balíček: desktop dropdown / mobilný dialóg (z ☰ menu – hlavička sa sama zavrie).
+$("deckDdBtn").addEventListener("click", toggleDeckDd);
+$("deckBtn").addEventListener("click", openDeckOverlay);
+$("deckClose").addEventListener("click", () => { hidePreview(); $("deckOverlay").classList.add("hidden"); });
+$("deckOverlay").addEventListener("click", e => { if (e.target === e.currentTarget) { hidePreview(); e.currentTarget.classList.add("hidden"); } });
+window.addEventListener("resize", () => { if (state) positionDeckDd(); });
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));
 $("chatSend").addEventListener("click", sendChat);
