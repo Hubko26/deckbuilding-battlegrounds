@@ -1798,7 +1798,11 @@ function cardEl(instOrId, opts) {
   // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
   if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
-  inner += `<div class="nm">${name}</div>`;
+  // Pohladkanie má dlhé mená stupňov (Super-pohladkanie, Mega-pohladkanie…)
+  // – do bannera sa zmestia len v jednom riadku menším písmom, inak sa
+  // zalomia cez rám a orežú. Písmo sa zmenšuje s dĺžkou mena.
+  const nmStyle = def.pet ? ` style="font-size:${Math.min(0.82, 7.4 / name.length).toFixed(2)}em;white-space:nowrap;letter-spacing:0"` : "";
+  inner += `<div class="nm"${nmStyle}>${name}</div>`;
   if (!(art && def.spell)) inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
   if (!def.spell) {
