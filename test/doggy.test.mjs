@@ -45,13 +45,13 @@ test("psíci: dáta – 9 kariet rasy doggy s artom (P001–P009), Pohladkanie j
     s.p1.tier = 6;
     for (let i = 0; i < 5; i++) { s.p1.money = 10; E.refreshShop(s, "p1"); assert.notEqual(s.p1.spellShop.defId, "pet"); }
   }
-  // mená podľa stupňa, sila ×3
+  // mená podľa stupňa, sila ×2
   assert.equal(C.nameOf(pet, 1, "sk"), "Pohladkanie");
   assert.equal(C.nameOf(pet, 2, "sk"), "Super-pohladkanie");
   assert.equal(C.nameOf(pet, 3, "en"), "Mega-Pet");
   assert.equal(C.nameOf(pet, 7, "sk"), "Pohladkanie 7. stupňa");
-  assert.equal(C.petValue(1), 1); assert.equal(C.petValue(2), 3); assert.equal(C.petValue(4), 27);
-  assert.match(C.cardText(pet, 3, "sk", false, 0), /\+9\/\+9/);
+  assert.equal(C.petValue(1), 1); assert.equal(C.petValue(2), 2); assert.equal(C.petValue(4), 8);
+  assert.match(C.cardText(pet, 3, "sk", false, 0), /\+4\/\+4/);
   assert.match(C.cardText(pet, 1, "sk", false, 0), /spoja/);
 });
 
@@ -70,10 +70,10 @@ test("psíci: Pohladkanie – na Psíka NAVŽDY (pa/ph), na inú rasu len dočas
   assert.equal(dog.atk, 2); assert.equal(dog.hp, 3);
   assert.equal(dog.pa, 1); assert.equal(dog.ph, 1);
   assert.ok(ev1[0].perm);
-  const ev2 = E.castSpell(state, "p1", 0, bear.uid); // Super +3/+3 na medveďa
-  assert.equal(bear.atk, 5); assert.equal(bear.hp, 5);
+  const ev2 = E.castSpell(state, "p1", 0, bear.uid); // Super +2/+2 na medveďa
+  assert.equal(bear.atk, 4); assert.equal(bear.hp, 4);
   assert.equal(bear.pa, undefined);
-  assert.equal(ev2[0].a, 3); assert.equal(ev2[0].rank, 2);
+  assert.equal(ev2[0].a, 2); assert.equal(ev2[0].rank, 2);
   assert.equal(p.petsCast, 2);
   assert.equal(p.spellsCast, 2); // je to kúzlo – víly „Po kúzle" ho vidia
   assert.equal(p.spentSpells.length, 2);
@@ -290,7 +290,7 @@ test("bot (psíci): Pohladkanie hodí na najsilnejšieho Psíka; pohladkania nie
   for (const x of p.hand) assert.equal(B.isJunk(state, p, x), false);
   B.botTurn(state, "p2", "hard");
   assert.equal(p.petsCast, 2);
-  assert.equal(dog.pa, 4); // +3 (Super) +1 – obe na psa, navždy
+  assert.equal(dog.pa, 3); // +2 (Super) +1 – obe na psa, navždy
   assert.equal(bear.pa, undefined);
   // pohladkania sa do stropu kúziel nerátajú: Minca má rovnaké skóre
   // s pohladkaniami v balíčku aj bez nich

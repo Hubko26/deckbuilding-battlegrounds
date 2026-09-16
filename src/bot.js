@@ -763,7 +763,7 @@ const Bot = (() => {
       case "starPower": return ab * (PW_BOARD + 1) * PW_PERM + (f.n || 0) * PW_BOOST; // Pečať všetkým + Živelná sila
       case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0);
       // ----- Psíci -----
-      // Pohladkanie: +v/+v (v = 3^(stupeň−1)) navždy na psíkovi – ako Jablko
+      // Pohladkanie: +v/+v (v = 2^(stupeň−1)) navždy na psíkovi – ako Jablko
       // ×1,5 za trvalosť. rank tu = stupeň kúzla.
       case "petBuff": return ((f.a || 0) + (f.h || 0)) * Cards.petValue(rank) * 1.5;
       // Pohladkanie do balíčka ≈ 2,5 bodu (+1/+1 navždy + neskoršie spojenie);

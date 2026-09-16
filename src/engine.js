@@ -620,8 +620,8 @@ const Engine = (() => {
 
   // ---------- Spájanie Pohladkaní (psíci) ----------
   // 3 Pohladkania rovnakého stupňa v ruke, balíčku alebo kôpke sa spoja na
-  // jedno o stupeň vyššie (sila ×3 – stat-neutrálne, hráč nič nestráca,
-  // získa kompresiu balíčka a jedno zoslanie namiesto troch). Bez stropu
+  // jedno o stupeň vyššie (sila ×2 ako evolve statov – jedno pohladkanie
+  // „prepadne", výhra je kompresia balíčka a jedno zoslanie namiesto troch). Bez stropu
   // stupňa. Kúzla zahrané v tomto ťahu (spentSpells) sa NErátajú – inak by
   // zoslané pohladkanie splynulo do Super a jeho hodnota by sa zahrala 2×.
   // Výsledok ide do ruky, ak je hráč práve na ťahu a má miesto (dieťa vidí
@@ -989,7 +989,7 @@ const Engine = (() => {
   // ťah), až potom kúzlo minie (opustí ruku) a aplikuje efekt – poradie je
   // dôležité pre veľkosť ruky (draw, evolve do ruky).
   const SPELL_CAST = {
-    // Pohladkanie (psíci): +v/+v vybranej vlastnej príšerke, v = 3^(stupeň−1).
+    // Pohladkanie (psíci): +v/+v vybranej vlastnej príšerke, v = 2^(stupeň−1).
     // Psíkovi ostáva NAVŽDY (pa/ph cestuje s kartou cez balíček aj evolve),
     // inej príšerke len do konca boja. Živelná sila nezosilňuje. Počítadlo
     // petsCast (P008) rastie o 1 bez ohľadu na stupeň.

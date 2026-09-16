@@ -417,9 +417,9 @@ const L = {
       en: `🔮 <i class="hl-e">Imprint</i> +X/+Y to a Race: all your minions of that race – in your deck and the ones you buy later too – get the stats <i class="hl-e">forever</i>. Other buffs from battle last only <i class="hl-b">until the fight ends</i>; growth marked <i class="hl-e">FOREVER</i> stays on the card.`,
     },
     {
-      sk: `🐶 <i class="hl-e">Psíci</i> generujú kúzlo <i class="hl-e">Pohladkanie</i> (+1/+1; Psíkovi <i class="hl-e">navždy</i>). Tri rovnaké sa spoja na vyšší stupeň: Super +3, Mega +9, Giga +27… bez stropu.`,
-      cs: `🐶 <i class="hl-e">Pejsci</i> generují kouzlo <i class="hl-e">Pohlazení</i> (+1/+1; Pejskovi <i class="hl-e">navždy</i>). Tři stejná se spojí na vyšší stupeň: Super +3, Mega +9, Giga +27… bez stropu.`,
-      en: `🐶 <i class="hl-e">Doggies</i> generate the <i class="hl-e">Pet</i> spell (+1/+1; <i class="hl-e">forever</i> on a Doggy). Three of the same merge into the next level: Super +3, Mega +9, Giga +27… no cap.`,
+      sk: `🐶 <i class="hl-e">Psíci</i> generujú kúzlo <i class="hl-e">Pohladkanie</i> (+1/+1; Psíkovi <i class="hl-e">navždy</i>). Tri rovnaké sa spoja na vyšší stupeň: Super +2, Mega +4, Giga +8… bez stropu.`,
+      cs: `🐶 <i class="hl-e">Pejsci</i> generují kouzlo <i class="hl-e">Pohlazení</i> (+1/+1; Pejskovi <i class="hl-e">navždy</i>). Tři stejná se spojí na vyšší stupeň: Super +2, Mega +4, Giga +8… bez stropu.`,
+      en: `🐶 <i class="hl-e">Doggies</i> generate the <i class="hl-e">Pet</i> spell (+1/+1; <i class="hl-e">forever</i> on a Doggy). Three of the same merge into the next level: Super +2, Mega +4, Giga +8… no cap.`,
     },
     {
       sk: `⚔️ V boji sa útočí zľava doprava; <i class="hl-r">Obrancovia 🛡️</i> musia byť napadnutí prví. Preživšie príšery uberú <i class="hl-r">❤️</i> súperovmu hrdinovi.`,
@@ -771,9 +771,10 @@ L.cards = (() => {
     }
     return { sk: `Pohladkanie ${rank}. stupňa`, cs: `Pohlazení ${rank}. stupně`, en: `Pet lvl ${rank}` };
   };
-  // Sila pohladkania podľa stupňa: +1, +3, +9, +27… (×3 – spojenie troch
-  // je stat-neutrálne, hráč spájaním nič nestráca).
-  const petValue = rank => Math.pow(3, rank - 1);
+  // Sila pohladkania podľa stupňa: +1, +2, +4, +8… (×2 ako evolve statov –
+  // tri pohladkania sa spoja na dvojnásobok, jedno „prepadne" ako pri
+  // evolve príšer; výhra je kompresia balíčka a jedno zoslanie).
+  const petValue = rank => Math.pow(2, rank - 1);
 
   // Kľúčové slová schopností (label pred dvojbodkou / proc badge).
   const kwLabel = {
@@ -818,9 +819,9 @@ L.cards = (() => {
   const oneShotNote = { sk: "Jednorazové – po ťahu zmizne.", cs: "Jednorázové – po tahu zmizí.", en: "One-shot – vanishes after the turn." };
   // Pohladkanie: poznámka o spájaní (3 rovnaké → vyšší stupeň, bez stropu).
   const petMergeNote = {
-    sk: "3 rovnaké sa spoja na vyšší stupeň (×3).",
-    cs: "3 stejná se spojí na vyšší stupeň (×3).",
-    en: "3 of the same merge into the next level (×3).",
+    sk: "3 rovnaké sa spoja na vyšší stupeň (×2).",
+    cs: "3 stejná se spojí na vyšší stupeň (×2).",
+    en: "3 of the same merge into the next level (×2).",
   };
 
   // Šablóny textov efektov: fx[type](f, m, hl, kw, def, byId) → {sk,cs,en}.
@@ -1152,7 +1153,7 @@ L.cards = (() => {
       en: `pick a minion – after it dies it gets back up as a ${m}/${m} (auras apply)`,
     }),
     // ---------- Psíci ----------
-    // Pohladkanie (kúzlo so stupňom): m = stupeň kúzla, sila ×3 za stupeň.
+    // Pohladkanie (kúzlo so stupňom): m = stupeň kúzla, sila ×2 za stupeň.
     // Psíkovi ostáva NAVŽDY (pa/ph), inej príšerke do konca boja. Živelná
     // sila ho nezosilňuje (free kúzlo bez stropu by snowballovalo).
     petBuff: (f, m) => {

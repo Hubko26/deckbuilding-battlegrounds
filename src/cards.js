@@ -1,8 +1,8 @@
 // Dáta kariet. Roster = 60 príšer z art sád (assets/cards), 6 rás × 10,
 // každá príšera má vlastné meno a obrázok pre každý evolučný stupeň
-// (bronz → striebro → zlato), + 11 Psíkov (rasa doggy, 9 s artom, P003 a
-// P007 zatiaľ noArt: true – generický rám s emoji ako tokeny). Texty schopností sa
-// generujú zo šablón v src/i18n.js (L.cards).
+// (bronz → striebro → zlato), + 9 Psíkov (rasa doggy, art sada Doggo).
+// Karta bez artu by dostala noArt: true (generický rám s emoji ako tokeny).
+// Texty schopností sa generujú zo šablón v src/i18n.js (L.cards).
 //
 // Príšera: { id, tier, race, stageNames: [meno1, meno2, meno3], atk, hp,
 //            taunt?, power?, noArt?, emoji? }  – art sa odvodí z id: assets/cards/<ID>_<rank>.webp
@@ -254,7 +254,7 @@ const Cards = (() => {
     // šamanka P006 Zavýjanie, retriever bylinkár P007 Pečať, dalmatín showman
     // P008, shiba ronin P009 Verný až do konca. Motor rasy je
     // kúzlo Pohladkanie (id `pet`): +1/+1, Psíkovi NAVŽDY (pa/ph), 3 rovnaké
-    // sa spoja na vyšší stupeň ×3 (Super +3, Mega +9, Giga +27…) bez stropu.
+    // sa spoja na vyšší stupeň ×2 (Super +2, Mega +4, Giga +8…) bez stropu.
     // Generujú ho LEN P001 (Pri vyložení) a P002 (Pri smrti) – odhad 2–3
     // pohladkania za kolo, 25–35 za hru (logy: hra ~12 kôl, hráč vyloží
     // 1,5–2 karty dominantnej rasy za kolo). Zvyšok rasy sú psie schopnosti:
@@ -295,7 +295,7 @@ const Cards = (() => {
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     // Pohladkanie: generované kúzlo psíkov (nie je v obchode – gen), cena 0,
-    // stupeň bez stropu (sila ×3 za stupeň – L.cards.petValue). Cieľ: vlastná
+    // stupeň bez stropu (sila ×2 za stupeň – L.cards.petValue). Cieľ: vlastná
     // príšerka; Psíkovi ostáva navždy. Spúšťa vílie „Po kúzle" (je to kúzlo),
     // Živelná sila ho NEzosilňuje.
     { id: "pet", cost: 0, tier: 1, emoji: "👋", spell: true, gen: true, pet: true, fx: { type: "petBuff", a: 1, h: 1 } },

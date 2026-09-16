@@ -450,13 +450,15 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   **Predaj dá 0 zlata** (generátory nesmú byť zlatý motor), odhodenie ho
   nechá v kôpke.
 - **Reťaz stupňov bez stropu**: kúzlo nesie `rank` (jediné kúzlo so stupňom),
-  sila `3^(rank−1)`: Pohladkanie +1, Super +3, Mega +9, Giga +27, Ultra +81,
-  Omega +243, ďalej „Pohladkanie N. stupňa" (`L.cards.petName`,
+  sila `2^(rank−1)`: Pohladkanie +1, Super +2, Mega +4, Giga +8, Ultra +16,
+  Omega +32, ďalej „Pohladkanie N. stupňa" (`L.cards.petName`,
   `Cards.petValue`). **3 rovnaké stupne** v ruke, balíčku alebo kôpke sa
   automaticky spoja na jedno o stupeň vyššie (`Engine.checkPetMerge`, volá
-  sa z `checkEvolve`). ×3 je stat-neutrálne – spájanie je automatické,
-  hráč ním nič nestráca, získa kompresiu balíčka (pohladkania ho riedia) a
-  jedno zoslanie namiesto troch. Zoslané kúzlá v karanténe (`spentSpells`)
+  sa z `checkEvolve`). ×2 ako evolve statov príšer (hráčovo rozhodnutie
+  16. 9. 2026 – pôvodné ×3 dávalo Super +3/+3, príliš): tri pohladkania sa
+  spoja na dvojnásobok, jedno „prepadne" rovnako ako tretia kópia pri
+  evolve; výhra je kompresia balíčka (pohladkania ho riedia) a jedno
+  zoslanie namiesto troch. Zoslané kúzlá v karanténe (`spentSpells`)
   sa do trojice **nerátajú** (inak by sa hodnota zoslaného zahrala 2×).
   Výsledok ide do ruky, ak je hráč na ťahu a má miesto, inak do balíčka
   (event `petMerge`, `hidden` = použila sa neviditeľná kópia).
@@ -845,7 +847,7 @@ ruky), peniaze navyše.
 
 - **Pohladkanie** 👋 (id `pet`, cena 0, len generované psíkmi – nie je
   v obchode ani v poole): +1/+1 vybranej vlastnej príšerke, Psíkovi
-  navždy; jediné kúzlo so stupňom (×3 za stupeň, 3 rovnaké sa spoja).
+  navždy; jediné kúzlo so stupňom (×2 za stupeň, 3 rovnaké sa spoja).
   Detaily v „🐶 Psíci".
 - **Umlčanie** 🤫 (t2, cena 2): odložená kliatba – nabije sa (`p.silences`)
   a spotrebuje na začiatku najbližšieho boja, PRED „Pred bojom" efektmi:
