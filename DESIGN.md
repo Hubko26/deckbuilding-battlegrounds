@@ -1057,7 +1057,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `dragonPact` | 🐲 | dračie bojové aury (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) +1/+1 |
 | `ogreSabotage` | 👹 | Pečať +1/+0 Ogrom; minca za súperove trinkety |
 | `ogreCareful` | 👹 | hody padnú vždy dobre, bonusy polovičné (min. 1) |
-| `doggyLeash` | 🐶 late | každé generovanie Pohladkania (P001, P002) dá o 1 viac – endgame palivo pre Veľké pohladkanie; art je placeholder (rám Zákona svorky + emoji) |
+| `doggyLeash` | 🐶 late | každé generovanie Pohladkania (P001, P002) dá o 1 viac – endgame palivo pre Veľké pohladkanie |
 | `cheapUpgrade` | – | upgrade o 2 lacnejší (min. 2) |
 | `richSell` | – | predaj dáva 2 |
 | `twinEvolve1` | – | kartám tieru 1 stačia 2 kópie |
