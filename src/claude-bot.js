@@ -42,10 +42,10 @@ RULES:
 - 3 copies of the same card+rank ANYWHERE (board/hand/deck/discard) auto-merge into a stronger rank (stats x2 / x4). The merged card ALWAYS returns to your hand (even if a copy was on the board) – play it again, its battlecry triggers at the higher rank. Completing triples is the strongest play.
 - Shop: common cards (shared), private cards, and one spell slot. Refresh costs 1. Tier upgrade unlocks stronger cards and +1 private slot.
 - Spells are cast for free from hand; they return to your deck cycle (one-shot token spells vanish).
-- Races: beast (big bodies/auras), elemental (zaps/AoE), undead (skeleton swarm), fairy (abilities trigger on each spell cast), dragon (mercenaries – above-curve bodies whose battlecries boost the RACE of a targeted friendly minion; they fit into any build), ogre (huge stats with chaotic downsides – coin flips, friendly fire, self-hits). OGRES ARE OFF-LIMITS FOR YOU: never buy an ogre, never pick one from a discover, never keep one – the driver refuses ogre buys anyway. Stick to a dominant race for synergy.
+- Races: beast (big bodies/auras), elemental (zaps/AoE), undead (skeleton swarm), fairy (abilities trigger on each spell cast), doggy (good boys: P001/P002/P007 generate the free "pet" spell into your deck – cast it on a DOGGY for a PERMANENT +1/+1; three pets of the same level auto-merge into the next level worth x3 (Super +3, Mega +9, Giga +27…); P006 tutors a pet from the deck, P010 gains +1/+1 per pet cast; dog tricks: P003 removes an enemy Taunt, P004 halves a random enemy's stats, P005 steals half of the remaining stats after its attack, P008 buffs all doggies per doggy on board, P011 (t6) wins the fight instantly when alone against a single enemy), dragon (mercenaries – above-curve bodies whose battlecries boost the RACE of a targeted friendly minion; they fit into any build), ogre (huge stats with chaotic downsides – coin flips, friendly fire, self-hits). OGRES ARE OFF-LIMITS FOR YOU: never buy an ogre, never pick one from a discover, never keep one – the driver refuses ogre buys anyway. Stick to a dominant race for synergy.
 - Battle: sides alternate attacks, random targets, Taunt minions must be hit first. "startFight"/"deathrattle"/"onAttack" abilities as written on cards.
 - "Imprint +X/+Y to <Race>" = permanent race aura: ALL your minions of that race (board, hand, deck, tokens, future buys) get +X/+Y forever. Buy Imprint cards of your race early.
-- MAIN races are beast, elemental, undead, fairy. OGRE and DRAGON are SUPPORT races – never a main build: dragons are mercenaries whose battlecries feed the race you target; ogres you do NOT buy at all (an ogre in a fairy/undead deck is pure junk that pushes your real cards out of the 5-card hand). Owning many dragons does NOT make them your race; dominantRace in the state already ignores them. If dominantRace is null, pick the main race you own most of (or the best Imprint/engine in the shop) and commit to it.
+- MAIN races are beast, elemental, undead, fairy, doggy. OGRE and DRAGON are SUPPORT races – never a main build: dragons are mercenaries whose battlecries feed the race you target; ogres you do NOT buy at all (an ogre in a fairy/undead deck is pure junk that pushes your real cards out of the 5-card hand). Owning many dragons does NOT make them your race; dominantRace in the state already ignores them. If dominantRace is null, pick the main race you own most of (or the best Imprint/engine in the shop) and commit to it.
 
 YOUR TASK: return ONLY a JSON object, no markdown fences, shaped:
 {"actions":[...], "taunt":"..."}
@@ -55,7 +55,7 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"buy","id":"<cardId>"}              buy card with that id from any shop row
 - {"a":"refresh"}                          reroll shop (1 gold)
 - {"a":"play","id":"<cardId>","target":"<own board cardId, optional>"}  play minion from hand to board; target only matters for dragons with targeted battlecries (the effect applies to the TARGET's race – target a minion of your dominant race!)
-- {"a":"cast","id":"<spellId>","target":"<own board cardId, optional>"}  cast spell
+- {"a":"cast","id":"<spellId>","target":"<own board cardId, optional>"}  cast spell (the "pet" spell needs a target – always a DOGGY on your board, the buff is permanent there)
 - {"a":"sell","zone":"hand"|"board","id":"<cardId>"}  sell for 1 gold (card leaves the game)
 - {"a":"discard","zone":"hand"|"board","id":"<cardId>"}  put card into your discard pile – NO gold, card STAYS in your deck cycle and comes back in a later hand
 - {"a":"move","id":"<own board cardId>","slot":0-4}  reposition minion on board (0 = leftmost = attacks first; swaps with occupant)
@@ -85,7 +85,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
   // Sila = Bot.cardPower: telo + odhad schopnosti v stat bodoch (tabuľka:
   // `npm run power`).
   function catalogue(state) {
-    const order = ["beast", "elemental", "undead", "fairy", "dragon", "ogre"];
+    const order = ["beast", "elemental", "undead", "fairy", "doggy", "dragon", "ogre"];
     const defs = Cards.DEFS.filter(d => !state.banned || d.race !== state.banned);
     const lines = [];
     for (const race of order) {
@@ -139,7 +139,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
     const junkInHand = p.hand.filter(x => !x.spell && Bot.isJunk(state, p, x)).map(x => x.defId);
     return {
       round: state.round,
-      you: { hp: p.hp, tier: p.tier, money: p.money, upgradeCost: Engine.upgradeCost(state, pid), dmgBoost: p.dmgBoost, raceAuras: p.raceBuffs, spellsCastTotal: p.spellsCast },
+      you: { hp: p.hp, tier: p.tier, money: p.money, upgradeCost: Engine.upgradeCost(state, pid), dmgBoost: p.dmgBoost, raceAuras: p.raceBuffs, spellsCastTotal: p.spellsCast, petsCastTotal: p.petsCast || 0 },
       humanOpponent: { hp: foe.hp, tier: foe.tier, boughtThisRound: foe.bought },
       hand: p.hand.map(inst),
       board: p.board.map(x => ({ ...inst(x), slot: x.slot })),

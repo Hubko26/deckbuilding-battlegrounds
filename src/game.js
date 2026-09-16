@@ -889,7 +889,7 @@ async function runBattle() {
         // Oslabenie (D001): −a/−h floatuje červeno, čísla na karte klesnú.
         const el = cardById(ev.uid);
         const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
-        log(`🐲 ${name} ${t(L.shrinkMsg)} ${fmtBuff(ev.a, ev.h)}`);
+        log(`${ev.icon || "🐲"} ${name} ${t(L.shrinkMsg)} ${fmtBuff(ev.a, ev.h)}`);
         if (el) {
           floatText(el, fmtBuff(ev.a, ev.h), false);
           const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
@@ -898,6 +898,68 @@ async function runBattle() {
           if (ev.h) el.dataset.maxhp = String(Math.max(1, Number(el.dataset.maxhp || 0) + ev.h));
           Sfx.zap();
           await sleep(500);
+        }
+        break;
+      }
+      // ----- Psíci -----
+      case "pee": {
+        // Ocikaj (P004): staty na polovicu – žltá kvapka, čísla klesnú.
+        const el = cardById(ev.uid);
+        const fromEl = ev.from ? cardById(ev.from) : null;
+        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
+        log(`🐩 ${name} ${t(L.peeMsg)} ${fmtBuff(ev.a, ev.h)}`);
+        if (el) {
+          if (fromEl) await shootProjectile(fromEl, el, "#ffd43b");
+          floatText(el, `💦 ${fmtBuff(ev.a, ev.h)}`, false);
+          const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
+          if (atkEl && ev.a) atkEl.textContent = String((parseInt(atkEl.textContent, 10) || 0) + ev.a);
+          if (hpEl && ev.h) hpEl.textContent = String((parseInt(hpEl.textContent, 10) || 0) + ev.h);
+          if (ev.h) el.dataset.maxhp = String(Math.max(1, Number(el.dataset.maxhp || 0) + ev.h));
+          impactRing(el, "#ffd43b");
+          spawnParticles(el, { n: 8, color: "#ffd43b", emoji: "💦", spread: 50 });
+          Sfx.hex();
+          await sleep(600);
+        }
+        break;
+      }
+      case "bark": {
+        // Brechot (P003): súper stratil Obrancu – badge preč.
+        const el = cardById(ev.uid);
+        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
+        log(`🐕 ${name} ${t(L.barkMsg)}`);
+        if (el) {
+          el.querySelector(".taunt-badge")?.remove();
+          floatText(el, "🐕💢");
+          impactRing(el, "#868e96");
+          Sfx.silence();
+          await sleep(500);
+        }
+        break;
+      }
+      case "barkFizzle":
+        log(t(L.barkFizzleMsg));
+        break;
+      case "fetch": {
+        // Aport (P005): za ním idú shrink (obranca) a buff (kamarát) eventy.
+        const a = Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang);
+        const b = ev.targetDefId ? Cards.nameOf(Cards.byId[ev.targetDefId], ev.targetRank || 1, I18N.lang) : "?";
+        log(t(L.fetchMsg).replace("{a}", a).replace("{b}", b).replace("{n}", `${ev.a}/${ev.h}`));
+        const from = cardById(ev.targetUid), to = cardById(ev.toUid);
+        if (from && to) await shootProjectile(from, to, "#f783ac");
+        break;
+      }
+      case "lastStand": {
+        // Verný až do konca (P011): sám proti jedinému – výhra boja, súper padne.
+        const a = Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang);
+        log(t(L.lastStandMsg).replace("{a}", a));
+        const el = cardById(ev.uid);
+        if (el) {
+          floatText(el, "👑🐶", true);
+          Sfx.evolve();
+          impactRing(el, "#ffd147");
+          spawnParticles(el, { n: 14, color: "#ffd147", emoji: "⭐", spread: 80 });
+          screenShake(0.8);
+          await sleep(900);
         }
         break;
       }
@@ -1205,6 +1267,7 @@ const center = r => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 // príšerku, board = vlna cez celú vlastnú plochu, self = k hrdinovi/peniazom.
 const SPELL_FX = {
   buffTarget:     { color: "#40c057", emoji: "✨", mode: "target" },
+  petBuff:        { color: "#f783ac", emoji: "👋", mode: "target" },
   copyToDeck:     { color: "#4dabf7", emoji: "🪞", mode: "target" },
   transform:      { color: "#9775fa", emoji: "🎩", mode: "target" },
   swapDeck:       { color: "#3bc9db", emoji: "🌀", mode: "target" },
@@ -2002,7 +2065,7 @@ function markZones(src, on) {
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
 const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget", "reviveAs", "buffOne"]);
 // Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
-const TARGETED_SPELL = new Set(["buffTarget", "copyToDeck", "transform", "swapDeck"]);
+const TARGETED_SPELL = new Set(["buffTarget", "petBuff", "copyToDeck", "transform", "swapDeck"]);
 
 function endDrag(e) {
   const d = drag;
@@ -2122,13 +2185,21 @@ function act(events) {
       Sfx.evolve();
       log(`⭐ ${t(L.allMinionsForever)} +${ev.a}/+${ev.h}!`);
     }
+    // Psíci: Pohladkanie do balíčka / spojenie troch na vyšší stupeň.
+    if (ev.type === "addPet" && ev.pid === MY) {
+      log(`${t(L.addPetMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId.pet, ev.rank, I18N.lang)}`);
+    }
+    if (ev.type === "petMerge" && ev.pid === MY) {
+      Sfx.evolve();
+      log(`${t(L.petMergeMsg)} ${Cards.nameOf(Cards.byId.pet, ev.rank, I18N.lang)}`);
+    }
   }
   renderAll();
   // Evolve animácia po prerenderi.
   for (const ev of events) {
-    if (ev.type === "evolve" && ev.uid) {
+    if ((ev.type === "evolve" || ev.type === "petMerge") && ev.uid) {
       const el = cardById(ev.uid);
-      if (el) { el.classList.add("evolving"); spawnParticles(el, { n: 12, color: "#ffd147", emoji: "⭐", spread: 80 }); }
+      if (el) { el.classList.add("evolving"); spawnParticles(el, { n: 12, color: ev.type === "petMerge" ? "#f783ac" : "#ffd147", emoji: ev.type === "petMerge" ? "👋" : "⭐", spread: 80 }); }
     }
   }
   if (spellEv) playSpellCast(spellEv, castFrom);

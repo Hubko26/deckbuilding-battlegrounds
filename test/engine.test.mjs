@@ -46,14 +46,16 @@ test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", ()
       assert.equal(d.stageNames.length, 3, `karta ${d.id} nemá 3 mená`);
       for (const r of [1, 2, 3]) {
         assert.equal(typeof C.nameOf(d, r, "sk"), "string");
-        assert.match(C.artOf(d, r), /assets\/cards\/.+_\d\.webp/);
+        // Psíci (noArt) zatiaľ art nemajú – generický rám s emoji.
+        if (d.noArt) { assert.equal(C.artOf(d, r), null); assert.ok(d.emoji, `${d.id} bez artu potrebuje emoji`); }
+        else assert.match(C.artOf(d, r), /assets\/cards\/.+_\d\.webp/);
       }
     } else {
       for (const lang of ["sk", "cs", "en"]) assert.equal(typeof d.name[lang], "string");
     }
     for (const lang of ["sk", "cs", "en"]) C.cardText(d, 2, lang); // nesmie spadnúť
   }
-  assert.equal(minions, 60); // 6 rás × 10 príšer
+  assert.equal(minions, 71); // 6 rás × 10 príšer + 11 Psíkov
 });
 
 test("drak buffRaceOf: cielený battlecry buffne rasu cieľa; bez cieľa fallback na najsilnejšiu", () => {
@@ -214,7 +216,7 @@ test("art súbory existujú pre všetky príšery a stupne", async () => {
   const { ROOT } = await import("./harness.mjs");
   const { C } = fresh();
   for (const d of C.DEFS) {
-    if (d.spell) continue;
+    if (d.spell || d.noArt) continue;
     for (const r of [1, 2, 3]) {
       const p = path.join(ROOT, C.artOf(d, r));
       assert.ok(fs.existsSync(p), `chýba ${C.artOf(d, r)}`);
@@ -2806,7 +2808,9 @@ test("ban: newGame s ban dá fázu ban, každému 3 rôzne rasy, balíčky a obc
   const all = [...state.ban.offers.p1, ...state.ban.offers.p2];
   assert.equal(state.ban.offers.p1.length, 3);
   assert.equal(state.ban.offers.p2.length, 3);
-  assert.deepEqual([...new Set(all)].sort(), Object.keys(C.RACES).sort());
+  // 7 rás: 6 rôznych v ponukách, jedna náhodne mimo (nedá sa zabanovať).
+  assert.equal(new Set(all).size, 6);
+  for (const r of all) assert.ok(C.RACES[r], r);
   assert.equal(state.p1.deck.length, 0);
   assert.equal(state.commons.length, 0);
   assert.equal(state.round, 0);

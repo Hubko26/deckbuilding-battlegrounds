@@ -133,11 +133,20 @@ const Bot = (() => {
   }
 
   // Počet kúziel vo všetkých zónach – kvôli hodnote víl („Po kúzle“).
+  // Pohladkania (psíci) sa nerátajú – sú motor rasy, nie kúpené kúzlo, a
+  // nesmú spustiť strop kúziel ani predaj balastu.
   function ownedSpellCount(p) {
     let n = 0;
-    for (const c of p.deck) if (Cards.byId[c.defId].spell) n++;
-    for (const c of p.discard) if (Cards.byId[c.defId].spell) n++;
-    for (const x of p.hand) if (x.spell) n++;
+    const spell = defId => { const d = Cards.byId[defId]; return d.spell && !d.pet; };
+    for (const c of p.deck) if (spell(c.defId)) n++;
+    for (const c of p.discard) if (spell(c.defId)) n++;
+    for (const x of p.hand) if (x.spell && spell(x.defId)) n++;
+    return n;
+  }
+  // Koľko Pohladkaní hráč vlastní (ruka, balíček, kôpka) – hodnota tutora P006.
+  function ownedPetCount(p) {
+    let n = 0;
+    for (const c of [...p.deck, ...p.discard, ...p.hand]) if (Cards.byId[c.defId].pet) n++;
     return n;
   }
 
@@ -209,6 +218,13 @@ const Bot = (() => {
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
       // Mrchožrúti (B004 navždy, B009 dočasne) – cennejší s vyvolávačmi Mláďat
       if (pw.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005") + ownedCount(p, "B001") + ownedCount(p, "B006")) * 0.8;
+      // Psíci: generátory Pohladkaní rastú s počtom psov (pohladkanie na
+      // psíkovi je navždy), tutor P006 s počtom pohladkaní, P010 s počtom
+      // zoslaní, Zavýjanie s počtom psov na ploche.
+      if (fx.type === "addPet") score += 1 + (races.doggy || 0) * 0.5;
+      if (fx.type === "fetchPet") score += 1 + ownedPetCount(p) * 0.5;
+      if (fx.type === "petScale") score += 1 + (p.petsCast || 0) * 0.3;
+      if (fx.type === "howl") score += (races.doggy || 0) * 0.6;
     }
     if (def.spell) {
       const spells = ownedSpellCount(p);
@@ -315,6 +331,7 @@ const Bot = (() => {
     // dostať, je predaj. Mince (zlato) a discover (karta) sa nepredávajú, tie
     // hodnotu majú vždy; Štít naopak vždy (slot v ruke > Obranca), aj vílam.
     if (def.spell) {
+      if (def.pet) return false; // Pohladkanie: motor psíkov, predaj dá 0 – nikdy balast
       if (fillerSpell(def)) return true;
       if (def.fx.type === "gold" || def.fx.type === "discover") return false;
       return ownedSpellCount(p) > (dom === "fairy" ? SPELL_CAP_FAIRY : SPELL_CAP);
@@ -494,7 +511,16 @@ const Bot = (() => {
       const inst = p.hand[i];
       if (!inst || !inst.spell) continue;
       const fx = Cards.byId[inst.defId].fx;
-      if (fx.type === "buffTarget" && p.board.length) {
+      if (fx.type === "petBuff" && p.board.length) {
+        // Pohladkanie: na Psíka je NAVŽDY – najsilnejší vlastný Psík (bez
+        // tokenov), bez Psíka najsilnejšie telo. Easy hladká náhodne.
+        const dogs = p.board.filter(x => Cards.byId[x.defId].race === "doggy" && !Cards.byId[x.defId].token);
+        const pool = dogs.length ? dogs : p.board;
+        const target = cfg.smartSpells
+          ? [...pool].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0]
+          : pool[Math.floor(state.rng() * pool.length)];
+        push(act("castSpell", state, pid, i, target.uid));
+      } else if (fx.type === "buffTarget" && p.board.length) {
         // Vichor (2 útoky): najlepšie na „Pri útoku" kartu, inak najväčší útok.
         const score = fx.windfury
           ? x => x.atk + (Cards.byId[x.defId].power?.kw === "onAttack" ? 10 : 0)
@@ -638,8 +664,8 @@ const Bot = (() => {
   function attackPriority(inst) {
     const pw = Cards.byId[inst.defId].power;
     if (!pw) return 1;
-    if (pw.kw === "onAttack") return 0;
-    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell"].includes(pw.kw)) return 2;
+    if (pw.kw === "onAttack" || pw.kw === "afterAttack") return 0; // Aport chce útočiť, kým súper žije
+    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell", "lastStand"].includes(pw.kw)) return 2; // P011 má ostať posledný
     return 1;
   }
 
@@ -736,6 +762,20 @@ const Bot = (() => {
       case "transform": return 3; case "copyToDeck": return 6; case "swapDeck": return 2;
       case "starPower": return ab * (PW_BOARD + 1) * PW_PERM + (f.n || 0) * PW_BOOST; // Pečať všetkým + Živelná sila
       case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0);
+      // ----- Psíci -----
+      // Pohladkanie: +v/+v (v = 3^(stupeň−1)) navždy na psíkovi – ako Jablko
+      // ×1,5 za trvalosť. rank tu = stupeň kúzla.
+      case "petBuff": return ((f.a || 0) + (f.h || 0)) * Cards.petValue(rank) * 1.5;
+      // Pohladkanie do balíčka ≈ 2,5 bodu (+1/+1 navždy + neskoršie spojenie);
+      // Po nákupe každé kolo → horizont.
+      case "addPet": return f.n * m * 2.5 * (kw === "endTurn" ? PW_HORIZON : 1);
+      case "fetchPet": return f.n * m * 3;                     // tutor ako draw
+      case "halveEnemy": return m * 6;                         // polovica ~12-statového tela
+      case "loseTaunt": return m * 2;
+      case "fetchSteal": return 4 * PW_ATTACKS;                // ~4 body presunuté za útok
+      case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
+      case "petScale": return ab * 8;                          // ~8 pohladkaní zahraných za hru
+      case "lastStand": return 10;                             // výhra 1v1 – hodnotný záver boja
       default: return 0;
     }
   }

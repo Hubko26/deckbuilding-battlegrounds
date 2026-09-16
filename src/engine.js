@@ -188,7 +188,8 @@ const Engine = (() => {
   // rasové aury („všetky budúce X dostanú +a/+h“).
   function makeInst(state, defId, rank, p) {
     const def = Cards.byId[defId];
-    if (def.spell) return { uid: ++state.uidSeq, defId, rank: 1, spell: true };
+    // Kúzla nesú stupeň len Pohladkanie (pet, bez stropu); ostatné sú vždy 1.
+    if (def.spell) return { uid: ++state.uidSeq, defId, rank: def.pet ? (rank || 1) : 1, spell: true };
     const m = Cards.STAT_MULT[rank];
     const inst = {
       uid: ++state.uidSeq, defId, rank,
@@ -257,7 +258,7 @@ const Engine = (() => {
   function makePools() {
     const pools = { p1: {}, p2: {}, common: {} };
     for (const d of Cards.DEFS) {
-      if (d.token) continue;
+      if (d.token || d.gen) continue; // generované kúzlo (Pohladkanie) pool nemá
       if (d.spell) {
         pools.p1[d.id] = spellPoolCap(d);
         pools.p2[d.id] = spellPoolCap(d);
@@ -282,7 +283,7 @@ const Engine = (() => {
   // nechceme; na t1 je len Štít ×3). Vracia { defId, src? }.
   function rollSpell(state, tierLimit, poolKey) {
     const pool = state.pools[poolKey];
-    const defs = Cards.DEFS.filter(d => d.spell && !d.token && d.tier <= tierLimit);
+    const defs = Cards.DEFS.filter(d => d.spell && !d.token && !d.gen && d.tier <= tierLimit);
     const weighted = [];
     for (const d of defs) for (let i = 0; i < (pool[d.id] || 0); i++) weighted.push(d.id);
     if (weighted.length) {
@@ -304,7 +305,8 @@ const Engine = (() => {
   // mutatorId: undefined = vyžrebuj z rng (bežná hra), null = bez mutácie
   // (testy, balance sim), string = vynútená konkrétna mutácia.
   // opts.ban: true = hra začína fázou BAN (state.phase === "ban"): každý hráč
-  // dostane 3 rasy (6 rás rozdelených na dve trojice zo state.rng) a jednu
+  // dostane 3 rasy (rasy zamiešané zo state.rng, prvých 6 rozdelených na dve
+  // trojice – pri 7 rasách je jedna náhodne mimo ponuky) a jednu
   // z nich zabanuje (pickBan); z oboch výberov sa jedna vylosuje a jej karty
   // v celej hre nie sú (štartovací balíček, obchod, discover, klobúk…).
   // Štartovacie balíčky a obchod vznikajú až po vylosovaní (setupStart),
@@ -408,6 +410,7 @@ const Engine = (() => {
       rollBias: null, // { race, weight } – bot: súkromná ponuka praje jeho rase (rollCard)
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
       racePlayed: {}, // koľko príšer každej rasy hráč vyložil z ruky za celú hru (racePlayedScale)
+      petsCast: 0, // koľko Pohladkaní hráč zahral za celú hru (petScale – P010), počet zoslaní bez stupňa
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
       giftRound: 0, // mutácia „gift": v ktorom kole hráč naposledy dostal kúzlo
       maxHp: HERO_HP, // strop liečenia (mutácie menia štartovné HP)
@@ -606,12 +609,65 @@ const Engine = (() => {
     const needFor = defId => evolveNeed(state, p, defId);
     for (;;) {
       const group = findEvolveGroup(p, needFor);
-      if (!group) return;
+      if (!group) break;
       const consumed = consumeEvolveCopies(p, group, needFor(group.defId));
       const bonus = mergeEvolveBonus(consumed.copies);
       const uid = placeEvolved(state, p, group, consumed, bonus);
       events.push({ type: "evolve", pid: p.id, defId: group.defId, rank: group.rank + 1, uid, hidden: consumed.hidden });
     }
+    checkPetMerge(state, p, events);
+  }
+
+  // ---------- Spájanie Pohladkaní (psíci) ----------
+  // 3 Pohladkania rovnakého stupňa v ruke, balíčku alebo kôpke sa spoja na
+  // jedno o stupeň vyššie (sila ×3 – stat-neutrálne, hráč nič nestráca,
+  // získa kompresiu balíčka a jedno zoslanie namiesto troch). Bez stropu
+  // stupňa. Kúzla zahrané v tomto ťahu (spentSpells) sa NErátajú – inak by
+  // zoslané pohladkanie splynulo do Super a jeho hodnota by sa zahrala 2×.
+  // Výsledok ide do ruky, ak je hráč práve na ťahu a má miesto (dieťa vidí
+  // „Super!" a môže ho hneď zahrať), inak do balíčka. Kópie sa berú v poradí
+  // ruka → balíček → kôpka; hidden = použila sa aj neviditeľná kópia.
+  function checkPetMerge(state, p, events) {
+    for (;;) {
+      const group = findPetGroup(p);
+      if (!group) return;
+      let need = 3, hidden = false;
+      for (const inst of group.hand) { if (need <= 0) break; p.hand.splice(p.hand.indexOf(inst), 1); need--; }
+      for (const zone of ["deck", "discard"]) {
+        for (const idx of group[zone].reverse()) {
+          if (need <= 0) break;
+          p[zone].splice(idx, 1);
+          hidden = true;
+          need--;
+        }
+      }
+      const rank = group.rank + 1;
+      const toHand = state.phase === "shop" && state.active === p.id && p.hand.length < HAND_MAX;
+      let uid = null;
+      if (toHand) {
+        const sp = makeInst(state, "pet", rank);
+        sp.slot = freeSlot(p.hand, HAND_MAX);
+        p.hand.push(sp);
+        uid = sp.uid;
+      } else {
+        addToDeckRef(state, p, "pet", rank, 0, 0);
+      }
+      events.push({ type: "petMerge", pid: p.id, rank, uid, hidden });
+    }
+  }
+
+  function findPetGroup(p) {
+    const groups = {};
+    const group = rank => (groups[rank] ||= { rank, hand: [], deck: [], discard: [], total: 0 });
+    for (const inst of p.hand) {
+      if (inst.spell && Cards.byId[inst.defId].pet) { const g = group(inst.rank || 1); g.hand.push(inst); g.total++; }
+    }
+    for (const zone of ["deck", "discard"]) {
+      p[zone].forEach((c, i) => {
+        if (Cards.byId[c.defId].pet) { const g = group(c.rank || 1); g[zone].push(i); g.total++; }
+      });
+    }
+    return Object.values(groups).sort((a, b) => a.rank - b.rank).find(g => g.total >= 3) || null;
   }
 
   // Do evolve sa počítajú len príšerky pod zlatým stupňom (kúzla a tokeny nie).
@@ -933,6 +989,22 @@ const Engine = (() => {
   // ťah), až potom kúzlo minie (opustí ruku) a aplikuje efekt – poradie je
   // dôležité pre veľkosť ruky (draw, evolve do ruky).
   const SPELL_CAST = {
+    // Pohladkanie (psíci): +v/+v vybranej vlastnej príšerke, v = 3^(stupeň−1).
+    // Psíkovi ostáva NAVŽDY (pa/ph cestuje s kartou cez balíček aj evolve),
+    // inej príšerke len do konca boja. Živelná sila nezosilňuje. Počítadlo
+    // petsCast (P010) rastie o 1 bez ohľadu na stupeň.
+    petBuff(state, p, inst, def, targetUid) {
+      const target = ownMinion(p, targetUid);
+      if (!target) return null;
+      spendSpell(p, inst, def);
+      const v = Cards.petValue(inst.rank || 1);
+      const a = def.fx.a * v, h = def.fx.h * v;
+      buff(target, a, h);
+      const perm = isRace(state, p.id, Cards.byId[target.defId], "doggy");
+      if (perm) { target.pa = (target.pa || 0) + a; target.ph = (target.ph || 0) + h; }
+      p.petsCast = (p.petsCast || 0) + 1;
+      return [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a, h, perm }];
+    },
     buffTarget(state, p, inst, def, targetUid) {
       const target = ownMinion(p, targetUid);
       if (!target) return null;
@@ -1083,7 +1155,10 @@ const Engine = (() => {
     const inst = p[zone][idx];
     if (!inst) return null;
     p[zone].splice(idx, 1);
-    const gain = SELL_GAIN + (state.mutator === "richSell" || hasTrinket(state, pid, "richSell") ? 1 : 0);
+    // Pohladkanie sa predáva za 0 – zbavíš sa ho, ale generátory (P001/P002/
+    // P007) nesmú byť zlatý motor (3–4 pohladkania za kolo = 3–4 zlata).
+    const gain = Cards.byId[inst.defId].pet ? 0
+      : SELL_GAIN + (state.mutator === "richSell" || hasTrinket(state, pid, "richSell") ? 1 : 0);
     p.money += gain;
     returnSrc(state, inst.defId, inst.src); // kópie späť do poolov, z ktorých boli
     // Buyback: posledný predaj v ťahu sa dá raz vrátiť (omyl pri ťahaní).
@@ -1415,6 +1490,37 @@ const Engine = (() => {
     futureRace({ state, p, fx, m, events }) {
       grantRaceAura(state, p, fx.race, fx.a * m, fx.h * m, events);
     },
+    // Psíci: Pohladkanie do balíčka (P001 Pri vyložení, P007 Po nákupe;
+    // v boji P002 Pri smrti cez BATTLE_FX.addPet). Evolve = počet (1/2/3).
+    // Trojica sa hneď spojí (checkPetMerge).
+    addPet({ state, p, fx, m, events }) {
+      addPets(state, p, fx.n * m, fx.rank || 1, events);
+      checkPetMerge(state, p, events);
+    },
+    // Vyňuchaj (P006): z balíčka vytiahni Pohladkanie (najvyšší stupeň);
+    // bez pohladkania v balíčku dotiahni náhodnú kartu. n×stupeň.
+    fetchPet({ state, p, fx, m, events }) {
+      for (let i = 0; i < fx.n * m; i++) {
+        if (p.hand.length >= HAND_MAX) break;
+        let best = -1;
+        p.deck.forEach((c, idx) => {
+          if (Cards.byId[c.defId].pet && (best < 0 || (c.rank || 1) > (p.deck[best].rank || 1))) best = idx;
+        });
+        if (best < 0) { drawCards(state, p, 1, events); continue; }
+        const [c] = p.deck.splice(best, 1);
+        const sp = makeInst(state, "pet", c.rank || 1);
+        sp.slot = freeSlot(p.hand, HAND_MAX);
+        p.hand.push(sp);
+        events.push({ type: "draw", pid: p.id, defId: "pet", rank: sp.rank, fetched: true });
+      }
+      checkEvolve(state, p, events);
+    },
+    // P010: +a/+h za každé Pohladkanie zahrané v tejto hre (počet zoslaní,
+    // Super = 1). Ako spellScale: dočasné, bez stupňa.
+    petScale({ p, fx, self, events }) {
+      const n = p.petsCast || 0;
+      if (n > 0) buffWithEvent(self, p.id, fx.a * n, fx.h * n, events);
+    },
     // F008: permanentná aura pre KAŽDÚ rasu naraz; príšerky na ploche a v ruke
     // dostanú buff hneď (raz).
     futureAll({ p, fx, m, events }) {
@@ -1434,6 +1540,12 @@ const Engine = (() => {
     inst.atk += a;
     inst.maxHp += h;
     inst.hp += h;
+  }
+
+  // n Pohladkaní daného stupňa na náhodné miesta balíčka (nákup aj boj).
+  function addPets(state, p, n, rank, events) {
+    for (let i = 0; i < n; i++) addToDeckRef(state, p, "pet", rank, 0, 0);
+    if (n > 0) events.push({ type: "addPet", pid: p.id, rank, n });
   }
 
   // ---------- Koniec nákupnej fázy ----------
@@ -1668,6 +1780,8 @@ const Engine = (() => {
     let attacker = first;
     let guard = BATTLE_CAP; // poistka proti nekonečnému boju (→ remíza)
     while (aliveOn(sides, "p1").length && aliveOn(sides, "p2").length && guard-- > 0) {
+      // Verný až do konca (P011): sám proti jedinému súperovi = boj končí.
+      if (checkLastStand(state, sides, attacker, events)) break;
       const a = nextAttacker(sides[attacker], ptr, attacker);
       if (!a) break;
       // Vichor (windfury): dva útoky za ťah – druhý len ak prežila prvý.
@@ -1677,6 +1791,29 @@ const Engine = (() => {
       }
       attacker = other(attacker);
     }
+  }
+
+  // Verný až do konca (psík P011, kw lastStand): keď je na strane jediná
+  // živá príšerka s touto schopnosťou (neumlčaná) a súper má tiež jedinú,
+  // súperova padne okamžite – BEZ Pri smrti (nie je to zásah, je to výhra)
+  // a boj končí. Kontroluje sa pred každým útokom, strana na ťahu prvá
+  // (obaja s P011 1v1 → vyhráva ten, kto je na ťahu). Vráti true, ak boj skončil.
+  function checkLastStand(state, sides, attacker, events) {
+    for (const pid of sideOrder(attacker)) {
+      const mine = aliveOn(sides, pid), foes = aliveOn(sides, other(pid));
+      if (mine.length !== 1 || foes.length !== 1) continue;
+      const hero = mine[0];
+      if (hero.silenced || !Cards.powersOf(Cards.byId[hero.defId]).some(pw => pw.kw === "lastStand")) continue;
+      const t = foes[0];
+      events.push({ type: "proc", pid, uid: hero.uid, kw: "lastStand" });
+      events.push({ type: "lastStand", pid, uid: hero.uid, defId: hero.defId, rank: hero.rank, targetPid: other(pid), targetUid: t.uid, targetDefId: t.defId });
+      t.hp = 0;
+      t.dead = true;
+      t.revive = false; t.reviveAs = 0;
+      events.push({ type: "die", pid: other(pid), uid: t.uid, defId: t.defId });
+      return true;
+    }
+    return false;
   }
 
   // Ďalší živý útočník v poradí plochy (cyklicky); ukazovateľ sa posunie za neho.
@@ -1710,8 +1847,40 @@ const Engine = (() => {
     pushHp(events, attacker, a);
     pushHp(events, defender, d);
     cleaveSplash(state, sides, attacker, a, d, aDmg, events);
+    // Po údere (psík P005 Aport): obaja žijú → polovica zvyšných statov
+    // obrancu ide kamarátovi útočníka. Pred handleDeaths – smrti zo zásahu sa
+    // riešia až po ňom (obranca, čo padol, už nemá čo ukradnúť: hp <= 0).
+    if (a.hp > 0 && d.hp > 0) runAfterAttack(state, sides, attacker, a, d, events);
     handleDeaths(state, sides, events);
     return true;
+  }
+
+  // „Po údere" schopnosti útočníka (kw afterAttack) – zatiaľ len Aport.
+  function runAfterAttack(state, sides, pid, a, d, events) {
+    if (a.silenced) return;
+    for (const pw of Cards.powersOf(Cards.byId[a.defId])) {
+      if (pw.kw !== "afterAttack") continue;
+      events.push({ type: "proc", pid, uid: a.uid, kw: "afterAttack" });
+      if (pw.fx.type === "fetchSteal") fetchSteal(state, sides, pid, a, d, events);
+    }
+  }
+
+  // Aport: obranca stratí polovicu zvyšného útoku aj života (zaokrúhlené
+  // dole – 1 ostane 1, nikdy nepadne), náhodný iný živý kamarát útočníka
+  // ich dostane (bez kamaráta si ich nechá útočník). Nie je to damage
+  // (štít nepomôže). Dočasné ako všetky bojové buffy. S Vichorom dvakrát.
+  function fetchSteal(state, sides, pid, a, d, events) {
+    const foe = other(pid);
+    const sa = Math.floor(d.atk / 2), sh = Math.floor(d.hp / 2);
+    if (!sa && !sh) return;
+    d.atk -= sa;
+    d.hp -= sh; d.maxHp = Math.max(d.hp, d.maxHp - sh);
+    const friends = aliveOn(sides, pid).filter(f => f !== a);
+    const to = friends.length ? pick(friends, state.rng) : a;
+    events.push({ type: "fetch", pid, uid: a.uid, defId: a.defId, targetPid: foe, targetUid: d.uid, targetDefId: d.defId, targetRank: d.rank, toUid: to.uid, a: sa, h: sh });
+    events.push({ type: "shrink", pid: foe, uid: d.uid, defId: d.defId, rank: d.rank, a: 0 - sa, h: 0 - sh, icon: "🦴" });
+    pushHp(events, foe, d);
+    buffWithEvent(to, pid, sa, sh, events);
   }
 
   // Číslo zásahu príšerky: útok, alebo pri Divokom údere (O009, def.wildAtk)
@@ -1994,6 +2163,48 @@ const Engine = (() => {
         events.push({ type: "futureBuff", pid, race: "ogre", a, h });
       }
     },
+    // ----- Psíci -----
+    // P002 Pri smrti: Pohladkanie do balíčka (spojí sa na začiatku ďalšieho
+    // ťahu – checkEvolve v beginShopTurn).
+    addPet({ state, pid, fx, m, events }) {
+      addPets(state, state[pid], fx.n * m, fx.rank || 1, events);
+    },
+    // P004 Ocikaj: m náhodných živých súperov (každý raz za boj – flag
+    // `peed`) má útok aj životy na polovicu, zaokrúhlené HORE (1 ostane 1).
+    // Nie je to damage: štít nepomôže, Pri smrti sa nespustí.
+    halveEnemy({ state, sides, pid, self, m, events }) {
+      const foe = other(pid);
+      for (let i = 0; i < m; i++) {
+        const targets = aliveOn(sides, foe).filter(x => !x.peed);
+        if (!targets.length) break;
+        const t = pick(targets, state.rng);
+        t.peed = true;
+        const na = Math.ceil(t.atk / 2), nh = Math.ceil(t.hp / 2);
+        const da = t.atk - na, dh = t.hp - nh;
+        t.atk = na; t.hp = nh; t.maxHp = Math.max(nh, t.maxHp - dh);
+        events.push({ type: "pee", pid: foe, uid: t.uid, defId: t.defId, rank: t.rank, from: self.uid, a: 0 - da, h: 0 - dh });
+        pushHp(events, foe, t);
+      }
+    },
+    // P003 Brechot: m náhodných súperových Obrancov stratí Obrancu.
+    loseTaunt({ state, sides, pid, self, m, events }) {
+      const foe = other(pid);
+      for (let i = 0; i < m; i++) {
+        const targets = aliveOn(sides, foe).filter(x => x.taunt);
+        if (!targets.length) { if (i === 0) events.push({ type: "barkFizzle", pid }); break; }
+        const t = pick(targets, state.rng);
+        t.taunt = false;
+        events.push({ type: "bark", pid: foe, uid: t.uid, defId: t.defId, rank: t.rank, from: self.uid });
+      }
+    },
+    // P008 Zavýjanie: všetci živí Psíci (aj sám) +a·m/+h·m za KAŽDÉHO živého
+    // Psíka na ploche – 5 psov = +5/+5 každému. Dočasné.
+    howl({ state, sides, pid, fx, m, events }) {
+      const dogs = aliveOn(sides, pid).filter(f => isRace(state, pid, Cards.byId[f.defId], "doggy"));
+      const n = dogs.length;
+      if (!n) return;
+      for (const f of dogs) buffWithEvent(f, pid, fx.a * m * n, fx.h * m * n, events);
+    },
     // Rast seba; perm (B004) = rast NAVŽDY aj z boja (na originál na ploche).
     growSelf({ state, pid, self, fx, m, events }) {
       buffWithEvent(self, pid, fx.a * m, fx.h * m, events);
@@ -2217,7 +2428,7 @@ const Engine = (() => {
     handDraw, heroDmgCap, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
-    sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, makeInst, commonTierLimit,
+    sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,
     pileCard, drawCards, rollCard, returnToPool, // pre testy a nástroje (cyklus balíčka, pooly, rollBias)
   };
 })();

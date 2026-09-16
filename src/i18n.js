@@ -417,6 +417,11 @@ const L = {
       en: `🔮 <i class="hl-e">Imprint</i> +X/+Y to a Race: all your minions of that race – in your deck and the ones you buy later too – get the stats <i class="hl-e">forever</i>. Other buffs from battle last only <i class="hl-b">until the fight ends</i>; growth marked <i class="hl-e">FOREVER</i> stays on the card.`,
     },
     {
+      sk: `🐶 <i class="hl-e">Psíci</i> generujú kúzlo <i class="hl-e">Pohladkanie</i> (+1/+1; Psíkovi <i class="hl-e">navždy</i>). Tri rovnaké sa spoja na vyšší stupeň: Super +3, Mega +9, Giga +27… bez stropu.`,
+      cs: `🐶 <i class="hl-e">Pejsci</i> generují kouzlo <i class="hl-e">Pohlazení</i> (+1/+1; Pejskovi <i class="hl-e">navždy</i>). Tři stejná se spojí na vyšší stupeň: Super +3, Mega +9, Giga +27… bez stropu.`,
+      en: `🐶 <i class="hl-e">Doggies</i> generate the <i class="hl-e">Pet</i> spell (+1/+1; <i class="hl-e">forever</i> on a Doggy). Three of the same merge into the next level: Super +3, Mega +9, Giga +27… no cap.`,
+    },
+    {
       sk: `⚔️ V boji sa útočí zľava doprava; <i class="hl-r">Obrancovia 🛡️</i> musia byť napadnutí prví. Preživšie príšery uberú <i class="hl-r">❤️</i> súperovmu hrdinovi.`,
       cs: `⚔️ V boji se útočí zleva doprava; <i class="hl-r">Obránci 🛡️</i> musí být napadeni první. Přeživší příšery uberou <i class="hl-r">❤️</i> soupeřovu hrdinovi.`,
       en: `⚔️ Minions attack left to right; <i class="hl-r">Defenders 🛡️</i> must be attacked first. Survivors damage the enemy hero's <i class="hl-r">❤️</i>.`,
@@ -580,6 +585,42 @@ const L = {
     cs: "🌀 Portál: {a} odešel do balíčku, z balíčku přišel {b}!",
     en: "🌀 Portal: {a} went to the deck, {b} came out of it!",
   },
+  // Psíci – bojové hlášky.
+  peeMsg: {
+    sk: "bol ocikaný – útok aj životy na polovicu",
+    cs: "byl očůrán – útok i životy na polovinu",
+    en: "got peed on – attack and health halved",
+  },
+  barkMsg: {
+    sk: "sa zľakol brechotu a stratil Obrancu",
+    cs: "se lekl štěkotu a ztratil Obránce",
+    en: "got scared by the bark and lost Taunt",
+  },
+  barkFizzleMsg: {
+    sk: "🐶 Brechot nenašiel žiadneho Obrancu",
+    cs: "🐶 Štěkot nenašel žádného Obránce",
+    en: "🐶 The bark found no Taunt minion",
+  },
+  fetchMsg: {
+    sk: "🐶 Aport! {a} ukradol {b} polovicu statov ({n}) a dal ich kamarátovi",
+    cs: "🐶 Aport! {a} ukradl {b} polovinu statů ({n}) a dal je kamarádovi",
+    en: "🐶 Fetch! {a} stole half of {b}'s stats ({n}) and gave them to a friend",
+  },
+  lastStandMsg: {
+    sk: "🐶 Verný až do konca: {a} ostal sám proti jedinému súperovi – vyhráva boj!",
+    cs: "🐶 Věrný až do konce: {a} zůstal sám proti jedinému soupeři – vyhrává boj!",
+    en: "🐶 Loyal to the end: {a} stands alone against a single enemy – it wins the fight!",
+  },
+  petMergeMsg: {
+    sk: "🐶 Tri pohladkania sa spojili:",
+    cs: "🐶 Tři pohlazení se spojila:",
+    en: "🐶 Three pets merged into:",
+  },
+  addPetMsg: {
+    sk: "🐶 do balíčka pribudlo",
+    cs: "🐶 do balíčku přibylo",
+    en: "🐶 added to your deck:",
+  },
   hexMsg: {
     sk: "dostal Žabiu kliatbu – život klesol na 1",
     cs: "dostal Žabí kletbu – život klesl na 1",
@@ -662,6 +703,7 @@ L.cards = (() => {
     fairy: { sk: "Víla", cs: "Víla", en: "Fairy" },
     dragon: { sk: "Drak", cs: "Drak", en: "Dragon" },
     ogre: { sk: "Ogr", cs: "Zlobr", en: "Ogre" },
+    doggy: { sk: "Psík", cs: "Pejsek", en: "Doggy" },
   };
   const racesPl = { // datív množného čísla („+2/+2 všetkým Zvieratám“)
     beast: { sk: "Zvieratám", cs: "Zvířatům", en: "Beasts" },
@@ -670,6 +712,7 @@ L.cards = (() => {
     fairy: { sk: "Vílam", cs: "Vílám", en: "Fairies" },
     dragon: { sk: "Drakom", cs: "Drakům", en: "Dragons" },
     ogre: { sk: "Ogrom", cs: "Zlobrům", en: "Ogres" },
+    doggy: { sk: "Psíkom", cs: "Pejskům", en: "Doggies" },
   };
   const racesNom = { // nominatív množného čísla („všetky budúce Zvieratá“)
     beast: { sk: "Zvieratá", cs: "Zvířata", en: "Beasts" },
@@ -678,6 +721,7 @@ L.cards = (() => {
     fairy: { sk: "Víly", cs: "Víly", en: "Fairies" },
     dragon: { sk: "Draky", cs: "Draci", en: "Dragons" },
     ogre: { sk: "Ogri", cs: "Zlobři", en: "Ogres" },
+    doggy: { sk: "Psíci", cs: "Pejsci", en: "Doggies" },
   };
 
   // Mená kúziel (id kúzla → meno). Kúzla majú kompletnú kartu s artom.
@@ -702,6 +746,9 @@ L.cards = (() => {
     portal: { sk: "Kúzelný portál", cs: "Kouzelný portál", en: "Magic Portal" },
     poklad: { sk: "Poklad škriatka", cs: "Poklad skřítka", en: "Goblin Treasure" },
     hviezda: { sk: "Hviezdna moc", cs: "Hvězdná moc", en: "Star Power" },
+    // Pohladkanie (psíci): generované kúzlo so stupňom bez stropu – meno
+    // podľa stupňa dáva petName(rank), toto je základ (stupeň 1).
+    pet: { sk: "Pohladkanie", cs: "Pohlazení", en: "Pet" },
     // Tokeny – vyvolávané príšerky a jednorazové kúzla.
     kostik: { sk: "Kostík", cs: "Kůstka", en: "Bonelet" },
     supermlada: { sk: "SuperMláďa", cs: "SuperMládě", en: "SuperCub" },
@@ -721,7 +768,22 @@ L.cards = (() => {
   // Akuzatív („pridaj Iskričku“ – F006).
   const namesAcc = {
     iskricka: { sk: "Iskričku", cs: "Jiskřičku", en: "Sparkle" },
+    pet: { sk: "Pohladkanie", cs: "Pohlazení", en: "a Pet" },
   };
+  // Pohladkanie podľa stupňa: 3 rovnaké sa spoja na vyšší (bez stropu).
+  // Predpony sú spoločné pre všetky jazyky, od 7. stupňa číslo.
+  const PET_PREFIX = ["", "Super-", "Mega-", "Giga-", "Ultra-", "Omega-"];
+  const petName = rank => {
+    const pre = PET_PREFIX[rank - 1];
+    if (pre !== undefined) {
+      const cap = s => pre ? pre + s.toLowerCase() : s;
+      return { sk: cap(names.pet.sk), cs: cap(names.pet.cs), en: pre + names.pet.en };
+    }
+    return { sk: `Pohladkanie ${rank}. stupňa`, cs: `Pohlazení ${rank}. stupně`, en: `Pet lvl ${rank}` };
+  };
+  // Sila pohladkania podľa stupňa: +1, +3, +9, +27… (×3 – spojenie troch
+  // je stat-neutrálne, hráč spájaním nič nestráca).
+  const petValue = rank => Math.pow(3, rank - 1);
 
   // Kľúčové slová schopností (label pred dvojbodkou / proc badge).
   const kwLabel = {
@@ -733,6 +795,8 @@ L.cards = (() => {
     onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
+    afterAttack: { sk: "Po údere", cs: "Po úderu", en: "After attacking" }, // psíci: Aport (P005)
+    lastStand: { sk: "Verný až do konca", cs: "Věrný až do konce", en: "Loyal to the end" }, // psíci t6
   };
   const taunt = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
   const cleave = { sk: "Rozmach", cs: "Rozmach", en: "Cleave" };
@@ -762,6 +826,12 @@ L.cards = (() => {
   const enemySummonLabel = { sk: "Keď súper vyvolá prvý token", cs: "Když soupeř vyvolá první token", en: "When the enemy summons their first token" };
   // Jednorazové kúzlo (token, napr. Iskrička).
   const oneShotNote = { sk: "Jednorazové – po ťahu zmizne.", cs: "Jednorázové – po tahu zmizí.", en: "One-shot – vanishes after the turn." };
+  // Pohladkanie: poznámka o spájaní (3 rovnaké → vyšší stupeň, bez stropu).
+  const petMergeNote = {
+    sk: "3 rovnaké sa spoja na vyšší stupeň (×3).",
+    cs: "3 stejná se spojí na vyšší stupeň (×3).",
+    en: "3 of the same merge into the next level (×3).",
+  };
 
   // Šablóny textov efektov: fx[type](f, m, hl, kw, def, byId) → {sk,cs,en}.
   //   f = fx karty, m = násobič čísel podľa stupňa (1/2/3),
@@ -1091,6 +1161,81 @@ L.cards = (() => {
       cs: `vyber příšerku – po smrti vstane jako ${m}/${m} (aury se přidají)`,
       en: `pick a minion – after it dies it gets back up as a ${m}/${m} (auras apply)`,
     }),
+    // ---------- Psíci ----------
+    // Pohladkanie (kúzlo so stupňom): m = stupeň kúzla, sila ×3 za stupeň.
+    // Psíkovi ostáva NAVŽDY (pa/ph), inej príšerke do konca boja. Živelná
+    // sila ho nezosilňuje (free kúzlo bez stropu by snowballovalo).
+    petBuff: (f, m) => {
+      const v = petValue(m);
+      return {
+        sk: `pohladkaj vybranú príšerku: +${f.a * v}/+${f.h * v} (Psíkovi NAVŽDY, inej do konca boja)`,
+        cs: `pohlaď vybranou příšerku: +${f.a * v}/+${f.h * v} (Pejskovi NAVŽDY, jiné do konce boje)`,
+        en: `pet a chosen minion: +${f.a * v}/+${f.h * v} (FOREVER on a Doggy, until the fight ends on others)`,
+      };
+    },
+    // Pohladkanie do balíčka (P001 Pri vyložení, P002 Pri smrti, P007 Po nákupe).
+    addPet: (f, m) => {
+      const n = f.n * m;
+      const nm = petName(f.rank || 1);
+      return {
+        sk: `pridaj do balíčka ${n > 1 ? n + "× " : ""}${nm.sk}`,
+        cs: `přidej do balíčku ${n > 1 ? n + "× " : ""}${nm.cs}`,
+        en: `add ${n > 1 ? n + "× " : ""}${nm.en} to your deck`,
+      };
+    },
+    // Vyňuchaj (P006): tutor – Pohladkanie z balíčka, inak náhodná karta.
+    fetchPet: (f, m) => {
+      const n = f.n * m;
+      return {
+        sk: `Vyňuchaj – vytiahni z balíčka ${n > 1 ? n + "× " : ""}Pohladkanie (ak tam nie je, náhodnú kartu)`,
+        cs: `Vyčenichej – vytáhni z balíčku ${n > 1 ? n + "× " : ""}Pohlazení (když tam není, náhodnou kartu)`,
+        en: `Sniff out – draw ${n > 1 ? n + "× " : ""}a Pet from your deck (a random card if there is none)`,
+      };
+    },
+    // Ocikaj (P004): náhodný súper má útok aj život na polovicu (hore).
+    halveEnemy: (f, m) => (m === 1 ? {
+      sk: "Ocikaj náhodného súpera – jeho útok aj životy klesnú na polovicu",
+      cs: "Očůrej náhodného soupeře – jeho útok i životy klesnou na polovinu",
+      en: "pee on a random enemy – its attack and health are halved",
+    } : {
+      sk: `Ocikaj ${m} náhodných súperov – ich útok aj životy klesnú na polovicu`,
+      cs: `Očůrej ${m} náhodné soupeře – jejich útok i životy klesnou na polovinu`,
+      en: `pee on ${m} random enemies – their attack and health are halved`,
+    }),
+    // Brechot (P003): náhodný súper stratí Obrancu.
+    loseTaunt: (f, m) => (m === 1 ? {
+      sk: "Brechot – náhodný súperov Obranca stratí Obrancu",
+      cs: "Štěkot – náhodný soupeřův Obránce ztratí Obránce",
+      en: "Bark – a random enemy Taunt minion loses Taunt",
+    } : {
+      sk: `Brechot – ${m} náhodní súperovi Obrancovia stratia Obrancu`,
+      cs: `Štěkot – ${m} náhodní soupeřovi Obránci ztratí Obránce`,
+      en: `Bark – ${m} random enemy Taunt minions lose Taunt`,
+    }),
+    // Aport (P005, Po údere): polovica zvyšných statov súpera ide kamarátovi.
+    fetchSteal: () => ({
+      sk: "Aport – ak súper prežije, polovicu jeho zvyšných statov ukradne a dá náhodnému kamarátovi",
+      cs: "Aport – když soupeř přežije, polovinu jeho zbylých statů ukradne a dá náhodnému kamarádovi",
+      en: "Fetch – if the enemy survives, steal half of its remaining stats and give them to a random friend",
+    }),
+    // Zavýjanie (P008): všetci Psíci +a/+h za každého Psíka na ploche.
+    howl: (f, m) => ({
+      sk: `Zavýjanie – všetci Psíci +${f.a * m}/+${f.h * m} za každého Psíka na ploche`,
+      cs: `Vytí – všichni Pejsci +${f.a * m}/+${f.h * m} za každého Pejska na ploše`,
+      en: `Howl – all Doggies get +${f.a * m}/+${f.h * m} for each Doggy on the board`,
+    }),
+    // P010: +a/+h za každé zahrané Pohladkanie (počet zoslaní, bez stupňa).
+    petScale: (f) => ({
+      sk: `+${f.a}/+${f.h} pre seba za každé Pohladkanie, ktoré si v tejto hre zahral`,
+      cs: `+${f.a}/+${f.h} pro sebe za každé Pohlazení, které jsi v této hře zahrál`,
+      en: `+${f.a}/+${f.h} for itself for each Pet you've cast this game`,
+    }),
+    // P011 (t6): sám proti jedinému nepriateľovi = okamžitá výhra boja.
+    lastStand: () => ({
+      sk: "keď ostane na ploche sám proti jedinej súperovej príšerke, boj hneď vyhráva",
+      cs: "když zůstane na ploše sám proti jediné soupeřově příšerce, boj hned vyhrává",
+      en: "when it is alone on the board against a single enemy minion, it wins the fight instantly",
+    }),
     // O010: hod mincou – hlava Pečať Ogrom, chvost Pečať rase súperovej príšerky.
     ogreGamble: (f, m) => ({
       sk: `hoď mincou 🪙 – ${imprint.sk} +${f.oa * m}/+${f.oh * m} Ogrom, alebo ${imprint.sk} +${f.a * m}/+${f.h * m} rase náhodnej SÚPEROVEJ príšerky`,
@@ -1100,5 +1245,5 @@ L.cards = (() => {
   };
 
   return { races, racesPl, racesNom, names, namesPl, namesAcc, kwLabel, taunt, cleave, wild, imprint,
-    wildText, cleaveText, raceDeathLabel, enemySummonLabel, oneShotNote, fx };
+    wildText, cleaveText, raceDeathLabel, enemySummonLabel, oneShotNote, petMergeNote, petName, petValue, fx };
 })();

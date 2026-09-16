@@ -1,10 +1,15 @@
 // Dáta kariet. Roster = 60 príšer z art sád (assets/cards), 6 rás × 10,
 // každá príšera má vlastné meno a obrázok pre každý evolučný stupeň
-// (bronz → striebro → zlato). Texty schopností sa generujú zo šablón v src/i18n.js (L.cards).
+// (bronz → striebro → zlato), + 11 Psíkov (rasa doggy) zatiaľ bez artu
+// (noArt: true – generický rám s emoji ako tokeny). Texty schopností sa
+// generujú zo šablón v src/i18n.js (L.cards).
 //
 // Príšera: { id, tier, race, stageNames: [meno1, meno2, meno3], atk, hp,
-//            taunt?, power? }  – art sa odvodí z id: assets/cards/<ID>_<rank>.webp
+//            taunt?, power?, noArt?, emoji? }  – art sa odvodí z id: assets/cards/<ID>_<rank>.webp
 // Kúzlo:   { id, tier, emoji, spell: true, fx }  – meno {sk,cs,en} sa pripojí z L.cards.names
+//          gen: true = kúzlo sa len generuje (nie je v obchode ani v poole);
+//          pet: true = Pohladkanie – kúzlo so stupňom (rank) bez stropu,
+//          3 rovnaké sa spoja (Engine.checkPetMerge), meno L.cards.petName(rank)
 // power = { kw: "battlecry"|"deathrattle"|"startFight"|"endTurn", fx: {...} }
 // fx = { type, a?, h?, n?, race?, token?, taunt? } – čísla sa násobia stupňom (×1/×2/×3).
 //
@@ -17,7 +22,7 @@ const Cards = (() => {
   const RACES = L.cards.races;
   const RACES_PL = L.cards.racesPl;
   const RACES_NOM = L.cards.racesNom;
-  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲", ogre: "👹" };
+  const RACE_ICON = { beast: "🐾", elemental: "✨", undead: "💀", fairy: "🧚", dragon: "🐲", ogre: "👹", doggy: "🐶" };
 
   const M = (id, tier, race, stageNames, atk, hp, extra = {}) =>
     ({ id, tier, race, stageNames, atk, hp, ...extra });
@@ -242,7 +247,57 @@ const Cards = (() => {
     M("O010", 6, "ogre", ["Twinklebrow", "Moonmaul", "Celestial Titan"], 10, 10,
       { cleave: 0.5, power: { kw: "startFight", fx: { type: "ogreGamble", a: 1, h: 1, oa: 2, oh: 2 } } }),
 
+    // ---------- Psíci (Doggy) – good boys: Pohladkanie + psie správanie ----------
+    // Bez artu (noArt) – generický rám s emoji, kým art nebude. Motor rasy je
+    // kúzlo Pohladkanie (id `pet`): +1/+1, Psíkovi NAVŽDY (pa/ph), 3 rovnaké
+    // sa spoja na vyšší stupeň ×3 (Super +3, Mega +9, Giga +27…) bez stropu.
+    // Generujú ho LEN P001 (Pri vyložení), P002 (Pri smrti) a P007 (Po nákupe)
+    // – odhad 3–4 pohladkania za kolo, 35–45 za hru (logy: hra ~12 kôl,
+    // hráč vyloží 1,5–2 karty dominantnej rasy za kolo). Zvyšok rasy sú
+    // psie schopnosti: Brechot (Obranca preč), Ocikaj (staty na polovicu),
+    // Aport (krádež polovice zvyšných statov), Vyňuchaj (tutor), Zavýjanie.
+    // Pohladkanie sa predáva za 0 (inak by generátory boli zlatý motor).
+    M("P001", 1, "doggy", ["Pupling", "Pupkin", "Grand Pupperoni"], 1, 2,
+      { noArt: true, emoji: "🐶", power: { kw: "battlecry", fx: { type: "addPet", n: 1 } } }),
+    M("P002", 1, "doggy", ["Guardpup", "Gatehound", "Bastion Barker"], 1, 3,
+      { noArt: true, emoji: "🦮", taunt: true, power: { kw: "deathrattle", fx: { type: "addPet", n: 1 } } }),
+    // P003 Brechot: náhodný súperov Obranca stratí Obrancu (stupeň = počet).
+    M("P003", 1, "doggy", ["Yapper", "Yelpsworth", "Thunderyap"], 2, 1,
+      { noArt: true, emoji: "🐕", power: { kw: "startFight", fx: { type: "loseTaunt" } } }),
+    // P004 Ocikaj: náhodný súper má útok aj životy na polovicu (zaokrúhlené
+    // hore, 1 ostane 1), do konca boja. Stupeň = počet súperov, každého raz.
+    M("P004", 2, "doggy", ["Puddlepaw", "Sprinklefur", "Monsoon Mutt"], 2, 3,
+      { noArt: true, emoji: "🐩", power: { kw: "startFight", fx: { type: "halveEnemy" } } }),
+    // P005 Aport (Po údere): ak súper úder prežije, polovicu jeho zvyšných
+    // statov ukradne a dá náhodnému kamarátovi. Bez stupňa (ako O006).
+    M("P005", 2, "doggy", ["Fetchit", "Fetchwick", "Retriever Royale"], 3, 2,
+      { noArt: true, emoji: "🦴", power: { kw: "afterAttack", fx: { type: "fetchSteal" } } }),
+    // P006 Vyňuchaj: tutor – Pohladkanie z balíčka (najvyšší stupeň), inak
+    // náhodná karta. Psí draw – bez neho by pohladkania riedili balíček.
+    M("P006", 3, "doggy", ["Snifflet", "Snoutwell", "Nosferatruffle"], 3, 4,
+      { noArt: true, emoji: "👃", power: { kw: "battlecry", fx: { type: "fetchPet", n: 1 } } }),
+    M("P007", 3, "doggy", ["Snackpaw", "Treatmaster", "Biscuit Baron"], 3, 5,
+      { noArt: true, emoji: "🍖", taunt: true, power: { kw: "endTurn", fx: { type: "addPet", n: 1 } } }),
+    // P008 Zavýjanie: všetci Psíci +1/+1 za každého Psíka na ploche (aj seba).
+    M("P008", 4, "doggy", ["Howler", "Moonhowl", "Aurora Alpha"], 4, 7,
+      { noArt: true, emoji: "🐺", power: { kw: "startFight", fx: { type: "howl", a: 1, h: 1 } } }),
+    M("P009", 4, "doggy", ["Goodboy", "Bestboy", "Paragon Pooch"], 5, 6,
+      { noArt: true, emoji: "🏅", power: { kw: "battlecry", fx: { type: "futureRace", race: "doggy", a: 1, h: 1 } } }),
+    // P010: +1/+1 za každé zahrané Pohladkanie (počet zoslaní – po spojení
+    // je to 15–25 za hru; body pohladkaní by dali 60+).
+    M("P010", 5, "doggy", ["Barkley", "Sir Barkley", "Barkley the Beloved"], 6, 6,
+      { noArt: true, emoji: "🎖️", power: { kw: "battlecry", fx: { type: "petScale", a: 1, h: 1 } } }),
+    // P011 (t6, dočasný návrh): keď ostane sám proti jedinej súperovej
+    // príšerke, boj hneď vyhráva (súper padne bez Pri smrti). Umlčanie to ruší.
+    M("P011", 6, "doggy", ["Loyalpaw", "Faithful Alpha", "The Last Good Boy"], 8, 8,
+      { noArt: true, emoji: "👑", power: { kw: "lastStand", fx: { type: "lastStand" } } }),
+
     // ---------- Kúzla (spoločné pre všetkých) ----------
+    // Pohladkanie: generované kúzlo psíkov (nie je v obchode – gen), cena 0,
+    // stupeň bez stropu (sila ×3 za stupeň – L.cards.petValue). Cieľ: vlastná
+    // príšerka; Psíkovi ostáva navždy. Spúšťa vílie „Po kúzle" (je to kúzlo),
+    // Živelná sila ho NEzosilňuje.
+    { id: "pet", cost: 0, tier: 1, emoji: "👋", spell: true, gen: true, pet: true, fx: { type: "petBuff", a: 1, h: 1 } },
     // Minca od t2 – na t1 bola automatická kúpa a rozbiehala snowball.
     { id: "minca", cost: 1, tier: 2, emoji: "🪙", spell: true, fx: { type: "gold", n: 2 } },
     { id: "stit", cost: 1, tier: 1, emoji: "🛡️", spell: true, fx: { type: "buffTarget", a: 0, h: 0, taunt: true } },
@@ -328,6 +383,7 @@ const Cards = (() => {
 
   // Meno karty pre daný stupeň (mená príšer sú vlastné mená, neprekladajú sa).
   function nameOf(def, rank, lang) {
+    if (def.pet) return L.cards.petName(rank || 1)[lang] ?? L.cards.petName(rank || 1).sk; // Pohladkanie podľa stupňa
     if (def.stageNames) return def.stageNames[Math.min(rank, 3) - 1];
     const n = def.name;
     return n[lang] ?? n.sk;
@@ -336,12 +392,13 @@ const Cards = (() => {
   // Kúzla majú kompletnú kartu (assets/cards/<id>_1.webp, rovnaký rám ako
   // príšery: kryštál s tierom vľavo hore, banner mena, textový box, kruh na
   // cenu dole). Nové kúzlo bez artu pridaj sem, kým art nemá – dostane emoji.
-  const SPELL_NO_ART = new Set();
+  const SPELL_NO_ART = new Set(["pet"]);
 
-  // Cesta k obrázku pre daný stupeň; kúzla bez artu a tokeny majú emoji.
+  // Cesta k obrázku pre daný stupeň; kúzla bez artu, tokeny a príšery
+  // s noArt (psíci) majú emoji.
   function artOf(def, rank) {
     if (def.spell) return SPELL_NO_ART.has(def.id) ? null : `assets/cards/${def.id}_1.webp`;
-    if (!def.stageNames) return null;
+    if (!def.stageNames || def.noArt) return null;
     return `assets/cards/${def.id}_${Math.min(rank, 3)}.webp`;
   }
 
@@ -395,8 +452,10 @@ const Cards = (() => {
         parts.push(`${b(T.kwLabel[pw.kw][lang])}: ${fxText(pw.fx, m, pw.kw)}.`);
       }
     }
-    if (def.spell) { const s = fxText(def.fx, 1); parts.push(s[0].toUpperCase() + s.slice(1) + "."); }
+    // Pohladkanie: číslo podľa stupňa kúzla (m = rank), ostatné kúzla ×1.
+    if (def.spell) { const s = fxText(def.fx, def.pet ? rank : 1); parts.push(s[0].toUpperCase() + s.slice(1) + "."); }
     if (def.spell && def.token) parts.push(T.oneShotNote[lang]);
+    if (def.pet) parts.push(T.petMergeNote[lang]);
     return parts.join(" ");
   }
 
@@ -407,7 +466,11 @@ const Cards = (() => {
   // `power2` (B006: Pred bojom + Pri smrti). Engine spúšťa všetky s daným kw.
   const powersOf = def => def.power2 ? [def.power, def.power2] : def.power ? [def.power] : [];
 
-  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, powersOf, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, IMPRINT, wildRange };
+  // Sila Pohladkania podľa stupňa (1, 3, 9, 27…) – rovnaké číslo používa
+  // engine (petBuff) aj text karty (L.cards.fx.petBuff).
+  const petValue = L.cards.petValue;
+
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, powersOf, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, IMPRINT, wildRange, petValue };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;
