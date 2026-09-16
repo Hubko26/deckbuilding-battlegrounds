@@ -225,7 +225,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     P009 (t6) Vodca svorky: Pred bojom všetci Psíci dostanú útok a život
     najsilnejšieho Psíka – drž jedného „nahladkaného" psa a P009 vedľa neho;
     Verný až do konca: sám proti jedinému súperovi vyhráva boj – daj ho
-    úplne vpravo, nech ostane posledný.
+    úplne vpravo, nech ostane posledný. Trinket Vodítko (kolo 8): každé
+    generovanie Pohladkania dá o 1 viac – v psom builde vždy ber.
     Pohladkanie je kúzlo: víly „Po kúzle" ho vidia, Živelná sila nie.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
     Mláďa s aurami škálujú. Stupeň vyvolávača škáluje POČET tokenov (+1

@@ -333,6 +333,8 @@ const L = {
       d: { sk: "Dračie bojové aury dávajú +1/+1 navyše.", cs: "Dračí bojové aury dávají +1/+1 navíc.", en: "Dragon fight auras give +1/+1 extra." } },
     ogreSabotage: { e: "🔧", sk: "Ogrí kľúč", cs: "Obří klíč", en: "Ogre Key",
       d: { sk: "Tvoji Ogri majú +1/+0. Každé kolo hod mincou: chvost = súperov trinket to kolo nefunguje.", cs: "Tvoji Obři mají +1/+0. Každé kolo hod mincí: orel = soupeřův trinket to kolo nefunguje.", en: "Your Ogres have +1/+0. Each round flip a coin: tails = the opponent's trinket is off that round." } },
+    doggyLeash: { e: "🦮", sk: "Vodítko", cs: "Vodítko", en: "Leash",
+      d: { sk: "Vždy, keď tvoj Psík pridá Pohladkanie do balíčka, pridá o 1 viac.", cs: "Vždy, když tvůj Pejsek přidá Pohlazení do balíčku, přidá o 1 víc.", en: "Whenever your Doggy adds a Pet to your deck, it adds 1 more." } },
     ogreCareful: { e: "⛑️", sk: "Opatrný ogr", cs: "Opatrný obr", en: "Careful Ogre",
       d: { sk: "Backstab sa ti nikdy nestane, ale ogrie bonusy sú polovičné.", cs: "Backstab se ti nikdy nestane, ale obří bonusy jsou poloviční.", en: "Backstab never happens to you, but ogre bonuses are halved." } },
     cheapUpgrade: { e: "🏷️", sk: "Zľava tavernára", cs: "Sleva hospodského", en: "Tavern Discount",

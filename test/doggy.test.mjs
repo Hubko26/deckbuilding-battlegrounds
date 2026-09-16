@@ -373,3 +373,24 @@ test("psíci: P009 Vodca svorky – Pred bojom všetci Psíci dostanú útok a �
   assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /Vodca svorky/);
   assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /Verný až do konca/);
 });
+
+test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac; ponúka sa len v kole 8 hráčovi s 3+ psíkmi", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(61), null, { trinkets: true });
+  E.startRound(state);
+  const p = state.p1;
+  p.deck = [{ defId: "P001", rank: 1 }, { defId: "P002", rank: 1 }, { defId: "P003", rank: 1 }]; p.discard = [];
+  // kolo 1: late trinket sa neponúka; kolo 8 s 3 psíkmi áno
+  assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyLeash"));
+  state.round = 8;
+  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "doggyLeash"));
+  p.deck = [{ defId: "B001", rank: 1 }];
+  assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyLeash")); // bez psíkov nie
+  p.trinkets = ["doggyLeash"];
+  p.deck = []; p.hand = [E.makeInst(state, "P001", 1)];
+  const ev = E.playMinion(state, "p1", 0);
+  assert.equal(ev.find(e => e.type === "addPet").n, 2);
+  assert.ok(ev.some(e => e.type === "trinketProc" && e.id === "doggyLeash"));
+  assert.equal(p.deck.filter(c => c.defId === "pet").length, 2);
+});

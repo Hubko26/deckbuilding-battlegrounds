@@ -496,7 +496,8 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   cieľ A všetkých ostatných Psíkov na ploche (Psíkom navždy), Mega +4/+4 na
   5 psov = +40 statov jedným zoslaním; plus Vodca svorky na P009. Záložné
   páky, ak nestačí: Zavýjanie navždy, P008 zdvihne všetky pohladkania
-  o stupeň, psí trinket „Vodítko" (generátory dávajú 2).
+  o stupeň. Psí trinket **Vodítko** (`doggyLeash`, late – kolo 8) je
+  implementovaný: každé generovanie Pohladkania dá o 1 viac.
 - Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo.
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
   najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel ani balast;
@@ -1015,7 +1016,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
   podporných rás (drak, ogr – `Engine.SUPPORT_RACES`) dostane každý bez
   ohľadu na balíček (drak je žoldnier do každého buildu, hráč ho nemusí
   držať vopred – 14. 9. 2026: hráč 12 hier nevidel dračí trinket, lebo
-  drakov nekupoval); zabanovaná rasa nikdy; `late` (Hrobárova lopata, Dračia krv, Krvavý mesiac) až v kole 8;
+  drakov nekupoval); zabanovaná rasa nikdy; `late` (Hrobárova lopata, Dračia krv, Vodítko, Krvavý mesiac) až v kole 8;
   Ogrí kľúč len keď súper už trinket má; trinket s id zhodným s mutáciou hry
   (`richSell`, `bloodMoon`) sa neponúka – nestackujú sa. Z prípustných sa
   zamieša a vezmú prvé 3.
@@ -1056,6 +1057,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `dragonPact` | 🐲 | dračie bojové aury (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) +1/+1 |
 | `ogreSabotage` | 👹 | Pečať +1/+0 Ogrom; minca za súperove trinkety |
 | `ogreCareful` | 👹 | hody padnú vždy dobre, bonusy polovičné (min. 1) |
+| `doggyLeash` | 🐶 late | každé generovanie Pohladkania (P001, P002) dá o 1 viac – endgame palivo pre Veľké pohladkanie; art je placeholder (rám Zákona svorky + emoji) |
 | `cheapUpgrade` | – | upgrade o 2 lacnejší (min. 2) |
 | `richSell` | – | predaj dáva 2 |
 | `twinEvolve1` | – | kartám tieru 1 stačia 2 kópie |

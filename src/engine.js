@@ -87,6 +87,7 @@ const Engine = (() => {
     { id: "dragonPact", race: "dragon" },        // dračie bojové aury +1/+1 navyše
     { id: "ogreSabotage", race: "ogre", needFoeTrinket: true }, // ogri +1/+0, minca vypína súperov trinket
     { id: "ogreCareful", race: "ogre" },         // backstab nikdy, bonusy polovičné
+    { id: "doggyLeash", race: "doggy", late: true }, // každé generovanie Pohladkania dá o 1 viac (endgame psíkov)
     { id: "cheapUpgrade" },  // upgrade o 2 lacnejší (min. 2)
     { id: "richSell" },      // predaj dáva 2
     { id: "twinEvolve1" },   // kartám t1 stačia 2 kópie
@@ -1567,7 +1568,12 @@ const Engine = (() => {
   }
 
   // n Pohladkaní daného stupňa na náhodné miesta balíčka (nákup aj boj).
+  // Vodítko (trinket psíkov, kolo 8): každé generovanie dá o 1 Pohladkanie viac.
   function addPets(state, p, n, rank, events) {
+    if (n > 0 && hasTrinket(state, p.id, "doggyLeash")) {
+      n++;
+      events.push({ type: "trinketProc", pid: p.id, id: "doggyLeash" });
+    }
     for (let i = 0; i < n; i++) addToDeckRef(state, p, "pet", rank, 0, 0);
     if (n > 0) events.push({ type: "addPet", pid: p.id, rank, n });
   }
