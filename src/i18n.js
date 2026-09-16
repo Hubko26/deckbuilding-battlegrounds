@@ -607,11 +607,6 @@ const L = {
     cs: "🐶 Aport! {a} ukradl {b} polovinu statů ({n}) a dal je kamarádovi",
     en: "🐶 Fetch! {a} stole half of {b}'s stats ({n}) and gave them to a friend",
   },
-  lastStandMsg: {
-    sk: "🐶 Verný až do konca: {a} ostal sám proti jedinému súperovi – vyhráva boj!",
-    cs: "🐶 Věrný až do konce: {a} zůstal sám proti jedinému soupeři – vyhrává boj!",
-    en: "🐶 Loyal to the end: {a} stands alone against a single enemy – it wins the fight!",
-  },
   petMergeMsg: {
     sk: "🐶 Tri pohladkania sa spojili:",
     cs: "🐶 Tři pohlazení se spojila:",
@@ -798,8 +793,7 @@ L.cards = (() => {
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
     afterAttack: { sk: "Po údere", cs: "Po úderu", en: "After attacking" }, // psíci: Aport (P004)
-    packLeader: { sk: "Vodca svorky", cs: "Vůdce smečky", en: "Pack Leader" }, // psíci t6 (P009)
-    lastStand: { sk: "Verný až do konca", cs: "Věrný až do konce", en: "Loyal to the end" }, // psíci t6
+    packLeader: { sk: "Vodca svorky", cs: "Vůdce smečky", en: "Pack Leader" }, // psíci t6 (P009), pasívna v nákupe
   };
   const taunt = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
   const cleave = { sk: "Rozmach", cs: "Rozmach", en: "Cleave" };
@@ -1223,17 +1217,12 @@ L.cards = (() => {
       cs: `+${f.a}/+${f.h} pro sebe za každé Pohlazení, které jsi v této hře zahrál`,
       en: `+${f.a}/+${f.h} for itself for each Pet you've cast this game`,
     }),
-    // P009 (t6): sám proti jedinému nepriateľovi = okamžitá výhra boja.
-    // P009 Vodca svorky: všetci Psíci dostanú staty najsilnejšieho Psíka.
+    // P009 Vodca svorky (t6): kým je na ploche, každé Pohladkanie pohladká
+    // všetkých tvojich Psíkov.
     packLeader: () => ({
-      sk: "každé Pohladkanie pohladká všetkých tvojich Psíkov; Pred bojom všetci Psíci dostanú útok a život najsilnejšieho Psíka (do konca boja)",
-      cs: "každé Pohlazení pohladí všechny tvé Pejsky; Před bojem všichni Pejsci dostanou útok a život nejsilnějšího Pejska (do konce boje)",
-      en: "every Pet pets all your Doggies; at the start of the fight all Doggies get the attack and health of your strongest Doggy (until the fight ends)",
-    }),
-    lastStand: () => ({
-      sk: "keď ostane na ploche sám proti jedinej súperovej príšerke, boj hneď vyhráva",
-      cs: "když zůstane na ploše sám proti jediné soupeřově příšerce, boj hned vyhrává",
-      en: "when it is alone on the board against a single enemy minion, it wins the fight instantly",
+      sk: "kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov",
+      cs: "dokud je na ploše, každé Pohlazení pohladí všechny tvé Pejsky",
+      en: "while it is on the board, every Pet pets all your Doggies",
     }),
     // O010: hod mincou – hlava Pečať Ogrom, chvost Pečať rase súperovej príšerky.
     ogreGamble: (f, m) => ({

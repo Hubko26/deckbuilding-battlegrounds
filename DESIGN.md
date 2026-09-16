@@ -189,8 +189,7 @@ hrozba hodná t6.
 | On attack | **Pri útoku** | keď príšerka útočí (dočasný efekt, len v boji) |
 | After a spell | **Po kúzle** | keď zošleš kúzlo, kým je víla na ploche |
 | After attacking | **Po údere** | po vlastnom útoku, ak útočník aj obranca prežili (psík P004 Aport) |
-| Loyal to the end | **Verný až do konca** | pasívna (psík P009): sám proti jedinej súperovej príšerke = boj hneď vyhráva |
-| Pack Leader | **Vodca svorky** | pasívna (psík P009): každé Pohladkanie pohladká všetkých Psíkov; Pred bojom všetci Psíci dostanú staty najsilnejšieho |
+| Pack Leader | **Vodca svorky** | pasívna v nákupnej fáze (psík P009): kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov |
 | Divine Shield | **Božský štít** | prvé zranenie sa zruší (štít praskne); z kúzla Svätožiara |
 | Windfury | **Vichor** | príšerka útočí vo svojom ťahu dvakrát (druhý útok len ak prežila); z kúzla Vichor |
 | Imprint | **Pečať** | trvalá rasová aura (`futureRace`/`futureRaceOf`/`futureAll`): „Pečať +1/+1 Zvieratám" – všetky tvoje príšerky rasy (plocha, ruka, balíček, tokeny aj budúce) dostanú staty navždy; vysvetlené v pravidlách na úvodnej obrazovke |
@@ -481,26 +480,19 @@ vyradené a rasa má 9 kariet (t3 len jednu).
 - P007 (t4 5/6): Pečať +1/+1 Psíkom. P008 (t5 6/6): +1/+1 za každé
   Pohladkanie zahrané v hre (`p.petsCast` – **počet zoslaní**, Super = 1;
   body pohladkaní by dali 60+). Dočasné, bez stupňa (ako F010).
-- **P009 (t6 8/8) – Vodca svorky + Verný až do konca**. Vodca svorky
-  (`kw packLeader`, `power`) má dve časti: (1) kým je P009 na ploche, každé
-  zoslané Pohladkanie pohladká cieľ A všetkých ostatných Psíkov na ploche
-  (Psíkom navždy; `SPELL_CAST.petBuff` hľadá na ploche kartu s kw
-  `packLeader`) – Super +2/+2 na 5 psov = +20 statov jedným zoslaním;
-  (2) Pred bojom (`runStartFightProcs` spúšťa aj kw `packLeader`,
-  `BATTLE_FX.packLeader`) všetci živí Psíci dostanú útok a život
-  najsilnejšieho živého Psíka (dvíha sa len nahor, do konca boja) – rast
-  z pohladkaní na jednom psovi ide na celú svorku. Verný až do konca
-  (`kw lastStand`, `power2`): keď je na ploche jedinou živou príšerkou
-  svojej strany a súper má tiež jedinú, súperova padne okamžite **bez Pri
-  smrti** (nie je to zásah, je to výhra) a boj končí. Kontrola pred každým
-  útokom, strana na ťahu prvá (obaja s P009 1v1 → vyhráva ten, kto je na
-  ťahu). Umlčanie ruší bojové časti (Pred bojom, Verný); hladkanie svorky je
-  nákupná fáza, tam sa neumlčuje.
+- **P009 (t6 8/8) – Vodca svorky** (`kw packLeader`, pasívna v nákupnej
+  fáze): kým je P009 na ploche, každé zoslané Pohladkanie pohladká cieľ
+  A všetkých ostatných Psíkov na ploche (Psíkom navždy; `SPELL_CAST.petBuff`
+  hľadá na ploche kartu s kw `packLeader`) – Super +2/+2 na 5 psov = +20
+  statov jedným zoslaním. Vylož Misa pred hladkaním. Nič iné: bývalé
+  bojové časti (Pred bojom kopírovanie statov najsilnejšieho Psíka, Verný až
+  do konca = výhra 1v1) hráč zamietol (16. 9. 2026) – masívne hladkanie
+  stačí. Umlčanie nemá čo rušiť (nákupná fáza).
 - **Endgame psíkov** (16. 9. 2026, simulácia rastu do kola 20: psíci ~207
   statov plochy vs zvieratá ~339 – rast išiel len na jedno telo): riešením
-  je Vodca svorky na P009 (hladkanie celej svorky + kopírovanie statov).
-  Pôvodný návrh dal hladkanie svorky samotnému kúzlu od Mega – hráč to
-  zamietol: je to mechanika t6 psíka, nie pohladkaní. Záložné páky, ak
+  je Vodca svorky na P009 (hladkanie celej svorky). Pôvodný návrh dal
+  hladkanie svorky samotnému kúzlu od Mega – hráč to zamietol: je to
+  mechanika t6 psíka, nie pohladkaní. Záložné páky, ak
   nestačí: Zavýjanie navždy, P008 zdvihne všetky pohladkania o stupeň. Psí
   trinket **Vodítko** (`doggyLeash`, late – kolo 8) je implementovaný:
   každé generovanie Pohladkania dá o 1 viac.

@@ -1804,10 +1804,7 @@ const Engine = (() => {
   function runStartFightProcs(state, sides, first, events) {
     for (const pid of sideOrder(first)) {
       for (const inst of [...sides[pid]]) {
-        if (inst.hp <= 0) continue;
-        triggerPower(state, sides, pid, inst, "startFight", events);
-        // Vodca svorky (P009): bojová časť schopnosti beží ako Pred bojom.
-        triggerPower(state, sides, pid, inst, "packLeader", events);
+        if (inst.hp > 0) triggerPower(state, sides, pid, inst, "startFight", events);
       }
     }
   }
@@ -1818,8 +1815,6 @@ const Engine = (() => {
     let attacker = first;
     let guard = BATTLE_CAP; // poistka proti nekonečnému boju (→ remíza)
     while (aliveOn(sides, "p1").length && aliveOn(sides, "p2").length && guard-- > 0) {
-      // Verný až do konca (P009): sám proti jedinému súperovi = boj končí.
-      if (checkLastStand(state, sides, attacker, events)) break;
       const a = nextAttacker(sides[attacker], ptr, attacker);
       if (!a) break;
       // Vichor (windfury): dva útoky za ťah – druhý len ak prežila prvý.
@@ -1829,29 +1824,6 @@ const Engine = (() => {
       }
       attacker = other(attacker);
     }
-  }
-
-  // Verný až do konca (psík P009, kw lastStand): keď je na strane jediná
-  // živá príšerka s touto schopnosťou (neumlčaná) a súper má tiež jedinú,
-  // súperova padne okamžite – BEZ Pri smrti (nie je to zásah, je to výhra)
-  // a boj končí. Kontroluje sa pred každým útokom, strana na ťahu prvá
-  // (obaja s P009 1v1 → vyhráva ten, kto je na ťahu). Vráti true, ak boj skončil.
-  function checkLastStand(state, sides, attacker, events) {
-    for (const pid of sideOrder(attacker)) {
-      const mine = aliveOn(sides, pid), foes = aliveOn(sides, other(pid));
-      if (mine.length !== 1 || foes.length !== 1) continue;
-      const hero = mine[0];
-      if (hero.silenced || !Cards.powersOf(Cards.byId[hero.defId]).some(pw => pw.kw === "lastStand")) continue;
-      const t = foes[0];
-      events.push({ type: "proc", pid, uid: hero.uid, kw: "lastStand" });
-      events.push({ type: "lastStand", pid, uid: hero.uid, defId: hero.defId, rank: hero.rank, targetPid: other(pid), targetUid: t.uid, targetDefId: t.defId });
-      t.hp = 0;
-      t.dead = true;
-      t.revive = false; t.reviveAs = 0;
-      events.push({ type: "die", pid: other(pid), uid: t.uid, defId: t.defId });
-      return true;
-    }
-    return false;
   }
 
   // Ďalší živý útočník v poradí plochy (cyklicky); ukazovateľ sa posunie za neho.
@@ -2222,20 +2194,6 @@ const Engine = (() => {
         t.atk = na; t.hp = nh; t.maxHp = Math.max(nh, t.maxHp - dh);
         events.push({ type: "pee", pid: foe, uid: t.uid, defId: t.defId, rank: t.rank, from: self.uid, a: 0 - da, h: 0 - dh });
         pushHp(events, foe, t);
-      }
-    },
-    // P009 Vodca svorky (Pred bojom): všetci živí Psíci dostanú staty
-    // najsilnejšieho živého Psíka (útok aj život sa dvíhajú na jeho hodnotu,
-    // nikdy neklesajú), do konca boja. Rast z pohladkaní na jednom psovi sa
-    // tak skopíruje na celú svorku – endgame psíkov (16. 9. 2026).
-    packLeader({ state, sides, pid, events }) {
-      const dogs = aliveOn(sides, pid).filter(f => isRace(state, pid, Cards.byId[f.defId], "doggy"));
-      if (dogs.length < 2) return;
-      const lead = [...dogs].sort((x, y) => (y.atk + y.hp) - (x.atk + x.hp))[0];
-      for (const f of dogs) {
-        if (f === lead) continue;
-        const a = Math.max(0, lead.atk - f.atk), h = Math.max(0, lead.hp - f.hp);
-        if (a || h) buffWithEvent(f, pid, a, h, events);
       }
     },
     // P006 Zavýjanie: všetci živí Psíci (aj sám) +a·m/+h·m za KAŽDÉHO živého

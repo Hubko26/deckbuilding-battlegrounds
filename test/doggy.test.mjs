@@ -1,6 +1,6 @@
 // Psíci (rasa doggy): Pohladkanie so stupňom bez stropu, generátory,
 // psie schopnosti (Ocikaj, Aport, Vyňuchaj, Zavýjanie), P008
-// škálovač a t6 Verný až do konca. Bot: hladká psov, pohladkania nie sú balast.
+// škálovač a t6 Vodca svorky. Bot: hladká psov, pohladkania nie sú balast.
 import test from "node:test";
 import assert from "node:assert/strict";
 import { loadEngine, seeded } from "./harness.mjs";
@@ -239,29 +239,6 @@ test("psíci: P008 – +1/+1 za každé zahrané Pohladkanie (počet zoslaní, S
   assert.equal(b.hp, C.byId.P008.hp + 2);
 });
 
-test("psíci: P009 Verný až do konca – sám proti jedinému súperovi vyhráva boj hneď (bez Pri smrti súpera); umlčaný nie", () => {
-  const { state, E, put } = bareFight(24);
-  put("p1", "P009");             // 8/8
-  const foe = put("p2", "B006"); // 7/9, Pri smrti 2× SuperMláďa – nesmú prísť
-  const ev = E.doBattle(state);
-  const ls = ev.find(e => e.type === "lastStand");
-  assert.ok(ls);
-  assert.equal(ls.targetUid, foe.uid);
-  assert.ok(!ev.some(e => e.type === "attack"));
-  assert.ok(!ev.some(e => e.type === "summon"));
-  const dmg = ev.find(e => e.type === "heroDmg");
-  assert.equal(dmg.pid, "p2");
-  // umlčaný P009 schopnosť stráca – bojuje sa normálne
-  const { state: s2, E: E2, put: put2 } = bareFight(25);
-  put2("p1", "P009");
-  put2("p2", "U001");
-  s2.p2.silences = 1; // súper umlčí P009
-  const ev2 = E2.doBattle(s2);
-  assert.ok(ev2.some(e => e.type === "silence"));
-  assert.ok(!ev2.some(e => e.type === "lastStand"));
-  assert.ok(ev2.some(e => e.type === "attack"));
-});
-
 test("psíci: predaj Pohladkania dá 0 zlata (nie zlatý motor), odhodenie ho nechá v kôpke aj so stupňom", () => {
   const { state, E } = fresh(26);
   E.startRound(state);
@@ -360,20 +337,15 @@ test("psíci: P009 Vodca svorky na ploche – každé Pohladkanie pohladká cie�
   assert.equal(p.petsCast, 2);
 });
 
-test("psíci: P009 Vodca svorky – Pred bojom všetci Psíci dostanú útok a život najsilnejšieho Psíka; Verný až do konca ostáva", () => {
+test("psíci: P009 Vodca svorky je len nákupná pasívka – v boji nič nerobí, text má jedinú schopnosť", () => {
   const { state, E, C, put } = bareFight(52);
-  const lead = put("p1", "P009");          // 8/8
-  const small = put("p1", "P001");         // 1/2 → 8/8
-  const bear = put("p1", "B001");          // nie pes, ostáva 2/2
+  put("p1", "P009"); const small = put("p1", "P001");
   put("p2", "O008"); put("p2", "O004");
   const ev = E.doBattle(state);
-  const b = ev.find(e => e.type === "buff" && e.uid === small.uid);
-  assert.ok(b); assert.equal(b.a, 7); assert.equal(b.h, 6);
-  assert.ok(!ev.some(e => e.type === "buff" && e.uid === bear.uid));
-  assert.ok(!ev.some(e => e.type === "buff" && e.uid === lead.uid));
-  assert.equal(C.powersOf(C.byId.P009).length, 2);
-  assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /Vodca svorky/);
-  assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /Verný až do konca/);
+  assert.ok(!ev.some(e => e.type === "buff" && e.uid === small.uid && e.pid === "p1"));
+  assert.ok(!ev.some(e => e.type === "proc" && e.kw === "packLeader"));
+  assert.equal(C.powersOf(C.byId.P009).length, 1);
+  assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /^Vodca svorky: kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov\.$/);
 });
 
 test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac; ponúka sa len v kole 8 hráčovi s 3+ psíkmi", () => {

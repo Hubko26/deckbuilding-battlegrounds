@@ -931,21 +931,6 @@ async function runBattle() {
         if (from && to) await shootProjectile(from, to, "#f783ac");
         break;
       }
-      case "lastStand": {
-        // Verný až do konca (P009): sám proti jedinému – výhra boja, súper padne.
-        const a = Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang);
-        log(t(L.lastStandMsg).replace("{a}", a));
-        const el = cardById(ev.uid);
-        if (el) {
-          floatText(el, "👑🐶", true);
-          Sfx.evolve();
-          impactRing(el, "#ffd147");
-          spawnParticles(el, { n: 14, color: "#ffd147", emoji: "⭐", spread: 80 });
-          screenShake(0.8);
-          await sleep(900);
-        }
-        break;
-      }
       case "polymorph": {
         // Ovčia premena: karta sa na mieste vymení za Ovečku 0/1 (uid ostáva).
         const el = cardById(ev.uid);

@@ -252,7 +252,7 @@ const Cards = (() => {
     // corgi zabávač P001, buldog rytier P002 Obranca, pudlí alchymistka P003
     // Ocikaj, jazvečík vynálezca P004 Aport, bígl stopár P005 Vyňuchaj, husky
     // šamanka P006 Zavýjanie, retriever bylinkár P007 Pečať, dalmatín showman
-    // P008, shiba ronin P009 Verný až do konca. Motor rasy je
+    // P008, shiba ronin P009 Vodca svorky. Motor rasy je
     // kúzlo Pohladkanie (id `pet`): +1/+1, Psíkovi NAVŽDY (pa/ph), 3 rovnaké
     // sa spoja na vyšší stupeň ×2 (Super +2, Mega +4, Giga +8…) bez stropu.
     // Generujú ho LEN P001 (Pri vyložení) a P002 (Pri smrti) – odhad 2–3
@@ -288,15 +288,12 @@ const Cards = (() => {
     // je to 15–25 za hru; body pohladkaní by dali 60+).
     M("P008", 5, "doggy", ["Spotpop", "Emberdot", "Grand Firemaster"], 6, 6,
       { power: { kw: "battlecry", fx: { type: "petScale", a: 1, h: 1 } } }),
-    // P009 (t6): Vodca svorky (kw packLeader) – kým je na ploche, každé
-    // Pohladkanie pohladká všetkých tvojich Psíkov (engine petBuff), a Pred
-    // bojom všetci Psíci dostanú staty najsilnejšieho Psíka (rast z pohladkaní
-    // na jednom psovi ide na celú svorku). + Verný až do konca: sám proti
-    // jedinej súperovej príšerke boj hneď vyhráva (súper padne bez Pri smrti).
-    // Umlčanie ruší bojovú časť.
+    // P009 (t6): Vodca svorky (kw packLeader, pasívna v nákupnej fáze) – kým
+    // je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov
+    // (engine SPELL_CAST.petBuff). Masívne hladkanie je celý endgame psíkov;
+    // bojové časti (kopírovanie statov, Verný až do konca) hráč zamietol.
     M("P009", 6, "doggy", ["Miso", "Shadowshiba", "Moonfang Ronin"], 8, 8,
-      { power: { kw: "packLeader", fx: { type: "packLeader" } },
-        power2: { kw: "lastStand", fx: { type: "lastStand" } } }),
+      { power: { kw: "packLeader", fx: { type: "packLeader" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     // Pohladkanie: generované kúzlo psíkov (nie je v obchode – gen), cena 0,

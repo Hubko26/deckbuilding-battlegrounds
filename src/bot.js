@@ -665,7 +665,7 @@ const Bot = (() => {
     const pw = Cards.byId[inst.defId].power;
     if (!pw) return 1;
     if (pw.kw === "onAttack" || pw.kw === "afterAttack") return 0; // Aport chce útočiť, kým súper žije
-    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell", "lastStand", "packLeader"].includes(pw.kw)) return 2; // P009 má ostať posledný
+    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell"].includes(pw.kw)) return 2; // P009 má ostať posledný
     return 1;
   }
 
@@ -774,8 +774,7 @@ const Bot = (() => {
       case "fetchSteal": return 4 * PW_ATTACKS;                // ~4 body presunuté za útok
       case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
       case "petScale": return ab * 8;                          // ~8 pohladkaní zahraných za hru
-      case "lastStand": return 10;                             // výhra 1v1 – hodnotný záver boja
-      case "packLeader": return 4 * PW_BOARD + 3 * PW_BOARD;   // psi dotiahnutí na vodcu + každé pohladkanie na celú svorku
+      case "packLeader": return 3 * PW_BOARD * PW_HORIZON / 2; // každé pohladkanie na celú svorku navždy, kým je na ploche
       default: return 0;
     }
   }

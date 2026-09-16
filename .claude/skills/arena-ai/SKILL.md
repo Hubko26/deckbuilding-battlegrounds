@@ -97,8 +97,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   Keywords: Pri
   vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
   bojom, Po nákupe, Pri útoku, Po údere (afterAttack – po vlastnom útoku,
-  ak obaja prežili; psík P004 Aport), Verný až do konca (lastStand – psík
-  P009: sám proti jedinému súperovi vyhráva boj hneď), Po kúzle (afterSpell – spustí sa každým
+  ak obaja prežili; psík P004 Aport), Vodca svorky (packLeader – psík P009:
+  kým je na ploche, každé Pohladkanie pohladká všetkých Psíkov), Po kúzle (afterSpell – spustí sa každým
   zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
   sa zruší; z kúzla Svätožiara), Pečať (Imprint = trvalá rasová aura,
   na karte „Pečať +1/+1 Zvieratám"). Buffy z boja sú dočasné; trvalé sú buffy
@@ -222,11 +222,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     zvyšných statov obrancu kamarátovi – daj ho vľavo, nech útočí prvý,
     s Vichorom dvakrát). P009 (t6) Vodca svorky: kým je na ploche, každé
     Pohladkanie pohladká cieľ AJ všetkých ostatných Psíkov (vylož P009 PRED
-    hladkaním, hladkaj s plnou psou plochou); Pred bojom všetci Psíci
-    dostanú útok a život najsilnejšieho Psíka – drž jedného „nahladkaného"
-    psa a P009 vedľa neho;
-    Verný až do konca: sám proti jedinému súperovi vyhráva boj – daj ho
-    úplne vpravo, nech ostane posledný. Trinket Vodítko (kolo 8): každé
+    hladkaním, hladkaj s plnou psou plochou – v boji nerobí nič, je to
+    telo 8/8). Trinket Vodítko (kolo 8): každé
     generovanie Pohladkania dá o 1 viac – v psom builde vždy ber.
     Pohladkanie je kúzlo: víly „Po kúzle" ho vidia, Živelná sila nie.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
