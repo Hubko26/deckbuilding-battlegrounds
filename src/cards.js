@@ -397,7 +397,7 @@ const Cards = (() => {
   // Kúzla majú kompletnú kartu (assets/cards/<id>_1.webp, rovnaký rám ako
   // príšery: kryštál s tierom vľavo hore, banner mena, textový box, kruh na
   // cenu dole). Nové kúzlo bez artu pridaj sem, kým art nemá – dostane emoji.
-  const SPELL_NO_ART = new Set(["pet"]);
+  const SPELL_NO_ART = new Set();
 
   // Cesta k obrázku pre daný stupeň; kúzla bez artu, tokeny a príšery
   // s noArt (psíci) majú emoji.
