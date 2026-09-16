@@ -765,7 +765,7 @@ const Bot = (() => {
       // ----- Psíci -----
       // Pohladkanie: +v/+v (v = 2^(stupeň−1)) navždy na psíkovi – ako Jablko
       // ×1,5 za trvalosť. rank tu = stupeň kúzla.
-      case "petBuff": return ((f.a || 0) + (f.h || 0)) * Cards.petValue(rank) * 1.5;
+      case "petBuff": return ((f.a || 0) + (f.h || 0)) * Cards.petValue(rank) * 1.5 * (rank >= 3 ? PW_BOARD / 2 : 1); // Mega+ hladká celú svorku
       // Pohladkanie do balíčka ≈ 2,5 bodu (+1/+1 navždy + neskoršie spojenie);
       // Po nákupe každé kolo → horizont.
       case "addPet": return f.n * m * 2.5 * (kw === "endTurn" ? PW_HORIZON : 1);
@@ -775,6 +775,7 @@ const Bot = (() => {
       case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
       case "petScale": return ab * 8;                          // ~8 pohladkaní zahraných za hru
       case "lastStand": return 10;                             // výhra 1v1 – hodnotný záver boja
+      case "packLeader": return 4 * PW_BOARD;                  // ~3 psi dotiahnutí na vodcu (≈ +4/+4 každý)
       default: return 0;
     }
   }

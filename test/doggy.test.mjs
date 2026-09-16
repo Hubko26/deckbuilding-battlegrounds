@@ -339,3 +339,37 @@ test("psíci: spojenie Pohladkaní pri dotiahnutí ruky nezje ruku – ruka sa d
   assert.equal(p.hand.find(x => x.defId === "pet").rank, 2);
   assert.equal(p.deck.length, 1);
 });
+
+test("psíci: Mega-pohladkanie (stupeň 3+) pohladká cieľ aj všetkých ostatných Psíkov na ploche navždy; Super len cieľ", () => {
+  const { state, E } = fresh(51);
+  E.startRound(state);
+  const p = state.p1;
+  const d1 = E.makeInst(state, "P001", 1); d1.slot = 0;
+  const d2 = E.makeInst(state, "P003", 1); d2.slot = 1;
+  const bear = E.makeInst(state, "B001", 1); bear.slot = 2;
+  p.board = [d1, d2, bear];
+  p.hand = [E.makeInst(state, "pet", 2), E.makeInst(state, "pet", 3)];
+  E.castSpell(state, "p1", 0, d1.uid); // Super: len d1
+  assert.equal(d1.pa, 2); assert.equal(d2.pa, undefined);
+  const ev = E.castSpell(state, "p1", 0, bear.uid); // Mega na medveďa: medveď dočasne, psi navždy
+  assert.equal(bear.atk, 6); assert.equal(bear.pa, undefined);
+  assert.equal(d1.pa, 6); assert.equal(d2.pa, 4);
+  assert.equal(ev.filter(e => e.type === "buff").length, 2);
+  assert.equal(p.petsCast, 2);
+});
+
+test("psíci: P009 Vodca svorky – Pred bojom všetci Psíci dostanú útok a život najsilnejšieho Psíka; Verný až do konca ostáva", () => {
+  const { state, E, C, put } = bareFight(52);
+  const lead = put("p1", "P009");          // 8/8
+  const small = put("p1", "P001");         // 1/2 → 8/8
+  const bear = put("p1", "B001");          // nie pes, ostáva 2/2
+  put("p2", "O008"); put("p2", "O004");
+  const ev = E.doBattle(state);
+  const b = ev.find(e => e.type === "buff" && e.uid === small.uid);
+  assert.ok(b); assert.equal(b.a, 7); assert.equal(b.h, 6);
+  assert.ok(!ev.some(e => e.type === "buff" && e.uid === bear.uid));
+  assert.ok(!ev.some(e => e.type === "buff" && e.uid === lead.uid));
+  assert.equal(C.powersOf(C.byId.P009).length, 2);
+  assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /Vodca svorky/);
+  assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /Verný až do konca/);
+});

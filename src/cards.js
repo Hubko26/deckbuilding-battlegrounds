@@ -288,10 +288,13 @@ const Cards = (() => {
     // je to 15–25 za hru; body pohladkaní by dali 60+).
     M("P008", 5, "doggy", ["Spotpop", "Emberdot", "Grand Firemaster"], 6, 6,
       { power: { kw: "battlecry", fx: { type: "petScale", a: 1, h: 1 } } }),
-    // P009 (t6, dočasný návrh): keď ostane sám proti jedinej súperovej
-    // príšerke, boj hneď vyhráva (súper padne bez Pri smrti). Umlčanie to ruší.
+    // P009 (t6): Vodca svorky – Pred bojom všetci Psíci dostanú staty
+    // najsilnejšieho Psíka (rast z pohladkaní na jednom psovi ide na celú
+    // svorku) + Verný až do konca: sám proti jedinej súperovej príšerke boj
+    // hneď vyhráva (súper padne bez Pri smrti). Umlčanie ruší oboje.
     M("P009", 6, "doggy", ["Miso", "Shadowshiba", "Moonfang Ronin"], 8, 8,
-      { power: { kw: "lastStand", fx: { type: "lastStand" } } }),
+      { power: { kw: "lastStand", fx: { type: "lastStand" } },
+        power2: { kw: "startFight", fx: { type: "packLeader" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     // Pohladkanie: generované kúzlo psíkov (nie je v obchode – gen), cena 0,

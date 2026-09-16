@@ -9,6 +9,7 @@ const Engine = (() => {
   const CARD_COST = 3;
   const SELL_GAIN = 1;
   const BOLT_DMG = 3; // kúzlo Blesk: základný damage odloženého výboja
+  const PET_PACK_RANK = 3; // Pohladkanie od tohto stupňa (Mega) pohladká všetkých Psíkov na ploche
   const REFRESH_COST = 1;
   const BACKSTAB_BUFF = 1; // ogr „Backstab": Pečať +1/+1 všetkým ogrom za smolný roll
   const COMMON_COUNT = 3;
@@ -1010,11 +1011,23 @@ const Engine = (() => {
       spendSpell(p, inst, def);
       const v = Cards.petValue(inst.rank || 1);
       const a = def.fx.a * v, h = def.fx.h * v;
-      buff(target, a, h);
-      const perm = isRace(state, p.id, Cards.byId[target.defId], "doggy");
-      if (perm) { target.pa = (target.pa || 0) + a; target.ph = (target.ph || 0) + h; }
+      const isDog = x => isRace(state, p.id, Cards.byId[x.defId], "doggy");
+      const pat = (x, events) => {
+        buff(x, a, h);
+        if (isDog(x)) { x.pa = (x.pa || 0) + a; x.ph = (x.ph || 0) + h; }
+        if (events) events.push({ type: "buff", pid: p.id, uid: x.uid, a, h });
+      };
+      pat(target);
+      const perm = isDog(target);
+      const events = [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a, h, perm }];
+      // Veľké pohladkanie (Mega a vyššie, stupeň >= PET_PACK_RANK): objíme celú
+      // svorku – každý ďalší Psík na ploche dostane to isté (navždy). Endgame
+      // psíkov: rast už nejde len na jedno telo (16. 9. 2026).
+      if ((inst.rank || 1) >= PET_PACK_RANK) {
+        for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
+      }
       p.petsCast = (p.petsCast || 0) + 1;
-      return [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a, h, perm }];
+      return events;
     },
     buffTarget(state, p, inst, def, targetUid) {
       const target = ownMinion(p, targetUid);
@@ -2195,6 +2208,20 @@ const Engine = (() => {
         t.atk = na; t.hp = nh; t.maxHp = Math.max(nh, t.maxHp - dh);
         events.push({ type: "pee", pid: foe, uid: t.uid, defId: t.defId, rank: t.rank, from: self.uid, a: 0 - da, h: 0 - dh });
         pushHp(events, foe, t);
+      }
+    },
+    // P009 Vodca svorky (Pred bojom): všetci živí Psíci dostanú staty
+    // najsilnejšieho živého Psíka (útok aj život sa dvíhajú na jeho hodnotu,
+    // nikdy neklesajú), do konca boja. Rast z pohladkaní na jednom psovi sa
+    // tak skopíruje na celú svorku – endgame psíkov (16. 9. 2026).
+    packLeader({ state, sides, pid, events }) {
+      const dogs = aliveOn(sides, pid).filter(f => isRace(state, pid, Cards.byId[f.defId], "doggy"));
+      if (dogs.length < 2) return;
+      const lead = [...dogs].sort((x, y) => (y.atk + y.hp) - (x.atk + x.hp))[0];
+      for (const f of dogs) {
+        if (f === lead) continue;
+        const a = Math.max(0, lead.atk - f.atk), h = Math.max(0, lead.hp - f.hp);
+        if (a || h) buffWithEvent(f, pid, a, h, events);
       }
     },
     // P006 Zavýjanie: všetci živí Psíci (aj sám) +a·m/+h·m za KAŽDÉHO živého

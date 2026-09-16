@@ -451,7 +451,8 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   nechá v kôpke.
 - **Reťaz stupňov bez stropu**: kúzlo nesie `rank` (jediné kúzlo so stupňom),
   sila `2^(rank−1)`: Pohladkanie +1, Super +2, Mega +4, Giga +8, Ultra +16,
-  Omega +32, ďalej „Pohladkanie N. stupňa" (`L.cards.petName`,
+  Omega +32, ďalej „Pohladkanie N. stupňa"; **od Mega pohladká aj všetkých
+  ostatných Psíkov na ploche** (Veľké pohladkanie) (`L.cards.petName`,
   `Cards.petValue`). **3 rovnaké stupne** v ruke, balíčku alebo kôpke sa
   automaticky spoja na jedno o stupeň vyššie (`Engine.checkPetMerge`, volá
   sa z `checkEvolve`). ×2 ako evolve statov príšer (hráčovo rozhodnutie
@@ -480,11 +481,22 @@ vyradené a rasa má 9 kariet (t3 len jednu).
 - P007 (t4 5/6): Pečať +1/+1 Psíkom. P008 (t5 6/6): +1/+1 za každé
   Pohladkanie zahrané v hre (`p.petsCast` – **počet zoslaní**, Super = 1;
   body pohladkaní by dali 60+). Dočasné, bez stupňa (ako F010).
-- **P009 (t6 8/8, dočasný návrh) – Verný až do konca** (`kw lastStand`):
-  keď je na ploche jedinou živou príšerkou svojej strany a súper má tiež
-  jedinú, súperova padne okamžite **bez Pri smrti** (nie je to zásah, je to
-  výhra) a boj končí. Kontrola pred každým útokom, strana na ťahu prvá
-  (obaja s P009 1v1 → vyhráva ten, kto je na ťahu). Umlčanie ho ruší.
+- **P009 (t6 8/8) – Vodca svorky + Verný až do konca**. Vodca svorky
+  (`power2`, Pred bojom, `packLeader`): všetci živí Psíci dostanú útok a
+  život najsilnejšieho živého Psíka (dvíha sa len nahor, do konca boja) –
+  rast z pohladkaní na jednom psovi ide na celú svorku. Verný až do konca
+  (`kw lastStand`): keď je na ploche jedinou živou príšerkou svojej strany a
+  súper má tiež jedinú, súperova padne okamžite **bez Pri smrti** (nie je to
+  zásah, je to výhra) a boj končí. Kontrola pred každým útokom, strana na
+  ťahu prvá (obaja s P009 1v1 → vyhráva ten, kto je na ťahu). Umlčanie ruší
+  oboje.
+- **Endgame psíkov** (16. 9. 2026, simulácia rastu do kola 20: psíci ~207
+  statov plochy vs zvieratá ~339 – rast išiel len na jedno telo): **Veľké
+  pohladkanie** – Pohladkanie od stupňa 3 (Mega, `PET_PACK_RANK`) pohladká
+  cieľ A všetkých ostatných Psíkov na ploche (Psíkom navždy), Mega +4/+4 na
+  5 psov = +40 statov jedným zoslaním; plus Vodca svorky na P009. Záložné
+  páky, ak nestačí: Zavýjanie navždy, P008 zdvihne všetky pohladkania
+  o stupeň, psí trinket „Vodítko" (generátory dávajú 2).
 - Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo.
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
   najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel ani balast;
