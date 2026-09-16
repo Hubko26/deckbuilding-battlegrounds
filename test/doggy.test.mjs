@@ -28,11 +28,13 @@ function bareFight(seed) {
   return { state, E, C, put };
 }
 
-test("psíci: dáta – 11 kariet rasy doggy bez artu, Pohladkanie je generované kúzlo mimo obchodu a poolu", () => {
+test("psíci: dáta – 11 kariet rasy doggy (9 s artom, P003/P007 emoji), Pohladkanie je generované kúzlo mimo obchodu a poolu", () => {
   const { state, C, E } = fresh(3);
   const dogs = C.DEFS.filter(d => d.race === "doggy");
   assert.equal(dogs.length, 11);
-  assert.ok(dogs.every(d => d.noArt && d.emoji));
+  assert.equal(dogs.filter(d => d.noArt).map(d => d.id).join(","), "P003,P007");
+  for (const d of dogs) if (!d.noArt) assert.match(C.artOf(d, 2), /P0\d\d_2\.webp/);
+  assert.ok(dogs.every(d => !d.noArt || d.emoji));
   assert.equal(C.RACE_ICON.doggy, "🐶");
   const pet = C.byId.pet;
   assert.ok(pet.spell && pet.gen && pet.pet);

@@ -1,7 +1,7 @@
 // Dáta kariet. Roster = 60 príšer z art sád (assets/cards), 6 rás × 10,
 // každá príšera má vlastné meno a obrázok pre každý evolučný stupeň
-// (bronz → striebro → zlato), + 11 Psíkov (rasa doggy) zatiaľ bez artu
-// (noArt: true – generický rám s emoji ako tokeny). Texty schopností sa
+// (bronz → striebro → zlato), + 11 Psíkov (rasa doggy, 9 s artom, P003 a
+// P007 zatiaľ noArt: true – generický rám s emoji ako tokeny). Texty schopností sa
 // generujú zo šablón v src/i18n.js (L.cards).
 //
 // Príšera: { id, tier, race, stageNames: [meno1, meno2, meno3], atk, hp,
@@ -248,7 +248,12 @@ const Cards = (() => {
       { cleave: 0.5, power: { kw: "startFight", fx: { type: "ogreGamble", a: 1, h: 1, oa: 2, oh: 2 } } }),
 
     // ---------- Psíci (Doggy) – good boys: Pohladkanie + psie správanie ----------
-    // Bez artu (noArt) – generický rám s emoji, kým art nebude. Motor rasy je
+    // Art sada Fantasy_Cards_Doggo (9 psov × 3 stupne, 16. 9. 2026): bígl
+    // stopár = P006 Vyňuchaj, husky šamanka = P008 Zavýjanie, shiba ronin =
+    // P011 Verný až do konca, pudlí alchymistka = P004 Ocikaj, jazvečík
+    // vynálezca = P005 Aport, buldog rytier = P002 Obranca, corgi zabávač =
+    // P001, retriever bylinkár = P009 Pečať, dalmatín showman = P010. P003
+    // Brechot a P007 Snackpaw art zatiaľ nemajú (noArt – rám s emoji). Motor rasy je
     // kúzlo Pohladkanie (id `pet`): +1/+1, Psíkovi NAVŽDY (pa/ph), 3 rovnaké
     // sa spoja na vyšší stupeň ×3 (Super +3, Mega +9, Giga +27…) bez stropu.
     // Generujú ho LEN P001 (Pri vyložení), P002 (Pri smrti) a P007 (Po nákupe)
@@ -257,40 +262,40 @@ const Cards = (() => {
     // psie schopnosti: Brechot (Obranca preč), Ocikaj (staty na polovicu),
     // Aport (krádež polovice zvyšných statov), Vyňuchaj (tutor), Zavýjanie.
     // Pohladkanie sa predáva za 0 (inak by generátory boli zlatý motor).
-    M("P001", 1, "doggy", ["Pupling", "Pupkin", "Grand Pupperoni"], 1, 2,
-      { noArt: true, emoji: "🐶", power: { kw: "battlecry", fx: { type: "addPet", n: 1 } } }),
-    M("P002", 1, "doggy", ["Guardpup", "Gatehound", "Bastion Barker"], 1, 3,
-      { noArt: true, emoji: "🦮", taunt: true, power: { kw: "deathrattle", fx: { type: "addPet", n: 1 } } }),
+    M("P001", 1, "doggy", ["Wigglecrown", "Jinglepaw", "Carnival King"], 1, 2,
+      { power: { kw: "battlecry", fx: { type: "addPet", n: 1 } } }),
+    M("P002", 1, "doggy", ["Bumblesnout", "Ironjowl", "Royal Bulwark"], 1, 3,
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "addPet", n: 1 } } }),
     // P003 Brechot: náhodný súperov Obranca stratí Obrancu (stupeň = počet).
     M("P003", 1, "doggy", ["Yapper", "Yelpsworth", "Thunderyap"], 2, 1,
       { noArt: true, emoji: "🐕", power: { kw: "startFight", fx: { type: "loseTaunt" } } }),
     // P004 Ocikaj: náhodný súper má útok aj životy na polovicu (zaokrúhlené
     // hore, 1 ostane 1), do konca boja. Stupeň = počet súperov, každého raz.
-    M("P004", 2, "doggy", ["Puddlepaw", "Sprinklefur", "Monsoon Mutt"], 2, 3,
-      { noArt: true, emoji: "🐩", power: { kw: "startFight", fx: { type: "halveEnemy" } } }),
+    M("P004", 2, "doggy", ["Fizzlepuff", "Brewbark", "Grand Alchehound"], 2, 3,
+      { power: { kw: "startFight", fx: { type: "halveEnemy" } } }),
     // P005 Aport (Po údere): ak súper úder prežije, polovicu jeho zvyšných
     // statov ukradne a dá náhodnému kamarátovi. Bez stupňa (ako O006).
-    M("P005", 2, "doggy", ["Fetchit", "Fetchwick", "Retriever Royale"], 3, 2,
-      { noArt: true, emoji: "🦴", power: { kw: "afterAttack", fx: { type: "fetchSteal" } } }),
+    M("P005", 2, "doggy", ["Zipbolt", "Gearhound", "Clockwork Ace"], 3, 2,
+      { power: { kw: "afterAttack", fx: { type: "fetchSteal" } } }),
     // P006 Vyňuchaj: tutor – Pohladkanie z balíčka (najvyšší stupeň), inak
     // náhodná karta. Psí draw – bez neho by pohladkania riedili balíček.
-    M("P006", 3, "doggy", ["Snifflet", "Snoutwell", "Nosferatruffle"], 3, 4,
-      { noArt: true, emoji: "👃", power: { kw: "battlecry", fx: { type: "fetchPet", n: 1 } } }),
+    M("P006", 3, "doggy", ["Snifflecap", "Trailwhisker", "Grand Scentmaster"], 3, 4,
+      { power: { kw: "battlecry", fx: { type: "fetchPet", n: 1 } } }),
     M("P007", 3, "doggy", ["Snackpaw", "Treatmaster", "Biscuit Baron"], 3, 5,
       { noArt: true, emoji: "🍖", taunt: true, power: { kw: "endTurn", fx: { type: "addPet", n: 1 } } }),
     // P008 Zavýjanie: všetci Psíci +1/+1 za každého Psíka na ploche (aj seba).
-    M("P008", 4, "doggy", ["Howler", "Moonhowl", "Aurora Alpha"], 4, 7,
-      { noArt: true, emoji: "🐺", power: { kw: "startFight", fx: { type: "howl", a: 1, h: 1 } } }),
-    M("P009", 4, "doggy", ["Goodboy", "Bestboy", "Paragon Pooch"], 5, 6,
-      { noArt: true, emoji: "🏅", power: { kw: "battlecry", fx: { type: "futureRace", race: "doggy", a: 1, h: 1 } } }),
+    M("P008", 4, "doggy", ["Snowblink", "Aurorawoof", "Froststar Shaman"], 4, 7,
+      { power: { kw: "startFight", fx: { type: "howl", a: 1, h: 1 } } }),
+    M("P009", 4, "doggy", ["Sunnytail", "Kindheart", "Dawn Shepherd"], 5, 6,
+      { power: { kw: "battlecry", fx: { type: "futureRace", race: "doggy", a: 1, h: 1 } } }),
     // P010: +1/+1 za každé zahrané Pohladkanie (počet zoslaní – po spojení
     // je to 15–25 za hru; body pohladkaní by dali 60+).
-    M("P010", 5, "doggy", ["Barkley", "Sir Barkley", "Barkley the Beloved"], 6, 6,
-      { noArt: true, emoji: "🎖️", power: { kw: "battlecry", fx: { type: "petScale", a: 1, h: 1 } } }),
+    M("P010", 5, "doggy", ["Spotpop", "Emberdot", "Grand Firemaster"], 6, 6,
+      { power: { kw: "battlecry", fx: { type: "petScale", a: 1, h: 1 } } }),
     // P011 (t6, dočasný návrh): keď ostane sám proti jedinej súperovej
     // príšerke, boj hneď vyhráva (súper padne bez Pri smrti). Umlčanie to ruší.
-    M("P011", 6, "doggy", ["Loyalpaw", "Faithful Alpha", "The Last Good Boy"], 8, 8,
-      { noArt: true, emoji: "👑", power: { kw: "lastStand", fx: { type: "lastStand" } } }),
+    M("P011", 6, "doggy", ["Miso", "Shadowshiba", "Moonfang Ronin"], 8, 8,
+      { power: { kw: "lastStand", fx: { type: "lastStand" } } }),
 
     // ---------- Kúzla (spoločné pre všetkých) ----------
     // Pohladkanie: generované kúzlo psíkov (nie je v obchode – gen), cena 0,

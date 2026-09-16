@@ -214,8 +214,9 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 | ogre | Ogr | derpy chaos – veľké staty; smolný roll („backstab") dá Pečať celej rase |
 | doggy | Psík | good boys – generujú kúzlo Pohladkanie (na Psíka navždy, reťaz stupňov bez stropu) + psie triky (Brechot, Ocikaj, Aport, Vyňuchaj, Zavýjanie) |
 
-Roster: **60 príšer z art sád** (6 rás × 10) + **11 Psíkov bez artu**
-(`noArt: true` – generický rám s emoji ako tokeny, kým art nebude).
+Roster: **60 príšer z art sád** (6 rás × 10) + **11 Psíkov** (art sada
+Fantasy_Cards_Doggo: 9 psov × 3 stupne; P003 Brechot a P007 Snackpaw sú
+`noArt: true` – generický rám s emoji ako tokeny, kým art nebude).
 Ďalšie rasy sa pridajú s ďalšími art sadami – dátový model je pripravený
 (pole `race` na karte).
 
@@ -433,8 +434,11 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 **🐶 Psíci – good boys: Pohladkanie + psie správanie** (16. 9. 2026)
 
 Identita rasy je kúzlo **Pohladkanie** (id `pet`, emoji 👋) a správanie psa
-(brechot, cikanie, aport, ňuchanie, zavýjanie). Karty P001–P011, zatiaľ bez
-artu (`noArt`, emoji v generickom ráme).
+(brechot, cikanie, aport, ňuchanie, zavýjanie). Karty P001–P011; art zo
+sady Fantasy_Cards_Doggo (bígl stopár = P006, husky šamanka = P008, shiba
+ronin = P011, pudlí alchymistka = P004, jazvečík vynálezca = P005, buldog
+rytier = P002, corgi zabávač = P001, retriever bylinkár = P009, dalmatín
+showman = P010); P003 a P007 sú zatiaľ `noArt` (emoji v generickom ráme).
 
 - **Pohladkanie** – generované kúzlo (nie je v obchode ani v poole, `gen`),
   cena 0, cieľ vlastná príšerka: **+1/+1; Psíkovi NAVŽDY** (pa/ph cestuje

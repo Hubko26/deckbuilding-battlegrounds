@@ -29,8 +29,8 @@ commity, UI) je slovenčina.
   `L.chess`, `L.cards`: rasy, mená kúziel/tokenov, šablóny schopností) SK/CZ/EN.
   Nový text patrí SEM, nie do cards.js/game.js.
 - `src/cards.js` – dáta kariet (rasy, schopnosti, ceny); texty ťahá z `L.cards`.
-  7 rás: 6 s artom (10 kariet) + Psíci (`doggy`, 11 kariet, `noArt` – emoji
-  v generickom ráme). Nová karta bez artu dostane `noArt: true, emoji`.
+  7 rás: 6 s artom (10 kariet) + Psíci (`doggy`, 11 kariet, P003/P007 bez
+  artu). Nová karta bez artu dostane `noArt: true, emoji`.
 - `src/bot.js` – heuristický súper (easy/normal/hard); hrá len cez Engine API.
 - `src/game.js` – UI, animácie, prehrávanie eventov z engine.
 - `src/net.js` – multiplayer (replikácia akcií, chat, prítomnosť hráča,
