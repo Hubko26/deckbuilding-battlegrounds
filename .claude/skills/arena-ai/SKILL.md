@@ -220,10 +220,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     plocha psov = +5/+5 každému). Triky: P003 Ocikaj (náhodný súper má
     staty na polovicu, stupeň = počet), P004 Aport (Po údere ukradne polovicu
     zvyšných statov obrancu kamarátovi – daj ho vľavo, nech útočí prvý,
-    s Vichorom dvakrát). Od Mega (stupeň 3) pohladkanie pohladká cieľ AJ
-    všetkých ostatných Psíkov na ploche – Mega hrávaj s plnou psou plochou.
-    P009 (t6) Vodca svorky: Pred bojom všetci Psíci dostanú útok a život
-    najsilnejšieho Psíka – drž jedného „nahladkaného" psa a P009 vedľa neho;
+    s Vichorom dvakrát). P009 (t6) Vodca svorky: kým je na ploche, každé
+    Pohladkanie pohladká cieľ AJ všetkých ostatných Psíkov (vylož P009 PRED
+    hladkaním, hladkaj s plnou psou plochou); Pred bojom všetci Psíci
+    dostanú útok a život najsilnejšieho Psíka – drž jedného „nahladkaného"
+    psa a P009 vedľa neho;
     Verný až do konca: sám proti jedinému súperovi vyhráva boj – daj ho
     úplne vpravo, nech ostane posledný. Trinket Vodítko (kolo 8): každé
     generovanie Pohladkania dá o 1 viac – v psom builde vždy ber.

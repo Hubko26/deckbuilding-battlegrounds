@@ -1891,7 +1891,7 @@ function hidePreview() {
 // (rasová aura majiteľa), Navždy (pa/ph – rast z pohladkaní, Po nákupe…),
 // Dočasne (zvyšok do aktuálnych statov: kúzla, dračie buffy, boj), počet
 // prijatých Pohladkaní. Hráč tak vidí, odkiaľ sa čísla vzali (hlásenie
-// „všetci dostali buff" = Veľké pohladkanie od Mega). Len pre inštancie
+// „všetci dostali buff" = Vodca svorky P009 na ploche). Len pre inštancie
 // príšer (nie ponuka, nie kúzla). Zranenie = maxHp − hp.
 function statBreakdown(instOrId, opts) {
   if (!state || typeof instOrId !== "object" || instOrId.spell) return null;

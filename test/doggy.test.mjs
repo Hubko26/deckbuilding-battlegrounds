@@ -340,7 +340,7 @@ test("psíci: spojenie Pohladkaní pri dotiahnutí ruky nezje ruku – ruka sa d
   assert.equal(p.deck.length, 1);
 });
 
-test("psíci: Mega-pohladkanie (stupeň 3+) pohladká cieľ aj všetkých ostatných Psíkov na ploche navždy; Super len cieľ", () => {
+test("psíci: P009 Vodca svorky na ploche – každé Pohladkanie pohladká cieľ aj všetkých ostatných Psíkov navždy; bez P009 len cieľ", () => {
   const { state, E } = fresh(51);
   E.startRound(state);
   const p = state.p1;
@@ -348,13 +348,15 @@ test("psíci: Mega-pohladkanie (stupeň 3+) pohladká cieľ aj všetkých ostatn
   const d2 = E.makeInst(state, "P003", 1); d2.slot = 1;
   const bear = E.makeInst(state, "B001", 1); bear.slot = 2;
   p.board = [d1, d2, bear];
-  p.hand = [E.makeInst(state, "pet", 2), E.makeInst(state, "pet", 3)];
-  E.castSpell(state, "p1", 0, d1.uid); // Super: len d1
-  assert.equal(d1.pa, 2); assert.equal(d2.pa, undefined);
-  const ev = E.castSpell(state, "p1", 0, bear.uid); // Mega na medveďa: medveď dočasne, psi navždy
-  assert.equal(bear.atk, 6); assert.equal(bear.pa, undefined);
-  assert.equal(d1.pa, 6); assert.equal(d2.pa, 4);
-  assert.equal(ev.filter(e => e.type === "buff").length, 2);
+  p.hand = [E.makeInst(state, "pet", 3), E.makeInst(state, "pet", 2)];
+  E.castSpell(state, "p1", 0, d1.uid); // Mega bez P009: len d1
+  assert.equal(d1.pa, 4); assert.equal(d2.pa, undefined);
+  const leader = E.makeInst(state, "P009", 1); leader.slot = 3;
+  p.board.push(leader);
+  const ev = E.castSpell(state, "p1", 0, bear.uid); // Super na medveďa s P009: medveď dočasne, všetci psi navždy
+  assert.equal(bear.atk, 4); assert.equal(bear.pa, undefined);
+  assert.equal(d1.pa, 6); assert.equal(d2.pa, 2); assert.equal(leader.pa, 2);
+  assert.equal(ev.filter(e => e.type === "buff").length, 3);
   assert.equal(p.petsCast, 2);
 });
 

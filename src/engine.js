@@ -9,7 +9,6 @@ const Engine = (() => {
   const CARD_COST = 3;
   const SELL_GAIN = 1;
   const BOLT_DMG = 3; // kúzlo Blesk: základný damage odloženého výboja
-  const PET_PACK_RANK = 3; // Pohladkanie od tohto stupňa (Mega) pohladká všetkých Psíkov na ploche
   const REFRESH_COST = 1;
   const BACKSTAB_BUFF = 1; // ogr „Backstab": Pečať +1/+1 všetkým ogrom za smolný roll
   const COMMON_COUNT = 3;
@@ -1025,10 +1024,11 @@ const Engine = (() => {
       pat(target);
       const perm = isDog(target);
       const events = [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a, h, perm }];
-      // Veľké pohladkanie (Mega a vyššie, stupeň >= PET_PACK_RANK): objíme celú
-      // svorku – každý ďalší Psík na ploche dostane to isté (navždy). Endgame
-      // psíkov: rast už nejde len na jedno telo (16. 9. 2026).
-      if ((inst.rank || 1) >= PET_PACK_RANK) {
+      // Vodca svorky (P009 na ploche): každé pohladkanie objíme celú svorku –
+      // každý ďalší Psík na ploche dostane to isté (navždy). Endgame psíkov:
+      // rast už nejde len na jedno telo. Je to schopnosť t6 psíka, nie
+      // kúzla (hráčovo rozhodnutie 16. 9. 2026).
+      if (p.board.some(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "packLeader"))) {
         for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
       }
       p.petsCast = (p.petsCast || 0) + 1;
@@ -1804,7 +1804,10 @@ const Engine = (() => {
   function runStartFightProcs(state, sides, first, events) {
     for (const pid of sideOrder(first)) {
       for (const inst of [...sides[pid]]) {
-        if (inst.hp > 0) triggerPower(state, sides, pid, inst, "startFight", events);
+        if (inst.hp <= 0) continue;
+        triggerPower(state, sides, pid, inst, "startFight", events);
+        // Vodca svorky (P009): bojová časť schopnosti beží ako Pred bojom.
+        triggerPower(state, sides, pid, inst, "packLeader", events);
       }
     }
   }

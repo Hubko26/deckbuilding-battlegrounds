@@ -428,9 +428,9 @@ const L = {
       en: `🔮 <i class="hl-e">Imprint</i> +X/+Y to a Race: all your minions of that race – in your deck and the ones you buy later too – get the stats <i class="hl-e">forever</i>. Other buffs from battle last only <i class="hl-b">until the fight ends</i>; growth marked <i class="hl-e">FOREVER</i> stays on the card.`,
     },
     {
-      sk: `🐶 <i class="hl-e">Psíci</i> generujú kúzlo <i class="hl-e">Pohladkanie</i> (+1/+1; Psíkovi <i class="hl-e">navždy</i>). Tri rovnaké sa spoja na vyšší stupeň: Super +2, Mega +4, Giga +8… bez stropu; od Mega pohladká <i class="hl-e">všetkých Psíkov</i> naraz.`,
-      cs: `🐶 <i class="hl-e">Pejsci</i> generují kouzlo <i class="hl-e">Pohlazení</i> (+1/+1; Pejskovi <i class="hl-e">navždy</i>). Tři stejná se spojí na vyšší stupeň: Super +2, Mega +4, Giga +8… bez stropu; od Mega pohladí <i class="hl-e">všechny Pejsky</i> naráz.`,
-      en: `🐶 <i class="hl-e">Doggies</i> generate the <i class="hl-e">Pet</i> spell (+1/+1; <i class="hl-e">forever</i> on a Doggy). Three of the same merge into the next level: Super +2, Mega +4, Giga +8… no cap; from Mega up it pets <i class="hl-e">all your Doggies</i> at once.`,
+      sk: `🐶 <i class="hl-e">Psíci</i> generujú kúzlo <i class="hl-e">Pohladkanie</i> (+1/+1; Psíkovi <i class="hl-e">navždy</i>). Tri rovnaké sa spoja na vyšší stupeň: Super +2, Mega +4, Giga +8… bez stropu.`,
+      cs: `🐶 <i class="hl-e">Pejsci</i> generují kouzlo <i class="hl-e">Pohlazení</i> (+1/+1; Pejskovi <i class="hl-e">navždy</i>). Tři stejná se spojí na vyšší stupeň: Super +2, Mega +4, Giga +8… bez stropu.`,
+      en: `🐶 <i class="hl-e">Doggies</i> generate the <i class="hl-e">Pet</i> spell (+1/+1; <i class="hl-e">forever</i> on a Doggy). Three of the same merge into the next level: Super +2, Mega +4, Giga +8… no cap.`,
     },
     {
       sk: `⚔️ V boji sa útočí zľava doprava; <i class="hl-r">Obrancovia 🛡️</i> musia byť napadnutí prví. Preživšie príšery uberú <i class="hl-r">❤️</i> súperovmu hrdinovi.`,
@@ -798,6 +798,7 @@ L.cards = (() => {
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
     afterAttack: { sk: "Po údere", cs: "Po úderu", en: "After attacking" }, // psíci: Aport (P004)
+    packLeader: { sk: "Vodca svorky", cs: "Vůdce smečky", en: "Pack Leader" }, // psíci t6 (P009)
     lastStand: { sk: "Verný až do konca", cs: "Věrný až do konce", en: "Loyal to the end" }, // psíci t6
   };
   const taunt = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
@@ -1167,14 +1168,8 @@ L.cards = (() => {
     // Pohladkanie (kúzlo so stupňom): m = stupeň kúzla, sila ×2 za stupeň.
     // Psíkovi ostáva NAVŽDY (pa/ph), inej príšerke do konca boja. Živelná
     // sila ho nezosilňuje (free kúzlo bez stropu by snowballovalo).
-    // Od Mega (stupeň 3) pohladká aj všetkých ostatných Psíkov na ploche.
     petBuff: (f, m) => {
       const v = petValue(m);
-      if (m >= 3) return {
-        sk: `pohladkaj vybranú príšerku A všetkých svojich Psíkov: +${f.a * v}/+${f.h * v} (Psíkom NAVŽDY, inej do konca boja)`,
-        cs: `pohlaď vybranou příšerku A všechny své Pejsky: +${f.a * v}/+${f.h * v} (Pejskům NAVŽDY, jiné do konce boje)`,
-        en: `pet a chosen minion AND all your Doggies: +${f.a * v}/+${f.h * v} (FOREVER on Doggies, until the fight ends on others)`,
-      };
       return {
         sk: `pohladkaj vybranú príšerku: +${f.a * v}/+${f.h * v} (Psíkovi NAVŽDY, inej do konca boja)`,
         cs: `pohlaď vybranou příšerku: +${f.a * v}/+${f.h * v} (Pejskovi NAVŽDY, jiné do konce boje)`,
@@ -1231,9 +1226,9 @@ L.cards = (() => {
     // P009 (t6): sám proti jedinému nepriateľovi = okamžitá výhra boja.
     // P009 Vodca svorky: všetci Psíci dostanú staty najsilnejšieho Psíka.
     packLeader: () => ({
-      sk: "Vodca svorky – všetci tvoji Psíci dostanú útok a život najsilnejšieho Psíka (do konca boja)",
-      cs: "Vůdce smečky – všichni tví Pejsci dostanou útok a život nejsilnějšího Pejska (do konce boje)",
-      en: "Pack Leader – all your Doggies get the attack and health of your strongest Doggy (until the fight ends)",
+      sk: "každé Pohladkanie pohladká všetkých tvojich Psíkov; Pred bojom všetci Psíci dostanú útok a život najsilnejšieho Psíka (do konca boja)",
+      cs: "každé Pohlazení pohladí všechny tvé Pejsky; Před bojem všichni Pejsci dostanou útok a život nejsilnějšího Pejska (do konce boje)",
+      en: "every Pet pets all your Doggies; at the start of the fight all Doggies get the attack and health of your strongest Doggy (until the fight ends)",
     }),
     lastStand: () => ({
       sk: "keď ostane na ploche sám proti jedinej súperovej príšerke, boj hneď vyhráva",
