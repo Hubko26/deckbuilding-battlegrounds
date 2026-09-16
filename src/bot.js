@@ -143,7 +143,7 @@ const Bot = (() => {
     for (const x of p.hand) if (x.spell && spell(x.defId)) n++;
     return n;
   }
-  // Koľko Pohladkaní hráč vlastní (ruka, balíček, kôpka) – hodnota tutora P006.
+  // Koľko Pohladkaní hráč vlastní (ruka, balíček, kôpka) – hodnota tutora P005.
   function ownedPetCount(p) {
     let n = 0;
     for (const c of [...p.deck, ...p.discard, ...p.hand]) if (Cards.byId[c.defId].pet) n++;
@@ -219,7 +219,7 @@ const Bot = (() => {
       // Mrchožrúti (B004 navždy, B009 dočasne) – cennejší s vyvolávačmi Mláďat
       if (pw.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005") + ownedCount(p, "B001") + ownedCount(p, "B006")) * 0.8;
       // Psíci: generátory Pohladkaní rastú s počtom psov (pohladkanie na
-      // psíkovi je navždy), tutor P006 s počtom pohladkaní, P010 s počtom
+      // psíkovi je navždy), tutor P005 s počtom pohladkaní, P008 s počtom
       // zoslaní, Zavýjanie s počtom psov na ploche.
       if (fx.type === "addPet") score += 1 + (races.doggy || 0) * 0.5;
       if (fx.type === "fetchPet") score += 1 + ownedPetCount(p) * 0.5;
@@ -665,7 +665,7 @@ const Bot = (() => {
     const pw = Cards.byId[inst.defId].power;
     if (!pw) return 1;
     if (pw.kw === "onAttack" || pw.kw === "afterAttack") return 0; // Aport chce útočiť, kým súper žije
-    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell", "lastStand"].includes(pw.kw)) return 2; // P011 má ostať posledný
+    if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell", "lastStand"].includes(pw.kw)) return 2; // P009 má ostať posledný
     return 1;
   }
 
@@ -771,7 +771,6 @@ const Bot = (() => {
       case "addPet": return f.n * m * 2.5 * (kw === "endTurn" ? PW_HORIZON : 1);
       case "fetchPet": return f.n * m * 3;                     // tutor ako draw
       case "halveEnemy": return m * 6;                         // polovica ~12-statového tela
-      case "loseTaunt": return m * 2;
       case "fetchSteal": return 4 * PW_ATTACKS;                // ~4 body presunuté za útok
       case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
       case "petScale": return ab * 8;                          // ~8 pohladkaní zahraných za hru

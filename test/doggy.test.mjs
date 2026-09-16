@@ -1,5 +1,5 @@
 // Psíci (rasa doggy): Pohladkanie so stupňom bez stropu, generátory,
-// psie schopnosti (Brechot, Ocikaj, Aport, Vyňuchaj, Zavýjanie), P010
+// psie schopnosti (Ocikaj, Aport, Vyňuchaj, Zavýjanie), P008
 // škálovač a t6 Verný až do konca. Bot: hladká psov, pohladkania nie sú balast.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -28,13 +28,12 @@ function bareFight(seed) {
   return { state, E, C, put };
 }
 
-test("psíci: dáta – 11 kariet rasy doggy (9 s artom, P003/P007 emoji), Pohladkanie je generované kúzlo mimo obchodu a poolu", () => {
+test("psíci: dáta – 9 kariet rasy doggy s artom (P001–P009), Pohladkanie je generované kúzlo mimo obchodu a poolu", () => {
   const { state, C, E } = fresh(3);
   const dogs = C.DEFS.filter(d => d.race === "doggy");
-  assert.equal(dogs.length, 11);
-  assert.equal(dogs.filter(d => d.noArt).map(d => d.id).join(","), "P003,P007");
-  for (const d of dogs) if (!d.noArt) assert.match(C.artOf(d, 2), /P0\d\d_2\.webp/);
-  assert.ok(dogs.every(d => !d.noArt || d.emoji));
+  assert.equal(dogs.length, 9);
+  assert.equal(dogs.map(d => d.id).join(","), "P001,P002,P003,P004,P005,P006,P007,P008,P009");
+  for (const d of dogs) { assert.ok(!d.noArt, d.id); assert.match(C.artOf(d, 2), /P00\d_2\.webp/); }
   assert.equal(C.RACE_ICON.doggy, "🐶");
   const pet = C.byId.pet;
   assert.ok(pet.spell && pet.gen && pet.pet);
@@ -121,20 +120,18 @@ test("psíci: 3 rovnaké Pohladkania (ruka, balíček, kôpka) sa spoja na vyš�
   assert.equal(p.deck.filter(c => c.defId === "pet" && c.rank === 1).length, 0);
 });
 
-test("psíci: generátory – P001 Pri vyložení (×stupeň), P007 Po nákupe, P002 Pri smrti v boji; trojica z generátorov sa spojí", () => {
+test("psíci: generátory – P001 Pri vyložení (×stupeň), P002 Pri smrti v boji; trojica z generátorov sa spojí", () => {
   const { state, E } = fresh(13);
   E.startRound(state);
   const p = state.p1;
   p.deck = []; p.discard = [];
-  p.hand = [E.makeInst(state, "P001", 2), E.makeInst(state, "P007", 1)];
+  p.hand = [E.makeInst(state, "P001", 2), E.makeInst(state, "P001", 1)];
   const ev = E.playMinion(state, "p1", 0);
   assert.equal(ev.find(e => e.type === "addPet").n, 2);
   assert.equal(p.deck.filter(c => c.defId === "pet").length, 2);
-  E.playMinion(state, "p1", 0);
-  const endEv = E.endShopTurn(state, "p1"); // P007 Po nákupe: tretie → spojenie
-  assert.ok(endEv.some(e => e.type === "addPet"));
-  assert.ok(endEv.some(e => e.type === "petMerge" && e.rank === 2));
-  const merged = [...p.deck, ...p.discard].filter(c => c.defId === "pet");
+  const ev2 = E.playMinion(state, "p1", 0); // tretie → spojenie hneď (hráč je na ťahu → do ruky)
+  assert.ok(ev2.some(e => e.type === "petMerge" && e.rank === 2));
+  const merged = [...p.deck, ...p.discard, ...p.hand].filter(c => c.defId === "pet");
   assert.equal(merged.length, 1); assert.equal(merged[0].rank, 2);
   // P002 Pri smrti v boji: pohladkanie do balíčka.
   const { state: s2, E: E2, put } = bareFight(14);
@@ -145,11 +142,11 @@ test("psíci: generátory – P001 Pri vyložení (×stupeň), P007 Po nákupe, 
   assert.equal([...s2.p1.deck, ...s2.p1.hand].filter(c => c.defId === "pet").length, 1);
 });
 
-test("psíci: P006 Vyňuchaj – vytiahne Pohladkanie najvyššieho stupňa z balíčka, bez pohladkania náhodnú kartu", () => {
+test("psíci: P005 Vyňuchaj – vytiahne Pohladkanie najvyššieho stupňa z balíčka, bez pohladkania náhodnú kartu", () => {
   const { state, E } = fresh(15);
   E.startRound(state);
   const p = state.p1;
-  p.hand = [E.makeInst(state, "P006", 1)];
+  p.hand = [E.makeInst(state, "P005", 1)];
   p.deck = [{ defId: "B001", rank: 1 }, { defId: "pet", rank: 1 }, { defId: "pet", rank: 2 }, { defId: "U001", rank: 1 }];
   p.discard = [];
   const ev = E.playMinion(state, "p1", 0);
@@ -159,16 +156,16 @@ test("psíci: P006 Vyňuchaj – vytiahne Pohladkanie najvyššieho stupňa z ba
   assert.equal(p.deck.length, 3);
   // bez pohladkania: náhodná karta (strieborný = 2 karty)
   p.deck = [{ defId: "B001", rank: 1 }, { defId: "U001", rank: 1 }];
-  p.hand = [E.makeInst(state, "P006", 2)];
+  p.hand = [E.makeInst(state, "P005", 2)];
   p.board = [];
   E.playMinion(state, "p1", 0);
   assert.equal(p.hand.length, 2);
   assert.equal(p.deck.length, 0);
 });
 
-test("psíci: P004 Ocikaj – náhodný súper má útok aj životy na polovicu (hore, 1 ostane 1), nie je to damage; striebro 2 rôznych", () => {
+test("psíci: P003 Ocikaj – náhodný súper má útok aj životy na polovicu (hore, 1 ostane 1), nie je to damage; striebro 2 rôznych", () => {
   const { state, E, put } = bareFight(16);
-  put("p1", "P004", 2);            // 2 ciele
+  put("p1", "P003", 2);            // 2 ciele
   const big = put("p2", "O008");   // 5/7 → 3/4
   const frail = put("p2", "U001"); // 1/1 → 1/1, žiadna smrť
   const ev = E.doBattle(state);
@@ -184,25 +181,9 @@ test("psíci: P004 Ocikaj – náhodný súper má útok aj životy na polovicu 
   assert.ok(firstSummon === -1 || firstSummon > firstAttack);
 });
 
-test("psíci: P003 Brechot – náhodný súperov Obranca stratí Obrancu; bez Obrancu fizzle", () => {
-  const { state, E, put } = bareFight(17);
-  put("p1", "P003");
-  const tank = put("p2", "U006"); // Obranca
-  put("p2", "O004");
-  const ev = E.doBattle(state);
-  const bark = ev.find(e => e.type === "bark");
-  assert.ok(bark); assert.equal(bark.uid, tank.uid);
-  const { state: s2, E: E2, put: put2 } = bareFight(18);
-  put2("p1", "P003");
-  put2("p2", "O004");
-  const ev2 = E2.doBattle(s2);
-  assert.ok(ev2.some(e => e.type === "barkFizzle"));
-  assert.ok(!ev2.some(e => e.type === "bark"));
-});
-
-test("psíci: P005 Aport (Po údere) – ak obranca prežije, polovica jeho zvyšných statov ide kamarátovi; padnutý nič", () => {
+test("psíci: P004 Aport (Po údere) – ak obranca prežije, polovica jeho zvyšných statov ide kamarátovi; padnutý nič", () => {
   const { state, E, put } = bareFight(19);
-  const dog = put("p1", "P005");    // 3/2
+  const dog = put("p1", "P004");    // 3/2
   const friend = put("p1", "O004"); // 3/4
   const wall = put("p2", "B006");   // 7/9 – prežije; psa chráni Božský štít
   dog.shield = true;
@@ -219,17 +200,17 @@ test("psíci: P005 Aport (Po údere) – ak obranca prežije, polovica jeho zvy�
   assert.ok(ev.some(e => e.type === "buff" && e.uid === friend.uid && e.a === 3 && e.h === 3));
   // obranca padne z úderu → žiadny Aport
   const { state: s2, E: E2, put: put2 } = bareFight(20);
-  put2("p1", "P005");
+  put2("p1", "P004");
   put2("p2", "U001"); // 1/1 padne
   s2.p1.trinkets = ["initiative"];
   const ev2 = E2.doBattle(s2);
   assert.ok(!ev2.some(e => e.type === "fetch"));
 });
 
-test("psíci: P008 Zavýjanie – všetci Psíci +1/+1 za každého Psíka na ploche (aj sám); P009 Pečať Psíkom", () => {
+test("psíci: P006 Zavýjanie – všetci Psíci +1/+1 za každého Psíka na ploche (aj sám); P007 Pečať Psíkom", () => {
   const { state, E, put } = bareFight(21);
-  const howler = put("p1", "P008");
-  const d1 = put("p1", "P001"), d2 = put("p1", "P003");
+  const howler = put("p1", "P006");
+  const d1 = put("p1", "P001"), d2 = put("p1", "P005");
   put("p1", "O004"); // nie je pes
   put("p2", "O005");
   const ev = E.doBattle(state);
@@ -238,29 +219,29 @@ test("psíci: P008 Zavýjanie – všetci Psíci +1/+1 za každého Psíka na pl
   for (const u of [howler.uid, d1.uid, d2.uid]) assert.ok(buffs.some(b => b.uid === u));
   const { state: s, E: E2 } = fresh(22);
   E2.startRound(s);
-  s.p1.hand = [E2.makeInst(s, "P009", 1)];
+  s.p1.hand = [E2.makeInst(s, "P007", 1)];
   E2.playMinion(s, "p1", 0);
   assert.equal(s.p1.raceBuffs.doggy.a, 1); assert.equal(s.p1.raceBuffs.doggy.h, 1);
 });
 
-test("psíci: P010 – +1/+1 za každé zahrané Pohladkanie (počet zoslaní, Super = 1)", () => {
+test("psíci: P008 – +1/+1 za každé zahrané Pohladkanie (počet zoslaní, Super = 1)", () => {
   const { state, E, C } = fresh(23);
   E.startRound(state);
   const p = state.p1;
   const dog = E.makeInst(state, "P001", 1); dog.slot = 0;
   p.board = [dog];
-  p.hand = [E.makeInst(state, "pet", 1), E.makeInst(state, "pet", 3), E.makeInst(state, "P010", 1)];
+  p.hand = [E.makeInst(state, "pet", 1), E.makeInst(state, "pet", 3), E.makeInst(state, "P008", 1)];
   E.castSpell(state, "p1", 0, dog.uid);
   E.castSpell(state, "p1", 0, dog.uid);
   E.playMinion(state, "p1", 0);
-  const b = p.board.find(x => x.defId === "P010");
-  assert.equal(b.atk, C.byId.P010.atk + 2);
-  assert.equal(b.hp, C.byId.P010.hp + 2);
+  const b = p.board.find(x => x.defId === "P008");
+  assert.equal(b.atk, C.byId.P008.atk + 2);
+  assert.equal(b.hp, C.byId.P008.hp + 2);
 });
 
-test("psíci: P011 Verný až do konca – sám proti jedinému súperovi vyhráva boj hneď (bez Pri smrti súpera); umlčaný nie", () => {
+test("psíci: P009 Verný až do konca – sám proti jedinému súperovi vyhráva boj hneď (bez Pri smrti súpera); umlčaný nie", () => {
   const { state, E, put } = bareFight(24);
-  put("p1", "P011");             // 8/8
+  put("p1", "P009");             // 8/8
   const foe = put("p2", "B006"); // 7/9, Pri smrti 2× SuperMláďa – nesmú prísť
   const ev = E.doBattle(state);
   const ls = ev.find(e => e.type === "lastStand");
@@ -270,11 +251,11 @@ test("psíci: P011 Verný až do konca – sám proti jedinému súperovi vyhrá
   assert.ok(!ev.some(e => e.type === "summon"));
   const dmg = ev.find(e => e.type === "heroDmg");
   assert.equal(dmg.pid, "p2");
-  // umlčaný P011 schopnosť stráca – bojuje sa normálne
+  // umlčaný P009 schopnosť stráca – bojuje sa normálne
   const { state: s2, E: E2, put: put2 } = bareFight(25);
-  put2("p1", "P011");
+  put2("p1", "P009");
   put2("p2", "U001");
-  s2.p2.silences = 1; // súper umlčí P011
+  s2.p2.silences = 1; // súper umlčí P009
   const ev2 = E2.doBattle(s2);
   assert.ok(ev2.some(e => e.type === "silence"));
   assert.ok(!ev2.some(e => e.type === "lastStand"));
@@ -318,12 +299,12 @@ test("bot (psíci): Pohladkanie hodí na najsilnejšieho Psíka; pohladkania nie
   assert.equal(B.cardScore(state, p, "minca", { raceFocus: 1 }), withPets);
 });
 
-test("cardPower (psíci): každá psia karta a Pohladkanie majú silu; P011 t6 a P010 t5 nad t1 telom", () => {
+test("cardPower (psíci): každá psia karta a Pohladkanie majú silu; P009 t6 a P008 t5 nad t1 telom", () => {
   const { B, C } = fresh(1);
   const power = id => B.cardPower(C.byId[id]).total;
   for (const d of C.DEFS.filter(x => x.race === "doggy")) assert.ok(power(d.id) > 0, d.id);
-  assert.ok(power("P011") > power("P001"));
-  assert.ok(power("P010") > power("P003"));
+  assert.ok(power("P009") > power("P001"));
+  assert.ok(power("P008") > power("P003"));
   assert.ok(B.cardPower(C.byId.pet, { rank: 2 }).total > B.cardPower(C.byId.pet).total);
 });
 

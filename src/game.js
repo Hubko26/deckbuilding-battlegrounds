@@ -903,7 +903,7 @@ async function runBattle() {
       }
       // ----- Psíci -----
       case "pee": {
-        // Ocikaj (P004): staty na polovicu – žltá kvapka, čísla klesnú.
+        // Ocikaj (P003): staty na polovicu – žltá kvapka, čísla klesnú.
         const el = cardById(ev.uid);
         const fromEl = ev.from ? cardById(ev.from) : null;
         const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
@@ -922,25 +922,8 @@ async function runBattle() {
         }
         break;
       }
-      case "bark": {
-        // Brechot (P003): súper stratil Obrancu – badge preč.
-        const el = cardById(ev.uid);
-        const name = ev.defId ? Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang) : "?";
-        log(`🐕 ${name} ${t(L.barkMsg)}`);
-        if (el) {
-          el.querySelector(".taunt-badge")?.remove();
-          floatText(el, "🐕💢");
-          impactRing(el, "#868e96");
-          Sfx.silence();
-          await sleep(500);
-        }
-        break;
-      }
-      case "barkFizzle":
-        log(t(L.barkFizzleMsg));
-        break;
       case "fetch": {
-        // Aport (P005): za ním idú shrink (obranca) a buff (kamarát) eventy.
+        // Aport (P004): za ním idú shrink (obranca) a buff (kamarát) eventy.
         const a = Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang);
         const b = ev.targetDefId ? Cards.nameOf(Cards.byId[ev.targetDefId], ev.targetRank || 1, I18N.lang) : "?";
         log(t(L.fetchMsg).replace("{a}", a).replace("{b}", b).replace("{n}", `${ev.a}/${ev.h}`));
@@ -949,7 +932,7 @@ async function runBattle() {
         break;
       }
       case "lastStand": {
-        // Verný až do konca (P011): sám proti jedinému – výhra boja, súper padne.
+        // Verný až do konca (P009): sám proti jedinému – výhra boja, súper padne.
         const a = Cards.nameOf(Cards.byId[ev.defId], ev.rank || 1, I18N.lang);
         log(t(L.lastStandMsg).replace("{a}", a));
         const el = cardById(ev.uid);

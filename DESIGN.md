@@ -188,8 +188,8 @@ hrozba hodná t6.
 | End of turn | **Po nákupe** | na konci tvojej nákupnej fázy |
 | On attack | **Pri útoku** | keď príšerka útočí (dočasný efekt, len v boji) |
 | After a spell | **Po kúzle** | keď zošleš kúzlo, kým je víla na ploche |
-| After attacking | **Po údere** | po vlastnom útoku, ak útočník aj obranca prežili (psík P005 Aport) |
-| Loyal to the end | **Verný až do konca** | pasívna (psík P011): sám proti jedinej súperovej príšerke = boj hneď vyhráva |
+| After attacking | **Po údere** | po vlastnom útoku, ak útočník aj obranca prežili (psík P004 Aport) |
+| Loyal to the end | **Verný až do konca** | pasívna (psík P009): sám proti jedinej súperovej príšerke = boj hneď vyhráva |
 | Divine Shield | **Božský štít** | prvé zranenie sa zruší (štít praskne); z kúzla Svätožiara |
 | Windfury | **Vichor** | príšerka útočí vo svojom ťahu dvakrát (druhý útok len ak prežila); z kúzla Vichor |
 | Imprint | **Pečať** | trvalá rasová aura (`futureRace`/`futureRaceOf`/`futureAll`): „Pečať +1/+1 Zvieratám" – všetky tvoje príšerky rasy (plocha, ruka, balíček, tokeny aj budúce) dostanú staty navždy; vysvetlené v pravidlách na úvodnej obrazovke |
@@ -212,11 +212,11 @@ optimalizované webp v `assets/cards/<ID>_<stupeň>.webp`.
 | fairy | Víla | Po kúzle – schopnosti spúšťané zoslaním kúzla |
 | dragon | Drak | žoldnieri – cielené battlecry zosilňujú rasu cieľa |
 | ogre | Ogr | derpy chaos – veľké staty; smolný roll („backstab") dá Pečať celej rase |
-| doggy | Psík | good boys – generujú kúzlo Pohladkanie (na Psíka navždy, reťaz stupňov bez stropu) + psie triky (Brechot, Ocikaj, Aport, Vyňuchaj, Zavýjanie) |
+| doggy | Psík | good boys – generujú kúzlo Pohladkanie (na Psíka navždy, reťaz stupňov bez stropu) + psie triky (Ocikaj, Aport, Vyňuchaj, Zavýjanie) |
 
-Roster: **60 príšer z art sád** (6 rás × 10) + **11 Psíkov** (art sada
-Fantasy_Cards_Doggo: 9 psov × 3 stupne; P003 Brechot a P007 Snackpaw sú
-`noArt: true` – generický rám s emoji ako tokeny, kým art nebude).
+Roster: **60 príšer z art sád** (6 rás × 10) + **9 Psíkov** (art sada
+Fantasy_Cards_Doggo: 9 psov × 3 stupne). Karta bez artu by dostala
+`noArt: true` (generický rám s emoji ako tokeny).
 Ďalšie rasy sa pridajú s ďalšími art sadami – dátový model je pripravený
 (pole `race` na karte).
 
@@ -434,11 +434,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
 **🐶 Psíci – good boys: Pohladkanie + psie správanie** (16. 9. 2026)
 
 Identita rasy je kúzlo **Pohladkanie** (id `pet`, emoji 👋) a správanie psa
-(brechot, cikanie, aport, ňuchanie, zavýjanie). Karty P001–P011; art zo
-sady Fantasy_Cards_Doggo (bígl stopár = P006, husky šamanka = P008, shiba
-ronin = P011, pudlí alchymistka = P004, jazvečík vynálezca = P005, buldog
-rytier = P002, corgi zabávač = P001, retriever bylinkár = P009, dalmatín
-showman = P010); P003 a P007 sú zatiaľ `noArt` (emoji v generickom ráme).
+(cikanie, aport, ňuchanie, zavýjanie). Karty P001–P009 = 9 psov z art sady
+Fantasy_Cards_Doggo (corgi zabávač = P001, buldog rytier = P002, pudlí
+alchymistka = P003, jazvečík vynálezca = P004, bígl stopár = P005, husky
+šamanka = P006, retriever bylinkár = P007, dalmatín showman = P008, shiba
+ronin = P009). Pôvodný návrh mal 11 kariet (Brechot: súperov Obranca stratí
+Obrancu; Snackpaw: Po nákupe Pohladkanie) – art sada má 9 psov, tak boli
+vyradené a rasa má 9 kariet (t3 len jednu).
 
 - **Pohladkanie** – generované kúzlo (nie je v obchode ani v poole, `gen`),
   cena 0, cieľ vlastná príšerka: **+1/+1; Psíkovi NAVŽDY** (pa/ph cestuje
@@ -458,34 +460,33 @@ showman = P010); P003 a P007 sú zatiaľ `noArt` (emoji v generickom ráme).
   sa do trojice **nerátajú** (inak by sa hodnota zoslaného zahrala 2×).
   Výsledok ide do ruky, ak je hráč na ťahu a má miesto, inak do balíčka
   (event `petMerge`, `hidden` = použila sa neviditeľná kópia).
-- **Generátory** – len tri, aby balíček neutopili: P001 (t1 1/2, Pri
-  vyložení), P002 (t1 1/3 Obranca, Pri smrti – aj v boji, `BATTLE_FX.addPet`),
-  P007 (t3 3/5 Obranca, Po nákupe). Evolve = počet. Odhad z logov (hra ~12
-  kôl, hráč vyloží 1,5–2 karty dominantnej rasy za kolo): 3–4 pohladkania za
-  kolo, 35–45 za hru, po spájaní ~5 kariet pohladkaní v balíčku.
-- **Psie triky**: P003 Brechot (t1 2/1, Pred bojom: náhodný súperov Obranca
-  stratí Obrancu, stupeň = počet; bez Obrancu `barkFizzle`), P004 Ocikaj (t2
+- **Generátory** – len dva, aby balíček neutopili: P001 (t1 1/2, Pri
+  vyložení), P002 (t1 1/3 Obranca, Pri smrti – aj v boji, `BATTLE_FX.addPet`).
+  Evolve = počet. Odhad z logov (hra ~12 kôl, hráč vyloží 1,5–2 karty
+  dominantnej rasy za kolo): 2–3 pohladkania za kolo, 25–35 za hru, po
+  spájaní ~4 karty pohladkaní v balíčku.
+- **Psie triky**: P003 Ocikaj (t2
   2/3, Pred bojom: náhodný súper má útok aj životy na polovicu zaokrúhlené
   hore, 1 ostane 1, nie je to damage, každý raz za boj, stupeň = počet),
-  P005 Aport (t2 3/2, **Po údere** – nový keyword `afterAttack`: ak útočník
+  P004 Aport (t2 3/2, **Po údere** – nový keyword `afterAttack`: ak útočník
   aj obranca prežili, obranca stratí polovicu zvyšných statov zaokrúhlenú
   dole a náhodný iný kamarát útočníka ich dostane; bez kamaráta útočník;
-  bez stupňa, s Vichorom dvakrát), P006 Vyňuchaj (t3 3/4, Pri vyložení:
+  bez stupňa, s Vichorom dvakrát), P005 Vyňuchaj (t3 3/4, Pri vyložení:
   z balíčka vytiahne Pohladkanie najvyššieho stupňa, bez pohladkania
-  náhodnú kartu – psí draw, stupeň = počet), P008 Zavýjanie (t4 4/7, Pred
+  náhodnú kartu – psí draw, stupeň = počet), P006 Zavýjanie (t4 4/7, Pred
   bojom: všetci Psíci +1/+1 za každého Psíka na ploche, aj sám; ×stupeň).
-- P009 (t4 5/6): Pečať +1/+1 Psíkom. P010 (t5 6/6): +1/+1 za každé
+- P007 (t4 5/6): Pečať +1/+1 Psíkom. P008 (t5 6/6): +1/+1 za každé
   Pohladkanie zahrané v hre (`p.petsCast` – **počet zoslaní**, Super = 1;
   body pohladkaní by dali 60+). Dočasné, bez stupňa (ako F010).
-- **P011 (t6 8/8, dočasný návrh) – Verný až do konca** (`kw lastStand`):
+- **P009 (t6 8/8, dočasný návrh) – Verný až do konca** (`kw lastStand`):
   keď je na ploche jedinou živou príšerkou svojej strany a súper má tiež
   jedinú, súperova padne okamžite **bez Pri smrti** (nie je to zásah, je to
   výhra) a boj končí. Kontrola pred každým útokom, strana na ťahu prvá
-  (obaja s P011 1v1 → vyhráva ten, kto je na ťahu). Umlčanie ho ruší.
+  (obaja s P009 1v1 → vyhráva ten, kto je na ťahu). Umlčanie ho ruší.
 - Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo.
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
   najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel ani balast;
-  P005 útočí vľavo, P011 úplne vpravo. `cardPower` má odhady pre všetky nové
+  P004 útočí vľavo, P009 úplne vpravo. `cardPower` má odhady pre všetky nové
   fx (`npm run power -- race=doggy`).
 
 ### Claude súper (obtiažnosť „🧠 Claude“)

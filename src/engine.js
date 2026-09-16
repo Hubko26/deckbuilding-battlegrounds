@@ -410,7 +410,7 @@ const Engine = (() => {
       rollBias: null, // { race, weight } – bot: súkromná ponuka praje jeho rase (rollCard)
       spellsCast: 0, // koľko kúziel hráč zahral za celú hru (spellScale karty)
       racePlayed: {}, // koľko príšer každej rasy hráč vyložil z ruky za celú hru (racePlayedScale)
-      petsCast: 0, // koľko Pohladkaní hráč zahral za celú hru (petScale – P010), počet zoslaní bez stupňa
+      petsCast: 0, // koľko Pohladkaní hráč zahral za celú hru (petScale – P008), počet zoslaní bez stupňa
       spellShop: null, // súkromný slot na kúzlo { defId, frozen } – neberie miesto príšerám
       giftRound: 0, // mutácia „gift": v ktorom kole hráč naposledy dostal kúzlo
       maxHp: HERO_HP, // strop liečenia (mutácie menia štartovné HP)
@@ -992,7 +992,7 @@ const Engine = (() => {
     // Pohladkanie (psíci): +v/+v vybranej vlastnej príšerke, v = 3^(stupeň−1).
     // Psíkovi ostáva NAVŽDY (pa/ph cestuje s kartou cez balíček aj evolve),
     // inej príšerke len do konca boja. Živelná sila nezosilňuje. Počítadlo
-    // petsCast (P010) rastie o 1 bez ohľadu na stupeň.
+    // petsCast (P008) rastie o 1 bez ohľadu na stupeň.
     petBuff(state, p, inst, def, targetUid) {
       const target = ownMinion(p, targetUid);
       if (!target) return null;
@@ -1155,8 +1155,8 @@ const Engine = (() => {
     const inst = p[zone][idx];
     if (!inst) return null;
     p[zone].splice(idx, 1);
-    // Pohladkanie sa predáva za 0 – zbavíš sa ho, ale generátory (P001/P002/
-    // P007) nesmú byť zlatý motor (3–4 pohladkania za kolo = 3–4 zlata).
+    // Pohladkanie sa predáva za 0 – zbavíš sa ho, ale generátory (P001/P002)
+    // nesmú byť zlatý motor (2–3 pohladkania za kolo = 2–3 zlata).
     const gain = Cards.byId[inst.defId].pet ? 0
       : SELL_GAIN + (state.mutator === "richSell" || hasTrinket(state, pid, "richSell") ? 1 : 0);
     p.money += gain;
@@ -1490,14 +1490,14 @@ const Engine = (() => {
     futureRace({ state, p, fx, m, events }) {
       grantRaceAura(state, p, fx.race, fx.a * m, fx.h * m, events);
     },
-    // Psíci: Pohladkanie do balíčka (P001 Pri vyložení, P007 Po nákupe;
-    // v boji P002 Pri smrti cez BATTLE_FX.addPet). Evolve = počet (1/2/3).
+    // Psíci: Pohladkanie do balíčka (P001 Pri vyložení; v boji P002 Pri smrti
+    // cez BATTLE_FX.addPet). Evolve = počet (1/2/3).
     // Trojica sa hneď spojí (checkPetMerge).
     addPet({ state, p, fx, m, events }) {
       addPets(state, p, fx.n * m, fx.rank || 1, events);
       checkPetMerge(state, p, events);
     },
-    // Vyňuchaj (P006): z balíčka vytiahni Pohladkanie (najvyšší stupeň);
+    // Vyňuchaj (P005): z balíčka vytiahni Pohladkanie (najvyšší stupeň);
     // bez pohladkania v balíčku dotiahni náhodnú kartu. n×stupeň.
     fetchPet({ state, p, fx, m, events }) {
       for (let i = 0; i < fx.n * m; i++) {
@@ -1515,7 +1515,7 @@ const Engine = (() => {
       }
       checkEvolve(state, p, events);
     },
-    // P010: +a/+h za každé Pohladkanie zahrané v tejto hre (počet zoslaní,
+    // P008: +a/+h za každé Pohladkanie zahrané v tejto hre (počet zoslaní,
     // Super = 1). Ako spellScale: dočasné, bez stupňa.
     petScale({ p, fx, self, events }) {
       const n = p.petsCast || 0;
@@ -1780,7 +1780,7 @@ const Engine = (() => {
     let attacker = first;
     let guard = BATTLE_CAP; // poistka proti nekonečnému boju (→ remíza)
     while (aliveOn(sides, "p1").length && aliveOn(sides, "p2").length && guard-- > 0) {
-      // Verný až do konca (P011): sám proti jedinému súperovi = boj končí.
+      // Verný až do konca (P009): sám proti jedinému súperovi = boj končí.
       if (checkLastStand(state, sides, attacker, events)) break;
       const a = nextAttacker(sides[attacker], ptr, attacker);
       if (!a) break;
@@ -1793,11 +1793,11 @@ const Engine = (() => {
     }
   }
 
-  // Verný až do konca (psík P011, kw lastStand): keď je na strane jediná
+  // Verný až do konca (psík P009, kw lastStand): keď je na strane jediná
   // živá príšerka s touto schopnosťou (neumlčaná) a súper má tiež jedinú,
   // súperova padne okamžite – BEZ Pri smrti (nie je to zásah, je to výhra)
   // a boj končí. Kontroluje sa pred každým útokom, strana na ťahu prvá
-  // (obaja s P011 1v1 → vyhráva ten, kto je na ťahu). Vráti true, ak boj skončil.
+  // (obaja s P009 1v1 → vyhráva ten, kto je na ťahu). Vráti true, ak boj skončil.
   function checkLastStand(state, sides, attacker, events) {
     for (const pid of sideOrder(attacker)) {
       const mine = aliveOn(sides, pid), foes = aliveOn(sides, other(pid));
@@ -1847,7 +1847,7 @@ const Engine = (() => {
     pushHp(events, attacker, a);
     pushHp(events, defender, d);
     cleaveSplash(state, sides, attacker, a, d, aDmg, events);
-    // Po údere (psík P005 Aport): obaja žijú → polovica zvyšných statov
+    // Po údere (psík P004 Aport): obaja žijú → polovica zvyšných statov
     // obrancu ide kamarátovi útočníka. Pred handleDeaths – smrti zo zásahu sa
     // riešia až po ňom (obranca, čo padol, už nemá čo ukradnúť: hp <= 0).
     if (a.hp > 0 && d.hp > 0) runAfterAttack(state, sides, attacker, a, d, events);
@@ -2169,7 +2169,7 @@ const Engine = (() => {
     addPet({ state, pid, fx, m, events }) {
       addPets(state, state[pid], fx.n * m, fx.rank || 1, events);
     },
-    // P004 Ocikaj: m náhodných živých súperov (každý raz za boj – flag
+    // P003 Ocikaj: m náhodných živých súperov (každý raz za boj – flag
     // `peed`) má útok aj životy na polovicu, zaokrúhlené HORE (1 ostane 1).
     // Nie je to damage: štít nepomôže, Pri smrti sa nespustí.
     halveEnemy({ state, sides, pid, self, m, events }) {
@@ -2186,18 +2186,7 @@ const Engine = (() => {
         pushHp(events, foe, t);
       }
     },
-    // P003 Brechot: m náhodných súperových Obrancov stratí Obrancu.
-    loseTaunt({ state, sides, pid, self, m, events }) {
-      const foe = other(pid);
-      for (let i = 0; i < m; i++) {
-        const targets = aliveOn(sides, foe).filter(x => x.taunt);
-        if (!targets.length) { if (i === 0) events.push({ type: "barkFizzle", pid }); break; }
-        const t = pick(targets, state.rng);
-        t.taunt = false;
-        events.push({ type: "bark", pid: foe, uid: t.uid, defId: t.defId, rank: t.rank, from: self.uid });
-      }
-    },
-    // P008 Zavýjanie: všetci živí Psíci (aj sám) +a·m/+h·m za KAŽDÉHO živého
+    // P006 Zavýjanie: všetci živí Psíci (aj sám) +a·m/+h·m za KAŽDÉHO živého
     // Psíka na ploche – 5 psov = +5/+5 každému. Dočasné.
     howl({ state, sides, pid, fx, m, events }) {
       const dogs = aliveOn(sides, pid).filter(f => isRace(state, pid, Cards.byId[f.defId], "doggy"));

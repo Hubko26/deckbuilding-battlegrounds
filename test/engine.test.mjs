@@ -55,7 +55,7 @@ test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", ()
     }
     for (const lang of ["sk", "cs", "en"]) C.cardText(d, 2, lang); // nesmie spadnúť
   }
-  assert.equal(minions, 71); // 6 rás × 10 príšer + 11 Psíkov
+  assert.equal(minions, 69); // 6 rás × 10 príšer + 9 Psíkov
 });
 
 test("drak buffRaceOf: cielený battlecry buffne rasu cieľa; bez cieľa fallback na najsilnejšiu", () => {

@@ -97,8 +97,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   Keywords: Pri
   vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
   bojom, Po nákupe, Pri útoku, Po údere (afterAttack – po vlastnom útoku,
-  ak obaja prežili; psík P005 Aport), Verný až do konca (lastStand – psík
-  P011: sám proti jedinému súperovi vyhráva boj hneď), Po kúzle (afterSpell – spustí sa každým
+  ak obaja prežili; psík P004 Aport), Verný až do konca (lastStand – psík
+  P009: sám proti jedinému súperovi vyhráva boj hneď), Po kúzle (afterSpell – spustí sa každým
   zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
   sa zruší; z kúzla Svätožiara), Pečať (Imprint = trvalá rasová aura,
   na karte „Pečať +1/+1 Zvieratám"). Buffy z boja sú dočasné; trvalé sú buffy
@@ -208,20 +208,19 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     Vanilla telá nad krivkou: O004/O005/O008 – bezpečný nákup. O009 (t4,
     7/7) má Divoký úder: každý zásah náhodne 1–14 (priemer 7,5), buffy a
     Pečať posúvajú rozsah (+1 → 2–15), striebro 2–28 – rozptyl, nie sila.
-  - **Doggy = Pohladkanie + psie triky**: P001 (Pri vyložení), P002 (Pri
-    smrti) a P007 (Po nákupe) pridávajú do balíčka kúzlo **Pohladkanie**
+  - **Doggy = Pohladkanie + psie triky**: P001 (Pri vyložení) a P002 (Pri
+    smrti) pridávajú do balíčka kúzlo **Pohladkanie**
     (id `pet`, cena 0): +1/+1 vybranej príšerke, **Psíkovi NAVŽDY** – hádž
     ho VŽDY na Psíka, ideálne na toho, koho vykladáš každé kolo. 3 rovnaké
     stupne sa samy spoja na vyšší (Super +3, Mega +9, Giga +27… bez stropu);
     spájanie nič nestráca (×3). Predaj pohladkania dá 0 – nepredávaj, hraj.
-    P006 Vyňuchaj = tutor pohladkania (najvyšší stupeň z balíčka), P010 (t5)
-    = +1/+1 za každé ZOSLANÉ pohladkanie (počet, nie body), P009 (t4) Pečať
-    Psíkom, P008 Zavýjanie = +1/+1 Psíkom za každého Psíka na ploche (plná
-    plocha psov = +5/+5 každému). Triky: P003 Brechot (súperov Obranca stratí
-    Obrancu – otvorí cestu na veľké telá), P004 Ocikaj (náhodný súper má
-    staty na polovicu, stupeň = počet), P005 Aport (Po údere ukradne polovicu
+    P005 Vyňuchaj = tutor pohladkania (najvyšší stupeň z balíčka), P008 (t5)
+    = +1/+1 za každé ZOSLANÉ pohladkanie (počet, nie body), P007 (t4) Pečať
+    Psíkom, P006 Zavýjanie = +1/+1 Psíkom za každého Psíka na ploche (plná
+    plocha psov = +5/+5 každému). Triky: P003 Ocikaj (náhodný súper má
+    staty na polovicu, stupeň = počet), P004 Aport (Po údere ukradne polovicu
     zvyšných statov obrancu kamarátovi – daj ho vľavo, nech útočí prvý,
-    s Vichorom dvakrát). P011 (t6) Verný až do konca: sám proti jedinému
+    s Vichorom dvakrát). P009 (t6) Verný až do konca: sám proti jedinému
     súperovi vyhráva boj – daj ho úplne vpravo, nech ostane posledný.
     Pohladkanie je kúzlo: víly „Po kúzle" ho vidia, Živelná sila nie.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
@@ -365,13 +364,11 @@ plochou. Rob VŠETKY kroky, každý ťah:
   chaos na súperovej karte je +1/+1 celej rase, takže viac generátorov
   (2–3× O006 vľavo, Vichor 🌪️ na O006) Pečať zrýchľuje. O003 len bez
   vlastného swarmu. Ako splash bez generátorov je ogre stále len telo.
-- **Doggy**: P001/P002 (t1 generátory), P007 (t3 Obranca, pohladkanie
-  každé kolo – drž na ploche), P006 (t3 tutor), P004 (t2 Ocikaj), P005 (t2
-  Aport, vľavo), P009 (t4 Pečať), P008 (t4 Zavýjanie pri plnej psej ploche),
-  P010 (t5, vykladaj až keď máš 10+ zoslaní), P011 (t6, vpravo). Každé
-  Pohladkanie z ruky hneď na najsilnejšieho Psíka na ploche; nikdy ho
-  nepredávaj (0 zlata). P003 Brechot proti Obrancom (undead U006/U008,
-  beast B002).
+- **Doggy**: P001/P002 (t1 generátory – vykladaj každé kolo), P005 (t3
+  tutor), P003 (t2 Ocikaj), P004 (t2 Aport, vľavo), P007 (t4 Pečať), P006
+  (t4 Zavýjanie pri plnej psej ploche), P008 (t5, vykladaj až keď máš 10+
+  zoslaní), P009 (t6, vpravo). Každé Pohladkanie z ruky hneď na
+  najsilnejšieho Psíka na ploche; nikdy ho nepredávaj (0 zlata).
 - **Draci**: **D004 (discover karty rasy cieľa) je VŽDY, absolútne vždy,
   najsilnejšia karta** – karta vlastnej rasy zadarmo s výberom z troch a
   odhodením z plochy sa battlecry zahrá znova; kupuj vždy, keď ho vidíš.
