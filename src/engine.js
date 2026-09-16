@@ -559,7 +559,18 @@ const Engine = (() => {
       p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: inst.defId });
     }
-    checkEvolve(state, p, events);
+    // Spojenie (evolve trojice, 3 Pohladkania) v ruke zje 3 karty a vráti
+    // jednu – ruka by ostala s 3 kartami namiesto 5 (hlásenie hráča, 16. 9.
+    // 2026: psíci ťahajú pohladkania často). Po spojení sa dotiahne znova,
+    // kým je z čoho a kým ruka nie je plná; ďalšie spojenie sa rieši v cykle.
+    for (let guard = 5; guard-- > 0;) {
+      const before = p.hand.length;
+      checkEvolve(state, p, events);
+      if (p.hand.length >= before) break; // nič sa nespojilo z ruky
+      const want = handDraw(state, pid) - p.hand.length;
+      if (want <= 0 || (!p.deck.length && !p.discard.length)) break;
+      drawCards(state, p, want, events);
+    }
     return events;
   }
 
