@@ -394,3 +394,26 @@ test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac;
   assert.ok(ev.some(e => e.type === "trinketProc" && e.id === "doggyLeash"));
   assert.equal(p.deck.filter(c => c.defId === "pet").length, 2);
 });
+
+test("psíci: počítadlo prijatých Pohladkaní (inst.pets) cestuje s kartou cez kôpku aj evolve", () => {
+  const { state, E } = fresh(71);
+  E.startRound(state);
+  const p = state.p1;
+  const dog = E.makeInst(state, "P001", 1); dog.slot = 0;
+  p.board = [dog];
+  p.hand = [E.makeInst(state, "pet", 1), E.makeInst(state, "pet", 2)];
+  E.castSpell(state, "p1", 0, dog.uid);
+  E.castSpell(state, "p1", 0, dog.uid);
+  assert.equal(dog.pets, 2);
+  const c = E.pileCard(dog);
+  assert.equal(c.pets, 2); assert.equal(c.pa, 3);
+  p.deck = [c]; p.hand = []; p.board = [];
+  E.drawCards(state, p, 1, []);
+  assert.equal(p.hand[0].pets, 2);
+  // evolve: dve najsilnejšie kópie sčítajú aj pohladkania
+  p.deck = [{ defId: "P001", rank: 1, pa: 1, ph: 1, pets: 1 }, { defId: "P001", rank: 1 }];
+  E.checkEvolve(state, p, []);
+  const silver = p.hand.find(x => x.defId === "P001" && x.rank === 2);
+  assert.ok(silver);
+  assert.equal(silver.pets, 3); assert.equal(silver.pa, 4);
+});

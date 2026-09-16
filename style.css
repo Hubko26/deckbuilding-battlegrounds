@@ -413,6 +413,15 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   font-size: 15px;
 }
 .preview-card .tx { display: block; }
+/* Súhrn statov pod preview kartou (Základ / Pečať / Navždy / Dočasne / Pohladkaní). */
+.preview-card .info {
+  position: absolute; left: 4%; right: 4%; top: 101%;
+  display: flex; flex-wrap: wrap; gap: 3px 8px; justify-content: center;
+  padding: 5px 8px; border-radius: 8px;
+  background: rgba(20, 28, 40, .92); color: #f1ede4;
+  font-size: .72em; line-height: 1.25; text-align: center;
+}
+.preview-card .info span { white-space: nowrap; }
 
 /* ---------- Overlay ---------- */
 .overlay {

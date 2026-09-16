@@ -1859,6 +1859,8 @@ function showPreview(card, instOrId, opts) {
   hidePreview();
   const big = cardEl(instOrId, { ...opts, big: true });
   big.classList.add("preview-card");
+  const info = statBreakdown(instOrId, opts);
+  if (info) big.appendChild(info);
   document.body.appendChild(big);
   const r = card.getBoundingClientRect();
   const pw = big.offsetWidth, ph = big.offsetHeight;
@@ -1883,6 +1885,46 @@ function showPreview(card, instOrId, opts) {
 
 function hidePreview() {
   if (previewEl) { previewEl.remove(); previewEl = null; }
+}
+
+// Súhrn statov príšerky pod preview kartou: Základ (karta × stupeň), Pečať
+// (rasová aura majiteľa), Navždy (pa/ph – rast z pohladkaní, Po nákupe…),
+// Dočasne (zvyšok do aktuálnych statov: kúzla, dračie buffy, boj), počet
+// prijatých Pohladkaní. Hráč tak vidí, odkiaľ sa čísla vzali (hlásenie
+// „všetci dostali buff" = Veľké pohladkanie od Mega). Len pre inštancie
+// príšer (nie ponuka, nie kúzla). Zranenie = maxHp − hp.
+function statBreakdown(instOrId, opts) {
+  if (!state || typeof instOrId !== "object" || instOrId.spell) return null;
+  const def = Cards.byId[instOrId.defId];
+  if (!def || def.spell) return null;
+  const owner = state[opts.owner || MY];
+  const mult = Cards.STAT_MULT[instOrId.rank || 1] || 1;
+  const baseA = def.atk * mult, baseH = def.hp * mult;
+  let aura = { a: 0, h: 0 };
+  if (owner && def.race && owner.raceBuffs) {
+    // Dračia krv: drak berie súčet Pečatí všetkých rás.
+    const all = def.race === "dragon" && Engine.hasTrinket(state, owner.id, "dragonBlood");
+    for (const [race, b] of Object.entries(owner.raceBuffs)) {
+      if (all || race === def.race) { aura.a += b.a; aura.h += b.h; }
+    }
+  }
+  const pa = instOrId.pa || 0, ph = instOrId.ph || 0;
+  const maxHp = instOrId.maxHp ?? instOrId.hp;
+  const tempA = instOrId.atk - baseA - aura.a - pa;
+  const tempH = maxHp - baseH - aura.h - ph;
+  const dmg = maxHp - instOrId.hp;
+  const T = L.statBreak;
+  const rows = [`${t(T.base)} ${baseA}/${baseH}`];
+  if (aura.a || aura.h) rows.push(`${t(Cards.IMPRINT)} ${fmtBuff(aura.a, aura.h)}`);
+  if (pa || ph) rows.push(`${t(T.forever)} ${fmtBuff(pa, ph)}`);
+  if (tempA || tempH) rows.push(`${t(T.temp)} ${fmtBuff(tempA, tempH)}`);
+  if (instOrId.pets) rows.push(`${t(T.pets)}: ${instOrId.pets}`);
+  if (dmg > 0) rows.push(`${t(T.damage)} −${dmg}`);
+  if (rows.length <= 1) return null; // čistý základ – nič na vysvetľovanie
+  const box = document.createElement("div");
+  box.className = "info";
+  box.innerHTML = rows.map(r => `<span>${r}</span>`).join("");
+  return box;
 }
 
 // ---------- Drag & drop ----------

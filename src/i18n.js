@@ -171,6 +171,15 @@ const L = {
   cancel: { sk: "✖ Zruš", cs: "✖ Zruš", en: "✖ Cancel" },
   stageWord: { sk: "stupeň", cs: "stupeň", en: "Stage" },
   spellWord: { sk: "Kúzlo", cs: "Kouzlo", en: "Spell" },
+  // Preview príšerky: súhrn, z čoho sa skladajú jej staty (základ, Pečať,
+  // rast navždy, dočasné buffy, počet pohladkaní).
+  statBreak: {
+    base: { sk: "Základ", cs: "Základ", en: "Base" },
+    forever: { sk: "Navždy", cs: "Navždy", en: "Forever" },
+    temp: { sk: "Dočasne", cs: "Dočasně", en: "Temporary" },
+    pets: { sk: "Pohladkaní", cs: "Pohlazení", en: "Pets received" },
+    damage: { sk: "Zranenie", cs: "Zranění", en: "Damage taken" },
+  },
   diffs: {
     easy: { sk: "🙂 Ľahký", cs: "🙂 Lehký", en: "🙂 Easy" },
     normal: { sk: "😎 Normálny", cs: "😎 Normální", en: "😎 Normal" },

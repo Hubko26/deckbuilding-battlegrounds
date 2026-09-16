@@ -581,6 +581,7 @@ const Engine = (() => {
   function pileCard(inst) {
     const c = { defId: inst.defId, rank: inst.rank || 1 };
     if (inst.pa || inst.ph) { c.pa = inst.pa || 0; c.ph = inst.ph || 0; }
+    if (inst.pets) c.pets = inst.pets; // koľko Pohladkaní karta dostala (súhrn v preview)
     if (inst.src) c.src = inst.src;
     return c;
   }
@@ -596,6 +597,7 @@ const Engine = (() => {
       const c = p.deck.pop();
       const inst = makeInst(state, c.defId, c.rank, p);
       if (c.src) inst.src = c.src;
+      if (c.pets) inst.pets = c.pets;
       if (c.pa || c.ph) {
         inst.pa = c.pa || 0;
         inst.ph = c.ph || 0;
@@ -715,11 +717,11 @@ const Engine = (() => {
   function consumeEvolveCopies(p, group, need) {
     const out = { copies: [], srcAll: {}, boardSlot: null, hidden: false }; // srcAll: zdroje všetkých kópií (predaj striebornej vráti 3 kópie)
     const noteInst = inst => {
-      out.copies.push({ pa: inst.pa || 0, ph: inst.ph || 0 });
+      out.copies.push({ pa: inst.pa || 0, ph: inst.ph || 0, pets: inst.pets || 0 });
       addSrc(out.srcAll, inst.src);
     };
     const noteRef = c => {
-      out.copies.push({ pa: c.pa || 0, ph: c.ph || 0 });
+      out.copies.push({ pa: c.pa || 0, ph: c.ph || 0, pets: c.pets || 0 });
       addSrc(out.srcAll, c.src);
     };
     while (need > 0 && group.board.length) {
@@ -752,8 +754,8 @@ const Engine = (() => {
   function mergeEvolveBonus(copies) {
     const sorted = [...copies].sort((x, y) => (y.pa + y.ph) - (x.pa + x.ph));
     return sorted.slice(0, 2).reduce(
-      (s, c) => ({ pa: s.pa + c.pa, ph: s.ph + c.ph }),
-      { pa: 0, ph: 0 });
+      (s, c) => ({ pa: s.pa + c.pa, ph: s.ph + c.ph, pets: s.pets + (c.pets || 0) }),
+      { pa: 0, ph: 0, pets: 0 });
   }
 
   // Nová karta vznikne v ruke (battlecry sa dá zahrať znova, silnejší). Pri
@@ -764,7 +766,7 @@ const Engine = (() => {
     const { boardSlot, srcAll } = consumed;
     const handFull = p.hand.length >= HAND_MAX;
     if (handFull && boardSlot === null) {
-      addToDeckRef(state, p, defId, rank + 1, bonus.pa, bonus.ph, srcAll.src);
+      addToDeckRef(state, p, defId, rank + 1, bonus.pa, bonus.ph, srcAll.src, bonus.pets);
       return null;
     }
     const evolved = makeInst(state, defId, rank + 1, p);
@@ -772,6 +774,7 @@ const Engine = (() => {
       buff(evolved, bonus.pa, bonus.ph);
       evolved.pa = bonus.pa; evolved.ph = bonus.ph;
     }
+    if (bonus.pets) evolved.pets = bonus.pets;
     if (srcAll.src) evolved.src = srcAll.src;
     if (handFull) {
       evolved.slot = boardSlot;
@@ -838,10 +841,11 @@ const Engine = (() => {
     addToDeckRef(state, p, defId, 1, 0, 0, src);
   }
 
-  function addToDeckRef(state, p, defId, rank, pa, ph, src) {
+  function addToDeckRef(state, p, defId, rank, pa, ph, src, pets) {
     const i = Math.floor(state.rng() * (p.deck.length + 1));
     const c = { defId, rank };
     if (pa || ph) { c.pa = pa || 0; c.ph = ph || 0; }
+    if (pets) c.pets = pets;
     if (src) c.src = src;
     p.deck.splice(i, 0, c);
   }
@@ -1015,7 +1019,7 @@ const Engine = (() => {
       const isDog = x => isRace(state, p.id, Cards.byId[x.defId], "doggy");
       const pat = (x, events) => {
         buff(x, a, h);
-        if (isDog(x)) { x.pa = (x.pa || 0) + a; x.ph = (x.ph || 0) + h; }
+        if (isDog(x)) { x.pa = (x.pa || 0) + a; x.ph = (x.ph || 0) + h; x.pets = (x.pets || 0) + 1; }
         if (events) events.push({ type: "buff", pid: p.id, uid: x.uid, a, h });
       };
       pat(target);
@@ -1100,6 +1104,7 @@ const Engine = (() => {
       const [c] = p.deck.splice(pick(idxs, state.rng), 1);
       const fresh = makeInst(state, c.defId, c.rank, p);
       if (c.src) fresh.src = c.src;
+      if (c.pets) fresh.pets = c.pets;
       if (c.pa || c.ph) {
         fresh.pa = c.pa || 0; fresh.ph = c.ph || 0;
         fresh.atk += fresh.pa; fresh.hp += fresh.ph; fresh.maxHp += fresh.ph;
