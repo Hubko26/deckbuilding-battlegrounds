@@ -2588,26 +2588,19 @@ test("mutácie: newGame bez parametra žrebuje, null = žiadna, string = vynúte
   assert.equal(forced.mutator, "gift");
 });
 
-test("trinkety: draft – rasový slot len pre hlavnú rasu (3+ kariet), drak/ogor ako neutrálne, zabanovaná rasa nikdy", () => {
+test("trinkety: dračie a ogrie trinkety sa ponúkajú aj bez kariet rasy, trinket hlavnej rasy až od 3 kariet", () => {
   const { E, state } = fresh(61);
-  const p = state.p1, q = state.p2;
-  for (const x of [p, q]) { x.hand = []; x.board = []; x.discard = []; x.deck = []; }
+  const p = state.p1;
   p.deck = ["U001", "U002", "E001", "E002", "F001"].map(id => ({ defId: id, rank: 1 }));
-  assert.equal(E.mainRace(state, p), null); // < 3 karty rasy
+  p.hand = []; p.board = []; p.discard = [];
+  const ids = E.trinketPool(state, "p1").map(t => t.id);
+  assert.ok(ids.includes("dragonPact") && ids.includes("dragonBlood"), ids.join(","));
+  assert.ok(ids.includes("ogreCareful"), ids.join(","));
+  assert.ok(!ids.includes("undeadBones") && !ids.includes("fairyDiscount"), ids.join(",")); // < 3 karty rasy
   p.deck.push({ defId: "U003", rank: 1 });
-  assert.equal(E.mainRace(state, p), "undead");
-  const seen = new Set();
-  for (let i = 0; i < 40; i++) for (const id of E.draftOffer(state, "p1", 1)) seen.add(id);
-  assert.ok(seen.has("undeadBones"), [...seen].join(","));
-  assert.ok(seen.has("ogreCareful"), "ogrí trinket sa ponúka ako neutrálny");
-  assert.ok(!seen.has("fairyDiscount") && !seen.has("beastPups"), [...seen].join(","));
-  for (const id of seen) assert.equal(E.TRINKETS.find(t => t.id === id).lvl, 1);
-  // úroveň 3: dračia krv ako neutrálny, rasový slot môže dať aj nižšiu úroveň
-  const seen3 = new Set();
-  for (let i = 0; i < 60; i++) for (const id of E.draftOffer(state, "p1", 3)) seen3.add(id);
-  assert.ok(seen3.has("dragonBlood"), [...seen3].join(","));
+  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "undeadBones"));
   state.banned = "dragon";
-  for (let i = 0; i < 30; i++) assert.ok(!E.draftOffer(state, "p1", 3).includes("dragonBlood")); // zabanovaná rasa nikdy
+  assert.ok(!E.trinketPool(state, "p1").some(t => t.race === "dragon")); // zabanovaná rasa nikdy
 });
 
 test("newGame opts.hpBonus: životy navyše po mutácii, dvíha aj maxHp", () => {

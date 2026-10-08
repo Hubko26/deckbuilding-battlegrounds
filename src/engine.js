@@ -56,24 +56,22 @@ const Engine = (() => {
   ];
 
   // ---------- Trinkety ----------
-  // Trvalé bonusy PER HRÁČ (mutácia je globálna). Trinkety sa získavajú
-  // DRAFTOM po DMG Meter kole (kolo deliteľné BOSS_EVERY, len so zapnutými
-  // trinketmi): v nasledujúcom kole ide víťaz merania na ťah prvý, dostane
-  // ponuku TRINKET_OFFER trinketov a vyberie jeden (pickTrinket); zvyšné dva
-  // potom dostane porazený. Nevybraný do konca ťahu = prvý z ponuky (hra sa
-  // nesmie zaseknúť). `lvl` = sila trinketu 1–3: draft po kole 5 ponúka
-  // úroveň 1, po kole 10 úroveň 2, od kola 15 úroveň 3 (trinketLevel).
-  // Ponuka (draftOffer): rasový trinket HLAVNEJ rasy víťaza, rasový trinket
-  // hlavnej rasy porazeného (rasa s aspoň TRINKET_RACE_MIN kartami vo
-  // všetkých zónach, úroveň <= aktuálna – neskôr môže prísť aj slabší, ktorý
-  // ešte nikto nemá) a zvyšok neutrálne trinkety aktuálnej úrovne. Trinkety
-  // podporných rás (SUPPORT_RACES: drak, ogr) sa ponúkajú ako neutrálne –
-  // drak je žoldnier do každého balíčka. Víťaz smie zobrať aj súperov rasový
-  // trinket (hate-draft). Zabanovaná rasa nikdy; trinket, ktorý už niekto
-  // má, ani trinket s id zhodným s mutáciou hry (nestackujú sa) sa neponúka.
-  // Texty a ikonky rieši UI (i18n L.trinkets).
+  // Trvalé bonusy PER HRÁČ (mutácia je globálna). V kolách TRINKET_ROUNDS
+  // dostane každý hráč v startRound ponuku TRINKET_OFFER trinketov (zo
+  // state.rng, p1 prvý) a vo VLASTNEJ nákupnej fáze si jeden vyberie
+  // (pickTrinket); nevybraný do konca ťahu = prvý z ponuky (hra sa nesmie
+  // zaseknúť). `lvl` = sila trinketu 1–3; TRINKET_ROUNDS hovorí, ktoré
+  // úrovne sa v danom kole ponúkajú (kolo 4 slabšie, kolo 8 silnejšie).
+  // Rasový trinket HLAVNEJ rasy sa ponúka len hráčovi, ktorý má aspoň
+  // TRINKET_RACE_MIN kariet rasy (všetky zóny); trinkety podporných rás
+  // (SUPPORT_RACES: drak, ogr) sa ponúkajú každému – drak je žoldnier do
+  // každého balíčka, hráč ich nemusí držať vopred; zabanovaná rasa nikdy;
+  // trinket s id zhodným s mutáciou hry sa neponúka (nestackujú sa). Ak je
+  // na úrovniach kola menej ako TRINKET_OFFER prípustných, doplní sa zo
+  // zvyšných úrovní. Texty a ikonky rieši UI (i18n L.trinkets).
   // Ogrí kľúč (ogreSabotage): každé kolo hod mincou – chvost = súperove
   // trinkety to kolo (nákup aj boj) nefungujú (p.trinketOff = kolo).
+  const TRINKET_ROUNDS = { 4: [1], 8: [2, 3] };
   const TRINKET_OFFER = 3;
   const TRINKET_RACE_MIN = 3;
   const SUPPORT_RACES = new Set(["dragon", "ogre"]); // podporné rasy (aj Bot.SUPPORT_RACES)
@@ -90,6 +88,8 @@ const Engine = (() => {
     { id: "dragonPact", race: "dragon", lvl: 2 },        // dračie bojové aury +1/+1 navyše
     { id: "ogreSabotage", race: "ogre", lvl: 2 },        // ogri +1/+0, minca vypína súperov trinket
     { id: "ogreCareful", race: "ogre", lvl: 1 },         // backstab nikdy, bonusy polovičné
+    { id: "doggyGlove", race: "doggy", lvl: 1 },         // na začiatku ťahu 1 Pohladkanie do ruky
+    { id: "doggyBrush", race: "doggy", lvl: 2 },         // na začiatku ťahu 2 Pohladkania do ruky (s rukavicou 3 = Super)
     { id: "doggyLeash", race: "doggy", lvl: 3 },         // každé generovanie Pohladkania dá o 1 viac (endgame psíkov)
     { id: "cheapUpgrade", lvl: 1 },  // upgrade o 2 lacnejší (min. 2)
     { id: "richSell", lvl: 1 },      // predaj dáva 2
@@ -104,12 +104,14 @@ const Engine = (() => {
     { id: "bloodMoon", lvl: 3 },     // preživšie +1/+1 navždy
   ];
   // ---------- DMG Meter kolo ----------
-  // Každé BOSS_EVERY-té kolo (len so zapnutými trinketmi) sa namiesto PvP
-  // boja každý hráč bije so Strážcom arény: BOSS_COUNT Obrancov s „nekonečnými"
-  // statmi (BOSS_STAT). Boss sám neútočí, ale každý úder do neho útočníka
-  // zabije (štít/pierko pomôžu). Útočí sa zľava doprava, kým hráčovi niečo
-  // žije – Pri smrti a vyvolávanie fungujú normálne. Kto spraví viac
-  // damage, vyberá v drafte trinketov prvý. Hrdinovia damage nedostanú.
+  // Každé BOSS_EVERY-té kolo sa namiesto PvP boja každý hráč bije so
+  // Strážcom arény: BOSS_COUNT Obrancov s „nekonečnými" statmi (BOSS_STAT).
+  // Boss sám neútočí, ale každý úder do neho útočníka zabije (štít/pierko
+  // pomôžu). Útočí sa zľava doprava, kým hráčovi niečo žije – Pri smrti
+  // a vyvolávanie fungujú normálne. Kto spraví viac damage, dostane na
+  // začiatku svojho ďalšieho ťahu Discover: 3 príšery tieru o 1 VYŠŠIEHO
+  // než jeho vlastný (max TIER_MAX) – hráč na nižšom tieri získa viac,
+  // takže sa oplatí zostať v nižšej krčme. Hrdinovia damage nedostanú.
   const BOSS_EVERY = 5;
   const BOSS_COUNT = 5;
   const BOSS_STAT = 1e9;
@@ -336,9 +338,8 @@ const Engine = (() => {
       commons: [], winner: null, pendingDiscover: null, mutator,
       ban: null, // { offers: { p1: [rasy], p2: [rasy] }, picks: { p1, p2 }, by } počas/po fáze BAN
       banned: null, // id zabanovanej rasy (null = žiadna)
-      trinketsOn: !!(opts && opts.trinkets), // DMG Meter kolá + draft trinketov
-      bossResult: null, // { round, dmg: { p1, p2 }, winner } posledného DMG Meter kola
-      draft: null, // { first, second, offer } – draft trinketov, kým nevyberie víťaz
+      trinketsOn: !!(opts && opts.trinkets), // ponuka trinketov v kolách TRINKET_ROUNDS
+      bossResult: null, // { round, dmg: { p1, p2 }, winner, claimed } posledného DMG Meter kola
       pools: makePools(),
       p1: makePlayer("p1"),
       p2: makePlayer("p2"),
@@ -461,47 +462,18 @@ const Engine = (() => {
     return n;
   }
 
-  const isBossRound = (state, round = state.round) => !!state.trinketsOn && round > 0 && round % BOSS_EVERY === 0;
-  const trinketLevel = round => Math.max(1, Math.min(3, Math.floor(round / BOSS_EVERY)));
+  const isBossRound = (state, round = state.round) => round > 0 && round % BOSS_EVERY === 0;
 
-  // Hlavná rasa hráča pre draft: najviac kariet (všetky zóny, bez tokenov),
-  // aspoň TRINKET_RACE_MIN; podporné a zabanovaná rasa sa nerátajú. Remíza =
-  // prvá v poradí Cards.RACES (deterministické).
-  function mainRace(state, p) {
-    let best = null, bestN = TRINKET_RACE_MIN - 1;
-    for (const race of Object.keys(Cards.RACES)) {
-      if (SUPPORT_RACES.has(race) || race === state.banned) continue;
-      const n = raceCardCount(p, race);
-      if (n > bestN) { best = race; bestN = n; }
-    }
-    return best;
-  }
-
-  // Ponuka draftu (pozri komentár pri TRINKETS): rasový slot víťaza, rasový
-  // slot porazeného, zvyšok neutrálne trinkety úrovne lvl (záložne nižšej).
-  function draftOffer(state, first, lvl) {
-    const owned = id => state.p1.trinkets.includes(id) || state.p2.trinkets.includes(id);
-    const offer = [];
-    const ok = t => !owned(t.id) && !offer.includes(t.id) && t.id !== state.mutator
-      && !(t.race && t.race === state.banned);
-    for (const pid of [first, other(first)]) {
-      const race = mainRace(state, state[pid]);
-      if (!race) continue;
-      const cands = TRINKETS.filter(t => t.race === race && t.lvl <= lvl && ok(t));
-      if (cands.length) offer.push(pick(cands, state.rng).id);
-    }
-    const neutral = t => (!t.race || SUPPORT_RACES.has(t.race)) && ok(t);
-    while (offer.length < TRINKET_OFFER) {
-      let cands = TRINKETS.filter(t => neutral(t) && t.lvl === lvl);
-      if (!cands.length) cands = TRINKETS.filter(t => neutral(t) && t.lvl <= lvl);
-      if (!cands.length) break;
-      offer.push(pick(cands, state.rng).id);
-    }
-    return shuffle(offer, state.rng);
+  function trinketPool(state, pid) {
+    const p = state[pid];
+    return TRINKETS.filter(t => !p.trinkets.includes(t.id)
+      && t.id !== state.mutator
+      && !(t.race && (state.banned === t.race
+        || (!SUPPORT_RACES.has(t.race) && raceCardCount(p, t.race) < TRINKET_RACE_MIN))));
   }
 
   // Začiatok kola: Ogrí kľúč hodí mincou za súperove trinkety (p1 prvý –
-  // ak p1 vypne p2 kľúč, p2 už nehádže), potom draft po DMG Meter kole.
+  // ak p1 vypne p2 kľúč, p2 už nehádže), potom ponuka v kolách TRINKET_ROUNDS.
   function startTrinketRound(state, events) {
     for (const pid of ["p1", "p2"]) {
       if (!hasTrinket(state, pid, "ogreSabotage")) continue;
@@ -510,13 +482,17 @@ const Engine = (() => {
       if (!heads) state[foe].trinketOff = state.round;
       events.push({ type: "sabotage", pid, target: foe, heads });
     }
-    const br = state.bossResult;
-    if (!br || br.round !== state.round - 1) return;
-    const offer = draftOffer(state, br.winner, trinketLevel(br.round));
-    if (!offer.length) return;
-    state.draft = { first: br.winner, second: other(br.winner), offer };
-    state[br.winner].trinketOffer = offer.slice();
-    events.push({ type: "trinketOffer", pid: br.winner, ids: offer.slice(), draft: "first" });
+    const lvls = TRINKET_ROUNDS[state.round];
+    if (!lvls) return;
+    for (const pid of ["p1", "p2"]) {
+      const p = state[pid];
+      const pool = trinketPool(state, pid);
+      const main = shuffle(pool.filter(t => lvls.includes(t.lvl)).map(t => t.id), state.rng);
+      const rest = main.length < TRINKET_OFFER
+        ? shuffle(pool.filter(t => !lvls.includes(t.lvl)).map(t => t.id), state.rng) : [];
+      p.trinketOffer = [...main, ...rest].slice(0, TRINKET_OFFER);
+      events.push({ type: "trinketOffer", pid, ids: p.trinketOffer.slice() });
+    }
   }
 
   // Výber trinketu z ponuky – legálne len vo vlastnej nákupnej fáze.
@@ -535,16 +511,6 @@ const Engine = (() => {
     p.trinketOffer = null;
     p.trinkets.push(id);
     events.push({ type: "trinketPick", pid: p.id, id, auto });
-    // Draft: víťaz DMG Meter kola vybral – zvyšok ponuky dostane porazený.
-    const d = state.draft;
-    if (d && d.first === p.id) {
-      state.draft = null;
-      const rest = d.offer.filter(x => x !== id);
-      if (rest.length) {
-        state[d.second].trinketOffer = rest;
-        events.push({ type: "trinketOffer", pid: d.second, ids: rest.slice(), draft: "second" });
-      }
-    }
     if (id === "elemSpark") SHOP_FX.dmgBoost({ p, fx: { n: 1 }, m: 1, events });
     if (id === "ogreSabotage") grantRaceAura(state, p, "ogre", 1, 0, events);
   }
@@ -574,9 +540,6 @@ const Engine = (() => {
   function startRound(state) {
     state.round++;
     state.first = state.round % 2 === 1 ? "p1" : "p2";
-    // Po DMG Meter kole ide víťaz na ťah prvý – vyberá v drafte trinketov.
-    const br = state.bossResult;
-    if (br && br.round === state.round - 1) state.first = br.winner;
     for (let i = 0; i < state.commons.length; i++) {
       returnToPool(state, "common", state.commons[i]);
       state.commons[i] = rollCard(state, commonTierLimit(state), "common");
@@ -609,6 +572,8 @@ const Engine = (() => {
     const p = state[pid];
     const events = [];
     drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
+    bossReward(state, p, events);
+    petTrinkets(state, p, events);
     // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
     // aby nebralo miesto normálnemu draw).
     if (state.mutator === "gift" && p.giftRound !== state.round && p.hand.length < HAND_MAX) {
@@ -1189,6 +1154,24 @@ const Engine = (() => {
     },
   };
 
+  // Odmena za DMG Meter: víťaz na začiatku svojho ťahu v ďalšom kole vyberá
+  // z 3 príšer tieru presne o 1 vyššieho než jeho tier (strop TIER_MAX),
+  // z vlastného poolu; karta ide do ruky (pickDiscover).
+  function bossReward(state, p, events) {
+    const br = state.bossResult;
+    if (!br || br.claimed || br.winner !== p.id || br.round !== state.round - 1 || state.pendingDiscover) return;
+    br.claimed = true;
+    const tier = Math.min(p.tier + 1, TIER_MAX);
+    const options = [];
+    for (let i = 0; i < 3; i++) {
+      const id = rollCard(state, tier, p.id, d => d.tier === tier);
+      if (id) options.push(id);
+    }
+    if (!options.length) return;
+    state.pendingDiscover = { pid: p.id, options, poolKey: p.id, boss: true, tier }; // boss/tier: titulok v UI
+    events.push({ type: "discoverStart", pid: p.id, options, boss: true, tier });
+  }
+
   function pickDiscover(state, pid, choiceIdx) {
     const pd = state.pendingDiscover;
     if (!pd || pd.pid !== pid || choiceIdx >= pd.options.length) return null;
@@ -1643,6 +1626,31 @@ const Engine = (() => {
     if (n > 0) events.push({ type: "addPet", pid: p.id, rank, n });
   }
 
+  // Hladkacia rukavica (+1) a kefa (+2): na začiatku ťahu Pohladkania
+  // stupňa 1 do RUKY (plná ruka = do balíčka). Sčítajú sa; Vodítko pridá
+  // +1 ako pri každom generovaní. Spojenie troch rieši cyklus v beginShopTurn.
+  function petTrinkets(state, p, events) {
+    let n = 0;
+    for (const [id, k] of [["doggyGlove", 1], ["doggyBrush", 2]]) {
+      if (!hasTrinket(state, p.id, id)) continue;
+      n += k;
+      events.push({ type: "trinketProc", pid: p.id, id });
+    }
+    if (!n) return;
+    if (hasTrinket(state, p.id, "doggyLeash")) {
+      n++;
+      events.push({ type: "trinketProc", pid: p.id, id: "doggyLeash" });
+    }
+    for (let i = 0; i < n; i++) {
+      if (p.hand.length < HAND_MAX) {
+        const inst = makeInst(state, "pet", 1);
+        inst.slot = freeSlot(p.hand, HAND_MAX);
+        p.hand.push(inst);
+      } else addToDeckRef(state, p, "pet", 1, 0, 0);
+    }
+    events.push({ type: "petGift", pid: p.id, n });
+  }
+
   // ---------- Koniec nákupnej fázy ----------
   function endShopTurn(state, pid) {
     // Nelegálne ukončenie (nie je nákupná fáza / nie je na ťahu) = null,
@@ -1653,6 +1661,8 @@ const Engine = (() => {
     const events = [];
     // Nevybraný trinket do konca ťahu = prvý z ponuky (hra sa nesmie zaseknúť).
     if (p.trinketOffer) applyTrinketPick(state, p, p.trinketOffer[0], events, true);
+    // Nevybraný Discover (odmena za bossa) = prvá možnosť.
+    if (state.pendingDiscover && state.pendingDiscover.pid === pid) events.push(...pickDiscover(state, pid, 0));
     // Po nákupe (end of turn) schopnosti príšeriek na ploche.
     for (const inst of [...p.board]) {
       const def = Cards.byId[inst.defId];
@@ -1703,6 +1713,7 @@ const Engine = (() => {
   // svojím Strážcom arény. Odložené kliatby z kúziel a Búrkový mrak sa
   // nespúšťajú (počkajú na ďalší PvP boj). Eventy každého merania sú medzi
   // bossStart a bossEnd (UI animuje len svoje). Remíza v damage = minca.
+  // Odmenu (Discover vyššieho tieru) dostane víťaz v ďalšom kole (bossReward).
   function doBossBattle(state) {
     const events = [{ type: "bossRound" }];
     const dmg = {}, fought = {};
@@ -1718,7 +1729,7 @@ const Engine = (() => {
     }
     const tie = dmg.p1 === dmg.p2;
     const winner = tie ? (state.rng() < 0.5 ? "p1" : "p2") : dmg.p1 > dmg.p2 ? "p1" : "p2";
-    state.bossResult = { round: state.round, dmg: { ...dmg }, winner };
+    state.bossResult = { round: state.round, dmg: { ...dmg }, winner, claimed: false };
     events.push({ type: "bossResult", dmg: { ...dmg }, winner, tie });
     clearBoards(state, fought, events);
     advanceAfterBattle(state, events);
@@ -2536,7 +2547,7 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
-    TIER_MAX, MUTATORS, TRINKETS, TRINKET_RACE_MIN, SUPPORT_RACES, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketLevel, mainRace, draftOffer, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
+    TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_RACE_MIN, SUPPORT_RACES, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
     handDraw, heroDmgCap, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,

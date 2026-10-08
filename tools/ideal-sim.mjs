@@ -10,7 +10,7 @@
 //           [trinkets=1] [rounds=40] [mirror=1] [verbose=0] [seed=1000]
 //   n        počet hier na matchup (polovica s vymenenými miestami p1/p2)
 //   races    ktoré rasy (čiarkou), default všetky
-//   trinkets 1 = DMG Meter kolá + draft trinketov (ako v hre), 0 = bez nich
+//   trinkets 1 = ponuka trinketov v kole 4 a 8 (ako v hre), 0 = bez nich
 //   rounds   strop kôl (potom remíza)
 //   mirror   1 = aj zrkadlové strety (rasa proti sebe)
 //   verbose  1 = vypíš priebeh prvej hry každého matchupu po kolách

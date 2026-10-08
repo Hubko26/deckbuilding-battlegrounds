@@ -60,7 +60,7 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"discard","zone":"hand"|"board","id":"<cardId>"}  put card into your discard pile – NO gold, card STAYS in your deck cycle and comes back in a later hand
 - {"a":"move","id":"<own board cardId>","slot":0-4}  reposition minion on board (0 = leftmost = attacks first; swaps with occupant)
 - {"a":"freeze","id":"<cardId in your private shop>"}  freeze that private-shop card so it survives into next round
-- {"a":"trinket","id":"<trinketId>"}  pick a trinket from trinketOffer (draft after each DMG Meter round) – do this FIRST when the state has trinketOffer; skipping it hands you the first one
+- {"a":"trinket","id":"<trinketId>"}  pick a trinket from trinketOffer (rounds 4 and 8) – do this FIRST when the state has trinketOffer; skipping it hands you the first one
 - {"a":"shield"}  arm your Hero Shield trinket (heroShieldReady): this fight your hero takes 0 damage – use it once, when a loss would hurt (low HP or the human's board is clearly stronger); useless in a dmgMeterRound
 
 STRATEGY – do ALL of these every turn, in this order (derived from logs of winning games; bots lost on mixed races, bloated decks, 3-4 minion boards and upgrading with an empty board):
@@ -74,7 +74,7 @@ STRATEGY – do ALL of these every turn, in this order (derived from logs of win
 8. SPELLS after minions are down: stat buffs on your strongest minion; Windfury ("vichor") on an onAttack minion (E004, O006) or your highest attack; Elemental Power, Silence, Frog Curse, Lightning immediately; Gold Coin first thing; fairies must be on board BEFORE casting.
 9. ORDER THE BOARD with "move" (slot 0 attacks first): onAttack minions (E004, O006) leftmost -> hard bodies by attack -> Taunts where they shield the engine -> scalers (B004, B009, E005, E007, F002, F004) rightmost so they attack last and survive.
 10. "discard" (not sell) a board minion only when its value was a weak-body battlecry you want to replay later (F001 draw, D004 discover). Imprint/aura bodies stay – they are above curve.
-TRINKETS: permanent per-player bonuses (yourTrinkets / opponentTrinkets, English text given). DMG METER: every 5th round (dmgMeterRound: true) there is no fight with the human and no hero damage – each player's board hits an Arena Guardian (5 Taunts, infinite stats, never attacks; each hit on it kills the attacker unless it has a Divine Shield). Minions attack left to right until all are dead, deathrattle tokens attack too; total damage dealt wins. Build max attack/tokens/shields for that round. The winner drafts first next round from 3 trinkets (level 1 after round 5, 2 after 10, 3 from 15), the loser gets the other two (trinketOffer): prefer a trinket of your dominantRace (its text names the race), else economy/board ones (Tavern Discount, Big Hand, Quick Start, Strong Tokens for summoner builds, Blood Moon late). trinketsOffThisRound = the human's Ogre Key switched your trinkets off for this round. Key mechanics: "Imprint" = permanent race aura. Summoners scale by COUNT when evolved (silver +1 token, gold +2; tokens stay 1/1) – an evolved undead summoner is a bigger horde and more overflow, not bigger skeletons. Cubs (B007/B005 tokens) have Taunt and feed B004 forever. Bubbles (E002 tokens) zap 1 (+Elemental Power) on death. E005 zaps only the FIRST enemy token summoned each fight and grows +2/+2 forever if it dies. E007 gives +1 Elemental Power every end of turn it is on board. O002 triggers a random ability on the battlefield (enemy too). U010 imprints undead +1/+1 when it DIES. Each player has a private pool of 6 copies per minion and the common shop has 3 – a gold card (9 copies) needs Mirror/Wish Book. Spells have a private pool too: 3 copies each up to tier 3, only 2 copies for tier 4-6 spells; selling a spell returns the copy. Your plan executes blindly in order – you will NOT see what a refresh rolls, so never plan buys after a refresh.
+TRINKETS: permanent per-player bonuses (yourTrinkets / opponentTrinkets, English text given). DMG METER: every 5th round (dmgMeterRound: true) there is no fight with the human and no hero damage – each player's board hits an Arena Guardian (5 Taunts, infinite stats, never attacks; each hit on it kills the attacker unless it has a Divine Shield). Minions attack left to right until all are dead, deathrattle tokens attack too; total damage dealt wins. Build max attack/tokens/shields for that round. The winner discovers 1 of 3 minions of (its own tier + 1, max 6) at the start of its next turn (picked for you, already in your hand) – a LOWER tier gains more, so staying a tier lower before a DMG Meter round can pay off. In rounds 4 and 8 you pick 1 of 3 trinkets (trinketOffer): prefer a trinket of your dominantRace (its text names the race), else economy/board ones (Tavern Discount, Big Hand, Quick Start, Strong Tokens for summoner builds, Blood Moon late). trinketsOffThisRound = the human's Ogre Key switched your trinkets off for this round. Key mechanics: "Imprint" = permanent race aura. Summoners scale by COUNT when evolved (silver +1 token, gold +2; tokens stay 1/1) – an evolved undead summoner is a bigger horde and more overflow, not bigger skeletons. Cubs (B007/B005 tokens) have Taunt and feed B004 forever. Bubbles (E002 tokens) zap 1 (+Elemental Power) on death. E005 zaps only the FIRST enemy token summoned each fight and grows +2/+2 forever if it dies. E007 gives +1 Elemental Power every end of turn it is on board. O002 triggers a random ability on the battlefield (enemy too). U010 imprints undead +1/+1 when it DIES. Each player has a private pool of 6 copies per minion and the common shop has 3 – a gold card (9 copies) needs Mirror/Wish Book. Spells have a private pool too: 3 copies each up to tier 3, only 2 copies for tier 4-6 spells; selling a spell returns the copy. Your plan executes blindly in order – you will NOT see what a refresh rolls, so never plan buys after a refresh.
 
 TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders in a small speech bubble – longer gets cut, so keep it a single snappy sentence), addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
 
@@ -156,7 +156,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
         refreshCost: Engine.refreshCost(state),
       },
       mutator: state.mutator || null, // „Pravidlo dnešnej arény" – nech ho Claude zohľadní
-      // Trinkety: vlastné, súperove a ponuka z draftu po DMG Meter kole (anglický text).
+      // Trinkety: vlastné, súperove a ponuka na výber (kolo 4 a 8) s anglickým textom.
       yourTrinkets: p.trinkets.map(id => trinketText ? trinketText(id) : id),
       opponentTrinkets: foe.trinkets.map(id => trinketText ? trinketText(id) : id),
       trinketsOffThisRound: p.trinketOff === state.round, // súperov Ogrí kľúč
@@ -177,6 +177,17 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
     const { apiKey, lang, playerName, lastBattle, humanLastRound, recentChat, onAction, trinketText } = opts;
     const name = (playerName || "").trim();
     const langName = L.langNames[langFor(name, lang)] || "Slovak";
+
+    // Odmena za DMG Meter (Discover vyššieho tieru) sa vyberie heuristikou
+    // ešte pred snímkou – Claude už vidí kartu v ruke a plánuje s ňou.
+    const events = [];
+    const pdz = state.pendingDiscover;
+    if (pdz && pdz.pid === pid) {
+      let best = 0;
+      pdz.options.forEach((d, j) => { if (Bot.cardScore(state, state[pid], d) > Bot.cardScore(state, state[pid], pdz.options[best])) best = j; });
+      const ev = Engine.pickDiscover(state, pid, best);
+      if (ev) { events.push(...ev); onAction("pickDiscover", [best]); }
+    }
 
     const userMsg = JSON.stringify({
       state: snapshot(state, pid, Cards, Engine, trinketText),
@@ -224,7 +235,6 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
     if (!m) throw new Error("Odpoveď bez JSON: " + text.slice(0, 120));
     const plan = JSON.parse(m[0]);
 
-    const events = [];
     const run = (name, args) => {
       const ev = Engine[name](state, pid, ...args);
       if (ev) { events.push(...ev); onAction(name, args); }

@@ -494,8 +494,14 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   hladkanie svorky samotnému kúzlu od Mega – hráč to zamietol: je to
   mechanika t6 psíka, nie pohladkaní. Záložné páky, ak
   nestačí: Zavýjanie navždy, P008 zdvihne všetky pohladkania o stupeň. Psí
-  trinket **Vodítko** (`doggyLeash`, úroveň 3 – draft od kola 15) je implementovaný:
-  každé generovanie Pohladkania dá o 1 viac.
+  trinket **Vodítko** (`doggyLeash`, úroveň 3 – kolo 8) je implementovaný:
+  každé generovanie Pohladkania dá o 1 viac (aj z rukavice/kefy).
+  8. 10. 2026 pribudli (psíci nemali trinket na úrovni 1–2): **Hladkacia
+  rukavica** (`doggyGlove`, úroveň 1 – kolo 4) = na začiatku ťahu 1
+  Pohladkanie do ruky, **Hladkacia kefa** (`doggyBrush`, úroveň 2 – kolo 8)
+  = 2 do ruky. Sčítajú sa: rukavica + kefa = 3 → Super pohladkanie každé
+  kolo (max roll), rukavica + Vodítko = 2. Plná ruka = do balíčka. Art
+  zatiaľ medailón Vodítka (`TRINKET_ART_ALIAS` v game.js).
 - Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo.
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
   najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel ani balast;
@@ -994,19 +1000,17 @@ Kúzla rasu nemajú – ban sa ich netýka.
   trojice (beast/elemental/undead/fairy), žoldnierov (draci, ogri) až keď iné
   nemá. Bez rng – akcia sa loguje ako `pickBan`, replay ju prehrá presne.
 
-## Trinkety (trvalé bonusy per hráč) a DMG Meter kolo
+## DMG Meter kolo (od 3. 10. 2026)
 
-Mutácia je jedno globálne pravidlo pre oboch; **trinket je trvalý bonus
-jedného hráča**. Trinkety sa získavajú **draftom po DMG Meter kole**.
+Motivácia: hráč príliš rýchlo full-upgraduje krčmu. DMG Meter dáva každých
+5 kôl moment „kto má silnejšiu plochu" bez straty životov a odmena (príšera
+o tier VYŠŠIE než vlastná krčma) má najväčšiu cenu pre hráča na nižšom
+tieri – oplatí sa commitnúť aj nižšiu krčmu, nie upgradovať od začiatku.
+(3. 10. bola odmenou prednosť v drafte trinketov; 8. 10. zmenené na
+Discover príšery, trinkety sa vrátili do kôl 4 a 8.)
 
-### DMG Meter kolo (od 3. 10. 2026)
-
-Motivácia: hra mala len dve ponuky trinketov (kolo 4 a 8) bez súťaže;
-DMG Meter dáva každých 5 kôl moment „kto má silnejšiu plochu" bez toho,
-aby niekto stratil životy, a víťaz má prednosť v drafte.
-
-- Každé **5. kolo** (`Engine.BOSS_EVERY`, `Engine.isBossRound`) – len so
-  zapnutými trinketmi – sa namiesto PvP boja každý hráč bije so
+- Každé **5. kolo** (`Engine.BOSS_EVERY`, `Engine.isBossRound`) – vždy,
+  nezávisle od trinketov – sa namiesto PvP boja každý hráč bije so
   **Strážcom arény**: 5 Obrancov (`straz`, token bez rasy) s „nekonečnými"
   statmi (`BOSS_STAT` = 1e9, UI píše ∞).
 - Boss **sám neútočí**, ale každý úder do neho vráti nekonečný damage –
@@ -1016,7 +1020,15 @@ aby niekto stratil životy, a víťaz má prednosť v drafte.
   Pred bojom áno. Ocikaj (P003) bossa nepolovičí (∞ / 2 = ∞).
 - Počíta sa **všetok damage do bossa** (útoky, Rozmach, výboje, výbuchy) –
   `dealDmg` pripočíta do `inst.taken`. Kto spraví viac, vyhral; remíza =
-  minca zo `state.rng`. Výsledok: `state.bossResult = { round, dmg, winner }`.
+  minca zo `state.rng`. Výsledok: `state.bossResult = { round, dmg, winner, claimed }`.
+- **Odmena**: víťaz dostane na začiatku svojho ťahu v ďalšom kole
+  (`beginShopTurn` → `bossReward`) **Discover: 3 príšery tieru presne
+  `min(vlastný tier + 1, 6)`** z vlastného poolu (`state.pendingDiscover`
+  s `boss: true, tier`); vybraná ide do ruky (`pickDiscover`). Tier sa
+  berie v momente začiatku ťahu (pred upgradom). Porazený nedostane nič.
+  Nevybraný Discover na konci ťahu = prvá možnosť (`endShopTurn`) – hra sa
+  nezasekne. Bot vyberá podľa `cardScore` hneď na začiatku `completeTurn`,
+  Claude bot ešte pred snímkou stavu (vidí kartu v ruke).
 - **Hrdinovia nedostanú damage** (žiadny `heroDmg`, Liečivé víťazstvo nie).
   Odložené kliatby z kúziel (Ticho, Ovčia premena, Žabia kliatba, Oslabenie,
   Blesk) a Búrkový mrak sa **nespúšťajú – počkajú na ďalší PvP boj**.
@@ -1028,36 +1040,32 @@ aby niekto stratil životy, a víťaz má prednosť v drafte.
   stojí na súperovom riadku), súperovo preskočí a ukáže tabuľu
   „Ty X : Y Súper".
 
-### Draft trinketov
+## Trinkety (trvalé bonusy per hráč)
 
-- V kole po DMG Meter ide **víťaz na ťah prvý** (`startRound` prepíše
-  `state.first`) a dostane ponuku **3 trinketov** (`p.trinketOffer`,
-  `state.draft = { first, second, offer }`). Keď vyberie
-  (`Engine.pickTrinket`), **porazený dostane zvyšné dva** (event
-  `trinketOffer` s `draft: "second"`). Nevybraný do konca ťahu = prvý
-  z ponuky (`endShopTurn`, event `trinketPick` s `auto: true`) – aj
-  víťazov auto-výber pošle zvyšok porazenému; hra sa nikdy nezasekne.
-  Vybrané trinkety sú v `p.trinkets`, platnosť overuje
-  `Engine.hasTrinket(state, pid, id)`.
-- **Úrovne sily** (`lvl` v `Engine.TRINKETS`, `Engine.trinketLevel`):
-  draft po kole 5 = úroveň 1, po kole 10 = úroveň 2, od kola 15 = úroveň 3.
-- **Ponuka** (`Engine.draftOffer`): 1 rasový trinket **hlavnej rasy
-  víťaza**, 1 rasový trinket **hlavnej rasy porazeného** (`Engine.mainRace`:
-  najviac kariet vo všetkých zónach, aspoň `TRINKET_RACE_MIN` = 3, bez
-  podporných rás; rasový slot berie úroveň <= aktuálna, takže slabší rasový
-  trinket môže prísť aj neskôr), zvyšok **neutrálne** trinkety aktuálnej
-  úrovne (záložne nižšej). Trinkety podporných rás (drak, ogr –
-  `Engine.SUPPORT_RACES`) sa ponúkajú ako neutrálne (drak je žoldnier do
-  každého buildu – 14. 9. 2026: hráč 12 hier nevidel dračí trinket, lebo
-  drakov nekupoval). Víťaz smie zobrať aj súperov rasový trinket
-  (hate-draft). Nikdy: zabanovaná rasa, trinket, ktorý už niekto má,
-  trinket s id zhodným s mutáciou hry (`richSell`, `bloodMoon`, `bigHand`…
-  – nestackujú sa). Ponuka sa zamieša zo `state.rng`.
-- **Default ZAPNUTÉ** (checkbox „Trinkety a DMG Meter" na úvodnej
-  obrazovke, `arena.trinkets`); v hre po sieti rozhoduje zakladateľ – flag
-  `trinkets` cestuje v `hello`/`start`/`rejoin` ako `ban` a zapisuje sa do
-  GameLog. Záznamy s trinketmi spred 3. 10. 2026 (ponuka v kole 4 a 8) sa
-  novým engine presne neprehrajú.
+Mutácia je jedno globálne pravidlo pre oboch; **trinket je trvalý bonus
+jedného hráča**. V **kole 4 a 8** (`Engine.TRINKET_ROUNDS`) dostane každý
+hráč na začiatku kola ponuku **3 trinketov** (`p.trinketOffer`, losuje sa
+zo `state.rng`, p1 prvý) a vo **vlastnej nákupnej fáze** si jeden vyberie
+(`Engine.pickTrinket(state, pid, id)`). Nevybraný do konca ťahu = prvý
+z ponuky (`endShopTurn`, event `trinketPick` s `auto: true`) – hra sa nikdy
+nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
+`Engine.hasTrinket(state, pid, id)`.
+
+- **Default ZAPNUTÉ** (checkbox na úvodnej obrazovke, `arena.trinkets`);
+  v hre po sieti rozhoduje zakladateľ – flag `trinkets` cestuje v
+  `hello`/`start`/`rejoin` ako `ban` a zapisuje sa do GameLog (staré
+  záznamy bez flagu = bez trinketov, rng poradie sa nemení). Záznamy spred
+  8. 10. 2026 sa novým engine presne neprehrajú (DMG Meter, úrovne).
+- **Úrovne sily** (`lvl` v `Engine.TRINKETS`): kolo 4 ponúka úroveň 1,
+  kolo 8 úrovne 2–3 (`TRINKET_ROUNDS = { 4: [1], 8: [2, 3] }`); keď je na
+  úrovniach kola menej ako 3 prípustné, doplní sa z ostatných.
+- **Ponuka** (`Engine.trinketPool`): trinket HLAVNEJ rasy len hráčovi, ktorý
+  má aspoň **3 karty rasy** vo všetkých zónach (`TRINKET_RACE_MIN`);
+  trinkety podporných rás (drak, ogr – `Engine.SUPPORT_RACES`) dostane každý
+  bez ohľadu na balíček (drak je žoldnier do každého buildu, hráč ho nemusí
+  držať vopred – 14. 9. 2026: hráč 12 hier nevidel dračí trinket, lebo
+  drakov nekupoval); zabanovaná rasa nikdy; trinket s id zhodným s mutáciou
+  hry (`richSell`, `bloodMoon`, `bigHand`…) sa neponúka – nestackujú sa.
 - **Ogrí kľúč** hodí na začiatku každého kola mincou (`sabotage` event):
   chvost = súperove trinkety to kolo (nákup aj boj) nefungujú
   (`p.trinketOff = kolo`); p1 hádže prvý – ak vypne p2 kľúč, p2 nehádže.
@@ -1074,8 +1082,8 @@ aby niekto stratil životy, a víťaz má prednosť v drafte.
   súčet všetkých Pečatí. Cielený efekt „rasa cieľa" na drakovi ostáva
   len drak; D007 najpočetnejšia rasa ráta draka ako draka.
 - Bot (`Bot.pickTrinket`): rasový trinket dominantnej rasy, inak pevná
-  priorita (Krvavý mesiac, Zľava, Veľká ruka, Rýchly štart…), cudzí rasový
-  trinket nikdy; Claude dostáva `dmgMeterRound`,
+  priorita (Krvavý mesiac, Zľava, Veľká ruka, Rýchly štart…); Claude dostáva
+  `dmgMeterRound`,
   `trinketOffer`/`yourTrinkets`/`opponentTrinkets` v stave a akcie
   `{"a":"trinket","id"}`, `{"a":"shield"}`; hygiena hard bota vyberie za
   neho, ak plán nevybral. Texty a emoji (log): `src/i18n.js` `L.trinkets`.
@@ -1097,7 +1105,9 @@ aby niekto stratil životy, a víťaz má prednosť v drafte.
 | `dragonPact` | 🐲 | 2 | dračie bojové aury (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) +1/+1 |
 | `ogreSabotage` | 👹 | 2 | Pečať +1/+0 Ogrom; minca za súperove trinkety |
 | `ogreCareful` | 👹 | 1 | hody padnú vždy dobre, bonusy polovičné (min. 1) |
-| `doggyLeash` | 🐶 | 3 | každé generovanie Pohladkania (P001, P002) dá o 1 viac – endgame palivo pre Veľké pohladkanie |
+| `doggyGlove` | 🐶 | 1 | na začiatku ťahu 1 Pohladkanie do ruky (`petTrinkets`, event `petGift`) |
+| `doggyBrush` | 🐶 | 2 | na začiatku ťahu 2 Pohladkania do ruky; s rukavicou 3 = Super |
+| `doggyLeash` | 🐶 | 3 | každé generovanie Pohladkania (P001, P002, rukavica, kefa) dá o 1 viac – endgame palivo pre Veľké pohladkanie |
 | `cheapUpgrade` | – | 1 | upgrade o 2 lacnejší (min. 2) |
 | `richSell` | – | 1 | predaj dáva 2 |
 | `twinEvolve1` | – | 1 | kartám tieru 1 stačia 2 kópie |

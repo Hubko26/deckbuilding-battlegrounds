@@ -348,20 +348,20 @@ test("psíci: P009 Vodca svorky je len nákupná pasívka – v boji nič nerob�
   assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /^Vodca svorky: kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov\.$/);
 });
 
-test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac; v drafte úrovne 3 hráčovi s 3+ psíkmi", () => {
+test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac; ponúka sa hráčovi s 3+ psíkmi, úroveň 3 (kolo 8)", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;
   const state = E.newGame(seeded(61), null, { trinkets: true });
   E.startRound(state);
   const p = state.p1;
   p.deck = [{ defId: "P001", rank: 1 }, { defId: "P002", rank: 1 }, { defId: "P003", rank: 1 }]; p.discard = [];
-  // úroveň 3 (Vodítko) až v drafte po kole 15; rasový slot ho dá psíkárovi
+  // Vodítko je úroveň 3 – ponúka sa v kole 8 (TRINKET_ROUNDS), len psíkárovi
   p.hand = []; p.board = [];
-  assert.equal(E.mainRace(state, p), "doggy");
-  assert.ok(!E.draftOffer(state, "p1", 2).includes("doggyLeash"));
-  assert.ok(E.draftOffer(state, "p1", 3).includes("doggyLeash"));
+  assert.equal(E.TRINKETS.find(t => t.id === "doggyLeash").lvl, 3);
+  assert.ok(E.TRINKET_ROUNDS[8].includes(3));
+  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "doggyLeash"));
   p.deck = [{ defId: "B001", rank: 1 }];
-  for (let i = 0; i < 20; i++) assert.ok(!E.draftOffer(state, "p1", 3).includes("doggyLeash")); // bez psíkov nie
+  assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyLeash")); // bez psíkov nie
   p.trinkets = ["doggyLeash"];
   p.deck = []; p.hand = [E.makeInst(state, "P001", 1)];
   const ev = E.playMinion(state, "p1", 0);
@@ -391,4 +391,53 @@ test("psíci: počítadlo prijatých Pohladkaní (inst.pets) cestuje s kartou ce
   const silver = p.hand.find(x => x.defId === "P001" && x.rank === 2);
   assert.ok(silver);
   assert.equal(silver.pets, 3); assert.equal(silver.pa, 4);
+});
+
+test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na začiatku ťahu, spolu 3 = Super, Vodítko +1, plná ruka do balíčka", () => {
+  const { state, E, C } = fresh(62);
+  E.startRound(state);
+  const p = state.p1;
+  const setup = trinkets => {
+    p.trinkets = trinkets;
+    p.hand = []; p.discard = [];
+    p.deck = ["B001", "B001", "B003", "B003", "E001", "E001", "F001"].map(id => ({ defId: id, rank: 1 }));
+    return E.beginShopTurn(state, "p1");
+  };
+  const pets = (zone, rank) => p[zone].filter(c => c.defId === "pet" && (c.rank || 1) === rank).length;
+
+  // rukavica: 5 kariet + 1 Pohladkanie navyše
+  let ev = setup(["doggyGlove"]);
+  assert.equal(pets("hand", 1), 1);
+  assert.equal(p.hand.length, 6);
+  assert.ok(ev.some(e => e.type === "petGift" && e.n === 1));
+  assert.ok(ev.some(e => e.type === "trinketProc" && e.id === "doggyGlove"));
+
+  // rukavica + kefa: 3 Pohladkania sa hneď spoja na Super
+  ev = setup(["doggyGlove", "doggyBrush"]);
+  assert.ok(ev.some(e => e.type === "petGift" && e.n === 3));
+  assert.equal(pets("hand", 1), 0);
+  assert.equal(pets("hand", 2), 1, "Super pohladkanie v ruke");
+
+  // rukavica + Vodítko = 2
+  ev = setup(["doggyGlove", "doggyLeash"]);
+  assert.ok(ev.some(e => e.type === "petGift" && e.n === 2));
+  assert.equal(pets("hand", 1), 2);
+
+  // plná ruka (bigHand nie, HAND_MAX) – prebytok ide do balíčka
+  p.trinkets = ["doggyBrush"];
+  const ids = ["B001", "B002", "B003", "E001", "E002", "F001", "F002", "U001", "U002", "O001"]; // bez trojíc (evolve by uvoľnil ruku)
+  p.hand = Array.from({ length: E.HAND_MAX }, (_, i) => Object.assign(E.makeInst(state, ids[i], 1), { slot: i }));
+  p.deck = []; p.discard = [];
+  E.beginShopTurn(state, "p1");
+  assert.equal(pets("deck", 1), 2);
+
+  // ponuka: rasové psie trinkety len psíkárovi, úrovne 1 a 2
+  assert.equal(E.TRINKETS.find(t => t.id === "doggyGlove").lvl, 1);
+  assert.equal(E.TRINKETS.find(t => t.id === "doggyBrush").lvl, 2);
+  p.trinkets = []; p.hand = []; p.board = [];
+  p.deck = ["P001", "P002", "P003"].map(id => ({ defId: id, rank: 1 }));
+  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "doggyGlove"));
+  p.deck = [{ defId: "B001", rank: 1 }];
+  assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyGlove"));
+  assert.ok(C.byId.pet);
 });

@@ -377,6 +377,14 @@ const Bot = (() => {
   function completeTurn(state, pid, cfg, push) {
     const p = state[pid];
 
+    // Odmena za DMG Meter (Discover vyššieho tieru) čaká hneď na začiatku ťahu.
+    const pd = state.pendingDiscover;
+    if (pd && pd.pid === pid) {
+      let best = 0;
+      pd.options.forEach((d, j) => { if (cardScore(state, p, d, cfg) > cardScore(state, p, pd.options[best], cfg)) best = j; });
+      push(act("pickDiscover", state, pid, best));
+    }
+
     // Trinkety: ponuka sa vyberá hneď (bez výberu by ju koniec ťahu vzal
     // automaticky); Štít hrdinu bot zapne, keď mu dochádzajú životy.
     if (p.trinketOffer) push(act("pickTrinket", state, pid, pickTrinket(state, pid)));
@@ -833,8 +841,7 @@ const Bot = (() => {
     const dom = dominantRace(state, p);
     const score = id => {
       const def = Engine.TRINKETS.find(t => t.id === id);
-      // Cudzí rasový trinket (súperova rasa v drafte) bot nechce.
-      if (def && def.race) return def.race === dom ? 8 : SUPPORT_RACES.has(def.race) ? 2 : 0;
+      if (def && def.race) return def.race === dom ? 8 : SUPPORT_RACES.has(def.race) ? 2 : 3;
       return TRINKET_PRIO[id] ?? 4;
     };
     return [...offer].sort((a, b) => score(b) - score(a))[0];

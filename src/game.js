@@ -736,8 +736,13 @@ async function runClaudeTurn() {
   await playOppEvents(res.events);
 }
 
+// Hladkacia rukavica/kefa: Pohladkania do ruky na začiatku môjho ťahu
+// (prídu v eventoch súperovho ťahu alebo nového kola po boji).
+const petGiftMsg = ev => `${t(L.petGiftMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId.pet, 1, I18N.lang)}`;
+
 function oppEventMsg(ev) {
   if (ev.type === "ban") return banResultMsg(ev);
+  if (ev.type === "petGift" && ev.pid === MY) return petGiftMsg(ev);
   if (ev.type === "banPick" && ev.pid === OPP) return t(L.banOppPicked);
   if (ev.pid !== OPP) return null;
   const def = ev.defId ? Cards.byId[ev.defId] : null;
@@ -818,7 +823,7 @@ async function runBattle() {
         if (ev.winner === MY) Sfx.evolve();
         log(`🗿 ${t(L.bossOppDmg)} ${theirs}`);
         log(`${ev.tie ? t(L.bossTie) + " " : ""}${t(ev.winner === MY ? L.bossWin : L.bossLose)}`);
-        lastBattleNote = `DMG Meter round (no hero damage): you dealt ${ev.dmg[OPP]}, the human dealt ${ev.dmg[MY]} – ${ev.winner === OPP ? "you pick" : "the human picks"} a trinket first next round`;
+        lastBattleNote = `DMG Meter round (no hero damage): you dealt ${ev.dmg[OPP]}, the human dealt ${ev.dmg[MY]} – ${ev.winner === OPP ? "you" : "the human"} discovered a higher-tier minion`;
         await sleep(2200);
         fb.classList.add("small");
         break;
@@ -1227,6 +1232,9 @@ async function runBattle() {
         if (m) log(m);
         break;
       }
+      case "petGift":
+        if (ev.pid === MY) log(petGiftMsg(ev));
+        break;
       case "gameOver":
         endBattleUI();
         return; // driveFlow ukáže výsledok
@@ -1608,9 +1616,11 @@ function showTrinketInfo(id, off) {
 }
 
 // Art trinketu: okrúhly medailón s rámom (assets/trinkets/<id>.webp, 512 px).
-const trinketArt = id => `assets/trinkets/${id}.webp`;
+// Psie trinkety Rukavica a Kefa zatiaľ nemajú vlastný art – medailón Vodítka.
+const TRINKET_ART_ALIAS = { doggyGlove: "doggyLeash", doggyBrush: "doggyLeash" };
+const trinketArt = id => `assets/trinkets/${TRINKET_ART_ALIAS[id] || id}.webp`;
 
-// Ponuka trinketov (draft po DMG Meter kole): overlay s tromi kartami, len vo vlastnom ťahu.
+// Ponuka trinketov (kolo 4 a 8): overlay s tromi kartami, len vo vlastnom ťahu.
 function renderTrinketOffer() {
   const ov = $("trinketOverlay");
   const p = state && state[MY];
@@ -1618,8 +1628,7 @@ function renderTrinketOffer() {
   if (!show) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("trinketTitle").textContent = t(L.trinketTitle);
-  // Draft po DMG Meter kole: víťaz vyberá z troch, porazený zo zvyšku.
-  $("trinketMsg").textContent = t(state.draft && state.draft.first === MY ? L.trinketIntroFirst : L.trinketIntroSecond);
+  $("trinketMsg").textContent = t(L.trinketIntro);
   const row = $("trinketRow");
   row.innerHTML = "";
   for (const id of p.trinketOffer) {
@@ -2229,6 +2238,7 @@ function act(events) {
       log(`⭐ ${t(L.allMinionsForever)} +${ev.a}/+${ev.h}!`);
     }
     // Psíci: Pohladkanie do balíčka / spojenie troch na vyšší stupeň.
+    if (ev.type === "petGift" && ev.pid === MY) log(petGiftMsg(ev));
     if (ev.type === "addPet" && ev.pid === MY) {
       log(`${t(L.addPetMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId.pet, ev.rank, I18N.lang)}`);
     }
@@ -2315,6 +2325,7 @@ function renderDiscover() {
   const pd = state.pendingDiscover;
   if (!pd || pd.pid !== MY) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
+  $("discoverTitle").textContent = pd.boss ? `${t(L.bossRewardTitle)} ${pd.tier}` : t(L.discoverTitle);
   const row = $("discoverRow");
   row.innerHTML = "";
   pd.options.forEach((defId, i) => {

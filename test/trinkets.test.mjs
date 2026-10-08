@@ -36,92 +36,116 @@ function fight(state, E) {
   return E.doBattle(state);
 }
 
-test("trinkety: bez opts žiadne DMG Meter kolo ani ponuka; s opts po kole 5 draft – víťaz ide prvý a má 3 trinkety úrovne 1", () => {
+test("trinkety: bez opts žiadna ponuka, s opts v kole 4 ponuka 3 trinketov úrovne 1 pre oboch", () => {
   const off = fresh(5);
-  toRound(off.state, off.E, 6);
+  toRound(off.state, off.E, 4);
   assert.equal(off.state.p1.trinketOffer, null);
-  assert.equal(off.state.bossResult, null);
   assert.equal(off.state.trinketsOn, false);
 
   const { state, E, C } = fresh(5, { trinkets: true });
   toRound(state, E, 4);
-  assert.ok(!state.p1.trinketOffer && !state.p2.trinketOffer, "v kole 4 už ponuka nie je");
-  toRound(state, E, 6);
-  const w = state.bossResult.winner, l = w === "p1" ? "p2" : "p1";
-  assert.equal(state.bossResult.round, 5);
-  assert.equal(state.active, w, "víťaz DMG Meter kola je na ťahu prvý");
-  assert.equal(state[l].trinketOffer, null, "porazený čaká, kým víťaz vyberie");
-  const offer = state[w].trinketOffer;
-  assert.equal(offer.length, 3);
-  assert.equal(new Set(offer).size, 3);
-  for (const id of offer) {
-    const def = E.TRINKETS.find(t => t.id === id);
-    assert.ok(def, `neznámy trinket ${id}`);
-    assert.equal(def.lvl, 1, `po kole 5 len úroveň 1 (${id})`);
-    if (def.race && !E.SUPPORT_RACES.has(def.race)) {
-      assert.ok(["p1", "p2"].some(pid => E.mainRace(state, state[pid]) === def.race), `rasový trinket ${id} mimo hlavných rás`);
+  for (const pid of ["p1", "p2"]) {
+    const offer = state[pid].trinketOffer;
+    assert.equal(offer.length, 3);
+    assert.equal(new Set(offer).size, 3);
+    for (const id of offer) {
+      const def = E.TRINKETS.find(t => t.id === id);
+      assert.ok(def, `neznámy trinket ${id}`);
+      assert.equal(def.lvl, 1, `v kole 4 len úroveň 1 (${id})`);
+      if (def.race && !E.SUPPORT_RACES.has(def.race)) {
+        let n = 0;
+        for (const zone of ["deck", "discard", "hand", "board"]) for (const c of state[pid][zone]) if (C.byId[c.defId].race === def.race) n++;
+        assert.ok(n >= 3, `rasový trinket ${id} bez aspoň 3 kariet rasy`);
+      }
     }
   }
-  assert.ok(C.byId.straz.boss);
 });
 
-test("trinkety: draft – víťaz vyberie, porazený dostane zvyšné dva; koniec ťahu bez výberu vezme prvý", () => {
+test("trinkety: výber len vo vlastnej fáze a z ponuky; koniec ťahu bez výberu vezme prvý", () => {
   const { state, E } = fresh(7, { trinkets: true });
-  toRound(state, E, 6);
-  const w = state.active, l = w === "p1" ? "p2" : "p1";
-  assert.equal(E.pickTrinket(state, l, state[w].trinketOffer[0]), null); // nie je na ťahu
-  assert.equal(E.pickTrinket(state, w, "nonsense"), null);
-  const offer = state[w].trinketOffer.slice();
-  const id = offer[1];
-  const ev = E.pickTrinket(state, w, id);
+  toRound(state, E, 4);
+  const me = state.active, foe = me === "p1" ? "p2" : "p1";
+  assert.equal(E.pickTrinket(state, foe, state[foe].trinketOffer[0]), null); // nie je na ťahu
+  assert.equal(E.pickTrinket(state, me, "nonsense"), null);
+  const id = state[me].trinketOffer[1];
+  const ev = E.pickTrinket(state, me, id);
   assert.ok(ev.some(e => e.type === "trinketPick" && e.id === id && e.auto === false));
-  assert.ok(ev.some(e => e.type === "trinketOffer" && e.pid === l && e.draft === "second"));
-  assert.equal(state[w].trinkets.join(), id);
-  assert.equal(state[w].trinketOffer, null);
-  assert.equal(E.pickTrinket(state, w, id), null); // ponuka je preč
-  assert.deepEqual(state[l].trinketOffer, offer.filter(x => x !== id));
-  E.endShopTurn(state, w);
-  const first = state[l].trinketOffer[0];
-  const ev2 = E.endShopTurn(state, l);
+  assert.equal(state[me].trinkets.join(), id);
+  assert.equal(state[me].trinketOffer, null);
+  assert.equal(E.pickTrinket(state, me, id), null); // ponuka je preč
+  E.endShopTurn(state, me);
+  const first = state[foe].trinketOffer[0];
+  const ev2 = E.endShopTurn(state, foe);
   assert.ok(ev2.some(e => e.type === "trinketPick" && e.id === first && e.auto === true));
-  assert.equal(state[l].trinkets.join(), first);
-  assert.ok(E.hasTrinket(state, l, first));
+  assert.equal(state[foe].trinkets.join(), first);
+  assert.ok(E.hasTrinket(state, foe, first));
 });
 
-test("trinkety: víťaz, ktorý nevyberie, dostane prvý automaticky a porazený aj tak dostane zvyšok", () => {
-  const { state, E } = fresh(8, { trinkets: true });
-  toRound(state, E, 6);
-  const w = state.active, l = w === "p1" ? "p2" : "p1";
-  const offer = state[w].trinketOffer.slice();
-  E.endShopTurn(state, w);
-  assert.equal(state[w].trinkets.join(), offer[0]);
-  assert.deepEqual(state[l].trinketOffer, offer.slice(1));
-});
-
-test("trinkety: draft po kole 10 – úroveň 2, bez vlastnených trinketov a bez mutácie hry", () => {
+test("trinkety: ponuka v kole 8 – úroveň 2–3, bez už vybraného trinketu a bez mutácie hry", () => {
   const ctx = loadEngine();
   const state = ctx.Engine.newGame(seeded(9), "bigHand", { trinkets: true });
   const E = ctx.Engine;
-  toRound(state, E, 6);
+  toRound(state, E, 4);
+  const picks = {};
   for (const pid of [state.active, state.active === "p1" ? "p2" : "p1"]) {
-    E.pickTrinket(state, pid, state[pid].trinketOffer[0]);
+    picks[pid] = state[pid].trinketOffer[0];
+    E.pickTrinket(state, pid, picks[pid]);
     E.endShopTurn(state, pid);
   }
   E.doBattle(state);
-  toRound(state, E, 11);
-  const w = state.active;
-  const offer = state[w].trinketOffer;
-  assert.equal(offer.length, 3);
-  const owned = [...state.p1.trinkets, ...state.p2.trinkets];
-  for (const id of offer) {
-    assert.ok(!owned.includes(id), `${id} už niekto má`);
-    assert.ok(E.TRINKETS.find(t => t.id === id).lvl <= 2);
+  toRound(state, E, 8);
+  for (const pid of ["p1", "p2"]) {
+    const offer = state[pid].trinketOffer;
+    assert.equal(offer.length, 3);
+    assert.ok(!offer.includes(picks[pid]));
+    assert.ok(!offer.includes("bigHand"), "mutácia a trinket s rovnakým id sa nestackujú");
+    for (const id of offer) assert.ok(E.TRINKETS.find(t => t.id === id).lvl >= 2, id);
   }
-  assert.ok(!offer.includes("bigHand"), "mutácia a trinket s rovnakým id sa nestackujú");
-  assert.equal(E.trinketLevel(5), 1);
-  assert.equal(E.trinketLevel(10), 2);
-  assert.equal(E.trinketLevel(15), 3);
-  assert.equal(E.trinketLevel(20), 3);
+});
+
+test("DMG Meter: víťaz dostane na začiatku ďalšieho ťahu výber z 3 príšer o tier vyššie, porazený nič", () => {
+  const { state, E, C } = fresh(14);
+  toRound(state, E, 5);
+  assert.ok(E.isBossRound(state), "DMG Meter aj bez trinketov");
+  clear(state);
+  const me = state.active, foe = me === "p1" ? "p2" : "p1";
+  put(E, state, me, "B002", 0);
+  state[me].tier = 2;
+  fight(state, E);
+  assert.equal(state.bossResult.winner, me);
+  // kolo 6: víťaz dostane Discover na začiatku SVOJHO ťahu
+  const loserFirst = state.active === foe;
+  if (loserFirst) {
+    assert.ok(!state.pendingDiscover, "porazený discover nedostane");
+    E.endShopTurn(state, foe);
+  }
+  const pd = state.pendingDiscover;
+  assert.ok(pd && pd.pid === me);
+  assert.equal(pd.options.length, 3);
+  for (const id of pd.options) assert.equal(C.byId[id].tier, 3, `tier 2 + 1 (${id})`);
+  const hand = state[me].hand.length;
+  E.pickDiscover(state, me, 1);
+  assert.equal(state.pendingDiscover, null);
+  assert.ok(state[me].hand.length >= hand); // evolve môže ruku hneď zmenšiť
+  // druhýkrát v tom kole nie
+  E.endShopTurn(state, me);
+  if (!loserFirst) assert.ok(!state.pendingDiscover);
+});
+
+test("DMG Meter: tier 6 dostane tier 6; nevybraný discover na konci ťahu = prvá možnosť", () => {
+  const { state, E, C } = fresh(15);
+  toRound(state, E, 5);
+  clear(state);
+  const me = state.active;
+  put(E, state, me, "B002", 0);
+  state[me].tier = 6;
+  fight(state, E);
+  if (state.active !== me) E.endShopTurn(state, state.active);
+  const opts = state.pendingDiscover.options.slice();
+  for (const id of opts) assert.equal(C.byId[id].tier, 6);
+  const ev = E.endShopTurn(state, me);
+  assert.ok(ev.some(e => e.type === "discoverPick" && e.defId === opts[0]));
+  assert.equal(state.pendingDiscover, null);
 });
 
 test("DMG Meter: boss neútočí, každá príšerka útočí do smrti, damage sa sčíta, hrdinovia nič nedostanú", () => {
@@ -465,7 +489,7 @@ test("trinkety: Ogrí kľúč – Pečať +1/+0 Ogrom, chvost vypne súperove tr
 test("trinkety: replay – rovnaký seed a rovnaké akcie dajú rovnaký stav (rng ide cez state.rng)", () => {
   const play = () => {
     const { state, E } = fresh(22, { trinkets: true });
-    toRound(state, E, 6);
+    toRound(state, E, 4);
     for (const pid of [state.active, state.active === "p1" ? "p2" : "p1"]) {
       E.pickTrinket(state, pid, state[pid].trinketOffer.at(-1));
       E.endShopTurn(state, pid);
@@ -479,7 +503,7 @@ test("trinkety: replay – rovnaký seed a rovnaké akcie dajú rovnaký stav (r
 
 test("trinkety: bot vyberie trinket a Claude hygiena ho vyberie tiež (completeTurn)", () => {
   const { state, E, B } = fresh(23, { trinkets: true });
-  toRound(state, E, 6);
+  toRound(state, E, 4);
   const pid = state.active;
   const id = B.pickTrinket(state, pid);
   assert.ok(state[pid].trinketOffer.includes(id));

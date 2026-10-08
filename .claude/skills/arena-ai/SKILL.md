@@ -25,27 +25,31 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   zabanovanej rase – v obchode sa nikdy neobjaví; rasové aury a synergie na
   ňu sú mŕtve karty. Bot banuje hlavnú rasu zo svojej trojice
   (`Bot.pickBan`), žoldnierov (draci, ogri) až keď inú nemá.
-- **Trinkety a DMG Meter** (voliteľné, default zapnuté): každé 5. kolo
-  (`Engine.isBossRound`, Claude: `dmgMeterRound: true`) je namiesto PvP
-  boja DMG Meter – každý hráč bije Strážcu arény (5 Obrancov, ∞ staty,
-  sám neútočí, každý úder do neho útočníka zabije, štít = ďalší útok).
-  Príšerky útočia zľava doprava, kým nepadnú; Pri smrti a tokeny útočia
-  tiež. Hrdinovia damage nedostanú, kliatby z kúziel počkajú na PvP boj,
-  Štít hrdinu sa nedá zapnúť. Kto spraví viac damage, v ďalšom kole ide na
-  ťah prvý a vyberá 1 z 3 trinketov (`p.trinketOffer`, `Engine.pickTrinket`);
-  porazený dostane zvyšné dva. Nevybraný = prvý z ponuky. Ponuka: rasový
-  trinket hlavnej rasy víťaza, rasový trinket hlavnej rasy porazeného
-  (≥ 3 karty rasy), zvyšok neutrálne/dračie/ogrie; úroveň 1 po kole 5,
-  2 po kole 10, 3 od kola 15. Claude dostáva `trinketOffer` (s anglickým
-  textom), `yourTrinkets`, `opponentTrinkets`, `trinketsOffThisRound`
-  (súperov Ogrí kľúč) a `heroShieldReady`. Pred DMG Meter kolom: plná
-  plocha, útok, tokeny a štíty (telá s veľkým HP nepomôžu). Vyberaj:
-  rasový trinket dominantnej rasy > ekonomika/telá (Zľava tavernára, Veľká
-  ruka, Rýchly štart, Silné tokeny pri vyvolávačoch) > Krvavý mesiac pri
-  stabilnej ploche; súperov rasový trinket nie. Štít hrdinu
+- **DMG Meter** (vždy): každé 5. kolo (`Engine.isBossRound`, Claude:
+  `dmgMeterRound: true`) je namiesto PvP boja DMG Meter – každý hráč bije
+  Strážcu arény (5 Obrancov, ∞ staty, sám neútočí, každý úder do neho
+  útočníka zabije, štít = ďalší útok). Príšerky útočia zľava doprava, kým
+  nepadnú; Pri smrti a tokeny útočia tiež. Hrdinovia damage nedostanú,
+  kliatby z kúziel počkajú na PvP boj, Štít hrdinu sa nedá zapnúť. Kto
+  spraví viac damage, dostane na začiatku ďalšieho ťahu Discover: 3 príšery
+  tieru `min(vlastný tier + 1, 6)` (`state.pendingDiscover`,
+  `Engine.pickDiscover`; Claude botovi ju vyberie heuristika pred plánom).
+  Nižší tier = cennejšia odmena, takže pred DMG Meter kolom netreba
+  upgradovať naslepo; do merania plná plocha, útok, tokeny a štíty (telá
+  s veľkým HP nepomôžu).
+- **Trinkety** (voliteľné, default zapnuté): v kole 4 a 8 dostane každý
+  hráč ponuku 3 trvalých bonusov (`p.trinketOffer`), jeden si vyberie vo
+  vlastnej nákupnej fáze (`Engine.pickTrinket`); nevybraný = prvý z ponuky.
+  Kolo 4 ponúka úroveň 1, kolo 8 úrovne 2–3. Claude ich dostáva v stave ako
+  `trinketOffer` (s anglickým textom), `yourTrinkets`, `opponentTrinkets`,
+  `trinketsOffThisRound` (súperov Ogrí kľúč) a `heroShieldReady`. Trinket
+  hlavnej rasy dostane len hráč s ≥ 3 kartami rasy, dračie/ogrie trinkety
+  dostane každý. Vyberaj: rasový trinket dominantnej rasy > ekonomika/telá
+  (Zľava tavernára, Veľká ruka, Rýchly štart, Silné tokeny pri
+  vyvolávačoch) > Krvavý mesiac v kole 8 pri stabilnej ploche. Štít hrdinu
   (`Engine.useHeroShield`) zapni raz, keď hrozí veľká prehra (nízke HP,
   súperova plocha zjavne silnejšia). Zoznam a pravidlá: DESIGN.md
-  „Trinkety a DMG Meter kolo".
+  „Trinkety" a „DMG Meter kolo".
 - Kolo = nákupná fáza hráča A → nákupná fáza hráča B → automatický boj.
   V nepárnom kole začína p1, v párnom p2.
 - Peniaze: `min(kolo + 2, 10)` na začiatku kola, neminuté prepadnú.
@@ -232,8 +236,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     s Vichorom dvakrát). P009 (t6) Vodca svorky: kým je na ploche, každé
     Pohladkanie pohladká cieľ AJ všetkých ostatných Psíkov (vylož P009 PRED
     hladkaním, hladkaj s plnou psou plochou – v boji nerobí nič, je to
-    telo 8/8). Trinket Vodítko (úroveň 3, draft od kola 15): každé
-    generovanie Pohladkania dá o 1 viac – v psom builde vždy ber.
+    telo 8/8). Psie trinkety – v psom builde vždy ber: Hladkacia rukavica
+    (kolo 4, 1 Pohladkanie do ruky každý ťah), Hladkacia kefa (kolo 8,
+    2 každý ťah; s rukavicou 3 = Super pohladkanie každé kolo), Vodítko
+    (kolo 8): každé generovanie Pohladkania dá o 1 viac.
     Pohladkanie je kúzlo: víly „Po kúzle" ho vidia, Živelná sila nie.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
     Mláďa s aurami škálujú. Stupeň vyvolávača škáluje POČET tokenov (+1
@@ -418,7 +424,7 @@ akcie za hráča `pid` – vracajú events alebo `null` pri nelegálnom ťahu:
   peňazí (karta ostáva v balíčku; napr. battlecry telo pred bojom)
 - `Engine.moveOnBoard(state, pid, boardIdx, slot)`
 - `Engine.pickTrinket(state, pid, trinketId)` – výber z `p.trinketOffer`
-  (draft po DMG Meter kole), len vo vlastnej nákupnej fáze; Claude: `{"a":"trinket","id"}`
+  (kolo 4 a 8), len vo vlastnej nákupnej fáze; Claude: `{"a":"trinket","id"}`
 - `Engine.useHeroShield(state, pid)` – trinket Štít hrdinu, raz za hru;
   Claude: `{"a":"shield"}`
 - `Engine.endShopTurn(state, pid)` – povinný záver ťahu
