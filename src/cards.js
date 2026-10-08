@@ -372,6 +372,9 @@ const Cards = (() => {
     // Ovečka 0/1: výsledok Ovčej premeny – súperova príšerka na jeden boj.
     // Neútočí (0), padne na prvý úder, preživšia dá hrdinovi len 1 (tier 1).
     { id: "ovecka", tier: 1, race: "beast", emoji: "🐑", atk: 0, hp: 1, token: true },
+    // Strážca arény: boss DMG Meter kola (engine bossBoard) – Obranca bez
+    // rasy, staty nastaví engine na BOSS_STAT („nekonečno"). Nie je v obchode.
+    { id: "straz", tier: 0, emoji: "🗿", atk: 0, hp: 1, token: true, taunt: true, boss: true },
   ];
 
   const byId = {};

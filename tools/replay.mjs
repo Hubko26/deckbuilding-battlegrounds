@@ -58,7 +58,7 @@ const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
 // mut:false v zázname = hra bez mutácie; staré záznamy flag nemajú (= mutácia zo seedu)
 // ban:true v zázname = hra začala fázou BAN (akcie pickBan v logu, prvé kolo
 // štartuje až po vylosovaní); staré záznamy flag nemajú (= bez banu)
-// trinkets:true v zázname = ponuka trinketov v kole 4 a 8 (akcie pickTrinket,
+// trinkets:true v zázname = DMG Meter kolá + draft trinketov (akcie pickTrinket,
 // useHeroShield v logu); staré záznamy flag nemajú (= bez trinketov)
 // difficulty hard/claude = bot (p2) štartuje so 70 HP (Bot.hpBonus)
 const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined,

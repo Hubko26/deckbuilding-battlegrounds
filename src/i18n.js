@@ -295,18 +295,37 @@ const L = {
       d: { sk: "Battlecry sa spúšťa 2×.", cs: "Battlecry se spouští 2×.", en: "Battlecries trigger twice." },
     },
   },
-  // Trinkety (engine TRINKETS) – ikonka e, meno, popis d. Ponuka 1 z 3 v kole 4 a 8.
+  // Trinkety (engine TRINKETS) – ikonka e, meno, popis d. Draft po DMG Meter
+  // kole (každé 5. kolo): víťaz vyberá 1 z 3, porazený zo zvyšných dvoch.
   trinketToggle: {
-    sk: "🧿 Trinkety (kolo 4 a 8: každý si vyberie trvalý bonus)",
-    cs: "🧿 Trinkety (kolo 4 a 8: každý si vybere trvalý bonus)",
-    en: "🧿 Trinkets (round 4 and 8: each player picks a permanent bonus)",
+    sk: "🧿 Trinkety a DMG Meter (každé 5. kolo boj s bossom – kto dá viac damage, vyberá trinket prvý)",
+    cs: "🧿 Trinkety a DMG Meter (každé 5. kolo boj s bossem – kdo dá víc damage, vybírá trinket první)",
+    en: "🧿 Trinkets & DMG Meter (every 5th round fight a boss – more damage picks a trinket first)",
   },
   trinketTitle: { sk: "🧿 Vyber si trinket", cs: "🧿 Vyber si trinket", en: "🧿 Pick a trinket" },
-  trinketIntro: {
-    sk: "Trvalý bonus na celú hru. Vyber jeden z troch – ak nevyberieš, na konci ťahu dostaneš prvý.",
-    cs: "Trvalý bonus na celou hru. Vyber jeden ze tří – když nevybereš, na konci tahu dostaneš první.",
-    en: "A permanent bonus for the whole game. Pick one of three – if you don't, you get the first one at end of turn.",
+  trinketIntroFirst: {
+    sk: "Vyhral si DMG Meter! Trvalý bonus na celú hru – vyber si prvý, zvyšné dva dostane súper. Ak nevyberieš, na konci ťahu dostaneš prvý.",
+    cs: "Vyhrál jsi DMG Meter! Trvalý bonus na celou hru – vyber si první, zbylé dva dostane soupeř. Když nevybereš, na konci tahu dostaneš první.",
+    en: "You won the DMG Meter! A permanent bonus for the whole game – you pick first, the opponent gets the other two. If you don't pick, you get the first one at end of turn.",
   },
+  trinketIntroSecond: {
+    sk: "Súper už vybral. Trvalý bonus na celú hru – vyber si jeden zo zvyšných. Ak nevyberieš, na konci ťahu dostaneš prvý.",
+    cs: "Soupeř už vybral. Trvalý bonus na celou hru – vyber si jeden ze zbylých. Když nevybereš, na konci tahu dostaneš první.",
+    en: "The opponent already picked. A permanent bonus for the whole game – pick one of the rest. If you don't, you get the first one at end of turn.",
+  },
+  // DMG Meter kolo (engine doBossBattle).
+  bossRoundTag: { sk: "🗿 DMG Meter", cs: "🗿 DMG Meter", en: "🗿 DMG Meter" },
+  bossFight: { sk: "🗿 DMG Meter!", cs: "🗿 DMG Meter!", en: "🗿 DMG Meter!" },
+  bossIntro: {
+    sk: "🗿 Toto kolo je DMG Meter: namiesto boja so súperom búšite do Strážcu arény. Každá tvoja príšerka útočí, kým nepadne. Kto spraví viac damage, vyberá trinket prvý. Hrdinovia nedostanú zranenie.",
+    cs: "🗿 Toto kolo je DMG Meter: místo boje se soupeřem bušíte do Strážce arény. Každá tvoje příšerka útočí, dokud nepadne. Kdo udělá víc damage, vybírá trinket první. Hrdinové nedostanou zranění.",
+    en: "🗿 This round is the DMG Meter: instead of fighting each other you both hit the Arena Guardian. Each of your minions attacks until it falls. Whoever deals more damage picks a trinket first. Heroes take no damage.",
+  },
+  bossYourDmg: { sk: "Tvoj damage:", cs: "Tvůj damage:", en: "Your damage:" },
+  bossOppDmg: { sk: "Súperov damage:", cs: "Soupeřův damage:", en: "Opponent's damage:" },
+  bossWin: { sk: "🏆 Vyhral si DMG Meter – v ďalšom kole vyberáš trinket prvý!", cs: "🏆 Vyhrál jsi DMG Meter – v dalším kole vybíráš trinket první!", en: "🏆 You won the DMG Meter – next round you pick a trinket first!" },
+  bossLose: { sk: "Súper spravil viac damage – vyberá trinket prvý, ty dostaneš výber zo zvyšných dvoch.", cs: "Soupeř udělal víc damage – vybírá trinket první, ty vybíráš ze zbylých dvou.", en: "The opponent dealt more damage – they pick a trinket first, you choose from the other two." },
+  bossTie: { sk: "Remíza, rozhodla minca:", cs: "Remíza, rozhodla mince:", en: "A tie, a coin decided:" },
   trinketPicked: { sk: "🧿 Tvoj trinket:", cs: "🧿 Tvůj trinket:", en: "🧿 Your trinket:" },
   trinketAuto: { sk: "🧿 Nevybral si – dostal si", cs: "🧿 Nevybral jsi – dostal jsi", en: "🧿 No pick – you got" },
   trinketOppPicked: { sk: "🤖 Súper si vybral trinket:", cs: "🤖 Soupeř si vybral trinket:", en: "🤖 Opponent picked a trinket:" },
@@ -752,6 +771,7 @@ L.cards = (() => {
     iskricka: { sk: "Iskrička", cs: "Jiskřička", en: "Sparkle" },
     mlada: { sk: "Mláďa", cs: "Mládě", en: "Cub" },
     ovecka: { sk: "Ovečka", cs: "Ovečka", en: "Sheep" },
+    straz: { sk: "Strážca arény", cs: "Strážce arény", en: "Arena Guardian" },
   };
   // Množné číslo tokenov („všetky tvoje Kostíky“ – U002).
   const namesPl = {

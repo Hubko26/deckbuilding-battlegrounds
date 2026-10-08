@@ -348,19 +348,20 @@ test("psíci: P009 Vodca svorky je len nákupná pasívka – v boji nič nerob�
   assert.match(C.cardText(C.byId.P009, 1, "sk", false, 0), /^Vodca svorky: kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov\.$/);
 });
 
-test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac; ponúka sa len v kole 8 hráčovi s 3+ psíkmi", () => {
+test("psíci: trinket Vodítko – každé generovanie Pohladkania dá o 1 viac; v drafte úrovne 3 hráčovi s 3+ psíkmi", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;
   const state = E.newGame(seeded(61), null, { trinkets: true });
   E.startRound(state);
   const p = state.p1;
   p.deck = [{ defId: "P001", rank: 1 }, { defId: "P002", rank: 1 }, { defId: "P003", rank: 1 }]; p.discard = [];
-  // kolo 1: late trinket sa neponúka; kolo 8 s 3 psíkmi áno
-  assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyLeash"));
-  state.round = 8;
-  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "doggyLeash"));
+  // úroveň 3 (Vodítko) až v drafte po kole 15; rasový slot ho dá psíkárovi
+  p.hand = []; p.board = [];
+  assert.equal(E.mainRace(state, p), "doggy");
+  assert.ok(!E.draftOffer(state, "p1", 2).includes("doggyLeash"));
+  assert.ok(E.draftOffer(state, "p1", 3).includes("doggyLeash"));
   p.deck = [{ defId: "B001", rank: 1 }];
-  assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyLeash")); // bez psíkov nie
+  for (let i = 0; i < 20; i++) assert.ok(!E.draftOffer(state, "p1", 3).includes("doggyLeash")); // bez psíkov nie
   p.trinkets = ["doggyLeash"];
   p.deck = []; p.hand = [E.makeInst(state, "P001", 1)];
   const ev = E.playMinion(state, "p1", 0);

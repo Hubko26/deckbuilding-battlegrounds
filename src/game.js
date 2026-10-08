@@ -782,8 +782,10 @@ async function runBattle() {
   };
   GameLog.push("_", "doBattle", []);
   const events = Engine.doBattle(state);
+  // DMG Meter kolo: na súperovom riadku stojí môj Strážca arény.
+  const myBoss = events.find(e => e.type === "bossStart" && e.pid === MY);
   renderAll();
-  renderBoardList($("oppBoard"), snap[OPP], false, OPP);
+  renderBoardList($("oppBoard"), myBoss ? myBoss.boss : snap[OPP], false, OPP);
   renderBoardList($("myBoard"), snap[MY], false, MY);
   renderHero($("oppHero"), { ...state[OPP], hp: pre[OPP].hp });
   renderHero($("myHero"), { ...state[MY], hp: pre[MY].hp });
@@ -794,13 +796,33 @@ async function runBattle() {
   // Boj: skry obchod, ukáž veľký nápis v strede.
   $("stage").classList.add("battle");
   const fb = $("fightBanner");
-  fb.textContent = t(L.fight);
+  fb.textContent = t(myBoss ? L.bossFight : L.fight);
   fb.classList.remove("hidden");
   await sleep(900);
   fb.classList.add("small");
 
+  let skip = false; // súperovo DMG Meter meranie sa neanimuje (len výsledok)
   for (const ev of events) {
+    if (ev.type === "bossStart") { skip = ev.pid !== MY; continue; }
+    if (ev.type === "bossEnd") {
+      if (!skip) { log(`🗿 ${t(L.bossYourDmg)} ${ev.dmg}`); await sleep(500); }
+      skip = false;
+      continue;
+    }
+    if (skip) continue;
     switch (ev.type) {
+      case "bossResult": {
+        const mine = ev.dmg[MY], theirs = ev.dmg[OPP];
+        fb.textContent = `🗿 ${t(L.you)} ${mine} : ${theirs} ${t(L.opp)}`;
+        fb.classList.remove("small");
+        if (ev.winner === MY) Sfx.evolve();
+        log(`🗿 ${t(L.bossOppDmg)} ${theirs}`);
+        log(`${ev.tie ? t(L.bossTie) + " " : ""}${t(ev.winner === MY ? L.bossWin : L.bossLose)}`);
+        lastBattleNote = `DMG Meter round (no hero damage): you dealt ${ev.dmg[OPP]}, the human dealt ${ev.dmg[MY]} – ${ev.winner === OPP ? "you pick" : "the human picks"} a trinket first next round`;
+        await sleep(2200);
+        fb.classList.add("small");
+        break;
+      }
       case "battleStart":
         log(`${t(L.fight)} ${ev.first === MY ? t(L.you) : t(L.opp)} ${t(L.begins)}.`);
         break;
@@ -821,7 +843,7 @@ async function runBattle() {
           spawnParticles(d, { n: 6, color: "#ff6b6b", spread: 40 });
           if (ev.aDmg >= 6) screenShake(0.5);
           floatText(d, `${ev.aWild ? "🎲" : ""}-${ev.aDmg}`);
-          if (ev.dDmg > 0) floatText(a, `${ev.dWild ? "🎲" : ""}-${ev.dDmg}`);
+          if (ev.dDmg > 0) floatText(a, `${ev.dWild ? "🎲" : ""}-${statNum(ev.dDmg)}`);
           // Divoký úder (O009): hodené číslo aj do logu – deti vidia, čo padlo.
           if (ev.aWild) log(`${t(L.wildMsg)}: ${ev.aDmg}`);
           if (ev.dWild) log(`${t(L.wildMsg)}: ${ev.dDmg}`);
@@ -856,7 +878,7 @@ async function runBattle() {
         if (el) {
           const hpEl = el.querySelector(".hp");
           if (hpEl) {
-            hpEl.textContent = String(Math.max(0, ev.hp));
+            hpEl.textContent = statNum(Math.max(0, ev.hp));
             hpEl.classList.toggle("hurt", ev.hp < Number(el.dataset.maxhp || Infinity));
           }
         }
@@ -1212,7 +1234,11 @@ async function runBattle() {
   }
   await sleep(400);
   endBattleUI();
+  if (Engine.isBossRound(state)) log(t(L.bossIntro));
 }
+
+// „Nekonečné" staty Strážcu arény (Engine.BOSS_STAT) sa píšu ako ∞.
+const statNum = n => n >= 1e6 ? "∞" : String(n);
 
 function endBattleUI() {
   $("stage").classList.remove("battle");
@@ -1584,7 +1610,7 @@ function showTrinketInfo(id, off) {
 // Art trinketu: okrúhly medailón s rámom (assets/trinkets/<id>.webp, 512 px).
 const trinketArt = id => `assets/trinkets/${id}.webp`;
 
-// Ponuka trinketov (kolo 4 a 8): overlay s tromi kartami, len vo vlastnom ťahu.
+// Ponuka trinketov (draft po DMG Meter kole): overlay s tromi kartami, len vo vlastnom ťahu.
 function renderTrinketOffer() {
   const ov = $("trinketOverlay");
   const p = state && state[MY];
@@ -1592,7 +1618,8 @@ function renderTrinketOffer() {
   if (!show) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("trinketTitle").textContent = t(L.trinketTitle);
-  $("trinketMsg").textContent = t(L.trinketIntro);
+  // Draft po DMG Meter kole: víťaz vyberá z troch, porazený zo zvyšku.
+  $("trinketMsg").textContent = t(state.draft && state.draft.first === MY ? L.trinketIntroFirst : L.trinketIntroSecond);
   const row = $("trinketRow");
   row.innerHTML = "";
   for (const id of p.trinketOffer) {
@@ -1669,11 +1696,12 @@ function renderShop() {
   $("auraEl").textContent = auraParts.join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "") +
     (p.summonCharge ? ` 🧟+${p.summonCharge}` : "");
   const banner = $("turnBanner");
+  const bossTag = Engine.isBossRound(state) ? ` · ${t(L.bossRoundTag)}` : "";
   if (state.active === MY) {
-    banner.textContent = `${t(L.round)} ${state.round} · ${t(L.yourTurn)}`;
+    banner.textContent = `${t(L.round)} ${state.round}${bossTag} · ${t(L.yourTurn)}`;
     banner.className = "banner";
   } else if (state.active === OPP) {
-    banner.textContent = `${t(L.round)} ${state.round} · ${t(L.enemyTurn)}`;
+    banner.textContent = `${t(L.round)} ${state.round}${bossTag} · ${t(L.enemyTurn)}`;
     banner.className = "banner enemy";
   }
 
@@ -1735,7 +1763,7 @@ function renderShop() {
   sb.classList.toggle("hidden", !hasShield);
   sb.classList.toggle("armed", armed);
   sb.innerHTML = `<img src="${trinketArt("heroShield")}" alt="🛡️"> ${t(armed ? L.heroShieldArmed : L.heroShieldBtn).replace("🛡️ ", "")}`;
-  sb.disabled = !myTurn || armed || !Engine.hasTrinket(state, MY, "heroShield");
+  sb.disabled = !myTurn || armed || !Engine.hasTrinket(state, MY, "heroShield") || Engine.isBossRound(state);
   $("endTurnBtn").textContent = t(L.endTurn);
   $("endTurnBtn").disabled = !myTurn || !!state.pendingDiscover;
 }
@@ -1764,7 +1792,7 @@ function cardEl(instOrId, opts) {
   const art = Cards.artOf(def, rank);
   // Príšery majú kompletnú kartu ako obrázok (rám + art); tier číslo sa
   // kreslí do modrého kryštálu vľavo hore. Kúzla/tokeny majú generický rám.
-  let inner = `<span class="tier-tag">${art ? def.tier : "⭐" + def.tier}</span>`;
+  let inner = `<span class="tier-tag">${def.boss ? "∞" : art ? def.tier : "⭐" + def.tier}</span>`;
   if (opts.shop) inner += `<span class="cost">🪙${Engine.cardCost(defId)}</span>`;
   // Koľko kópií už vlastníš (vrátane balíčka a kôpky) – kúpa tretej evolvne.
   // Kúzla sa neevolvujú, počítadlo by na nich zavádzalo.
@@ -1800,8 +1828,8 @@ function cardEl(instOrId, opts) {
     const maxHp = isInst ? (instOrId.maxHp ?? hp) : def.hp;
     const hurt = isInst && hp < maxHp;
     el.dataset.maxhp = String(maxHp);
-    inner += `<span class="atk${atk > baseAtk ? " buffed" : ""}">${atk}</span>` +
-      `<span class="hp${hurt ? " hurt" : hp > baseHp ? " buffed" : ""}">${hp}</span>`;
+    inner += `<span class="atk${atk > baseAtk && !def.boss ? " buffed" : ""}">${statNum(atk)}</span>` +
+      `<span class="hp${hurt ? " hurt" : hp > baseHp && !def.boss ? " buffed" : ""}">${statNum(hp)}</span>`;
   }
   el.innerHTML = inner;
   if (!opts.big && !opts.noPreview) {
@@ -1815,6 +1843,7 @@ function cardEl(instOrId, opts) {
 // vidno ho podľa farby kryštálu na ráme karty.
 function raceLine(def, rank) {
   if (def.spell) return t(L.spellWord);
+  if (!def.race) return ""; // Strážca arény nemá rasu
   // Ikona rasy pred menom – rasu vidno na prvý pohľad aj na malej karte.
   return `${Cards.RACE_ICON[def.race] || ""} ${t(Cards.RACES[def.race])}`;
 }

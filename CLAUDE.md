@@ -67,6 +67,11 @@ commity, UI) je slovenčina.
 - Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 50 HP.
   Damage hrdinovi za boj má strop podľa kola (`Engine.heroDmgCap`): 1–3 max 5,
   4–10 max 10, 11–15 max 15, od 16. kola bez stropu.
+- **DMG Meter kolo** (každé 5. kolo, len so zapnutými trinketmi): namiesto
+  PvP boja každý bije Strážcu arény (∞ staty, neútočí, úder do neho zabije
+  útočníka), bez damage hrdinom; viac damage = v ďalšom kole prvý na ťahu
+  a prvý vo **drafte trinketov** (1 z 3, porazený zo zvyšných dvoch;
+  úroveň trinketov 1/2/3 po kole 5/10/15). `Engine.doBossBattle`, `draftOffer`.
 - Kúpená karta ide **do balíčka** (nie do ruky); ruka sa doťahuje na 5.
 - Evolve: 3 rovnaké kópie (karta + stupeň) **kdekoľvek** (plocha, ruka, balíček,
   kôpka) sa automaticky spoja; staty ×2/×4. Výsledok ide **vždy do ruky** (aj
