@@ -10,6 +10,12 @@ commity, UI) je slovenčina.
 - `npm test` – testy (`node --test`, Node >= 20). Púšťaj po každej zmene engine.
 - `npm run sim [-- N]` – balance simulácia bot vs bot (race matchupy, per-card
   winrate). Púšťaj pri zmene kariet/balance.
+- `npm run ideal -- [n=100 hp=100 races=beast,undead trinkets=1 verbose=1]` –
+  ideálne strety rás („perfect roll": každý hráč vidí v obchode len svoju
+  rasu, 100 HP, hard bot bez handicapov): matica winrate, škálovanie sily
+  plochy po kolách, tier po kolách, top karty. `tierCost=5,8,10,13,16`,
+  `tierDrop=0.5`, `tierMin=4` = experimenty s cenou upgradu. Bot hrá rasy
+  rôzne dobre (víly a psíkov slabo) – výsledok porovnávaj s logmi hráčov.
 - `npm run scenario -- "B002:2 B001" "U009 U005" [n=500]` – odohrá N bojov
   zadaného mid-game scenára (boardy, aury, chargy).
 - `npm run power [-- race=beast md=1]` – tabuľka teoretickej sily kariet

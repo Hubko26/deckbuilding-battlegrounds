@@ -8,7 +8,8 @@
     "sim": "node tools/balance-sim.mjs",
     "scenario": "node tools/scenario.mjs",
     "replay": "node tools/replay.mjs",
-    "power": "node tools/card-power.mjs"
+    "power": "node tools/card-power.mjs",
+    "ideal": "node tools/ideal-sim.mjs"
   },
   "engines": {
     "node": ">=20"
