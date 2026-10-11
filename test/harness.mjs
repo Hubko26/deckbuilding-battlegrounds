@@ -12,11 +12,18 @@ function toVar(src) {
   return src.replace(/^(?:const|let) (\w+)(?= *[=,;])/gm, "var $1");
 }
 
-export function loadEngine() {
+// opts.deckMin: true = minimálny počet kariet podľa tieru platí ako v hre.
+// Default VYPNUTÝ – staršie testy skladajú umelé mini balíčky (3–5 kariet)
+// na testovanie iných mechaník (evolve, predaj, pohladkania…).
+export function loadEngine(opts = {}) {
   const ctx = { console, Math, JSON, Object, Array, module: undefined };
   vm.createContext(ctx);
   for (const f of ["src/i18n.js", "src/cards.js", "src/engine.js", "src/bot.js"]) {
     vm.runInContext(toVar(fs.readFileSync(path.join(ROOT, f), "utf8")), ctx, { filename: f });
+  }
+  if (!opts.deckMin) {
+    const newGame = ctx.Engine.newGame;
+    ctx.Engine.newGame = (...args) => Object.assign(newGame(...args), { noDeckMin: true });
   }
   return ctx;
 }

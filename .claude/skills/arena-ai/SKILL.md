@@ -99,6 +99,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 - Po boji idú VŠETKY karty z plochy do kôpky (aj preživšie); tokeny miznú.
   Damage hrdinovi = súčet TIEROV preživších súperových príšer (evolve
   stupeň nehrá rolu) – prežité vysoké tiery bolia, gold t1 dá stále 1.
+- **Minimum kariet**: tier 1 = 10, +1 za tier, tier 6 = 15 (`Engine.deckMin`;
+  rátajú sa všetky vlastné karty okrem tokenov – `Engine.cardCount`).
+  Predaj pod limit nejde (`sellCard` vráti null); evolve čaká, kým je kariet
+  menej než limit. Pred upgradom tieru rátaj s tým, že limit stúpne – tenký
+  balíček zablokuje predaj balastu aj spájanie trojíc.
 - Evolve: 3 rovnaké kópie (karta + stupeň) KDEKOĽVEK (plocha, ruka,
   balíček, kôpka) sa automaticky spoja: bronz → strieborná (staty ×2)
   → zlatá (×4); efekty ×2/×3. Evolvnutá karta ide VŽDY do ruky (aj keď

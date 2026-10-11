@@ -1482,6 +1482,8 @@ function renderAll() {
   renderCorner($("oppDiscardBox"), "🗂", t(L.discardPile), state[OPP].discard.length);
   renderCorner($("myDiscardBox"), "🗂", t(L.discardPile), state[MY].discard.length);
   renderCorner($("myDeckBox"), "🂠", t(L.deck), state[MY].deck.length);
+  // Počet všetkých kariet / minimum tieru (predaj a evolve pod ním nejdú).
+  $("myDeckBox").title = t(L.deckMinTip).replace("{n}", Engine.cardCount(state[MY])).replace("{min}", Engine.deckMin(state[MY].tier));
   renderBoardList($("oppBoard"), state[OPP].board, false);
   renderBoardList($("myBoard"), state[MY].board, true);
   renderHand();
@@ -2151,7 +2153,7 @@ function endDrag(e) {
     // Kôpka pred obchodom – jej menší rect sa prekrýva s rectom obchodu,
     // špecifickejší cieľ musí vyhrať (inak drop na kôpku omylom predá).
     if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "board", src.idx)); return; }
-    if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "board", src.idx)); return; }
+    if (inRect(e, $("shopPanel"))) { trySell("board", src.idx); return; }
     if (inRect(e, $("myBoard"))) {
       // Presun podľa miesta dropu: rad je vycentrovaný, tak sa slot určí
       // z pozícií vykreslených kariet (na kartu = výmena, vedľa = posun na kraj).
@@ -2181,7 +2183,7 @@ function endDrag(e) {
   const inst = p.hand[src.idx];
   if (!inst) { renderAll(); return; }
   if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "hand", src.idx)); return; }
-  if (inRect(e, $("shopPanel"))) { act(doAction("sellCard", "hand", src.idx)); return; }
+  if (inRect(e, $("shopPanel"))) { trySell("hand", src.idx); return; }
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
     if (TARGETED_SPELL.has(fx.type)) {
@@ -2203,7 +2205,19 @@ function endDrag(e) {
   }
 }
 
+// Predaj s vysvetlením, keď ho blokuje minimálny počet kariet tieru.
+function trySell(zone, idx) {
+  const p = state[MY], inst = p[zone][idx];
+  if (inst && Engine.sellBlocked(state, p, inst)) {
+    log(t(L.sellBlockedMsg).replace("{n}", Engine.cardCount(p)).replace("{min}", Engine.deckMin(p.tier)).replace("{tier}", p.tier));
+    renderAll();
+    return;
+  }
+  act(doAction("sellCard", zone, idx));
+}
+
 // ---------- Interakcie hráča ----------
+let evolveWaitRound = 0;
 function act(events) {
   if (!events) { renderAll(); return; }
   const hiddenEvolves = [];
@@ -2248,6 +2262,11 @@ function act(events) {
     }
     // Psíci: Pohladkanie do balíčka / spojenie troch na vyšší stupeň.
     if (ev.type === "petGift" && ev.pid === MY) log(petGiftMsg(ev));
+    // Trojica čaká na limit kariet – hlás raz za kolo, nech to nespamuje.
+    if (ev.type === "evolveWait" && ev.pid === MY && evolveWaitRound !== state.round) {
+      evolveWaitRound = state.round;
+      log(t(L.evolveWaitMsg).replace("{n}", ev.count).replace("{min}", ev.min));
+    }
     if (ev.type === "addPet" && ev.pid === MY) {
       log(`${t(L.addPetMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId.pet, ev.rank, I18N.lang)}`);
     }

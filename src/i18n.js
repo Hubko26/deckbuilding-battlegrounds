@@ -631,6 +631,17 @@ const L = {
     en: "🐶 Three pets merged into:",
   },
   petGiftMsg: { sk: "🐶 do ruky pribudlo", cs: "🐶 do ruky přibylo", en: "🐶 added to your hand:" },
+  sellBlockedMsg: {
+    sk: "🂠 Predať sa nedá: máš {n} kariet a na tieri {tier} ich musíš mať aspoň {min}. Najprv niečo kúp.",
+    cs: "🂠 Prodat to nejde: máš {n} karet a na tieru {tier} jich musíš mít aspoň {min}. Nejdřív něco kup.",
+    en: "🂠 Can't sell: you have {n} cards and tier {tier} needs at least {min}. Buy something first.",
+  },
+  evolveWaitMsg: {
+    sk: "🂠 Trojica čaká na spojenie: máš {n} kariet, potrebuješ aspoň {min}. Kúp ďalšiu kartu.",
+    cs: "🂠 Trojice čeká na spojení: máš {n} karet, potřebuješ aspoň {min}. Kup další kartu.",
+    en: "🂠 Triple is waiting to merge: you have {n} cards, need at least {min}. Buy another card.",
+  },
+  deckMinTip: { sk: "Všetky karty: {n} (minimum na tvoj tier: {min})", cs: "Všechny karty: {n} (minimum na tvůj tier: {min})", en: "All cards: {n} (minimum for your tier: {min})" },
   echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {
     sk: "🐶 do balíčka pribudlo",

@@ -34,6 +34,16 @@ const Engine = (() => {
   const TIER_BASE_COST = { 2: 5, 3: 8, 4: 9, 5: 11, 6: 12 };
   const TIER_MIN_COST = 2; // zľava za čakanie nikdy nezrazí cenu pod 2
   const BATTLE_CAP = 200; // poistka proti nekonečnému boju
+  // Minimálny počet kariet podľa tieru (od 11. 10. 2026): tier 1 = 10,
+  // každý tier +1, tier 6 = 15. Rátajú sa VŠETKY vlastné karty (balíček,
+  // kôpka, ruka, plocha, zahrané kúzla tohto ťahu) okrem tokenov. Predaj pod
+  // limit nejde; evolve (aj spojenie Pohladkaní) čaká, kým je kariet menej
+  // než limit – inak sa dalo zostať na 5 uber kartách (evolve, potom predaj).
+  const DECK_MIN_BASE = 9;
+  const deckMin = tier => DECK_MIN_BASE + tier;
+  // state.noDeckMin: len testy/nástroje s umelými mini balíčkami (harness);
+  // hra ani replay ho nikdy nenastavujú.
+  const deckLow = (state, p) => !state.noDeckMin && cardCount(p) < deckMin(p.tier);
   // Strop damage hrdinovi za jeden boj podľa kola: 1–3 max 5, 4–10 max 10,
   // 11–15 max 15, od 16. kola bez stropu. Skorý snowball nezabije hráča
   // za tri kolá, deti majú čas sa dostať do hry.
@@ -649,6 +659,11 @@ const Engine = (() => {
     for (;;) {
       const group = findEvolveGroup(p, needFor);
       if (!group) break;
+      // Málo kariet na tier: kópie počkajú, spoja sa po ďalšom nákupe.
+      if (deckLow(state, p)) {
+        events.push({ type: "evolveWait", pid: p.id, defId: group.defId, count: cardCount(p), min: deckMin(p.tier) });
+        return;
+      }
       const consumed = consumeEvolveCopies(p, group, needFor(group.defId));
       const bonus = mergeEvolveBonus(consumed.copies);
       const uid = placeEvolved(state, p, group, consumed, bonus);
@@ -670,6 +685,7 @@ const Engine = (() => {
     for (;;) {
       const group = findPetGroup(p);
       if (!group) return;
+      if (deckLow(state, p)) return; // ako evolve: málo kariet na tier
       let need = 3, hidden = false;
       for (const inst of group.hand) { if (need <= 0) break; p.hand.splice(p.hand.indexOf(inst), 1); need--; }
       for (const zone of ["deck", "discard"]) {
@@ -1224,11 +1240,26 @@ const Engine = (() => {
     return [{ type: "discard", pid, defId: inst.defId }];
   }
 
+  // Počet kariet hráča pre limit (deckMin): všetky zóny, tokeny nie.
+  function cardCount(p) {
+    let n = 0;
+    for (const zone of ["deck", "discard", "hand", "board", "spentSpells"]) {
+      for (const c of p[zone]) if (!Cards.byId[c.defId].token) n++;
+    }
+    return n;
+  }
+
+  // Predaj by stiahol počet kariet pod limit tieru? (tokeny sa nerátajú)
+  function sellBlocked(state, p, inst) {
+    return !state.noDeckMin && !Cards.byId[inst.defId].token && cardCount(p) - 1 < deckMin(p.tier);
+  }
+
   function sellCard(state, pid, zone, idx) {
     const p = state[pid];
     if (zone !== "hand" && zone !== "board") return null;
     const inst = p[zone][idx];
     if (!inst) return null;
+    if (sellBlocked(state, p, inst)) return null; // pod minimálny počet kariet tieru
     p[zone].splice(idx, 1);
     // Pohladkanie sa predáva za 0 – zbavíš sa ho, ale generátory (P001/P002)
     // nesmú byť zlatý motor (2–3 pohladkania za kolo = 2–3 zlata).
@@ -2578,7 +2609,7 @@ const Engine = (() => {
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
     TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_RACE_MIN, SUPPORT_RACES, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
-    handDraw, heroDmgCap, hasTrinket, pickTrinket, useHeroShield,
+    handDraw, heroDmgCap, deckMin, cardCount, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,

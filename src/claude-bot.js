@@ -56,7 +56,7 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"refresh"}                          reroll shop (1 gold)
 - {"a":"play","id":"<cardId>","target":"<own board cardId, optional>"}  play minion from hand to board; target only matters for dragons with targeted battlecries (the effect applies to the TARGET's race – target a minion of your dominant race!)
 - {"a":"cast","id":"<spellId>","target":"<own board cardId, optional>"}  cast spell (the "pet" spell needs a target – always a DOGGY on your board, the buff is permanent there)
-- {"a":"sell","zone":"hand"|"board","id":"<cardId>"}  sell for 1 gold (card leaves the game)
+- {"a":"sell","zone":"hand"|"board","id":"<cardId>"}  sell for 1 gold (card leaves the game) – NOT allowed if it would drop your total card count below the tier minimum (cardCount / deckMin in the state: tier 1 = 10, +1 per tier, tier 6 = 15); triples also wait to merge while cardCount < deckMin
 - {"a":"discard","zone":"hand"|"board","id":"<cardId>"}  put card into your discard pile – NO gold, card STAYS in your deck cycle and comes back in a later hand
 - {"a":"move","id":"<own board cardId>","slot":0-4}  reposition minion on board (0 = leftmost = attacks first; swaps with occupant)
 - {"a":"freeze","id":"<cardId in your private shop>"}  freeze that private-shop card so it survives into next round
@@ -162,6 +162,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       trinketsOffThisRound: p.trinketOff === state.round, // súperov Ogrí kľúč
       trinketOffer: p.trinketOffer ? p.trinketOffer.map(id => ({ id, text: trinketText ? trinketText(id) : id })) : null,
       heroShieldReady: Engine.hasTrinket(state, pid, "heroShield") && !p.heroShieldUsed && !Engine.isBossRound(state),
+      cardCount: Engine.cardCount(p), deckMin: Engine.deckMin(p.tier), // predaj pod deckMin nejde
       dmgMeterRound: Engine.isBossRound(state), // boj s bossom namiesto PvP, bez damage hrdinom
       bannedRace: state.banned || null, // rasa zabanovaná na začiatku hry – jej karty v hre nie sú
     };

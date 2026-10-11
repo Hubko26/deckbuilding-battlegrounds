@@ -3082,3 +3082,58 @@ test("Ozvena: bojová schopnosť vybranej príšerky sa na začiatku boja spust�
   assert.ok(summons.length >= 2, "Pri smrti vyvolal Kostíky bez smrti");
   assert.ok(!p.discard.some(c => c.echo), "značka Ozveny sa do kôpky neprenáša");
 });
+
+// ---------- Minimálny počet kariet podľa tieru (deckMin) ----------
+function freshMin(seed) {
+  const ctx = loadEngine({ deckMin: true });
+  const state = ctx.Engine.newGame(seeded(seed), null);
+  return { state, E: ctx.Engine, C: ctx.Cards, B: ctx.Bot };
+}
+
+test("deckMin: tier 1 = 10 … tier 6 = 15; predaj pod limit nejde, nad limitom áno", () => {
+  const { state, E } = freshMin(201);
+  assert.deepEqual([1, 2, 3, 4, 5, 6].map(E.deckMin), [10, 11, 12, 13, 14, 15]);
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  assert.equal(E.cardCount(p), 10, "štartovací balíček = 10 kariet");
+  assert.equal(E.sellCard(state, pid, "hand", 0), null, "10 kariet na tieri 1: predaj by šiel na 9");
+  p.deck.push({ defId: "B001", rank: 1 });
+  assert.ok(E.sellCard(state, pid, "hand", 0), "11 kariet: predaj na 10 smie");
+  assert.equal(E.sellCard(state, pid, "hand", 0), null);
+  p.tier = 2; // limit 11 – teraz má 10
+  p.deck.push({ defId: "B001", rank: 1 }, { defId: "B003", rank: 1 });
+  assert.equal(E.cardCount(p), 12);
+  assert.ok(E.sellCard(state, pid, "hand", 0));
+  assert.equal(E.sellCard(state, pid, "hand", 0), null);
+});
+
+test("deckMin: evolve čaká, kým je kariet menej než limit; po dokúpení sa trojica spojí", () => {
+  const { state, E } = freshMin(202);
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  p.tier = 3; // limit 12
+  p.hand = []; p.board = []; p.discard = [];
+  p.deck = ["B002", "B002", "B002", "B003", "B004", "B005", "B007", "B008", "E001", "E002", "F001"].map(id => ({ defId: id, rank: 1 })); // 11
+  const ev = [];
+  E.checkEvolve(state, p, ev);
+  assert.ok(ev.some(e => e.type === "evolveWait" && e.min === 12 && e.count === 11));
+  assert.equal(p.deck.filter(c => c.defId === "B002").length, 3, "kópie ostali");
+  p.deck.push({ defId: "U001", rank: 1 }); // 12 = limit
+  const ev2 = [];
+  E.checkEvolve(state, p, ev2);
+  assert.ok(ev2.some(e => e.type === "evolve" && e.defId === "B002"));
+  assert.equal(E.cardCount(p), 10, "po spojení môže klesnúť max o 2 pod limit");
+  assert.equal(E.sellCard(state, pid, "hand", 0), null, "a predávať už nejde");
+});
+
+test("deckMin: celá hra bot vs bot s limitom dobehne a nikto nemá menej kariet než limit − 2", () => {
+  const { state, E, B } = freshMin(203);
+  E.startRound(state);
+  let guard = 400;
+  while (state.phase !== "over" && guard-- > 0) {
+    if (state.phase === "shop") B.botTurn(state, state.active, "hard");
+    else E.doBattle(state);
+    for (const pid of ["p1", "p2"]) assert.ok(E.cardCount(state[pid]) >= E.deckMin(state[pid].tier) - 2, `${pid} r${state.round}: ${E.cardCount(state[pid])}`);
+  }
+  assert.equal(state.phase, "over");
+});

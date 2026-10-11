@@ -109,6 +109,22 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 - Po boji idú **všetky príšerky z plochy do discard pile** – padlé aj preživšie
   (vrátia sa cyklom balíčka). Plocha sa každé kolo stavia nanovo z ruky.
   Tokeny vyvolané v boji miznú z hry.
+- **Minimálny počet kariet podľa tieru** (od 11. 10. 2026,
+  `Engine.deckMin`): tier 1 = **10**, každý tier +1, tier 6 = **15**.
+  Rátajú sa všetky vlastné karty (balíček, kôpka, ruka, plocha, kúzla
+  zahrané v tomto ťahu – aj Pohladkania), tokeny nie (`Engine.cardCount`).
+  - **Predaj** nejde, ak by počet klesol pod limit (`sellBlocked`, UI
+    vysvetlí v logu). Štartovací balíček má presne 10 → na tieri 1 sa
+    predáva až po nákupe.
+  - **Evolve** (aj spojenie 3 Pohladkaní) sa nespustí, kým je kariet
+    MENEJ než limit – kópie počkajú a spoja sa samé po ďalšom nákupe
+    (event `evolveWait`). Spojenie zníži počet o 2, takže hráč môže byť
+    najviac 2 pod limitom a predávať už nesmie.
+  - Upgrade tieru limit zdvihne – nad limitom treba ďalšie nákupy.
+  - Motivácia: bez limitu sa dalo skončiť na 5 uber kartách (5× B006
+    + t6 drak, evolve, potom predaj zvyšku) a ťahať ich každé kolo.
+  - Testy: harness má limit default vypnutý (`state.noDeckMin`, staršie
+    testy používajú mini balíčky); `loadEngine({ deckMin: true })` ho zapne.
 
 ## Evolve
 
