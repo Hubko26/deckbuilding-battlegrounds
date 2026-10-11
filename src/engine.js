@@ -1062,6 +1062,7 @@ const Engine = (() => {
     buffTarget(state, p, inst, def, targetUid) {
       const target = ownMinion(p, targetUid);
       if (!target) return null;
+      if (def.fx.echo && !hasEchoPower(target)) return null; // Ozvena len na bojovú schopnosť
       spendSpell(p, inst, def);
       const fx = def.fx;
       const { a, h } = sparkBonus(fx, 1, p.dmgBoost); // Živelná sila zosilňuje buffy kúziel
@@ -1070,6 +1071,7 @@ const Engine = (() => {
       if (fx.shield) target.shield = true; // Božský štít: zablokuje prvé zranenie
       if (fx.revive) target.revive = true; // Fénixovo pierko: po smrti sa raz vráti s 1 HP
       if (fx.windfury) target.windfury = true; // Vichor: útočí dvakrát
+      if (fx.echo) target.echo = (target.echo || 0) + 1; // Ozvena: bojová schopnosť navyše
       return [{ type: "spell", pid: p.id, defId: inst.defId, targetUid, a, h }];
     },
     // Zrkadlo: kópia 1. stupňa vybranej vlastnej príšerky do balíčka –
@@ -1851,7 +1853,7 @@ const Engine = (() => {
       const fromDefId = t.defId, fromRank = t.rank;
       Object.assign(t, {
         defId: "ovecka", rank: 1, atk: sheep.atk, hp: sheep.hp, maxHp: sheep.hp,
-        taunt: false, shield: false, revive: false, windfury: false, silenced: false,
+        taunt: false, shield: false, revive: false, windfury: false, silenced: false, echo: 0,
       });
       events.push({ type: "polymorph", pid: foe, uid: t.uid, fromDefId, fromRank, defId: "ovecka", atk: t.atk, hp: t.hp });
       pushHp(events, foe, t);
@@ -1928,6 +1930,34 @@ const Engine = (() => {
     for (const pid of sideOrder(first)) {
       for (const inst of [...sides[pid]]) {
         if (inst.hp > 0) triggerPower(state, sides, pid, inst, "startFight", events);
+      }
+    }
+    runEchoProcs(state, sides, first, events);
+  }
+
+  // Ozvena (kúzlo): na začiatku boja (po Pred bojom) spustí bojové schopnosti
+  // označenej príšerky raz navyše za každé zoslanie – Pri smrti bez smrti,
+  // Pred bojom druhýkrát, Pri útoku bez útoku (ako chaos O002, ale vlastná
+  // a vybraná). Umlčaná / premenená (Ovečka) nič nespustí. Značka žije na
+  // príšerke na ploche do boja; do kôpky sa neprenáša (pileCard).
+  const ECHO_KW = ["deathrattle", "startFight", "onAttack", "raceDeath"];
+  function echoKws(defId) {
+    return [...new Set(Cards.powersOf(Cards.byId[defId]).map(pw => pw.kw).filter(kw => ECHO_KW.includes(kw)))];
+  }
+  function hasEchoPower(inst) {
+    return echoKws(inst.defId).length > 0;
+  }
+  function runEchoProcs(state, sides, first, events) {
+    for (const pid of sideOrder(first)) {
+      for (const inst of [...sides[pid]]) {
+        for (let i = 0; i < (inst.echo || 0); i++) {
+          if (inst.hp <= 0 || inst.silenced) break;
+          const kws = echoKws(inst.defId);
+          if (!kws.length) break;
+          events.push({ type: "echoProc", pid, uid: inst.uid, defId: inst.defId });
+          for (const kw of kws) triggerPower(state, sides, pid, inst, kw, events);
+          handleDeaths(state, sides, events);
+        }
       }
     }
   }

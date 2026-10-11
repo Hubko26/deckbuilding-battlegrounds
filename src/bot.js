@@ -90,10 +90,11 @@ const Bot = (() => {
   // čo vyložiť. Bot ho pritom spam-kupoval ako najlacnejší odkladač zvyšného
   // zlata za 1 (záznam z 8. 9. 2026: 5 Štítov v druhom kole).
   const FILLER_PENALTY = 99;
+  const ECHO_KW = ["deathrattle", "startFight", "onAttack", "raceDeath"]; // Ozvena (engine ECHO_KW)
   function fillerSpell(def) {
     const fx = def.fx;
     return fx.type === "buffTarget" && !fx.a && !fx.h &&
-      !fx.shield && !fx.revive && !fx.windfury;
+      !fx.shield && !fx.revive && !fx.windfury && !fx.echo;
   }
 
   // Koľko kópií karty bot vlastní (všade) – kvôli skladaniu trojíc.
@@ -528,6 +529,15 @@ const Bot = (() => {
           ? [...pool].sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0]
           : pool[Math.floor(state.rng() * pool.length)];
         push(act("castSpell", state, pid, i, target.uid));
+      } else if (fx.type === "buffTarget" && fx.echo) {
+        // Ozvena: najsilnejšia príšerka s bojovou schopnosťou (tier × stupeň).
+        const cands = p.board.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => ECHO_KW.includes(pw.kw)));
+        if (cands.length) {
+          const target = cfg.smartSpells
+            ? [...cands].sort((a, b) => Cards.byId[b.defId].tier * b.rank - Cards.byId[a.defId].tier * a.rank)[0]
+            : cands[Math.floor(state.rng() * cands.length)];
+          push(act("castSpell", state, pid, i, target.uid));
+        }
       } else if (fx.type === "buffTarget" && p.board.length) {
         // Vichor (2 útoky): najlepšie na „Pri útoku" kartu, inak najväčší útok.
         const score = fx.windfury
@@ -769,7 +779,7 @@ const Bot = (() => {
       case "silence": return 4; case "bolt": return 4; case "hex": return 6; case "polymorph": return 6;
       case "transform": return 3; case "copyToDeck": return 6; case "swapDeck": return 2;
       case "starPower": return ab * (PW_BOARD + 1) * PW_PERM + (f.n || 0) * PW_BOOST; // Pečať všetkým + Živelná sila
-      case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0);
+      case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0) + (f.echo ? 7 : 0);
       // ----- Psíci -----
       // Pohladkanie: +v/+v (v = 2^(stupeň−1)) navždy na psíkovi – ako Jablko
       // ×1,5 za trvalosť. rank tu = stupeň kúzla.

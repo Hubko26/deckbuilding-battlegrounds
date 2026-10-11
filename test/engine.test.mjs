@@ -3055,3 +3055,30 @@ test("B006: umlčanie vypne Pri smrti – žiadne SuperMláďatá ani Pečať", 
   assert.equal(events.filter(e => e.type === "summon" && e.pid === "p1").length, 0);
   assert.equal(state.p1.raceBuffs.beast, undefined);
 });
+
+test("Ozvena: bojová schopnosť vybranej príšerky sa na začiatku boja spustí raz navyše; vanilla cieľ nejde; značka sa neprenáša do kôpky", () => {
+  const { state, E, C } = fresh(91);
+  E.startRound(state);
+  const pid = state.active, p = state[pid], foe = pid === "p1" ? "p2" : "p1";
+  assert.equal(C.byId.ozvena.tier, 3);
+  assert.equal(C.byId.ozvena.cost, 2);
+  p.board = [Object.assign(E.makeInst(state, "U001", 1, p), { slot: 0 }), Object.assign(E.makeInst(state, "O008", 1, p), { slot: 1 })];
+  const echo = () => { const s = E.makeInst(state, "ozvena"); s.slot = 0; p.hand = [s]; };
+  echo();
+  assert.equal(E.castSpell(state, pid, 0, p.board[1].uid), null, "vanilla O008 nemá bojovú schopnosť");
+  const ev = E.castSpell(state, pid, 0, p.board[0].uid);
+  assert.ok(ev);
+  assert.equal(p.board[0].echo, 1);
+  // boj: U001 Pri smrti (2 Kostíky) sa spustí bez smrti hneď na začiatku
+  state[foe].board = [];
+  p.hand = []; state[foe].hand = [];
+  if (state.active === pid) E.endShopTurn(state, pid);
+  if (state.phase === "shop") E.endShopTurn(state, state.active);
+  if (state.phase === "shop") E.endShopTurn(state, state.active);
+  const events = E.doBattle(state);
+  const iEcho = events.findIndex(e => e.type === "echoProc" && e.pid === pid);
+  assert.ok(iEcho >= 0);
+  const summons = events.filter((e, i) => i > iEcho && e.type === "summon" && e.pid === pid && e.defId === "kostik");
+  assert.ok(summons.length >= 2, "Pri smrti vyvolal Kostíky bez smrti");
+  assert.ok(!p.discard.some(c => c.echo), "značka Ozveny sa do kôpky neprenáša");
+});

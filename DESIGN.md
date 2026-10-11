@@ -899,6 +899,16 @@ ruky), peniaze navyše.
   prežila prvý. Každý útok znova spustí „Pri útoku" (E004 buff, O006
   Ožratý úder – aj riziko sa zdvojí). So Svätožiarou (Božský štít) prežije
   aj prvý výmenný úder. Dočasné ako všetky bojové buffy. UI: badge 🌪️.
+- **Ozvena** 🔔 (t3, cena 2, od 11. 10. 2026): vybraná vlastná príšerka
+  s bojovou schopnosťou (Pri smrti, Pred bojom, Pri útoku, Keď zomrie… –
+  `ECHO_KW`) ju na začiatku ďalšieho boja (po Pred bojom) spustí **raz
+  navyše** za každé zoslanie (`inst.echo`, `runEchoProcs`, event
+  `echoProc`). Pri smrti bez smrti (vyvolávači dostanú hordu hneď),
+  Pred bojom druhýkrát. Ako chaos O002, ale vlastná a vybraná. Cieľ bez
+  bojovej schopnosti = nelegálne (`null`). Umlčaná / premenená na Ovečku
+  nič nespustí. Funguje aj v DMG Meter kole. Značka žije na príšerke do
+  boja, do kôpky sa neprenáša. UI: badge 🔔. Bot cieli najvyšší tier ×
+  stupeň s bojovou schopnosťou.
 - **Kúzelný klobúk** 🎩 (t4, cena 2): premení vlastnú cieľovú príšerku na
   **náhodnú o tier vyššiu** (stupeň 1, permanentné aury sa aplikujú, slot
   ostáva). Originál mizne z hry. Chaos/pivot nástroj v ogrom duchu.

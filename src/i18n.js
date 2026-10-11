@@ -631,6 +631,7 @@ const L = {
     en: "🐶 Three pets merged into:",
   },
   petGiftMsg: { sk: "🐶 do ruky pribudlo", cs: "🐶 do ruky přibylo", en: "🐶 added to your hand:" },
+  echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {
     sk: "🐶 do balíčka pribudlo",
     cs: "🐶 do balíčku přibylo",
@@ -752,6 +753,7 @@ L.cards = (() => {
     iskra: { sk: "Živelná sila", cs: "Živelná síla", en: "Elemental Power" },
     svatoziara: { sk: "Svätožiara", cs: "Svatozář", en: "Halo" },
     pierko: { sk: "Fénixovo pierko", cs: "Fénixovo pírko", en: "Phoenix Feather" },
+    ozvena: { sk: "Ozvena", cs: "Ozvěna", en: "Echo" },
     vichor: { sk: "Vichor", cs: "Vichr", en: "Windfury" },
     kliatba: { sk: "Žabia kliatba", cs: "Žabí kletba", en: "Frog Curse" },
     ovca: { sk: "Ovčia premena", cs: "Ovčí proměna", en: "Polymorph" },
@@ -943,6 +945,11 @@ L.cards = (() => {
         sk: "vybraná príšerka sa po smrti raz vráti s 1 životom (Pri smrti sa spustí)",
         cs: "vybraná příšerka se po smrti jednou vrátí s 1 životem (Při smrti se spustí)",
         en: "a chosen minion returns once after death with 1 health (Deathrattle triggers)",
+      };
+      if (!f.a && !f.h && f.echo) return {
+        sk: "vybraná príšerka s bojovou schopnosťou (Pri smrti, Pred bojom, Pri útoku…) ju na začiatku ďalšieho boja spustí raz navyše",
+        cs: "vybraná příšerka s bojovou schopností (Při smrti, Před bojem, Při útoku…) ji na začátku dalšího boje spustí jednou navíc",
+        en: "a chosen minion with a battle ability (Deathrattle, Start of Fight, On Attack…) triggers it once more at the start of the next fight",
       };
       if (!f.a && !f.h && f.windfury) return {
         sk: "vybraná príšerka získa Vichor (v boji útočí dvakrát)",

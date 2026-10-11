@@ -178,7 +178,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     refreshnúť. Každé kúzlo spustí všetky víly na
     ploche; víly vykladaj PRED hraním kúziel. Kúzla: Svätožiara (Božský
     štít), Fénixovo pierko (revive 1 HP; Pri smrti sa pritom spustí – hoď
-    na B007/U-karty s Pri smrti = deathrattle dvakrát za boj), Žabia kliatba (HP súperovej
+    na B007/U-karty s Pri smrti = deathrattle dvakrát za boj), Ozvena 🔔
+    (t3: bojová schopnosť vybranej príšerky sa na začiatku boja spustí raz
+    navyše – Pri smrti bez smrti; najlepšia na vyvolávača alebo Pred bojom
+    kartu najvyššieho tieru), Žabia kliatba (HP súperovej
     príšerky na 1 – anti-beast), Ovčia premena 🐑 (t5: náhodná súperova
     príšerka sa na začiatku boja zmení na Ovečku 0/1 – stratí schopnosť,
     Obrancu, štít, pierko; counter na jednu veľkú kartu, hraj hneď). Draw

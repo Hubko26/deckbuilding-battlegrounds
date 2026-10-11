@@ -325,6 +325,10 @@ const Cards = (() => {
     // Vichor: cieľ útočí v boji dvakrát – „Pri útoku" karty (E004, O006) sa
     // spustia pri každom útoku; s Božským štítom prežije aj druhý výmenný úder.
     { id: "vichor", cost: 2, tier: 4, emoji: "🌪️", spell: true, fx: { type: "buffTarget", a: 0, h: 0, windfury: true } },
+    // Ozvena: vlastná príšerka s bojovou schopnosťou (Pri smrti, Pred bojom,
+    // Pri útoku, Keď zomrie…) ju na začiatku ďalšieho boja spustí raz navyše
+    // – Pri smrti bez smrti (engine ECHO_KW, runEchoProcs). Pre všetky rasy.
+    { id: "ozvena", cost: 2, tier: 3, emoji: "🔔", spell: true, fx: { type: "buffTarget", a: 0, h: 0, echo: true } },
     { id: "kliatba", cost: 2, tier: 4, emoji: "🐸", spell: true, fx: { type: "hex", n: 1 } },
     // Ovčia premena: najsilnejšia odložená kliatba – na začiatku najbližšieho
     // boja sa náhodná súperova príšerka zmení na Ovečku 0/1 (bez schopnosti,

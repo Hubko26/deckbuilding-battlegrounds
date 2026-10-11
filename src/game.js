@@ -903,6 +903,14 @@ async function runBattle() {
         }
         break;
       }
+      case "echoProc": {
+        // Ozvena: zvonček nad príšerkou, potom jej schopnosť (proc eventy).
+        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
+        log(`🔔 ${t(L.echoProcMsg)} ${name}`);
+        const el = cardById(ev.uid);
+        if (el) { floatText(el, "🔔", true); await sleep(400); }
+        break;
+      }
       case "chaosTrigger": {
         // O002: kocka nad ogrom + log, koho schopnosť spustil (aj súperovu).
         const a = Cards.nameOf(Cards.byId["O002"], 1, I18N.lang);
@@ -1437,7 +1445,7 @@ async function playSpellCast(ev, fromRect) {
       // (ev.a/ev.h už aj so Živelnou silou).
       const f = def.fx;
       const a = ev.a ?? f.a, h = ev.h ?? f.h;
-      const tags = [f.taunt && "🛡️", f.shield && "😇", f.revive && "🪶", f.windfury && "🌪️"].filter(Boolean);
+      const tags = [f.taunt && "🛡️", f.shield && "😇", f.revive && "🪶", f.windfury && "🌪️", f.echo && "🔔"].filter(Boolean);
       if (a || h) tags.unshift(fmtBuff(a, h));
       if (tags.length) floatText(targetEl, tags.join(" "), true);
     }
@@ -1817,6 +1825,7 @@ function cardEl(instOrId, opts) {
   if (isInst && instOrId.shield) inner += `<span class="shield-badge">😇</span>`;
   if (isInst && instOrId.revive) inner += `<span class="revive-badge">🪶</span>`;
   if (isInst && instOrId.windfury) inner += `<span class="windfury-badge">🌪️</span>`;
+  if (isInst && instOrId.echo) inner += `<span class="echo-badge">🔔</span>`;
   // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
   if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
