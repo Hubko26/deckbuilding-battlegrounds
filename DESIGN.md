@@ -127,8 +127,8 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
   predtým stupeň rodiča): strieborný vyvolávač dá o 1 token viac, zlatý
   o 2, tokeny sú vždy stupňa 1 (Kostík 1/1, Mláďa 1/1) – undead je horda,
   evolve ju zväčší, Pretečenie ju využije. Platí pre všetky vyvolania
-  (U001/U005/U006/U009, B007/B005/B006, E002); strieborný B006 = 3
-  SuperMláďatá = 3 Pečate +1/+1.
+  (U001/U005/U006/U009, B007/B005/B006, E002); strieborný B006 = 2
+  SuperMláďatá = 2 Pečate +1/+1.
   **Výnimka – `dmgWeakEnemy`**: evolve škáluje POČET zásahov (1/2/3),
   nie silu – strieborný výboj dá 2× základný damage náhodným cieľom.
 - **Dočasné buffy pri evolve prepadnú, permanentné ostávajú**: evolvnutá
@@ -243,11 +243,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   („Keď zomrie tvoje Mláďa") a chráni mrchožrúta B009. Trvalé počítadlo rastu bolo odstránené:
   infinity škálovanie vyrábalo uber karty (mirror winrate až 91 %).
 - B006 (t6, 7/9, bez Obrancu – odstránený 2026-09-14) je **beast t6 payoff** (rasa dovtedy t6 kartu
-  nemala a v neskorej hre pôsobila slabo): „Pri smrti: vyvolaj 2×
+  nemala a v neskorej hre pôsobila slabo): „Pri smrti: vyvolaj 1×
   **SuperMláďa** 🐻" – vlastný token (klasické Mláďa 🐣 sa nemení): 1/1
   s Obrancom, ktorý **Pri smrti položí Pečať +1/+1 Zvieratám**. Stupeň
-  rodiča škáluje token aj jeho Pečať (striebro: dve 2/2, každé +2/+2).
-  Reťaz smrtí kŕmi mrchožrútov B004/B009 trikrát. Bola t4 Pečať +0/+1;
+  rodiča škáluje POČET SuperMláďat (bronz 1, striebro 2, zlato 3; tokeny
+  ostávajú 1/1 s Pečaťou +1/+1). Nerf 11. 10. 2026 z 2/3/4 – ideal sim:
+  zvieratá 92 % winrate, zlatý B006 skoro v každej hre. Reťaz smrtí kŕmi
+  mrchožrútov B004/B009. Bola t4 Pečať +0/+1;
   B002 (t3) zároveň z +1/+0 na +1/+1.
   Karty môžu mať dve schopnosti – `power` + `power2`, `Cards.powersOf(def)`
   vracia obe a engine (`triggerPower`, battlecry/endTurn/afterSpell slučky,

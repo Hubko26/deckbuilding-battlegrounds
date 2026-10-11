@@ -55,13 +55,15 @@ const Cards = (() => {
     M("B008", 3, "beast", ["Snortlet", "Mossgore", "Elderwood Tusker"], 3, 5,
       { power: { kw: "endTurn", fx: { type: "growSelf", a: 2, h: 2, perm: true } } }),
     // B006 = t6 beast payoff (rasa nemala t6 kartu a pôsobila slabo): 7/9,
-    // Pri smrti vyvolá 2 SuperMláďatá – vlastný token (klasické Mláďa
+    // Pri smrti vyvolá 1/2/3 SuperMláďatá podľa stupňa – vlastný token (klasické Mláďa
     // ostáva): 1/1 Obranca, ktorý Pri smrti položí Pečať +1/+1 Zvieratám.
     // Stupeň rodiča škáluje token aj jeho Pečať. Bola t4 Pečať +0/+1.
     // Obranca odstránený (14. 9. 2026): s ním padal prvý a SuperMláďatá
     // Pečate rozdali skôr, než mal súper čo zabiť – bez neho je to payoff.
+    // Nerf 11. 10. 2026: 2/3/4 → 1/2/3 SuperMláďatá (ideal sim: zvieratá
+    // 92 % winrate, zlatý B006 skoro v každej hre).
     M("B006", 6, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 7, 9,
-      { power: { kw: "deathrattle", fx: { type: "summon", token: "supermlada", n: 2 } } }),
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "supermlada", n: 1 } } }),
     M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 5, 4,
       { power: { kw: "raceDeath", fx: { type: "growSelf", race: "beast", a: 2, h: 2 } } }),
     M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10,

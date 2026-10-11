@@ -3011,12 +3011,12 @@ test("B002: Pečať +1/+1 Zvieratám (bola +1/+0)", () => {
   assert.match(C.cardText(C.byId["B002"], 1, "sk"), /Pečať \+1\/\+1 Zvieratám/);
 });
 
-test("B006 (t6): Pri smrti 2× SuperMláďa (striebro 3×, stupeň 1), každé Pri smrti Pečať +1/+1 Zvieratám", () => {
+test("B006 (t6): Pri smrti 1× SuperMláďa (striebro 2×, zlato 3×, stupeň 1), každé Pri smrti Pečať +1/+1 Zvieratám", () => {
   const { state, E, C } = fresh(82);
   const def = C.byId["B006"];
   assert.equal(def.tier, 6);
   const tx = C.cardText(def, 1, "sk");
-  assert.match(tx, /Pri smrti: vyvolaj 2× SuperMláďa \(1\/1\); každá pri smrti: Pečať \+1\/\+1 Zvieratám/);
+  assert.match(tx, /Pri smrti: vyvolaj 1× SuperMláďa \(1\/1\); každá pri smrti: Pečať \+1\/\+1 Zvieratám/);
   assert.equal(C.byId.supermlada.taunt, true);
   assert.equal(C.byId.mlada.power, undefined, "klasické Mláďa sa nemení");
   E.startRound(state);
@@ -3028,16 +3028,16 @@ test("B006 (t6): Pri smrti 2× SuperMláďa (striebro 3×, stupeň 1), každé P
   state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
   const cubs = events.filter(e => e.type === "summon" && e.pid === "p1" && e.defId === "supermlada");
-  assert.equal(cubs.length, 3, "strieborný B006 vyvolá 3 SuperMláďatá (2 + 1 za stupeň)");
+  assert.equal(cubs.length, 2, "strieborný B006 vyvolá 2 SuperMláďatá (1 + 1 za stupeň)");
   for (const c of cubs) { assert.equal(c.rank, 1); assert.equal(c.atk, 1); }
   const iDie = events.findIndex(e => e.type === "die" && e.uid === tank.uid);
   const iCub = events.findIndex(e => e.type === "summon" && e.defId === "supermlada");
   assert.ok(iCub >= 0 && iCub < iDie, "Mláďatá prídu z Pri smrti B006");
   assert.ok(!events.some(e => e.type === "summon" && e.defId === "mlada"));
   const seals = events.filter(e => e.type === "futureBuff" && e.pid === "p1" && e.race === "beast");
-  assert.equal(seals.length, 3, "každé SuperMláďa dá Pečať");
+  assert.equal(seals.length, 2, "každé SuperMláďa dá Pečať");
   for (const sl of seals) { assert.equal(sl.a, 1); assert.equal(sl.h, 1); }
-  assert.deepEqual({ ...state.p1.raceBuffs.beast }, { a: 3, h: 3 }, "tri Pečate stupňa 1 = +3/+3 navždy");
+  assert.deepEqual({ ...state.p1.raceBuffs.beast }, { a: 2, h: 2 }, "dve Pečate stupňa 1 = +2/+2 navždy");
 });
 
 test("B006: umlčanie vypne Pri smrti – žiadne SuperMláďatá ani Pečať", () => {
