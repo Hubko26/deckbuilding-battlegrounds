@@ -2323,7 +2323,9 @@ function act(events) {
 function renderDiscover() {
   const ov = $("discoverOverlay");
   const pd = state.pendingDiscover;
-  if (!pd || pd.pid !== MY) { ov.classList.add("hidden"); return; }
+  // Počas animácie (busy) nie: odmena za DMG Meter vzniká v engine už pri
+  // doBattle (nové kolo), overlay sa ukáže až po dohraní boja.
+  if (!pd || pd.pid !== MY || busy) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("discoverTitle").textContent = pd.boss ? `${t(L.bossRewardTitle)} ${pd.tier}` : t(L.discoverTitle);
   const row = $("discoverRow");
