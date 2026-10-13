@@ -203,7 +203,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     neskôr vyložené karty a tokeny vyvolané v boji – kombuje so summon
     buildmi; rovnako D007 Pred bojom aj D006 Po nákupe),
     D003 permanentná aura +1/+1, D009 (t5) v boji berie staty padlých
-    kamarátov (½ / celé / 2×, do konca boja – daj ho vpravo, nech prežije
+    kamarátov (¼ / ½ / celé, do konca boja – daj ho vpravo, nech prežije
     dlho), D004 discover rasy, D010 (t6) spustí Pri vyložení cieľa znova
     (2×/3× na striebre/zlate – cieľ B002/B010/U003 Pečať, D004 objav, P001). Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); D004 kupuj vždy, D010 na t6, ostatných
@@ -403,8 +403,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Draci**: **D004 (discover karty rasy cieľa) je VŽDY, absolútne vždy,
   najsilnejšia karta** – karta vlastnej rasy zadarmo s výberom z troch a
   odhodením z plochy sa battlecry zahrá znova; kupuj vždy, keď ho vidíš.
-  D010 (t6, evolvne cieľ) má silu tiež. Ostatní draci (D002/D008 buff,
-  D003/D009 Pečať) takú power nemajú – bot im ráta len telo, kupuje ich
+  D010 (t6, Pri vyložení cieľa znova) má silu tiež. Ostatní draci (D002/D008 buff,
+  D003 Pečať, D009 staty padlých) takú power nemajú – bot im ráta len telo, kupuje ich
   len keď nič vlastnej rasy nie je. Vždy `target` na najlepšiu kartu
   dominantnej rasy.
 

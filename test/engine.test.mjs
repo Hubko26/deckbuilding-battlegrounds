@@ -94,12 +94,12 @@ test("drak futureRaceOf: permanentná aura pre rasu cieľa", () => {
   assert.equal(fresh2.atk, C.byId["U002"].atk + 1);
 });
 
-test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty do konca boja (bronz ½, striebro celé)", () => {
+test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty do konca boja (bronz ¼, striebro ½, zlato celé)", () => {
   const { state, E, C } = fresh(82);
   E.startRound(state);
   E.endShopTurn(state, "p1");
   const small = E.makeInst(state, "O008", 1); small.slot = 0; small.atk = 4; small.hp = small.maxHp = 6; // padne prvý
-  const drake = E.makeInst(state, "D009", 2); drake.slot = 1; // strieborný 14/14 – celé staty
+  const drake = E.makeInst(state, "D009", 3); drake.slot = 1; // zlatý – celé staty
   state.p1.board = [small, drake];
   state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
   for (const pid of ["p1", "p2"]) { state[pid].hand = []; state[pid].deck = []; state[pid].discard = []; }
@@ -110,7 +110,7 @@ test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty 
   const absorb = events.find((e, i) => i > iDie - 3 && e.type === "buff" && e.uid === drake.uid);
   assert.ok(absorb, "D009 dostal staty padlého");
   assert.equal(absorb.a, 4); assert.equal(absorb.h, 6);
-  assert.match(C.cardText(C.byId.D009, 1, "sk"), /Keď zomrie tvoja príšerka: dostane polovicu jej statov/);
+  assert.match(C.cardText(C.byId.D009, 1, "sk"), /Keď zomrie tvoja príšerka: dostane štvrtinu jej statov/);
   assert.ok(!state.p1.discard.some(c => c.defId === "D009" && (c.pa || c.ph)), "nie je to trvalé");
 });
 test("drak discoverRace: ponuka len z rasy cieľa a vlastného tieru", () => {

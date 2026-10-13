@@ -1173,11 +1173,11 @@ L.cards = (() => {
       cs: `vyber příšerku – její Při vyložení se spustí znovu${m > 1 ? ` ${m}×` : ""}`,
       en: `pick a minion – its Battlecry triggers again${m > 1 ? ` ${m} times` : ""}`,
     }),
-    // D009: staty padlej vlastnej príšerky do konca boja (½ / celé / 2×).
+    // D009: staty padlej vlastnej príšerky do konca boja (¼ / ½ / celé).
     absorbStats: (f, m) => ({
-      sk: `dostane ${["polovicu", "všetky", "dvojnásobok"][Math.min(m, 3) - 1]} jej statov do konca boja`,
-      cs: `dostane ${["polovinu", "všechny", "dvojnásobek"][Math.min(m, 3) - 1]} jejích statů do konce boje`,
-      en: `gains ${["half of", "all of", "double"][Math.min(m, 3) - 1]} its stats until the fight ends`,
+      sk: `dostane ${["štvrtinu", "polovicu", "všetky"][Math.min(m, 3) - 1]} jej statov do konca boja`,
+      cs: `dostane ${["čtvrtinu", "polovinu", "všechny"][Math.min(m, 3) - 1]} jejích statů do konce boje`,
+      en: `gains ${["a quarter of", "half of", "all of"][Math.min(m, 3) - 1]} its stats until the fight ends`,
     }),
     buffTopRace: (f, m) => ({
       sk: `tvoja najpočetnejšia rasa dostane +${f.a * m}/+${f.h * m}`,

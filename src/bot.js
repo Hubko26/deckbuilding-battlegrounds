@@ -769,7 +769,7 @@ const Bot = (() => {
       case "addSpell": return 2;
       case "gold": return f.n * m * 1.5 * perTrigger;
       case "goldLater": return f.n * 1.5;
-      case "absorbStats": return [0.5, 1, 2][Math.min(m, 3) - 1] * 3 * PW_DEATHS; // D009: staty padlých kamarátov na boj
+      case "absorbStats": return [0.25, 0.5, 1][Math.min(m, 3) - 1] * 3 * PW_DEATHS; // D009: staty padlých kamarátov na boj
       case "replayBattlecry": return m * 9;                     // D009: Pri vyložení cieľa znova
       case "shrinkEnemy": return ab;
       case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu
