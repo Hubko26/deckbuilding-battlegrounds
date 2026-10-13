@@ -201,7 +201,7 @@ test("psíci: P004 (Po údere) – ak súper prežije, Pohladkanie do balíčka 
   assert.ok(!ev2.some(e => e.type === "addPet" && e.pid === "p1" && ev2.indexOf(e) < ev2.findIndex(x => x.type === "die")));
 });
 
-test("psíci: P009 strieborný Vodca – každé Pohladkanie pohladká ostatných Psíkov 2×", () => {
+test("psíci: P009 Vodcovia sa sčítajú – strieborný 2×, dvaja bronzoví tiež 2×", () => {
   const { state, E } = fresh(53);
   E.startRound(state);
   const p = state.p1;
@@ -214,6 +214,14 @@ test("psíci: P009 strieborný Vodca – každé Pohladkanie pohladká ostatnýc
   E.castSpell(state, "p1", 0, d1.uid);
   assert.equal(d2.atk, a2 + 2, "d2 pohladkaný 2× (+1/+1 dvakrát)");
   assert.equal(d2.pets, 2);
+  // dvaja bronzoví Vodcovia = 2×
+  const l1 = E.makeInst(state, "P009", 1); l1.slot = 2;
+  const l2 = E.makeInst(state, "P009", 1); l2.slot = 3;
+  p.board = [d1, d2, l1, l2];
+  p.hand = [E.makeInst(state, "pet", 1)];
+  const b2 = d2.atk;
+  E.castSpell(state, "p1", 0, d1.uid);
+  assert.equal(d2.atk, b2 + 2, "dvaja bronzoví Vodcovia = 2×");
 });
 
 test("psíci: P006 Zavýjanie – všetci Psíci +1/+1 za každého Psíka na ploche (aj sám); P007 Pečať Psíkom", () => {

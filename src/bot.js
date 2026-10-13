@@ -280,7 +280,7 @@ const Bot = (() => {
   function isBattlecryBuffer(defId) {
     const pw = Cards.byId[defId].power;
     return !!pw && pw.kw === "battlecry" &&
-      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "copyTarget"].includes(pw.fx.type) ||
+      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "copyTarget", "replayBattlecry"].includes(pw.fx.type) ||
         RACE_TARGETED.has(pw.fx.type));
   }
 
@@ -301,6 +301,12 @@ const Bot = (() => {
       return (mine.length ? strongest(mine) : strongest(others)).uid;
     }
     if (pw.fx.type === "buffOne") return strongest(others).uid; // stat buff na najsilnejšie telo
+    if (pw.fx.type === "replayBattlecry") {
+      // najcennejšie Pri vyložení na ploche (sila schopnosti × stupeň)
+      const cands = others.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(q => q.kw === "battlecry" && q.fx.type !== "replayBattlecry"));
+      if (!cands.length) return undefined;
+      return [...cands].sort((a, b) => cardPower(Cards.byId[b.defId]).ability * b.rank - cardPower(Cards.byId[a.defId]).ability * a.rank)[0].uid;
+    }
     if (pw.fx.type === "copyTarget") {
       // kópia najbližšie k trojici (tiebreak najsilnejšia), ako Zrkadlo
       const cands = others.filter(x => !Cards.byId[x.defId].token);
@@ -770,6 +776,7 @@ const Bot = (() => {
       case "gold": return f.n * m * 1.5 * perTrigger;
       case "goldLater": return f.n * 1.5;
       case "copyTarget": return f.n * m * 7;                    // D010 (t6): Zrkadlo na tele
+      case "replayBattlecry": return m * 9;                     // D009: Pri vyložení cieľa znova
       case "shrinkEnemy": return ab;
       case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu
       case "drunkStrike": return -2 / m;

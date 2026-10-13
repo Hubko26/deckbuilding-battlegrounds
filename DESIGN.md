@@ -134,7 +134,8 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
   stále 50 % – menej backstab Pečatí, nerf ogrieho škálovania); P004 Po
   údere: ak súper prežije, **1/2/3 Pohladkania** do balíčka (nahradilo
   Aport – krádež statov); P009 Vodca svorky pohladká svorku **1×/2×/3×**
-  (najvyšší stupeň Vodcu na ploche).
+  – viac Vodcov na ploche sa **sčíta** (dvaja bronzoví = 2×, bronz +
+  striebro = 3×).
 - **3 rovnaké príšerky (rovnaká karta, rovnaký stupeň) KDEKOĽVEK** – plocha,
   ruka, balíček aj kôpka – sa automaticky zlúčia na vyšší stupeň:
   bronz → **strieborná** → **zlatá**. Kópie sa spotrebujú v poradí
@@ -624,7 +625,10 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   na t1 sa dala mať v druhom kole, na stupni 2 dávala +2 a živly s ňou
   odchádzali do trhu. Na t3 je to odmena za postavený živelný build, nie
   jeho štartér;
-  D003 (t4) a D009 (t5) battlecry **permanentná aura rasy cieľa** +1/+1
+  D003 (t4) battlecry **permanentná aura rasy cieľa** +1/+1; D009 (t5, od
+  13. 10. 2026) **spustí Pri vyložení vybranej vlastnej príšerky znova**
+  (`replayBattlecry`, striebro 2×, zlato 3×; stupeň cieľa; iný D009 sa
+  nereplayuje – predtým duplikát D003)
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
   D010 (t6) battlecry **Zrkadlo na tele** (`copyTarget`, od 13. 10. 2026):

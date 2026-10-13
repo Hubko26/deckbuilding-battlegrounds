@@ -214,8 +214,10 @@ const Cards = (() => {
       { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
     M("D008", 5, "dragon", ["Rivetwyrm", "Forgewing", "Ironstar Dragon"], 6, 9,
       { taunt: true, power: { kw: "battlecry", fx: { type: "buffRaceOf", a: 2, h: 2 } } }),
+    // D009 (od 13. 10. 2026): spustí Pri vyložení vybranej vlastnej príšerky
+    // znova (striebro 2×, zlato 3×). Predtým Pečať rase cieľa = duplikát D003.
     M("D009", 5, "dragon", ["Petalwyrm", "Rosescale", "Spring Sovereign"], 7, 7,
-      { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "replayBattlecry" } } }),
     // D010: Zrkadlo na tele – kópie (1. stupňa) cieľa do balíčka, počet =
     // stupeň draka. Nerf 13. 10. 2026: predtým cieľ okamžite evolvol o stupeň
     // (free striebro/zlato pre každú rasu, t6 drak bol prisilný).

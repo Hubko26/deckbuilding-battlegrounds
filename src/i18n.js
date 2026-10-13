@@ -642,6 +642,7 @@ const L = {
     en: "🂠 Triple is waiting to merge: you have {n} cards, need at least {min}. Buy another card.",
   },
   deckMinTip: { sk: "Všetky karty: {n} (minimum na tvoj tier: {min})", cs: "Všechny karty: {n} (minimum na tvůj tier: {min})", en: "All cards: {n} (minimum for your tier: {min})" },
+  replayBattlecryMsg: { sk: "🌸 znova spustil Pri vyložení:", cs: "🌸 znovu spustil Při vyložení:", en: "🌸 replayed the Battlecry of" },
   copyToDeckMsg: { sk: "do balíčka pribudla kópia:", cs: "do balíčku přibyla kopie:", en: "copy added to your deck:" },
   echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {
@@ -1167,6 +1168,11 @@ L.cards = (() => {
       cs: `vyber příšerku – vyber si 1 ze 3 karet její rasy, ${m === 2 ? "stříbrnou" : "zlatou"}`,
       en: `pick a minion – discover a ${m === 2 ? "silver" : "golden"} card of its race`,
     },
+    replayBattlecry: (f, m) => ({
+      sk: `vyber príšerku – jej Pri vyložení sa spustí znova${m > 1 ? ` ${m}×` : ""}`,
+      cs: `vyber příšerku – její Při vyložení se spustí znovu${m > 1 ? ` ${m}×` : ""}`,
+      en: `pick a minion – its Battlecry triggers again${m > 1 ? ` ${m} times` : ""}`,
+    }),
     copyTarget: (f, m) => {
       const n = f.n * m;
       return {

@@ -3148,3 +3148,17 @@ test("D004 strieborný objaví striebornú kartu rasy cieľa; O006 sa trafí za 
   assert.ok(hit);
   assert.equal(hit.n, Math.floor(10 / 4), "strieborný 10/10 sa trafí za štvrtinu");
 });
+
+test("D009 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); bez cieľa vezme najsilnejší battlecry", () => {
+  const { state, E, C } = fresh(205);
+  E.startRound(state);
+  const p = state.p1;
+  const seal = E.makeInst(state, "B002", 1, p); seal.slot = 0; // Pečať +1/+1 Zvieratám
+  const vanilla = E.makeInst(state, "O008", 1, p); vanilla.slot = 1;
+  p.board = [seal, vanilla];
+  p.hand = [E.makeInst(state, "D009", 2)];
+  const ev = E.playMinion(state, "p1", 0, vanilla.uid); // vanilla nemá battlecry → vezme B002
+  assert.ok(ev.some(e => e.type === "replayBattlecry" && e.defId === "B002" && e.n === 2));
+  assert.deepEqual({ ...p.raceBuffs.beast }, { a: 2, h: 2 }, "Pečať B002 dvakrát");
+  assert.match(C.cardText(C.byId.D009, 2, "sk"), /spustí znova 2×/);
+});

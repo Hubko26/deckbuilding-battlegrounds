@@ -1069,9 +1069,10 @@ const Engine = (() => {
       // každý ďalší Psík na ploche dostane to isté (navždy). Endgame psíkov:
       // rast už nejde len na jedno telo. Je to schopnosť t6 psíka, nie
       // kúzla (hráčovo rozhodnutie 16. 9. 2026).
-      // Strieborný Vodca pohladká svorku 2×, zlatý 3× (najvyšší stupeň na ploche).
+      // Vodcovia sa sčítajú podľa stupňa: bronz 1×, striebro 2×, zlato 3×
+      // – dvaja bronzoví = svorka pohladkaná 2×.
       const leaders = p.board.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "packLeader"));
-      const times = leaders.length ? Math.max(...leaders.map(x => x.rank)) : 0;
+      const times = leaders.reduce((sum, x) => sum + x.rank, 0);
       for (let k = 0; k < times; k++) {
         for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
       }
@@ -1454,6 +1455,20 @@ const Engine = (() => {
     },
     // Drak t6: cieľ evolvne o stupeň (bronz→striebro→zlato); zlatú nezdvihne.
     // Buffy cieľa NAD základ (bez aury) sa prenesú, perma rast tiež.
+    // D009: Pri vyložení vybranej vlastnej príšerky (nie seba) sa spustí znova
+    // m× (stupeň draka), so stupňom CIEĽA. Iný D009 ako cieľ sa preskočí
+    // (žiadna rekurzia). Bez platného cieľa vezme najvyšší tier × stupeň.
+    replayBattlecry({ state, p, m, self, target, events }) {
+      const bcs = x => Cards.powersOf(Cards.byId[x.defId]).filter(pw => pw.kw === "battlecry" && pw.fx.type !== "replayBattlecry");
+      const ok = x => x !== self && bcs(x).length > 0;
+      const t = target && p.board.includes(target) && ok(target) ? target
+        : p.board.filter(ok).sort((a, b) => Cards.byId[b.defId].tier * b.rank - Cards.byId[a.defId].tier * a.rank)[0];
+      if (!t) return;
+      events.push({ type: "replayBattlecry", pid: p.id, uid: self.uid, targetUid: t.uid, defId: t.defId, n: m });
+      for (let i = 0; i < m; i++) {
+        for (const pw of bcs(t)) applyShopFx(state, p, pw.fx, t.rank, t, events);
+      }
+    },
     // D010: n×stupeň kópií 1. stupňa vybranej vlastnej príšerky do balíčka
     // (ako Zrkadlo – z vlastného poolu, kým v ňom je). Tokeny nie. Trojica
     // sa môže hneď spojiť (checkEvolve, platí aj minimum kariet).

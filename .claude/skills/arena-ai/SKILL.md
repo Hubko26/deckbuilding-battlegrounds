@@ -202,7 +202,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     (VŠETKY ne-aurové dračie staty platia celé kolo: dostanú ich aj
     neskôr vyložené karty a tokeny vyvolané v boji – kombuje so summon
     buildmi; rovnako D007 Pred bojom aj D006 Po nákupe),
-    D003/D009 permanentná aura +1/+1, D004 discover rasy, D010 (t6)
+    D003 permanentná aura +1/+1, D009 (t5) spustí Pri vyložení cieľa znova
+    (2×/3× na striebre/zlate – cieľ B002/B010/U003 Pečať, D004 objav, P001),
+    D004 discover rasy, D010 (t6)
     vloží kópiu cieľa (1. stupňa; strieborný 2, zlatý 3) do balíčka – cieľ
     na kartu najbližšie k trojici. Ako bot VŽDY cieľ smeruj na svoju dominantnú
     rasu (akcia `play` s `target`); D004 kupuj vždy, D010 na t6, ostatných
@@ -328,7 +330,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
    na zvyšok hry – podľa neho porovnávaj ponuku a to, čo prinesie vyšší tier):
    a) tretia kópia = trojica (aj kópie v balíčku a kôpke – `copiesOwnedTowardTriple`),
    b) Pečať (aura) vlastnej rasy (E003, B002/B006/B010,
-      U003/U008/U010, F008; draci D003/D009 s targetom na tvoju rasu),
+      U003/U008/U010, F008; draci D003 s targetom na tvoju rasu),
    c) motor rasy (undead U002/U005/U006, elemental E007/E004 + Živelná
       sila/D005 (t3), beast B004/B007/B005/B003/B008, fairy F002/F004 + kúzla),
    d) druhá kópia rozbehnutej trojice,
