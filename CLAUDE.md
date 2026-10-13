@@ -77,7 +77,7 @@ commity, UI) je slovenčina.
   aj na nižšom tieri. `Engine.doBossBattle`, `bossReward`.
 - **Trinkety** (checkbox): ponuka 1 z 3 v kole 4 (úroveň 1) a 8 (úroveň 2–3).
 - Kúpená karta ide **do balíčka** (nie do ruky); ruka sa doťahuje na 5
-  (Pohladkanie psíkov sa do 5 neráta – dotiahne sa ďalšia karta).
+  (zoslané Pohladkanie psíkov dotiahne kartu navyše).
 - **Minimum kariet** podľa tieru (`Engine.deckMin`: tier 1 = 10 … tier 6 = 15,
   všetky zóny okrem tokenov): predaj pod limit nejde, evolve čaká, kým je
   kariet menej než limit. Testy: harness má limit default vypnutý

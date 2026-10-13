@@ -1221,9 +1221,9 @@ L.cards = (() => {
     petBuff: (f, m) => {
       const v = petValue(m);
       return {
-        sk: `pohladkaj vybranú príšerku: +${f.a * v}/+${f.h * v} (Psíkovi NAVŽDY, inej do konca boja)`,
-        cs: `pohlaď vybranou příšerku: +${f.a * v}/+${f.h * v} (Pejskovi NAVŽDY, jiné do konce boje)`,
-        en: `pet a chosen minion: +${f.a * v}/+${f.h * v} (FOREVER on a Doggy, until the fight ends on others)`,
+        sk: `pohladkaj vybranú príšerku: +${f.a * v}/+${f.h * v} (Psíkovi NAVŽDY, inej do konca boja) a potiahni kartu`,
+        cs: `pohlaď vybranou příšerku: +${f.a * v}/+${f.h * v} (Pejskovi NAVŽDY, jiné do konce boje) a lízni si kartu`,
+        en: `pet a chosen minion: +${f.a * v}/+${f.h * v} (FOREVER on a Doggy, until the fight ends on others) and draw a card`,
       };
     },
     // Pohladkanie do balíčka (P001 Pri vyložení, P002 Pri smrti).

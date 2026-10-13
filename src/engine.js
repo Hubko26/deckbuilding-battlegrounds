@@ -582,7 +582,7 @@ const Engine = (() => {
   function beginShopTurn(state, pid) {
     const p = state[pid];
     const events = [];
-    drawCards(state, p, handDraw(state, pid) - handCount(p), events);
+    drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
     bossReward(state, p, events);
     petTrinkets(state, p, events);
     // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
@@ -604,7 +604,7 @@ const Engine = (() => {
       const before = p.hand.length;
       checkEvolve(state, p, events);
       if (p.hand.length >= before) break; // nič sa nespojilo z ruky
-      const want = handDraw(state, pid) - handCount(p);
+      const want = handDraw(state, pid) - p.hand.length;
       if (want <= 0 || (!p.deck.length && !p.discard.length)) break;
       drawCards(state, p, want, events);
     }
@@ -620,12 +620,6 @@ const Engine = (() => {
     if (inst.src) c.src = inst.src;
     return c;
   }
-
-  // Pohladkanie (psíci) nezaberá miesto v ruke: dotiahnuté Pohladkanie sa
-  // do n neráta a dotiahne sa ďalšia karta (strop HAND_MAX). Bez toho
-  // psom pohladkania vytláčali príšerky z ruky a plocha ostávala tenká.
-  const isPetCard = c => !!Cards.byId[c.defId].pet;
-  const handCount = p => p.hand.filter(c => !isPetCard(c)).length;
 
   function drawCards(state, p, n, events) {
     for (let i = 0; i < n; i++) {
@@ -649,7 +643,6 @@ const Engine = (() => {
       inst.slot = freeSlot(p.hand, HAND_MAX);
       p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: c.defId });
-      if (isPetCard(c)) i--; // Pohladkanie sa do počtu nerátá
     }
   }
 
@@ -1083,6 +1076,11 @@ const Engine = (() => {
         for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
       }
       p.petsCast = (p.petsCast || 0) + 1;
+      // Pohladkanie dotiahne kartu (od 13. 10. 2026) – pohladkania v ruke
+      // tak nevytláčajú príšerky. Zahrané kúzlo je v karanténe (spentSpells),
+      // takže reshuffle ho nevráti hneď späť – žiadny nekonečný cyklus.
+      drawCards(state, p, 1, events);
+      checkEvolve(state, p, events);
       return events;
     },
     buffTarget(state, p, inst, def, targetUid) {
