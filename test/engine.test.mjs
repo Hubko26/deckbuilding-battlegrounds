@@ -110,7 +110,18 @@ test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty 
   const absorb = events.find((e, i) => i > iDie - 3 && e.type === "buff" && e.uid === drake.uid);
   assert.ok(absorb, "D009 dostal staty padlého");
   assert.equal(absorb.a, 4); assert.equal(absorb.h, 6);
-  assert.match(C.cardText(C.byId.D009, 1, "sk"), /Keď zomrie tvoja príšerka: dostane štvrtinu jej statov/);
+  assert.match(C.cardText(C.byId.D009, 1, "sk"), /Keď zomrie tvoja príšerka \(nie token\): dostane štvrtinu jej statov/);
+  // token (Kostík) D009 nekŕmi
+  const { state: s2, E: E2 } = fresh(83);
+  E2.startRound(s2); E2.endShopTurn(s2, "p1");
+  const bone = Object.assign(E2.makeInst(s2, "kostik", 1), { slot: 0 });
+  const d2 = Object.assign(E2.makeInst(s2, "D009", 3), { slot: 1 });
+  s2.p1.board = [bone, d2];
+  s2.p2.board = [Object.assign(E2.makeInst(s2, "O008", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
+  for (const pid of ["p1", "p2"]) { s2[pid].hand = []; s2[pid].deck = []; s2[pid].discard = []; }
+  s2.p1.trinkets = ["initiative"];
+  const ev2 = E2.doBattle(s2);
+  assert.ok(!ev2.some(e => e.type === "proc" && e.kw === "allyDeath"), "token D009 nekŕmi");
   assert.ok(!state.p1.discard.some(c => c.defId === "D009" && (c.pa || c.ph)), "nie je to trvalé");
 });
 test("drak discoverRace: ponuka len z rasy cieľa a vlastného tieru", () => {

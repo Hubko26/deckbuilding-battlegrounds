@@ -2589,12 +2589,13 @@ const Engine = (() => {
     runAbsorbers(state, sides, pid, dead, events);
   }
 
-  // D009 (allyDeath/absorbStats): keď zomrie VLASTNÁ príšerka (aj token),
+  // D009 (allyDeath/absorbStats): keď zomrie VLASTNÁ príšerka (nie token),
   // živý D009 dostane jej útok a max. život do konca boja – bronz ¼,
   // striebro ½, zlato celé (zaokrúhlené dole). Nie je to trvalé. 2× na zlate
   // by bolo v endgame prisilné.
   const ABSORB_MULT = [0.25, 0.5, 1];
   function runAbsorbers(state, sides, pid, dead, events) {
+    if (Cards.byId[dead.defId].token) return; // tokeny (kostíky, mláďatá…) D009 nekŕmia
     for (const f of sides[pid]) {
       if (f === dead || f.hp <= 0 || f.silenced) continue;
       if (!instPowers(f).some(pw => pw.kw === "allyDeath")) continue;

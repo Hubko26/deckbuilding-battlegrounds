@@ -825,7 +825,7 @@ L.cards = (() => {
     afterSpell: { sk: "Po kúzle", cs: "Po kouzle", en: "After a spell" },
     onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
-    allyDeath: { sk: "Keď zomrie tvoja príšerka", cs: "Když zemře tvá příšerka", en: "When a friendly minion dies" }, // D009
+    allyDeath: { sk: "Keď zomrie tvoja príšerka (nie token)", cs: "Když zemře tvá příšerka (ne token)", en: "When a friendly minion (not a token) dies" }, // D009
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
     afterAttack: { sk: "Po údere", cs: "Po úderu", en: "After attacking" }, // psíci: Aport (P004)
     packLeader: { sk: "Vodca svorky", cs: "Vůdce smečky", en: "Pack Leader" }, // psíci t6 (P009), pasívna v nákupe

@@ -628,8 +628,9 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   D003 (t4) battlecry **permanentná aura rasy cieľa** +1/+1; D009 (t5, od
   13. 10. 2026) **keď v boji zomrie tvoja príšerka, dostane jej staty**
   do konca boja (`allyDeath`/`absorbStats`, `runAbsorbers`: bronz ¼,
-  striebro ½, zlato celé – 2× by bolo v endgame prisilné; viac ťaží rasa
-  s veľa smrťami/tokenmi, Živly menej; útok a max. život padlej, aj tokeny)
+  striebro ½, zlato celé – 2× by bolo v endgame prisilné; **tokeny sa
+  nerátajú** (nemŕtvi/zvieratá by ho inak kŕmili hordou); proti Živlom je
+  to lotéria – výboje ho môžu zložiť skôr, než nasaje staty; útok a max. život padlej, aj tokeny)
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
   D010 (t6) battlecry **spustí Pri vyložení vybranej vlastnej príšerky
