@@ -140,6 +140,33 @@ $("mutToggle").addEventListener("change", () => {
 const APP_V = [...document.querySelectorAll('script[src^="src/"]')]
   .map(el => (el.src.split("?v=")[1] || "")).join(".");
 
+// ---------- Verzia na úvodnej obrazovke ----------
+// APP_BUILD (version.js, čas commitu z pre-commit hooku) vs. posledný commit
+// na GitHube: commit výrazne neskôr než build = hráč má starú (keš) verziu.
+const REPO_API = "https://api.github.com/repos/Hubko26/deckbuilding-battlegrounds/commits/main";
+let latestCommit; // undefined = načítava sa, null = nedostupné
+const fmtDate = iso => new Date(iso).toLocaleString(I18N.lang === "en" ? "en-GB" : I18N.lang, { day: "numeric", month: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" });
+function renderVersion() {
+  const box = $("versionBox");
+  if (!box) return;
+  const build = typeof APP_BUILD === "string" ? APP_BUILD : null;
+  let html = `${t(L.versionBuild)} ${build ? fmtDate(build) : "?"}`;
+  if (latestCommit) {
+    const msg = latestCommit.msg.replace(/[<>&]/g, "");
+    const fresh = build && new Date(latestCommit.date) - new Date(build) <= 2 * 60 * 1000;
+    html += `<br>${t(L.versionLatest)} ${msg} (${fmtDate(latestCommit.date)})`;
+    if (build) html += `<br><span class="${fresh ? "ok" : "old"}">${t(fresh ? L.versionOk : L.versionOld)}</span>`;
+  } else if (latestCommit === null) {
+    html += `<br>${t(L.versionOffline)}`;
+  }
+  box.innerHTML = html;
+}
+fetch(REPO_API, { cache: "no-store" })
+  .then(r => r.ok ? r.json() : Promise.reject(r.status))
+  .then(j => { latestCommit = { msg: j.commit.message.split("\n")[0], date: j.commit.committer.date }; })
+  .catch(() => { latestCommit = null; })
+  .finally(renderVersion);
+
 // Tvrdá chyba siete (desync / rozdielne verzie): oznám a ukonči hru,
 // tiché pokračovanie by len prehlbovalo rozídený stav.
 let fatalShown = false;
@@ -223,6 +250,7 @@ function applyI18n() {
   $("mutToggleLbl").textContent = t(L.mutToggle);
   $("banToggleLbl").textContent = t(L.banToggle);
   $("trinketToggleLbl").textContent = t(L.trinketToggle);
+  renderVersion();
   $("peerJoinBtn").textContent = t(L.peerJoin);
   $("newGameBtn").textContent = t(L.newGame);
   $("discoverTitle").textContent = t(L.discoverTitle);

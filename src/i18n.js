@@ -301,6 +301,11 @@ const L = {
     cs: "🧿 Trinkety (kolo 4 a 8: každý si vybere trvalý bonus)",
     en: "🧿 Trinkets (round 4 and 8: each player picks a permanent bonus)",
   },
+  versionBuild: { sk: "🏷️ Tvoja verzia:", cs: "🏷️ Tvoje verze:", en: "🏷️ Your version:" },
+  versionLatest: { sk: "📝 Posledný commit:", cs: "📝 Poslední commit:", en: "📝 Latest commit:" },
+  versionOk: { sk: "✅ Máš aktuálnu verziu", cs: "✅ Máš aktuální verzi", en: "✅ You're up to date" },
+  versionOld: { sk: "⚠️ Existuje novšia verzia – obnov stránku (Ctrl+F5)", cs: "⚠️ Existuje novější verze – obnov stránku (Ctrl+F5)", en: "⚠️ A newer version exists – reload the page (Ctrl+F5)" },
+  versionOffline: { sk: "(posledný commit sa nedá načítať – offline)", cs: "(poslední commit nejde načíst – offline)", en: "(can't load the latest commit – offline)" },
   trinketTitle: { sk: "🧿 Vyber si trinket", cs: "🧿 Vyber si trinket", en: "🧿 Pick a trinket" },
   trinketIntro: {
     sk: "Trvalý bonus na celú hru. Vyber jeden z troch – ak nevyberieš, na konci ťahu dostaneš prvý.",

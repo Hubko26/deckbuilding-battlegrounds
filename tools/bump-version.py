@@ -37,8 +37,22 @@ def process(html_path):
     return False
 
 
+# version.js: čas buildu (UTC) – pre-commit ho zapíše pri každom commite,
+# úvodná obrazovka ho porovná s posledným commitom na GitHube.
+def write_build_stamp():
+    from datetime import datetime, timezone
+    stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    path = os.path.join(ROOT, "version.js")
+    with open(path, "w", encoding="utf-8", newline="\n") as f:
+        f.write("// Generuje tools/bump-version.py (pre-commit) – čas buildu v UTC.\n")
+        f.write(f'const APP_BUILD = "{stamp}";\n')
+    return "version.js"
+
+
 def main():
     changed = []
+    if "--stage" in sys.argv:
+        changed.append(write_build_stamp())
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if not d.startswith(".") and d not in ("node_modules", "tools")]
         for fn in filenames:

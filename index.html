@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=a0018b64">
+  <link rel="stylesheet" href="style.css?v=53f544f9">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -55,6 +55,8 @@
         <label class="mut-toggle"><input type="checkbox" id="banToggle"> <span id="banToggleLbl"></span></label>
         <!-- Trinkety: ponuka trvalého bonusu v kole 4 a 8; v hre po sieti rozhoduje zakladateľ. -->
         <label class="mut-toggle"><input type="checkbox" id="trinketToggle"> <span id="trinketToggleLbl"></span></label>
+        <!-- Verzia: čas buildu (version.js) + posledný commit z GitHubu. -->
+        <div id="versionBox" class="version-box"></div>
       </div>
       <!-- Pravidlá hry – obsah generuje game.js (trojjazyčne). -->
       <div id="rulesBox" class="rules-box"></div>
@@ -188,15 +190,16 @@
 
   <footer><span id="footNote"></span></footer>
 
+  <script src="version.js?v=5181d338"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=47864a3d"></script>
+  <script src="src/i18n.js?v=aaa37263"></script>
   <script src="src/net.js?v=96c2da75"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=5a3f129f"></script>
   <script src="src/engine.js?v=4a7be7a6"></script>
   <script src="src/bot.js?v=e8e919fa"></script>
   <script src="src/claude-bot.js?v=89c7ac9e"></script>
-  <script src="src/game.js?v=a99103fb"></script>
+  <script src="src/game.js?v=6adc02ca"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=24b5cf89"></script>

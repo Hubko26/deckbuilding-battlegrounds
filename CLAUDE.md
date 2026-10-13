@@ -27,6 +27,9 @@ commity, UI) je slovenčina.
   `arenaLogSave()`. Pri hlásení chyby si vyžiadaj tento súbor.
 - `node server.mjs` – lokálny server na `http://localhost:5180` (aj LAN multiplayer).
 - Žiadny build, lint ani bundler – súbory sa servírujú tak, ako sú.
+- Pre-commit hook (`tools/bump-version.py --stage`) prepočíta `?v=` hashe
+  v index.html a zapíše čas buildu do `version.js`; úvodná obrazovka ho
+  porovná s posledným commitom na GitHube (aktuálna / stará verzia).
 
 ## Štruktúra
 
