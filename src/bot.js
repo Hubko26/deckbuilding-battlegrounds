@@ -287,7 +287,7 @@ const Bot = (() => {
   // Cieľ cieleného battlecry (draci, U004): rasové efekty na NAJSILNEJŠIU
   // kartu dominantnej rasy (engine fallback berie najsilnejšiu bez ohľadu na
   // rasu – drak by buffoval cudzí splash), copyTarget (D010) na kartu s najviac
-  // kópiami (stupeň < 3), reviveAs nechaj enginu (vyberá deathrattlera).
+  // kópiami (stupeň < 3), copyAbility nechaj enginu (vyberá najsilnejšieho Nemŕtveho).
   function battlecryTarget(state, p, defId) {
     const pw = Cards.byId[defId].power;
     if (!pw || pw.kw !== "battlecry") return undefined;
@@ -751,7 +751,7 @@ const Bot = (() => {
       case "buffAllFriends": return ab * (PW_BOARD + 1) * perTrigger;
       case "buffFriend": case "buffOne": return ab * perTrigger;
       case "fightToken": return ab * PW_BOARD;                 // kostíky v najbližšom boji
-      case "reviveAs": return 4;                                // druhý život ako m/m
+      case "copyAbility": return 6;                             // U004: schopnosť iného Nemŕtveho na boj
       case "summonCharge": return f.n * m * 3;
       case "zapToken": return f.n * m + ab * 0.5 * PW_HORIZON;  // výboj + 50 % šanca na rast navždy
       case "dmgWeakEnemy": return f.n * m * 1.5;              // evolve = viac zásahov

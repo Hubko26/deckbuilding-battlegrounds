@@ -133,11 +133,11 @@ const Cards = (() => {
     // bez t2 aury sa undead scaling zosypal (beast > undead 74 % v sime).
     M("U003", 2, "undead", ["Gravebloom", "Thornwraith", "Mausoleum Hart"], 2, 4,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "undead", a: 0, h: 1 } } }),
-    // U004: cielený battlecry – označená príšerka po smrti vstane ako 1/1
-    // (stupeň 2/2, 3/3). Aury sa na vstávajúcu aplikujú; combo s deathrattle
-    // summonmi na plnej ploche (Pretečenie = buffy).
+    // U004 (od 13. 10. 2026): cielený battlecry – skopíruje schopnosť
+    // vybraného vlastného Nemŕtveho (okrem Pri vyložení) do konca boja;
+    // čísla podľa stupňa U004. Cieľ si schopnosť nechá. (Predtým reviveAs.)
     M("U004", 2, "undead", ["Mournmoth", "Veilwing", "Eclipse Mourner"], 4, 5,
-      { power: { kw: "battlecry", fx: { type: "reviveAs" } } }),
+      { power: { kw: "battlecry", fx: { type: "copyAbility", race: "undead" } } }),
     M("U005", 3, "undead", ["Cryptcub", "Sarcoclaw", "Tombsphinx"], 3, 4,
       { power: { kw: "startFight", fx: { type: "summon", token: "kostik", n: 2 } } }),
     M("U006", 3, "undead", ["Bonebell", "Knellhorn", "Cathedral Ram"], 2, 6,
@@ -150,9 +150,11 @@ const Cards = (() => {
       { power: { kw: "deathrattle", fx: { type: "summon", token: "kostik", n: 3 } } }),
     // U010: aura ako DEATHRATTLE (nie battlecry) – tank musí padnúť, potom
     // navždy buffne všetkých nemŕtvych aj kostíkov, čo ešte prídu. Combo
-    // s U004 (reviveAs), Pierkom a echoDeath = dvojitá aura; endgame akcelerátor.
+    // s Pierkom a echoDeath = dvojitá aura; endgame akcelerátor.
+    // Znovuzrodenie (13. 10. 2026): po prvej smrti vstane s 1 životom –
+    // Pri smrti (Pečať 1/2/3 podľa stupňa) sa tak spustí dvakrát.
     M("U010", 6, "undead", ["Wispwarden", "Lantern Guard", "Soul Bastion"], 8, 10,
-      { taunt: true, power: { kw: "deathrattle", fx: { type: "futureRace", race: "undead", a: 1, h: 1 } } }),
+      { taunt: true, reborn: true, power: { kw: "deathrattle", fx: { type: "futureRace", race: "undead", a: 1, h: 1 } } }),
 
     // ---------- Víly (Fairy) – schopnosti sa spúšťajú zoslaním kúzla ----------
     M("F002", 1, "fairy", ["Gleamcap", "Sporejester", "Mycelial Monarch"], 1, 2,
@@ -453,6 +455,7 @@ const Cards = (() => {
     const fxText = (fx, mult, kw) => T.fx[fx.type](fx, mult, hl, kw, def, byId)[lang];
     const parts = [];
     if (def.taunt) parts.push(b(T.taunt[lang]) + ".");
+    if (def.reborn) parts.push(`${b(T.reborn[lang])}: ${T.rebornText[lang]}.`);
     if (def.cleave) {
       parts.push(`${b(T.cleave[lang])}: ${T.cleaveText(Math.round(def.cleave * 100))[lang]}.`);
     }

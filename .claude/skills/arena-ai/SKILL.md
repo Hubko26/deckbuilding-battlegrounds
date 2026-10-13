@@ -143,13 +143,12 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     plochu, dá celé staty jednej náhodnej živej vlastnej príšerke. U007 battlecry
     charga: ďalšie vyvolanie v boji vyvolá +1 navyše (stackuje sa).
     U010 (t6, 8/10 Obranca) položí undead auru +1/+1 PRI SMRTI (nie pri
-    vyložení) – musí padnúť; kostíky a balíček ju dostanú navždy. Combo
-    s U004 reviveAs / Pierkom = aura dvakrát.
-    U004 (t2, cielený battlecry): označená príšerka po smrti vstane ako
-    1/1 (stupeň 2/2, 3/3) – deathrattle prebehne PRED vstávaním, takže
-    revivnutý deathrattler zomrie dvakrát a druhá dávka kostíkov pri
-    plnej ploche pretečie do buffov. Ako bot cieľ VŽDY na U001/U006/U009
-    (akcia `play` s `target`); aury sa na vstávajúceho aplikujú.
+    vyložení) – musí padnúť; kostíky a balíček ju dostanú navždy. Má
+    Znovuzrodenie (vstane s 1 životom) → aura dvakrát za boj.
+    U004 (t2, cielený battlecry): skopíruje schopnosť vlastného
+    Nemŕtveho (okrem Pri vyložení) do konca boja, čísla podľa stupňa
+    U004. Ako bot cieľ na najsilnejšieho vyvolávača (U009/U006/U001) alebo
+    U010 (Pečať pri smrti) – akcia `play` s `target`.
   - **Elemental = výboje + Živelná sila**: `dmgWeakEnemy` mieri na
     NÁHODNÉHO nepriateľa a pri evolve škáluje POČET zásahov (1/2/3),
     nie silu; E001 3, E006 (Pri smrti) 4, `dmgAllEnemies` E010 3 všetkým
@@ -313,7 +312,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
 2. **Vylož príšerky – najprv obyčajné (najsilnejšie), battlecry buffery
    a Pečate ako posledné**, nech zasiahnu plnú plochu. Dračí cielený
    battlecry vždy s `target` na kartu dominantnej rasy; U004 s `target`
-   na U001/U006/U009. Bojuj s PLNOU plochou (5).
+   na U009/U006/U001 alebo U010. Bojuj s PLNOU plochou (5).
 3. **Výmena na plnej ploche**: ak máš v ruke telo aspoň o 3 staty
    (útok + život + 2 za schopnosť) lepšie než najslabšie na ploche, predaj
    najslabšie a vylož lepšie.
@@ -361,7 +360,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
 ### Nákupné zoznamy podľa rasy (priorita zľava doprava)
 
 - **Undead**: U002 (t1, kostíky +1/+1 v boji – vykladaj každé kolo), U001,
-  U003 (t2 Pečať), U004 (t2, target U001/U006/U009), U005/U006 (t3), U008
+  U003 (t2 Pečať), U004 (t2, kópia schopnosti – target U009/U006/U010), U005/U006 (t3), U008
   (t4 Pečať), U007 (t4 charga), U009 (t5), U010 (t6, Pečať pri smrti –
   Obranca, nech padne). Proti undead: E010, O003, výboje E001/E006; E005
   je len škálovač (jeden výstrel za boj), hordu nezastaví.

@@ -1194,7 +1194,7 @@ test("Živelná sila zosilňuje Pri útoku bonus (E004): +1/+1 Živlom +boost, c
   assert.match(C.cardText(C.byId["F009"], 1, "sk", false, 2), /\+2\/\+2/); // Po kúzle bez boostu
 });
 
-test("U010: undead aura sa položí PRI SMRTI – živí nemŕtvi hneď, budúce inštancie cez raceBuffs", () => {
+test("U010: undead aura sa položí PRI SMRTI – Znovuzrodenie = dve smrti, dve Pečate; budúce inštancie cez raceBuffs", () => {
   const { state, E } = fresh(44);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -1211,9 +1211,11 @@ test("U010: undead aura sa položí PRI SMRTI – živí nemŕtvi hneď, budúce
   assert.ok(proc);
   assert.ok(events.some(e => e.type === "futureBuff" && e.pid === "p1" && e.race === "undead" && e.a === 1 && e.h === 1));
   assert.ok(events.some(e => e.type === "buff" && e.uid === bone.uid && e.a === 1 && e.h === 1)); // živý kostík hneď
-  assert.equal(state.p1.raceBuffs.undead.a, 1); assert.equal(state.p1.raceBuffs.undead.h, 1); // aura prežila boj
+  assert.ok(events.some(e => e.type === "revive" && e.uid === tank.uid), "Znovuzrodenie: vstane s 1 životom");
+  assert.equal(events.filter(e => e.type === "futureBuff" && e.pid === "p1" && e.race === "undead").length, 2);
+  assert.equal(state.p1.raceBuffs.undead.a, 2); assert.equal(state.p1.raceBuffs.undead.h, 2); // aura prežila boj
   const later = E.makeInst(state, "U001", 1, state.p1);
-  assert.equal(later.atk, 2); // 1 + aura – budúce inštancie
+  assert.equal(later.atk, 3); // 1 + 2× aura – budúce inštancie
 });
 
 test("Vichor: príšerka útočí dvakrát a Pri útoku sa spustí pri každom útoku", () => {
@@ -1974,38 +1976,30 @@ test("Pretečenie: undead token, čo sa nezmestí, dá celé staty jednému kama
   assert.equal(buffs[0].h, 1); // celé hp jednému
 });
 
-test("U004 reviveAs: deathrattle prebehne, karta vstane ako 1/1 s aurami a zomrie znova", () => {
-  const { state, E } = fresh(93);
+test("U004 copyAbility: skopíruje schopnosť vlastného Nemŕtveho do konca boja (čísla podľa stupňa U004); cieľ si ju nechá; do kôpky sa neprenáša", () => {
+  const { state, E, C } = fresh(46);
   E.startRound(state);
   const p = state.p1;
-  const rat = E.makeInst(state, "U001", 1); rat.slot = 0; // Pri smrti: 2× kostík
-  p.board = [rat];
-  p.hand = [E.makeInst(state, "U004", 1)];
-  p.deck = []; p.discard = [];
-  p.raceBuffs.undead = { a: 1, h: 2 }; // aura – vstane ako 2/3
-  assert.ok(E.playMinion(state, "p1", 0, rat.uid));
-  assert.equal(rat.reviveAs, 1);
-  state.p2.board = [Object.assign(E.makeInst(state, "E010", 2), { slot: 0 })]; // 18/18, Pred bojom AoE 4
-  state.p1.hand = []; state.p2.hand = [];
-  state.p1.deck = []; state.p1.discard = [];
-  state.p2.deck = []; state.p2.discard = [];
+  const src = E.makeInst(state, "U001", 1); src.slot = 0; // Pri smrti 2 Kostíky
+  const bear = E.makeInst(state, "B001", 1); bear.slot = 1; // nie Nemŕtvy
+  p.board = [src, bear];
+  const cl = E.makeInst(state, "U004", 2); // strieborný – kópia ×2
+  p.hand = [cl];
+  const ev = E.playMinion(state, "p1", 0, bear.uid); // neplatný cieľ → vezme Nemŕtveho
+  assert.ok(ev.some(e => e.type === "copyAbility" && e.fromDefId === "U001"));
+  const u4 = p.board.find(x => x.defId === "U004");
+  assert.equal(u4.cloneOf, "U001");
+  assert.match(C.cardText(C.byId.U004, 1, "sk"), /vyber Nemŕtveho/);
+  // boj: U004 zomrie a vyvolá Kostíky ako strieborný U001 (2 + 1 za stupeň = 3)
+  E.endShopTurn(state, "p1");
+  state.p1.board = [Object.assign(u4, { slot: 0 })];
+  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })];
+  for (const pid of ["p1", "p2"]) { state[pid].hand = []; state[pid].deck = []; state[pid].discard = []; }
   const events = E.doBattle(state);
-  const rev = events.find(e => e.type === "reviveAs");
-  assert.ok(rev);
-  assert.equal(rev.atk, 2); // 1 + aura 1
-  assert.equal(rev.hp, 3);  // 1 + aura 2
-  // Deathrattle prebehol PRED vstávaním – kostíky už boli vonku.
-  const revIdx = events.indexOf(rev);
-  const before = events.slice(0, revIdx).filter(e => e.type === "summon" && e.defId === "kostik");
-  assert.equal(before.length, 2);
-  // Druhá smrť: deathrattle znova, ale už nevstane (reviveAs spotrebované).
-  const dies = events.filter(e => e.type === "die" && e.uid === rev.uid);
-  assert.equal(dies.length, 1);
-  const all = events.filter(e => e.type === "summon" && e.defId === "kostik").length
-    + events.filter(e => e.type === "overflow").length;
-  assert.ok(all >= 4, `len ${all} kostíkov/pretečení`);
+  const bones = events.filter(e => e.type === "summon" && e.pid === "p1" && e.defId === "kostik");
+  assert.equal(bones.length, 3);
+  assert.ok(!state.p1.discard.some(c => c.cloneOf), "kópia schopnosti končí bojom");
 });
-
 test("ogr O002 chaos: Pred bojom spustí schopnosť náhodnej príšerky – aj súperovej, deathrattle bez smrti", () => {
   const { state, E, C } = fresh(91);
   E.startRound(state);

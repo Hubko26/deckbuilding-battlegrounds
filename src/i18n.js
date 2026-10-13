@@ -503,15 +503,10 @@ const L = {
     cs: "🍺 Ožralý úder: trefil sám sebe za",
     en: "🍺 Drunken swing: smacked itself for",
   },
-  reviveAsMarkMsg: {
-    sk: "🦋 po smrti vstane ako",
-    cs: "🦋 po smrti vstane jako",
-    en: "🦋 will get back up after death as",
-  },
-  reviveAsMsg: {
-    sk: "🦋 vstal ako",
-    cs: "🦋 vstal jako",
-    en: "🦋 got back up as",
+  copyAbilityMsg: {
+    sk: "🦋 {a} skopíroval schopnosť: {b}",
+    cs: "🦋 {a} zkopíroval schopnost: {b}",
+    en: "🦋 {a} copied the ability of {b}",
   },
   ogreGambleWinMsg: {
     sk: "🪙 Ogrí hazard vyšiel! Všetci Ogri +{a}/+{h} navždy",
@@ -836,6 +831,13 @@ L.cards = (() => {
   // tvoje príšerky danej rasy (plocha, ruka, balíček, kôpka, tokeny aj
   // budúce) dostanú staty NAVŽDY. Vysvetlenie je v pravidlách (L.rules).
   const imprint = { sk: "Pečať", cs: "Pečeť", en: "Imprint" };
+  // Znovuzrodenie (U010): po prvej smrti vstane s 1 životom.
+  const reborn = { sk: "Znovuzrodenie", cs: "Znovuzrození", en: "Reborn" };
+  const rebornText = {
+    sk: "po prvej smrti vstane s 1 životom (Pri smrti sa spustí)",
+    cs: "po první smrti vstane s 1 životem (Při smrti se spustí)",
+    en: "after its first death it comes back with 1 health (Deathrattle triggers)",
+  };
 
   // Divoký úder: rozsah zásahu [lo, hi] počíta cards.js (wildRange).
   const wildText = ([lo, hi]) => ({
@@ -1202,10 +1204,10 @@ L.cards = (() => {
       cs: `${hl(f.n * m)} damage úplně náhodné příšerce – jakékoli, i tvé`,
       en: `deal ${hl(f.n * m)} damage to a totally random minion – any, even yours`,
     }),
-    reviveAs: (f, m) => ({
-      sk: `vyber príšerku – po smrti vstane ako ${m}/${m} (aury sa pridajú)`,
-      cs: `vyber příšerku – po smrti vstane jako ${m}/${m} (aury se přidají)`,
-      en: `pick a minion – after it dies it gets back up as a ${m}/${m} (auras apply)`,
+    copyAbility: () => ({
+      sk: "vyber Nemŕtveho – do konca boja získa aj jeho schopnosť (Pri vyložení nie)",
+      cs: "vyber Nemrtvého – do konce boje získá i jeho schopnost (Při vyložení ne)",
+      en: "pick an Undead – until the end of the fight it also gains that minion's ability (not Battlecry)",
     }),
     // ---------- Psíci ----------
     // Pohladkanie (kúzlo so stupňom): m = stupeň kúzla, sila ×2 za stupeň.
@@ -1284,6 +1286,6 @@ L.cards = (() => {
     }),
   };
 
-  return { races, racesPl, racesNom, names, namesPl, namesAcc, kwLabel, taunt, cleave, wild, imprint,
+  return { races, racesPl, racesNom, names, namesPl, namesAcc, kwLabel, taunt, cleave, wild, imprint, reborn, rebornText,
     wildText, cleaveText, raceDeathLabel, enemySummonLabel, oneShotNote, petMergeNote, petName, petValue, fx };
 })();

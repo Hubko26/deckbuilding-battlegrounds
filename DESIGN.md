@@ -307,13 +307,13 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   stackuje sa, po boji sa nuluje ako dračie `fightRaceBuffs`). Vracia
   kostíkom úderný 2/2 – t1 undead stojí na U002 + U001. Navždy by bolo
   prisilné (aury už kostíky berú). Pôvodný výboj bol elemental mechanika.
-- **U004 (t2, Pri vyložení, cielené)**: označená príšerka po smrti vstane
-  ako 1/1 (stupeň 2/2, 3/3). Karta NAOZAJ zomrie – deathrattle aj
-  scavengery prebehnú PRED vstávaním (kostíky zaplnia plochu, druhá smrť
-  ich pretečie do buffov). Aury (permanentná rasová aj dračia bojová) sa
-  na vstávajúcu aplikujú; pri plnej ploche ostáva ležať. Nahradila tretiu
-  undead auru (+0/+1) – undead boli slabí a aura bola redundantná
-  k U008/U010.
+- **U004 (t2, Pri vyložení, cielené; od 13. 10. 2026)**: skopíruje
+  schopnosť vybraného vlastného **Nemŕtveho** (okrem Pri vyložení) do konca
+  boja (`copyAbility`, `inst.cloneOf`, `instPowers`) – čísla podľa stupňa
+  U004, cieľ si schopnosť nechá. Bez platného cieľa vezme najsilnejšieho
+  Nemŕtveho so schopnosťou (tier × stupeň). Funguje so všetkými spúšťačmi
+  (Pri smrti, Pred bojom, Po nákupe, Ozvena, O002 chaos…). UI: badge 🦋.
+  Predtým reviveAs (príšerka po smrti vstala ako 1/1) – zrušené.
 - U007 (t4, Pri vyložení) dáva jednorazovú chargu (`summonCharge`):
   „tvoje ďalšie vyvolanie v boji vyvolá o 1 viac". Chargy sa stackujú
   a minú sa prvým vyvolaním. Strieborný dáva +2, zlatý +3 (čísla ×stupeň).
@@ -442,7 +442,7 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
     s 1 životom (`inst.revive`). **Smrť sa počíta: Pri smrti aj scavengery
     (B004/B009) sa spustia**, až potom sa vráti – B007 s pierkom dá Mláďa
     a ostane stáť (HP sa nastaví pred Pri smrti, aby token nezabral jej
-    slot). U004 reviveAs sa pri návrate nemíňa – platí až na definitívnu smrť,
+    slot). (U004 reviveAs už v hre nie je),
   - **Žabia kliatba** 🐸 (t4): odložená kliatba – v najbližšom boji sa
     náhodnej súperovej príšerke zmení život na 1 (anti-beast tech),
   - ~~Zvitok múdrosti~~ 📜 (draw 2) **odstránený**: víly s ním každú hru
@@ -885,8 +885,10 @@ alebo hnevá.
   prirodzene rastie do vyšších čísel. **U010 (t6) položí auru ako Pri
   smrti**, nie Pri vyložení: tank 8/10 musí padnúť, potom navždy buffne
   všetkých nemŕtvych (živých na ploche hneď, kostíkov a balíček cez
-  `raceBuffs`). Combo s U004 (reviveAs), Fénixovým pierkom a mutáciou
-  echoDeath = aura dvakrát; endgame akcelerátor undead buildu.
+  `raceBuffs`). **Znovuzrodenie** (`def.reborn` → `inst.revive`, od
+  13. 10. 2026): po prvej smrti vstane s 1 životom, Pri smrti sa tak
+  spustí dvakrát (Pečať 1/2/3 podľa stupňa). S Pierkom/echoDeath/U004
+  kópiou ešte viac; endgame akcelerátor undead buildu.
 - **Dočasné boosty** – všetko, čo sa udeje v boji (Pri útoku, Pred bojom,
   Pri smrti buffy), platí len do konca boja: po boji idú karty do discard
   pile ako čisté kópie. Výnimka: trvalý rast `perm` kariet (B003/B008)

@@ -1151,22 +1151,6 @@ async function runBattle() {
         log(`${t(L.overflowMsg)} (+${ev.atk}/+${ev.hp})`);
         break;
       }
-      case "reviveAs": {
-        // U004: príšerka vstala ako n/n – prepíš staty na karte.
-        const el = cardById(ev.uid);
-        const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
-        log(`${name} ${t(L.reviveAsMsg)} ${ev.atk}/${ev.hp}`);
-        if (el) {
-          const atkEl = el.querySelector(".atk"), hpEl = el.querySelector(".hp");
-          if (atkEl) atkEl.textContent = String(ev.atk);
-          if (hpEl) { hpEl.textContent = String(ev.hp); hpEl.classList.remove("hurt"); }
-          el.dataset.maxhp = String(ev.hp);
-          floatText(el, "🦋✨", true);
-          Sfx.evolve();
-          await sleep(800);
-        }
-        break;
-      }
       case "drunkHit": {
         // Ogr sa ožratým úderom trafil sám – nápadný chaos moment.
         const el = cardById(ev.uid);
@@ -1828,6 +1812,7 @@ function cardEl(instOrId, opts) {
   if (isInst && instOrId.revive) inner += `<span class="revive-badge">🪶</span>`;
   if (isInst && instOrId.windfury) inner += `<span class="windfury-badge">🌪️</span>`;
   if (isInst && instOrId.echo) inner += `<span class="echo-badge">🔔</span>`;
+  if (isInst && instOrId.cloneOf) inner += `<span class="clone-badge" title="${Cards.nameOf(Cards.byId[instOrId.cloneOf], 1, I18N.lang)}">🦋</span>`;
   // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
   if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
@@ -2126,7 +2111,7 @@ function markZones(src, on) {
 }
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
-const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyTarget", "reviveAs", "buffOne"]);
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyTarget", "copyAbility", "buffOne"]);
 // Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
 const TARGETED_SPELL = new Set(["buffTarget", "petBuff", "copyToDeck", "transform", "swapDeck"]);
 
@@ -2316,9 +2301,9 @@ function act(events) {
         setTimeout(() => el.classList.remove("evolving"), 600);
       }
     }
-    if (ev.type === "reviveAsMark") {
-      const name = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang);
-      log(`${name} ${t(L.reviveAsMarkMsg)} ${ev.n}/${ev.n}`);
+    if (ev.type === "copyAbility" && ev.pid === MY) {
+      const a = Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang), b = Cards.nameOf(Cards.byId[ev.fromDefId], 1, I18N.lang);
+      log(t(L.copyAbilityMsg).replace("{a}", a).replace("{b}", b));
       const el = cardById(ev.uid);
       if (el) floatText(el, "🦋", true);
     }

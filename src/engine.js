@@ -223,6 +223,7 @@ const Engine = (() => {
       atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m,
       taunt: !!def.taunt,
     };
+    if (def.reborn) inst.revive = true; // Znovuzrodenie (U010): ako Fénixovo pierko
     // Permanentné rasové aury dostávajú AJ tokeny – kostíky s aurami
     // škálujú do late game (bez toho undead scaling zaostával).
     const aura = p && def.race && p.raceBuffs && auraFor(state, p, def);
@@ -1006,8 +1007,7 @@ const Engine = (() => {
   function afterSpellProcs(state, p, events) {
     p.spellsCast++;
     for (const inst of [...p.board]) {
-      const def = Cards.byId[inst.defId];
-      for (const pw of Cards.powersOf(def)) {
+      for (const pw of instPowers(inst)) {
         if (pw.kw !== "afterSpell") continue;
         events.push({ type: "proc", pid: p.id, uid: inst.uid, kw: "afterSpell" });
         applyShopFx(state, p, pw.fx, inst.rank, inst, events);
@@ -1312,6 +1312,15 @@ const Engine = (() => {
 
   // Cieľ cieleného battlecry: zadaný cieľ (ak je stále na ploche), inak
   // najsilnejšia vlastná príšerka OKREM seba.
+  // Schopnosti konkrétnej príšerky: jej karta + schopnosť skopírovaná cez
+  // U004 (inst.cloneOf, do konca boja). Pri vyložení sa nekopíruje.
+  function instPowers(inst) {
+    const own = Cards.powersOf(Cards.byId[inst.defId]);
+    if (!inst.cloneOf) return own;
+    return own.concat(Cards.powersOf(Cards.byId[inst.cloneOf]).filter(pw => pw.kw !== "battlecry"));
+  }
+  const copyablePowers = defId => Cards.powersOf(Cards.byId[defId]).filter(pw => pw.kw !== "battlecry");
+
   function shopTarget(p, self, target) {
     if (target && p.board.includes(target)) return target;
     const others = p.board.filter(x => x !== self);
@@ -1349,7 +1358,7 @@ const Engine = (() => {
   }
 
   // Permanentná aura rasy: budúce inštancie (balíček, kôpka, tokeny,
-  // vstávajúce) ju dostanú pri vzniku (makeInst, evolve, reviveAs).
+  // vstávajúce) ju dostanú pri vzniku (makeInst, evolve).
   function addRaceAura(p, race, a, h) {
     const cur = p.raceBuffs[race] || { a: 0, h: 0 };
     p.raceBuffs[race] = { a: cur.a + a, h: cur.h + h };
@@ -1518,18 +1527,17 @@ const Engine = (() => {
         self.ph = (self.ph || 0) + fx.h * m;
       }
     },
-    // U004: označená príšerka po smrti vstane ako m/m (1/2/3 podľa stupňa).
-    // Aury sa aplikujú až pri vstávaní v boji. Fallback bez cieľa: najsilnejší
-    // VLASTNÝ deathrattler (dve smrti = dvojitý deathrattle), až potom
-    // najsilnejšia príšerka.
-    reviveAs({ p, m, self, target, events }) {
-      const deathrattlers = p.board.filter(x =>
-        x !== self && Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "deathrattle"));
-      const t = (target && p.board.includes(target)) ? target
-        : deathrattlers.sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0] || shopTarget(p, self, target);
+    // U004: skopíruj schopnosť (okrem Pri vyložení) vybraného vlastného
+    // príšerky rasy fx.race do konca boja – čísla podľa stupňa U004. Bez
+    // platného cieľa vezme najsilnejšiu vhodnú (tier × stupeň).
+    copyAbility({ state, p, fx, self, target, events }) {
+      const ok = x => x !== self && isRace(state, p.id, Cards.byId[x.defId], fx.race) && copyablePowers(x.defId).length > 0;
+      const cands = p.board.filter(ok);
+      const t = target && ok(target) && p.board.includes(target) ? target
+        : cands.sort((a, b) => Cards.byId[b.defId].tier * b.rank - Cards.byId[a.defId].tier * a.rank)[0];
       if (!t) return;
-      t.reviveAs = Math.max(t.reviveAs || 0, m);
-      events.push({ type: "reviveAsMark", pid: p.id, uid: t.uid, defId: t.defId, n: m });
+      self.cloneOf = t.defId;
+      events.push({ type: "copyAbility", pid: p.id, uid: self.uid, fromUid: t.uid, defId: self.defId, fromDefId: t.defId });
     },
     // Ogr O001: hod mincou – 50 % veľký buff, 50 % postih (do konca boja).
     // Postih nejde pod 0 útoku / 1 život.
@@ -1715,8 +1723,7 @@ const Engine = (() => {
     if (state.pendingDiscover && state.pendingDiscover.pid === pid) events.push(...pickDiscover(state, pid, 0));
     // Po nákupe (end of turn) schopnosti príšeriek na ploche.
     for (const inst of [...p.board]) {
-      const def = Cards.byId[inst.defId];
-      for (const pw of Cards.powersOf(def)) {
+      for (const pw of instPowers(inst)) {
         if (pw.kw === "endTurn") applyShopFx(state, p, pw.fx, inst.rank, inst, events);
       }
     }
@@ -1867,7 +1874,7 @@ const Engine = (() => {
   function triggerPower(state, sides, pid, inst, kw, events) {
     if (inst.silenced) return false;
     let fired = false;
-    for (const pw of Cards.powersOf(Cards.byId[inst.defId])) {
+    for (const pw of instPowers(inst)) {
       if (pw.kw !== kw) continue;
       events.push({ type: "proc", pid, uid: inst.uid, kw });
       applyBattleFx(state, sides, pid, inst, pw.fx, inst.rank, events, kw);
@@ -1901,7 +1908,7 @@ const Engine = (() => {
       const fromDefId = t.defId, fromRank = t.rank;
       Object.assign(t, {
         defId: "ovecka", rank: 1, atk: sheep.atk, hp: sheep.hp, maxHp: sheep.hp,
-        taunt: false, shield: false, revive: false, windfury: false, silenced: false, echo: 0,
+        taunt: false, shield: false, revive: false, windfury: false, silenced: false, echo: 0, cloneOf: null,
       });
       events.push({ type: "polymorph", pid: foe, uid: t.uid, fromDefId, fromRank, defId: "ovecka", atk: t.atk, hp: t.hp });
       pushHp(events, foe, t);
@@ -1914,7 +1921,7 @@ const Engine = (() => {
     while (p.silences > 0) {
       p.silences--;
       const targets = sides[foe].filter(x =>
-        x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || Cards.byId[x.defId].wildAtk || x.taunt));
+        x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || x.cloneOf || Cards.byId[x.defId].wildAtk || x.taunt));
       if (!targets.length) {
         events.push({ type: "silenceFizzle", pid });
         continue;
@@ -1989,18 +1996,18 @@ const Engine = (() => {
   // a vybraná). Umlčaná / premenená (Ovečka) nič nespustí. Značka žije na
   // príšerke na ploche do boja; do kôpky sa neprenáša (pileCard).
   const ECHO_KW = ["deathrattle", "startFight", "onAttack", "raceDeath"];
-  function echoKws(defId) {
-    return [...new Set(Cards.powersOf(Cards.byId[defId]).map(pw => pw.kw).filter(kw => ECHO_KW.includes(kw)))];
+  function echoKws(inst) {
+    return [...new Set(instPowers(inst).map(pw => pw.kw).filter(kw => ECHO_KW.includes(kw)))];
   }
   function hasEchoPower(inst) {
-    return echoKws(inst.defId).length > 0;
+    return echoKws(inst).length > 0;
   }
   function runEchoProcs(state, sides, first, events) {
     for (const pid of sideOrder(first)) {
       for (const inst of [...sides[pid]]) {
         for (let i = 0; i < (inst.echo || 0); i++) {
           if (inst.hp <= 0 || inst.silenced) break;
-          const kws = echoKws(inst.defId);
+          const kws = echoKws(inst);
           if (!kws.length) break;
           events.push({ type: "echoProc", pid, uid: inst.uid, defId: inst.defId });
           for (const kw of kws) triggerPower(state, sides, pid, inst, kw, events);
@@ -2069,7 +2076,7 @@ const Engine = (() => {
   // „Po údere" schopnosti útočníka (kw afterAttack) – zatiaľ len Aport.
   function runAfterAttack(state, sides, pid, a, d, events) {
     if (a.silenced) return;
-    for (const pw of Cards.powersOf(Cards.byId[a.defId])) {
+    for (const pw of instPowers(a)) {
       if (pw.kw !== "afterAttack") continue;
       events.push({ type: "proc", pid, uid: a.uid, kw: "afterAttack" });
       applyBattleFx(state, sides, pid, a, pw.fx, a.rank, events, "afterAttack");
@@ -2288,7 +2295,7 @@ const Engine = (() => {
         for (const sp of isCareful(state, pid) ? [pid] : ["p1", "p2"]) { // Opatrný ogr: len vlastné
           for (const x of sides[sp]) {
             if (x === self || x.hp <= 0 || x.silenced) continue;
-            for (const pw of Cards.powersOf(Cards.byId[x.defId])) {
+            for (const pw of instPowers(x)) {
               if (!BATTLE_KW.includes(pw.kw) || pw.fx.type === "triggerRandom") continue;
               pool.push({ x, sp, pw });
             }
@@ -2545,7 +2552,6 @@ const Engine = (() => {
         inst.dead = true;
         runDeathrattle(state, sides, pid, inst, events);
         runScavengers(state, sides, pid, inst, events);
-        if (tryReviveAs(state, sides, pid, inst, events)) continue;
         events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
       }
     }
@@ -2584,31 +2590,9 @@ const Engine = (() => {
   function runObservers(state, sides, pid, dead, kw, matches, events) {
     for (const f of sides[pid]) {
       if (f === dead || f.hp <= 0 || f.silenced) continue;
-      if (!Cards.powersOf(Cards.byId[f.defId]).some(pw => pw.kw === kw && matches(pw.fx))) continue;
+      if (!instPowers(f).some(pw => pw.kw === kw && matches(pw.fx))) continue;
       triggerPower(state, sides, pid, f, kw, events);
     }
-  }
-
-  // U004 reviveAs: karta NAOZAJ zomrela (deathrattle aj scavengery prebehli –
-  // v tom je combo: kostíky už zaplnili plochu), ale vstane ako n/n. Aury sa
-  // aplikujú ako pri novej nemŕtvej inštancii – permanentná rasová aura aj
-  // dračí bojový buff. Pri plnej ploche ostáva ležať.
-  function tryReviveAs(state, sides, pid, inst, events) {
-    if (!inst.reviveAs) return false;
-    const n = inst.reviveAs;
-    inst.reviveAs = 0;
-    const aliveNow = aliveOn(sides, pid);
-    if (aliveNow.length >= BOARD_MAX) return false;
-    const idef = Cards.byId[inst.defId];
-    const aura = auraFor(state, state[pid], idef) || { a: 0, h: 0 };
-    const fb = fightBuffFor(state, state[pid], idef) || { a: 0, h: 0 };
-    inst.atk = n + aura.a + fb.a;
-    inst.hp = inst.maxHp = n + aura.h + fb.h;
-    inst.dead = false;
-    inst.slot = freeSlot(aliveNow, BOARD_MAX);
-    events.push({ type: "reviveAs", pid, uid: inst.uid, defId: inst.defId, atk: inst.atk, hp: inst.hp, slot: inst.slot });
-    pushHp(events, pid, inst);
-    return true;
   }
 
   return {
