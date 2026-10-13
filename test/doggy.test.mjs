@@ -67,7 +67,7 @@ test("psíci: Pohladkanie – na Psíka NAVŽDY (pa/ph), na inú rasu len dočas
   assert.equal(E.castSpell(state, "p1", 0), null); // bez cieľa nelegálne
   const ev1 = E.castSpell(state, "p1", 0, dog.uid);
   assert.ok(ev1);
-  assert.equal(dog.atk, 2); assert.equal(dog.hp, 3);
+  assert.equal(dog.atk, 3); assert.equal(dog.hp, 3); // P001 2/2 + 1/1
   assert.equal(dog.pa, 1); assert.equal(dog.ph, 1);
   assert.ok(ev1[0].perm);
   const ev2 = E.castSpell(state, "p1", 0, bear.uid); // Super +2/+2 na medveďa
@@ -85,7 +85,7 @@ test("psíci: Pohladkanie – na Psíka NAVŽDY (pa/ph), na inú rasu len dočas
   p.deck = p.discard.splice(0).filter(c => c.defId === "P001"); p.hand = [];
   E.drawCards(state, p, 1, []);
   assert.equal(p.hand[0].defId, "P001");
-  assert.equal(p.hand[0].atk, 2); assert.equal(p.hand[0].hp, 3);
+  assert.equal(p.hand[0].atk, 3); assert.equal(p.hand[0].hp, 3);
 });
 
 test("psíci: 3 rovnaké Pohladkania (ruka, balíček, kôpka) sa spoja na vyšší stupeň do ruky; mimo ťahu do balíčka; zoslané sa nerátajú", () => {
@@ -298,7 +298,7 @@ test("psíci: celá hra bot vs bot s psíkmi dobehne (rasa v poole, ban ju môž
   }
 });
 
-test("psíci: spojenie Pohladkaní pri dotiahnutí ruky nezje ruku – ruka sa doplní späť na 5", () => {
+test("psíci: Pohladkanie nezaberá miesto v ruke – spojenie pri dotiahnutí, ruka má 5 iných kariet + Super", () => {
   const { state, E } = fresh(41);
   E.startRound(state);
   E.endShopTurn(state, "p1");
@@ -309,12 +309,13 @@ test("psíci: spojenie Pohladkaní pri dotiahnutí ruky nezje ruku – ruka sa d
   // vrch balíčka (pop z konca): 3 pohladkania + 2 príšery, pod nimi rezerva
   p.deck = [{ defId: "B001", rank: 1 }, { defId: "U001", rank: 1 }, { defId: "E001", rank: 1 },
     { defId: "B003", rank: 1 }, { defId: "B007", rank: 1 }, { defId: "pet", rank: 1 }, { defId: "pet", rank: 1 }, { defId: "pet", rank: 1 }];
-  const ev = E.endShopTurn(state, "p2"); // p1 na ťahu: draw 5 (3 pet + 2) → Super → dotiahne 2
+  const ev = E.endShopTurn(state, "p2"); // p1 na ťahu: 3 pet sa nerátajú → 5 príšer, 3 pet → Super
   assert.ok(ev.some(e => e.type === "petMerge" && e.rank === 2));
-  assert.equal(p.hand.length, 5);
+  assert.equal(p.hand.length, 6);
+  assert.equal(p.hand.filter(x => x.defId !== "pet").length, 5, "5 kariet okrem Pohladkaní");
   assert.equal(p.hand.filter(x => x.defId === "pet").length, 1);
   assert.equal(p.hand.find(x => x.defId === "pet").rank, 2);
-  assert.equal(p.deck.length, 1);
+  assert.equal(p.deck.length, 0);
 });
 
 test("psíci: P009 Vodca svorky na ploche – každé Pohladkanie pohladká cieľ aj všetkých ostatných Psíkov navždy; bez P009 len cieľ", () => {
@@ -440,4 +441,27 @@ test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na za�
   p.deck = [{ defId: "B001", rank: 1 }];
   assert.ok(!E.trinketPool(state, "p1").some(t => t.id === "doggyGlove"));
   assert.ok(C.byId.pet);
+});
+
+test("psíci buff: P001 2/2, P002 2/3, P005 4/5 a Vyňuchaj za nájdené Pohladkanie +1/+1 navždy; dotiahnuté Pohladkanie sa do ruky nepočíta", () => {
+  const { state, E, C } = fresh(63);
+  assert.deepEqual([C.byId.P001.atk, C.byId.P001.hp], [2, 2]);
+  assert.deepEqual([C.byId.P002.atk, C.byId.P002.hp], [2, 3]);
+  assert.deepEqual([C.byId.P005.atk, C.byId.P005.hp], [4, 5]);
+  E.startRound(state);
+  const p = state.p1;
+  p.board = []; p.discard = [];
+  p.deck = [{ defId: "pet", rank: 1 }, { defId: "B001", rank: 1 }];
+  const sniff = E.makeInst(state, "P005", 1); sniff.slot = 0;
+  p.hand = [sniff];
+  E.playMinion(state, "p1", 0);
+  const s = p.board[0];
+  assert.equal(s.atk, 5); assert.equal(s.hp, 6);
+  assert.equal(s.pa, 1); assert.equal(s.ph, 1);
+  assert.ok(p.hand.some(c => c.defId === "pet"));
+  // drawCards: pet sa nepočíta, dotiahne sa ďalšia karta
+  p.hand = [];
+  p.deck = [{ defId: "B003", rank: 1 }, { defId: "pet", rank: 1 }];
+  E.drawCards(state, p, 1, []);
+  assert.deepEqual(p.hand.map(c => c.defId).sort(), ["B003", "pet"]);
 });

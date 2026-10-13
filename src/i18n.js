@@ -1222,9 +1222,9 @@ L.cards = (() => {
     fetchPet: (f, m) => {
       const n = f.n * m;
       return {
-        sk: `Vyňuchaj – vytiahni z balíčka ${n > 1 ? n + "× " : ""}Pohladkanie (ak tam nie je, náhodnú kartu)`,
-        cs: `Vyčenichej – vytáhni z balíčku ${n > 1 ? n + "× " : ""}Pohlazení (když tam není, náhodnou kartu)`,
-        en: `Sniff out – draw ${n > 1 ? n + "× " : ""}a Pet from your deck (a random card if there is none)`,
+        sk: `Vyňuchaj – vytiahni z balíčka ${n > 1 ? n + "× " : ""}Pohladkanie (ak tam nie je, náhodnú kartu)` + (f.grow ? `; za každé nájdené +${f.grow}/+${f.grow} navždy sebe` : ""),
+        cs: `Vyčenichej – vytáhni z balíčku ${n > 1 ? n + "× " : ""}Pohlazení (když tam není, náhodnou kartu)` + (f.grow ? `; za každé nalezené +${f.grow}/+${f.grow} navždy sobě` : ""),
+        en: `Sniff out – draw ${n > 1 ? n + "× " : ""}a Pet from your deck (a random card if there is none)` + (f.grow ? `; +${f.grow}/+${f.grow} forever to itself per Pet found` : ""),
       };
     },
     // Ocikaj (P003): náhodný súper má útok aj život na polovicu (hore).

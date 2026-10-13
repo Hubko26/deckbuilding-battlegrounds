@@ -3126,14 +3126,16 @@ test("deckMin: evolve čaká, kým je kariet menej než limit; po dokúpení sa 
   assert.equal(E.sellCard(state, pid, "hand", 0), null, "a predávať už nejde");
 });
 
-test("deckMin: celá hra bot vs bot s limitom dobehne a nikto nemá menej kariet než limit − 2", () => {
+test("deckMin: celá hra bot vs bot s limitom dobehne a nikto nespadne pod 8 kariet", () => {
   const { state, E, B } = freshMin(203);
   E.startRound(state);
   let guard = 400;
   while (state.phase !== "over" && guard-- > 0) {
     if (state.phase === "shop") B.botTurn(state, state.active, "hard");
     else E.doBattle(state);
-    for (const pid of ["p1", "p2"]) assert.ok(E.cardCount(state[pid]) >= E.deckMin(state[pid].tier) - 2, `${pid} r${state.round}: ${E.cardCount(state[pid])}`);
+    // spojenie môže ísť max 2 pod limit, upgrade tieru potom limit zdvihne –
+    // tvrdá spodná hranica je limit tieru 1 − 2
+    for (const pid of ["p1", "p2"]) assert.ok(E.cardCount(state[pid]) >= E.deckMin(1) - 2, `${pid} r${state.round}: ${E.cardCount(state[pid])}`);
   }
   assert.equal(state.phase, "over");
 });

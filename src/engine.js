@@ -581,7 +581,7 @@ const Engine = (() => {
   function beginShopTurn(state, pid) {
     const p = state[pid];
     const events = [];
-    drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
+    drawCards(state, p, handDraw(state, pid) - handCount(p), events);
     bossReward(state, p, events);
     petTrinkets(state, p, events);
     // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
@@ -603,7 +603,7 @@ const Engine = (() => {
       const before = p.hand.length;
       checkEvolve(state, p, events);
       if (p.hand.length >= before) break; // nič sa nespojilo z ruky
-      const want = handDraw(state, pid) - p.hand.length;
+      const want = handDraw(state, pid) - handCount(p);
       if (want <= 0 || (!p.deck.length && !p.discard.length)) break;
       drawCards(state, p, want, events);
     }
@@ -619,6 +619,12 @@ const Engine = (() => {
     if (inst.src) c.src = inst.src;
     return c;
   }
+
+  // Pohladkanie (psíci) nezaberá miesto v ruke: dotiahnuté Pohladkanie sa
+  // do n neráta a dotiahne sa ďalšia karta (strop HAND_MAX). Bez toho
+  // psom pohladkania vytláčali príšerky z ruky a plocha ostávala tenká.
+  const isPetCard = c => !!Cards.byId[c.defId].pet;
+  const handCount = p => p.hand.filter(c => !isPetCard(c)).length;
 
   function drawCards(state, p, n, events) {
     for (let i = 0; i < n; i++) {
@@ -642,6 +648,7 @@ const Engine = (() => {
       inst.slot = freeSlot(p.hand, HAND_MAX);
       p.hand.push(inst);
       events.push({ type: "draw", pid: p.id, defId: c.defId });
+      if (isPetCard(c)) i--; // Pohladkanie sa do počtu nerátá
     }
   }
 
@@ -1605,7 +1612,7 @@ const Engine = (() => {
     },
     // Vyňuchaj (P005): z balíčka vytiahni Pohladkanie (najvyšší stupeň);
     // bez pohladkania v balíčku dotiahni náhodnú kartu. n×stupeň.
-    fetchPet({ state, p, fx, m, events }) {
+    fetchPet({ state, p, fx, m, self, events }) {
       for (let i = 0; i < fx.n * m; i++) {
         if (p.hand.length >= HAND_MAX) break;
         let best = -1;
@@ -1618,6 +1625,12 @@ const Engine = (() => {
         sp.slot = freeSlot(p.hand, HAND_MAX);
         p.hand.push(sp);
         events.push({ type: "draw", pid: p.id, defId: "pet", rank: sp.rank, fetched: true });
+        // Nájdené Pohladkanie = Snifflecap si navždy prilepší (+grow/+grow).
+        if (fx.grow && self) {
+          buffWithEvent(self, p.id, fx.grow, fx.grow, events);
+          self.pa = (self.pa || 0) + fx.grow;
+          self.ph = (self.ph || 0) + fx.grow;
+        }
       }
       checkEvolve(state, p, events);
     },

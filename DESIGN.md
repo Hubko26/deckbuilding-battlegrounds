@@ -467,6 +467,15 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   sila ho **nezosilňuje** (free kúzlo bez stropu by snowballovalo).
   **Predaj dá 0 zlata** (generátory nesmú byť zlatý motor), odhodenie ho
   nechá v kôpke.
+- **Pohladkanie nezaberá miesto v ruke** (od 13. 10. 2026): pri doťahovaní
+  sa do 5 kariet neráta – dotiahnuté Pohladkanie dotiahne ďalšiu kartu
+  (`drawCards`, `handCount`; strop ruky `HAND_MAX` 8). Ideal sim: psí bot
+  mal na ploche len 2,4–4 príšerky (ostatné rasy 4,5), lebo pohladkania
+  vytláčali telá z ruky.
+- **Buff t1–t3** (13. 10. 2026; psíci 34 % v ideal sim, najslabšie skoré
+  telá zo všetkých rás): P001 1/2 → **2/2**, P002 1/3 → **2/3**, P005
+  3/4 → **4/5** a Vyňuchaj za každé nájdené Pohladkanie dá Snifflecapu
+  **+1/+1 navždy** (`fx.grow`).
 - **Reťaz stupňov bez stropu**: kúzlo nesie `rank` (jediné kúzlo so stupňom),
   sila `2^(rank−1)`: Pohladkanie +1, Super +2, Mega +4, Giga +8, Ultra +16,
   Omega +32, ďalej „Pohladkanie N. stupňa" (`L.cards.petName`,

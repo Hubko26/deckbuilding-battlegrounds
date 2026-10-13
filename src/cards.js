@@ -63,7 +63,7 @@ const Cards = (() => {
     // Nerf 11. 10. 2026: 2/3/4 → 1/2/3 SuperMláďatá (ideal sim: zvieratá
     // 92 % winrate, zlatý B006 skoro v každej hre).
     M("B006", 6, "beast", ["Rumblebean", "Boulderroll", "Fortressback"], 7, 9,
-      { power: { kw: "deathrattle", fx: { type: "summon", token: "supermlada", n: 1 } } }),
+      { taunt: true, power: { kw: "deathrattle", fx: { type: "summon", token: "supermlada", n: 1 } } }),
     M("B009", 4, "beast", ["Prowlpip", "Sabershade", "Moonfang"], 5, 4,
       { power: { kw: "raceDeath", fx: { type: "growSelf", race: "beast", a: 2, h: 2 } } }),
     M("B010", 5, "beast", ["Shellop", "Reefram", "Tidemammoth"], 6, 10,
@@ -265,9 +265,11 @@ const Cards = (() => {
     // generátory boli zlatý motor). Pôvodný návrh mal 11 kariet (Brechot –
     // Obranca preč, Snackpaw – Po nákupe pohladkanie); art sada má 9 psov,
     // tak rasa má 9 kariet ako ostatné (10) – t3 má len jednu kartu.
-    M("P001", 1, "doggy", ["Wigglecrown", "Jinglepaw", "Carnival King"], 1, 2,
+    // Buff 13. 10. 2026 (psíci 34 % v ideal sim, najslabšie t1–t3 telá):
+    // P001 1/2 → 2/2, P002 1/3 → 2/3, P005 3/4 → 4/5 + rast z Vyňuchaj.
+    M("P001", 1, "doggy", ["Wigglecrown", "Jinglepaw", "Carnival King"], 2, 2,
       { power: { kw: "battlecry", fx: { type: "addPet", n: 1 } } }),
-    M("P002", 1, "doggy", ["Bumblesnout", "Ironjowl", "Royal Bulwark"], 1, 3,
+    M("P002", 1, "doggy", ["Bumblesnout", "Ironjowl", "Royal Bulwark"], 2, 3,
       { taunt: true, power: { kw: "deathrattle", fx: { type: "addPet", n: 1 } } }),
     // P003 Ocikaj: náhodný súper má útok aj životy na polovicu (zaokrúhlené
     // hore, 1 ostane 1), do konca boja. Stupeň = počet súperov, každého raz.
@@ -279,8 +281,8 @@ const Cards = (() => {
       { power: { kw: "afterAttack", fx: { type: "fetchSteal" } } }),
     // P005 Vyňuchaj: tutor – Pohladkanie z balíčka (najvyšší stupeň), inak
     // náhodná karta. Psí draw – bez neho by pohladkania riedili balíček.
-    M("P005", 3, "doggy", ["Snifflecap", "Trailwhisker", "Grand Scentmaster"], 3, 4,
-      { power: { kw: "battlecry", fx: { type: "fetchPet", n: 1 } } }),
+    M("P005", 3, "doggy", ["Snifflecap", "Trailwhisker", "Grand Scentmaster"], 4, 5,
+      { power: { kw: "battlecry", fx: { type: "fetchPet", n: 1, grow: 1 } } }),
     // P006 Zavýjanie: všetci Psíci +1/+1 za každého Psíka na ploche (aj seba).
     M("P006", 4, "doggy", ["Snowblink", "Aurorawoof", "Froststar Shaman"], 4, 7,
       { power: { kw: "startFight", fx: { type: "howl", a: 1, h: 1 } } }),

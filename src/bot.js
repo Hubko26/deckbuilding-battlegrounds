@@ -787,7 +787,7 @@ const Bot = (() => {
       // Pohladkanie do balíčka ≈ 2,5 bodu (+1/+1 navždy + neskoršie spojenie);
       // Po nákupe každé kolo → horizont.
       case "addPet": return f.n * m * 2.5 * (kw === "endTurn" ? PW_HORIZON : 1);
-      case "fetchPet": return f.n * m * 3;                     // tutor ako draw
+      case "fetchPet": return f.n * m * (3 + 2 * (f.grow || 0)); // tutor ako draw + rast navždy
       case "halveEnemy": return m * 6;                         // polovica ~12-statového tela
       case "fetchSteal": return 4 * PW_ATTACKS;                // ~4 body presunuté za útok
       case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
