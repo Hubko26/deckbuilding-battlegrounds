@@ -61,7 +61,7 @@ Action objects (executed in order; illegal ones are skipped):
 - {"a":"move","id":"<own board cardId>","slot":0-4}  reposition minion on board (0 = leftmost = attacks first; swaps with occupant)
 - {"a":"freeze","id":"<cardId in your private shop>"}  freeze that private-shop card so it survives into next round
 - {"a":"trinket","id":"<trinketId>"}  pick a trinket from trinketOffer (rounds 4 and 8) – do this FIRST when the state has trinketOffer; skipping it hands you the first one
-- {"a":"shield"}  arm your Hero Shield trinket (heroShieldReady): this fight your hero takes 0 damage – use it once, when a loss would hurt (low HP or the human's board is clearly stronger); useless in a dmgMeterRound
+- {"a":"shield"}  arm your Hero Shield trinket (heroShieldReady): it stays up until your hero would take damage and blocks that whole hit (once per game) – arm it when a loss would hurt (low HP or the human's board is clearly stronger)
 
 STRATEGY – do ALL of these every turn, in this order (derived from logs of winning games; bots lost on mixed races, bloated decks, 3-4 minion boards and upgrading with an empty board):
 1. SELL JUNK FROM HAND FIRST (before playing): the state lists junkInHand – emit {"a":"sell","zone":"hand","id":...} for EVERY card in it as your first actions (rule: 0 attack; from round 3 on EVERY off-race tier 1-2 minion – pairs too, silver ones from tier 4, tier 1-2 dragons from tier 3; ogre/dragon tier 1-2 count as off-race). Your starting deck is 10 random tier-1 cards – winners sell them all by round 6. Sell off-race cards the moment you commit to a race, even if the board ends up thin: hero damage is capped early (rounds 1-3 max 5, rounds 4-10 max 10) while junk in the deck hurts every round for the rest of the game. HARD CAP deckSize 14 (the driver sells your weakest hand bodies above it): your board returns to the discard pile after every battle and the next hand is 5 RANDOM cards from your deck cycle, so a bloated deck means your best cards sit in the pile while random junk fights. Winners keep deckSize 11-13: every card in the deck is one they want to draw. A game with zero sells is a lost game.
@@ -161,7 +161,8 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       opponentTrinkets: foe.trinkets.map(id => trinketText ? trinketText(id) : id),
       trinketsOffThisRound: p.trinketOff === state.round, // súperov Ogrí kľúč
       trinketOffer: p.trinketOffer ? p.trinketOffer.map(id => ({ id, text: trinketText ? trinketText(id) : id })) : null,
-      heroShieldReady: Engine.hasTrinket(state, pid, "heroShield") && !p.heroShieldUsed && !Engine.isBossRound(state),
+      heroShieldReady: Engine.hasTrinket(state, pid, "heroShield") && !p.heroShieldUsed,
+      heroShieldArmed: !!p.heroShieldArmed, // zapnutý štít čaká na prvú prehru
       cardCount: Engine.cardCount(p), deckMin: Engine.deckMin(p.tier), // predaj pod deckMin nejde
       dmgMeterRound: Engine.isBossRound(state), // boj s bossom namiesto PvP, bez damage hrdinom
       bannedRace: state.banned || null, // rasa zabanovaná na začiatku hry – jej karty v hre nie sú

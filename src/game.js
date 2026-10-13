@@ -1789,7 +1789,7 @@ function renderShop() {
   // Štít hrdinu (trinket): tlačidlo kým je nepoužitý; po zapnutí ostáva
   // do konca kola ako „aktívny", potom zmizne.
   const sb = $("shieldBtn");
-  const armed = p.heroShieldRound === state.round;
+  const armed = !!p.heroShieldArmed;
   const hasShield = p.trinkets.includes("heroShield") && (!p.heroShieldUsed || armed);
   sb.classList.toggle("hidden", !hasShield);
   sb.classList.toggle("armed", armed);

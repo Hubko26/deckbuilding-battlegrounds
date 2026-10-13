@@ -335,7 +335,7 @@ const L = {
   sabotagedMsg: { sk: "🔧 Súperov Ogrí kľúč: tvoje trinkety toto kolo nefungujú!", cs: "🔧 Soupeřův Obří klíč: tvoje trinkety toto kolo nefungují!", en: "🔧 Enemy Ogre Key: your trinkets are off this round!" },
   heroShieldBtn: { sk: "🛡️ Štít hrdinu", cs: "🛡️ Štít hrdiny", en: "🛡️ Hero Shield" },
   heroShieldArmed: { sk: "🛡️ Štít aktívny", cs: "🛡️ Štít aktivní", en: "🛡️ Shield active" },
-  heroShieldArmMsg: { sk: "🛡️ Štít hrdinu zapnutý – v tomto boji nedostaneš žiadne zranenie", cs: "🛡️ Štít hrdiny zapnutý – v tomto boji nedostaneš žádné zranění", en: "🛡️ Hero Shield up – no damage in this fight" },
+  heroShieldArmMsg: { sk: "🛡️ Štít hrdinu zapnutý – drží, kým ťa niečo nezraní (to zranenie zablokuje)", cs: "🛡️ Štít hrdiny zapnutý – drží, dokud tě něco nezraní (to zranění zablokuje)", en: "🛡️ Hero Shield up – it stays until something would hurt you and blocks that hit" },
   heroShieldBlockMsg: { sk: "🛡️ Štít hrdinu zablokoval zranenie", cs: "🛡️ Štít hrdiny zablokoval zranění", en: "🛡️ Hero Shield blocked the damage" },
   healWinMsg: { sk: "❤️‍🩹 Liečivé víťazstvo", cs: "❤️‍🩹 Léčivé vítězství", en: "❤️‍🩹 Healing Victory" },
   trinkets: {
@@ -382,7 +382,7 @@ const L = {
     buybackAny: { e: "↩️", sk: "Ľutovanie", cs: "Litování", en: "Second Thoughts",
       d: { sk: "Buyback nie je obmedzený na raz za ťah.", cs: "Buyback není omezený na jednou za tah.", en: "Buyback is not limited to once per turn." } },
     heroShield: { e: "🛡️", sk: "Štít hrdinu", cs: "Štít hrdiny", en: "Hero Shield",
-      d: { sk: "Raz za hru: pred bojom stlač štít a v tom boji nedostaneš žiadne zranenie.", cs: "Jednou za hru: před bojem stiskni štít a v tom boji nedostaneš žádné zranění.", en: "Once per game: press the shield before a fight and take no damage in it." } },
+      d: { sk: "Raz za hru: zapni štít – drží, kým ťa niečo nezraní, a celé to zranenie zablokuje.", cs: "Jednou za hru: zapni štít – drží, dokud tě něco nezraní, a celé to zranění zablokuje.", en: "Once per game: raise the shield – it stays up until something would hurt you and blocks that whole hit." } },
     initiative: { e: "👟", sk: "Rýchly štart", cs: "Rychlý start", en: "Quick Start",
       d: { sk: "V boji vždy začína tvoja strana.", cs: "V boji vždy začíná tvoje strana.", en: "Your side always attacks first." } },
     strongTokens: { e: "🏋️", sk: "Silné tokeny", cs: "Silné tokeny", en: "Strong Tokens",

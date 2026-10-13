@@ -30,7 +30,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   Strážcu arény (5 Obrancov, ∞ staty, sám neútočí, každý úder do neho
   útočníka zabije, štít = ďalší útok). Príšerky útočia zľava doprava, kým
   nepadnú; Pri smrti a tokeny útočia tiež. Hrdinovia damage nedostanú,
-  kliatby z kúziel počkajú na PvP boj, Štít hrdinu sa nedá zapnúť. Kto
+  kliatby z kúziel počkajú na PvP boj, zapnutý Štít hrdinu počká. Kto
   spraví viac damage, dostane na začiatku ďalšieho ťahu Discover: 3 príšery
   tieru `min(vlastný tier + 1, 6)` (`state.pendingDiscover`,
   `Engine.pickDiscover`; Claude botovi ju vyberie heuristika pred plánom).
@@ -439,7 +439,7 @@ akcie za hráča `pid` – vracajú events alebo `null` pri nelegálnom ťahu:
 - `Engine.moveOnBoard(state, pid, boardIdx, slot)`
 - `Engine.pickTrinket(state, pid, trinketId)` – výber z `p.trinketOffer`
   (kolo 4 a 8), len vo vlastnej nákupnej fáze; Claude: `{"a":"trinket","id"}`
-- `Engine.useHeroShield(state, pid)` – trinket Štít hrdinu, raz za hru;
+- `Engine.useHeroShield(state, pid)` – trinket Štít hrdinu, raz za hru (drží do prvej prehry, tú zablokuje);
   Claude: `{"a":"shield"}`
 - `Engine.endShopTurn(state, pid)` – povinný záver ťahu
 

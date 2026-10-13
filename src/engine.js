@@ -450,7 +450,7 @@ const Engine = (() => {
       spellDiscountUsed: false, // Lacné čary: prvé kúzlo v kole o 1 lacnejšie
       graveUsed: false, // Hrobárova lopata: prvé vyvolanie v boji +1
       heroShieldUsed: false, // Štít hrdinu: raz za hru
-      heroShieldRound: 0, // kolo, v ktorom je Štít hrdinu aktívny (boj bez damage)
+      heroShieldArmed: false, // zapnutý Štít hrdinu – drží, kým nezablokuje prvé zranenie
     };
   }
 
@@ -526,14 +526,15 @@ const Engine = (() => {
     if (id === "ogreSabotage") grantRaceAura(state, p, "ogre", 1, 0, events);
   }
 
-  // Štít hrdinu: raz za hru, vo vlastnej nákupnej fáze – v najbližšom boji
-  // hrdina nedostane žiadne zranenie. Vypnutý Ogrím kľúčom sa nedá zapnúť.
+  // Štít hrdinu: raz za hru, vo vlastnej nákupnej fáze sa zapne a DRŽÍ,
+  // kým hrdina neprehrá boj – prvé zranenie zablokuje celé (od 13. 10. 2026;
+  // predtým platil len v kole zapnutia). Vypnutý Ogrím kľúčom sa nedá zapnúť
+  // a v kole, keď je vypnutý, neblokuje (počká na ďalší boj).
   function useHeroShield(state, pid) {
     const p = state[pid];
     if (state.phase !== "shop" || state.active !== pid || !hasTrinket(state, pid, "heroShield") || p.heroShieldUsed) return null;
-    if (isBossRound(state)) return null; // v DMG Meter kole hrdina damage nedostane
     p.heroShieldUsed = true;
-    p.heroShieldRound = state.round;
+    p.heroShieldArmed = true;
     return [{ type: "heroShieldArm", pid }];
   }
 
@@ -2146,7 +2147,9 @@ const Engine = (() => {
     const raw = aliveOn(sides, winner).reduce((sum, x) => sum + Cards.byId[x.defId].tier, 0);
     const cap = heroDmgCap(state.round);
     const loser = other(winner);
-    const shielded = state[loser].heroShieldRound === state.round; // Štít hrdinu: 0 damage
+    // Štít hrdinu: zapnutý štít zablokuje celé zranenie a spotrebuje sa.
+    const shielded = !!state[loser].heroShieldArmed && hasTrinket(state, loser, "heroShield");
+    if (shielded) state[loser].heroShieldArmed = false;
     const dmg = shielded ? 0 : Math.min(raw, cap);
     state[loser].hp -= dmg;
     events.push({ type: "heroDmg", pid: loser, dmg, hp: state[loser].hp, raw, capped: !shielded && raw > dmg ? cap : null, shielded });

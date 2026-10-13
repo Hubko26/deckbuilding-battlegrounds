@@ -1124,10 +1124,12 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
   (`p.trinketOff = kolo`); p1 hádže prvý – ak vypne p2 kľúč, p2 nehádže.
   Štít hrdinu sa vo vypnutom kole nedá zapnúť.
 - **Štít hrdinu** je jediný aktívny trinket: `Engine.useHeroShield(state, pid)`
-  vo vlastnej nákupnej fáze, raz za hru (`p.heroShieldUsed`,
-  `p.heroShieldRound`); v boji toho kola dostane porazený 0 damage
-  (`heroDmg.shielded`). UI: tlačidlo 🛡️ vedľa ↩️; bot ho zapína pod 15 HP
-  (nie v DMG Meter kole).
+  vo vlastnej nákupnej fáze, raz za hru (`p.heroShieldUsed`). Od
+  13. 10. 2026 **drží, kým hrdina neprehrá boj** (`p.heroShieldArmed`) –
+  výhry, remízy a DMG Meter ho nemíňajú; prvé zranenie zablokuje celé
+  (`heroDmg.shielded`) a spotrebuje sa. V kole vypnutom Ogrím kľúčom
+  neblokuje (počká). UI: tlačidlo 🛡️ vedľa ↩️ ukazuje „Štít aktívny“,
+  kým drží; bot ho zapína pod 15 HP.
 - **Opatrný ogr**: rng sa pri ogrích hodoch preskočí (nie prepíše) – staré
   záznamy bez trinketu sa prehrajú rovnako.
 - **Dračia krv**: drak spĺňa `isRace` pre každú rasu (Pečate, dračie
@@ -1169,7 +1171,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `strongTokens` | – | 1 | tokeny +1/+1 |
 | `healWin` | – | 1 | po výhre +2 HP (strop `p.maxHp`) |
 | `bigHand` | – | 2 | ruka 6 (`Engine.handDraw`) |
-| `heroShield` | – | 2 | raz za hru boj bez zranenia (aktívny) |
+| `heroShield` | – | 2 | raz za hru: zapnutý štít drží do prvej prehry a celé to zranenie zablokuje (aktívny) |
 | `initiative` | – | 2 | v boji začína tá strana (obaja = bežné pravidlo) |
 | `bloodMoon` | – | 3 | preživšie +1/+1 navždy (ako mutácia) |
 

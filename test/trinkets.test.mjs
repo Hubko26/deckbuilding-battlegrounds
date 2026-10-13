@@ -178,13 +178,13 @@ test("DMG Meter: boss neútočí, každá príšerka útočí do smrti, damage s
   assert.equal(state.round, 6);
 });
 
-test("DMG Meter: Pri smrti vyvolané tokeny útočia tiež; štít hrdinu sa v boss kole nedá zapnúť", () => {
+test("DMG Meter: Pri smrti vyvolané tokeny útočia tiež; štít hrdinu zapnutý v boss kole počká na ďalší PvP boj", () => {
   const { state, E } = fresh(13, { trinkets: true });
   toRound(state, E, 5);
   clear(state);
   const me = state.active;
   state[me].trinkets.push("heroShield");
-  assert.equal(E.useHeroShield(state, me), null);
+  assert.ok(E.useHeroShield(state, me));
   put(E, state, me, "U001", 0); // Pri smrti: 2 Kostíky
   const events = fight(state, E);
   const tokens = events.filter(e => e.type === "summon" && e.pid === me).map(e => e.uid);
@@ -192,6 +192,7 @@ test("DMG Meter: Pri smrti vyvolané tokeny útočia tiež; štít hrdinu sa v b
   const attackers = events.filter(e => e.type === "attack" && e.aPid === me).map(e => e.aUid);
   for (const uid of tokens) assert.ok(attackers.includes(uid), "vyvolaný Kostík zaútočí na bossa");
   assert.equal(attackers.length, 3);
+  assert.equal(state[me].heroShieldArmed, true, "boss kolo bez damage – štít drží ďalej");
 });
 
 test("trinkety: Zľava tavernára −2 (min. 2), Výhodný predaj 2 mince, Veľká ruka 6 kariet", () => {
@@ -270,7 +271,7 @@ test("trinkety: Ľutovanie – buyback viackrát za ťah", () => {
   assert.equal(p.hand.length, 2);
 });
 
-test("trinkety: Štít hrdinu – raz za hru, v tom boji porazený nedostane damage", () => {
+test("trinkety: Štít hrdinu – raz za hru; drží cez výhry, zablokuje prvú prehru a spotrebuje sa", () => {
   const { state, E } = fresh(11);
   E.startRound(state);
   const me = state.active, foe = me === "p1" ? "p2" : "p1";
@@ -280,6 +281,11 @@ test("trinkety: Štít hrdinu – raz za hru, v tom boji porazený nedostane dam
   const ev = E.useHeroShield(state, me);
   assert.ok(ev.some(e => e.type === "heroShieldArm"));
   assert.equal(E.useHeroShield(state, me), null); // druhýkrát nie
+  // kolo, ktoré vyhrám – štít ostáva zapnutý
+  clear(state);
+  put(E, state, me, "B002", 0);
+  fight(state, E);
+  assert.equal(state[me].heroShieldArmed, true, "výhra štít nemíňa");
   clear(state);
   put(E, state, foe, "B002", 0); // 4/5 obranca vyhrá proti prázdnej ploche
   const hp = state[me].hp;
@@ -289,6 +295,7 @@ test("trinkety: Štít hrdinu – raz za hru, v tom boji porazený nedostane dam
   assert.equal(dmg.dmg, 0);
   assert.equal(dmg.shielded, true);
   assert.equal(state[me].hp, hp);
+  assert.equal(state[me].heroShieldArmed, false);
   // Ďalší boj už bez štítu.
   clear(state);
   put(E, state, foe, "B002", 0);
