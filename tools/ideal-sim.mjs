@@ -1,3 +1,11 @@
+// Režim targeted=1 (cielenie rasy, 13. 10. 2026): obchod a štartovací balíček
+// ako v hre (všetky rasy, 10 náhodných t1 kariet), bot od 1. kola cieli
+// zadanú rasu – kupuje len ju (+ draci ako žoldnieri), refreshuje za silnou
+// kartou svojej rasy (raceHunt) a upgraduje skôr kvôli silnej karte na
+// ďalšom tieri (tierLure). runs=4 zopakuje celú maticu so 4 rôznymi seedmi
+// a vypíše priemer aj rozptyl (min–max) – nie výsledok jedného behu.
+// Default rasy v targeted móde bez víl (bot ich nevie hrať).
+//
 // Ideálne strety rás („perfect roll"): hráč A vidí v obchode LEN karty rasy A,
 // hráč B len rasy B (spoločná ponuka losuje z oboch rás, bot cudziu rasu
 // nekupuje), štartovací balíček sú len t1 karty vlastnej rasy (max 2 kópie,
@@ -8,6 +16,7 @@
 //
 // Použitie: node tools/ideal-sim.mjs [n=100] [hp=100] [races=beast,undead]
 //           [trinkets=1] [rounds=40] [mirror=1] [verbose=0] [seed=1000]
+//           [targeted=1] [runs=4]
 //   n        počet hier na matchup (polovica s vymenenými miestami p1/p2)
 //   races    ktoré rasy (čiarkou), default všetky
 //   trinkets 1 = ponuka trinketov v kole 4 a 8 (ako v hre), 0 = bez nich
@@ -109,7 +118,7 @@ function loadCtx() {
   bot = patch(bot,
     `let score = (foreignMain || plainDragon ? pw.body : pw.total) / 8;`,
     `let score = (foreignMain || plainDragon ? pw.body : pw.total) / 8;
-    if (p.forceRace && def.race && def.race !== p.forceRace) score -= 100;`);
+    if (p.forceRace && def.race && def.race !== p.forceRace && !(p.targeted && def.race === "dragon")) score -= 100;`);
   bot = patch(bot, `def.race === "ogre"`, `(def.race === "ogre" && p.forceRace !== "ogre")`, 2);
   vm.runInContext(toVar(bot), ctx, { filename: "src/bot.js" });
   return ctx;
@@ -123,9 +132,11 @@ function playGame(ctx, seed, raceA, raceB, cfg) {
   const E = ctx.Engine, B = ctx.Bot;
   const s = E.newGame(seeded(seed), null, {
     trinkets: !!cfg.trinkets,
-    raceLock: { p1: [raceA], p2: [raceB], common: [raceA, raceB] },
+    // targeted: obchod a štart ako v hre, bot len cieli rasu
+    raceLock: cfg.targeted ? null : { p1: [raceA], p2: [raceB], common: [raceA, raceB] },
   });
   s.p1.forceRace = raceA; s.p2.forceRace = raceB;
+  if (cfg.targeted) { s.p1.targeted = true; s.p2.targeted = true; }
   s.p1.hp = s.p1.maxHp = cfg.hp; s.p2.hp = s.p2.maxHp = cfg.hp;
   E.startRound(s);
   const rounds = []; // { round, p1: {sum, n, tier, hp}, p2: {...}, dmgTo, dmg }
@@ -176,8 +187,10 @@ const cfg = {
   tierCost: opts.tierCost || null,
   tierMin: opts.tierMin !== undefined ? Number(opts.tierMin) : null,
   tierDrop: opts.tierDrop !== undefined ? Number(opts.tierDrop) : null,
+  targeted: Number(opts.targeted || 0),
+  runs: Math.max(1, Number(opts.runs || 1)),
 };
-const races = opts.races ? opts.races.split(",") : ALL_RACES;
+const races = opts.races ? opts.races.split(",") : cfg.targeted ? ALL_RACES.filter(r => r !== "fairy") : ALL_RACES;
 for (const r of races) if (!ALL_RACES.includes(r)) { console.error("Neznáma rasa: " + r); process.exit(1); }
 
 const ctx = loadCtx();
@@ -222,13 +235,13 @@ function record(res, raceOf) {
   }
 }
 
-function matchup(A, B) {
+function matchup(A, B, seedBase) {
   const m = { a: 0, b: 0, draw: 0, rounds: 0 };
   for (let i = 0; i < cfg.n; i++) {
     const flip = i % 2 === 1; // polovicu hier hrá A ako p2
-    const res = playGame(ctx, cfg.seed + i, flip ? B : A, flip ? A : B, cfg);
+    const res = playGame(ctx, seedBase + i, flip ? B : A, flip ? A : B, cfg);
     const raceOf = { p1: flip ? B : A, p2: flip ? A : B };
-    if (cfg.verbose && i === 0) {
+    if (cfg.verbose && i === 0 && seedBase === cfg.seed) {
       console.log(`\n--- ${A} vs ${B}, hra #${cfg.seed} (p1=${raceOf.p1}, p2=${raceOf.p2}) ---`);
       for (const r of res.rounds) {
         console.log(`K${String(r.round).padStart(2)} p1 T${r.p1.tier} HP${String(r.p1.hp).padStart(3)} Σ${String(r.p1.sum).padStart(4)} [${r.p1.board}]`);
@@ -247,18 +260,37 @@ function matchup(A, B) {
 
 // ---------- beh ----------
 const t0 = Date.now();
-console.log(`=== Ideálne strety (perfect roll): HP ${cfg.hp}, hard bot bez handicapov, N=${cfg.n}/matchup, trinkety ${cfg.trinkets ? "áno" : "nie"}, strop ${cfg.rounds} kôl ===`);
+console.log(`=== ${cfg.targeted ? "Cielenie rasy (obchod a štart ako v hre)" : "Ideálne strety (perfect roll)"}: HP ${cfg.hp}, hard bot bez handicapov, N=${cfg.n}/matchup × ${cfg.runs} beh${cfg.runs > 1 ? "y" : ""}, trinkety ${cfg.trinkets ? "áno" : "nie"}, strop ${cfg.rounds} kôl ===`);
 if (cfg.tierCost || cfg.tierMin !== null || cfg.tierDrop !== null) {
   console.log(`(experiment: cena tieru ${cfg.tierCost || "5,8,9,11,12"}, minimum ${cfg.tierMin ?? 2}, zľava za kolo ${cfg.tierDrop ?? 1})`);
 }
-for (let i = 0; i < races.length; i++) {
-  for (let j = i; j < races.length; j++) {
-    if (i === j && !cfg.mirror) continue;
-    const A = races[i], B = races[j];
-    const m = matchup(A, B);
-    win[A][B] = m;
-    if (A !== B) win[B][A] = { a: m.b, b: m.a, draw: m.draw, rounds: m.rounds };
-    process.stderr.write(`${A} vs ${B}: ${m.a}/${m.b}/${m.draw} (priem. ${(m.rounds / cfg.n).toFixed(1)} kôl)\n`);
+// Behy s rôznymi seedmi; win = súčet cez behy, runAvg[race] = priemer rasy v každom behu.
+const runAvg = {};
+for (const r of races) runAvg[r] = [];
+const add = (x, y) => ({ a: x.a + y.a, b: x.b + y.b, draw: x.draw + y.draw, rounds: x.rounds + y.rounds });
+for (let run = 0; run < cfg.runs; run++) {
+  const seedBase = cfg.seed + run * 100000;
+  const runWin = {};
+  for (const r of races) runWin[r] = {};
+  for (let i = 0; i < races.length; i++) {
+    for (let j = i; j < races.length; j++) {
+      if (i === j && !cfg.mirror) continue;
+      const A = races[i], B = races[j];
+      const m = matchup(A, B, seedBase);
+      runWin[A][B] = m;
+      win[A][B] = win[A][B] ? add(win[A][B], m) : m;
+      if (A !== B) {
+        const rev = { a: m.b, b: m.a, draw: m.draw, rounds: m.rounds };
+        runWin[B][A] = rev;
+        win[B][A] = win[B][A] ? add(win[B][A], rev) : rev;
+      }
+      process.stderr.write(`[beh ${run + 1}/${cfg.runs}] ${A} vs ${B}: ${m.a}/${m.b}/${m.draw} (priem. ${(m.rounds / cfg.n).toFixed(1)} kôl)\n`);
+    }
+  }
+  for (const A of races) {
+    let w = 0, tot = 0;
+    for (const B of races) if (A !== B && runWin[A][B]) { w += runWin[A][B].a; tot += runWin[A][B].a + runWin[A][B].b; }
+    runAvg[A].push(tot ? w / tot * 100 : 0);
   }
 }
 
@@ -273,15 +305,23 @@ for (const A of races) {
   const cells = races.map(B => {
     const m = win[A][B];
     if (!m) return "-".padStart(col);
-    if (A !== B) { w += m.a; tot += m.a + m.b; rounds += m.rounds; n += cfg.n; }
+    if (A !== B) { w += m.a; tot += m.a + m.b; rounds += m.rounds; n += cfg.n * cfg.runs; }
     return pct(m.a, m.a + m.b).padStart(col);
   });
   console.log(short(A).padEnd(10) + cells.join("") + `  | ${pct(w, tot)}    ${n ? (rounds / n).toFixed(1) : "-"}`);
 }
 {
   let draws = 0, total = 0;
-  for (let i = 0; i < races.length; i++) for (let j = i; j < races.length; j++) { const m = win[races[i]][races[j]]; if (m) { draws += m.draw; total += cfg.n; } }
+  for (let i = 0; i < races.length; i++) for (let j = i; j < races.length; j++) { const m = win[races[i]][races[j]]; if (m) { draws += m.draw; total += cfg.n * cfg.runs; } }
   console.log(`remízy (strop kôl / obaja mŕtvi): ${draws} z ${total} hier`);
+}
+if (cfg.runs > 1) {
+  console.log(`\n--- Priemerný winrate rasy v jednotlivých behoch (${cfg.runs}×, rôzne seedy): priemer, min–max ---`);
+  for (const r of races) {
+    const v = runAvg[r];
+    const avg = v.reduce((x, y) => x + y, 0) / v.length;
+    console.log(short(r).padEnd(10) + `${avg.toFixed(0).padStart(4)}%   (${Math.min(...v).toFixed(0)}–${Math.max(...v).toFixed(0)} %)   behy: ${v.map(x => x.toFixed(0)).join(" / ")}`);
+  }
 }
 
 console.log("\n--- Výhry podľa dĺžky hry (kedy rasa vyhráva: % výhier z hier, ktoré skončili v danom kole) ---");

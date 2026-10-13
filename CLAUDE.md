@@ -16,6 +16,10 @@ commity, UI) je slovenčina.
   plochy po kolách, tier po kolách, top karty. `tierCost=5,8,10,13,16`,
   `tierDrop=0.5`, `tierMin=4` = experimenty s cenou upgradu. Bot hrá rasy
   rôzne dobre (víly a psíkov slabo) – výsledok porovnávaj s logmi hráčov.
+- `npm run target [-- n=100 hp=50 races=...]` – cielenie rasy: obchod a štart
+  ako v hre, hard bot od 1. kola cieli zadanú rasu (lov rasy refreshom,
+  skorší upgrade za silnou kartou, draci ako žoldnieri), matica sa odohrá
+  4× s rôznymi seedmi – priemer a rozptyl (min–max). Default bez víl.
 - `npm run scenario -- "B002:2 B001" "U009 U005" [n=500]` – odohrá N bojov
   zadaného mid-game scenára (boardy, aury, chargy).
 - `npm run power [-- race=beast md=1]` – tabuľka teoretickej sily kariet
