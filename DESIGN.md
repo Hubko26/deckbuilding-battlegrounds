@@ -626,16 +626,15 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   odchádzali do trhu. Na t3 je to odmena za postavený živelný build, nie
   jeho štartér;
   D003 (t4) battlecry **permanentná aura rasy cieľa** +1/+1; D009 (t5, od
-  13. 10. 2026) **spustí Pri vyložení vybranej vlastnej príšerky znova**
-  (`replayBattlecry`, striebro 2×, zlato 3×; stupeň cieľa; iný D009 sa
-  nereplayuje – predtým duplikát D003)
+  13. 10. 2026) **keď v boji zomrie tvoja príšerka, dostane jej staty**
+  do konca boja (`allyDeath`/`absorbStats`, `runAbsorbers`: bronz ½,
+  striebro celé, zlato 2×; útok a max. život padlej, aj tokeny)
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
-  D010 (t6) battlecry **Zrkadlo na tele** (`copyTarget`, od 13. 10. 2026):
-  vlož kópiu 1. stupňa vybranej vlastnej príšerky do balíčka – počet =
-  stupeň draka (1/2/3), z vlastného poolu kým je; trojica sa môže hneď
-  spojiť. Predtým cieľ okamžite evolvol o stupeň (free striebro/zlato pre
-  každú rasu – prisilné).
+  D010 (t6) battlecry **spustí Pri vyložení vybranej vlastnej príšerky
+  znova** (`replayBattlecry`, striebro 2×, zlato 3×; stupeň cieľa; iný D010
+  sa nereplayuje). História: okamžitý evolve cieľa (prisilné) → kópie cieľa
+  do balíčka → replay (krátko na D009, kde bol na t5 top kartou sim).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
 **👹 Ogre (Ogr) – derpy chaos (implementované)**

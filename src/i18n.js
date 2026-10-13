@@ -643,7 +643,6 @@ const L = {
   },
   deckMinTip: { sk: "Všetky karty: {n} (minimum na tvoj tier: {min})", cs: "Všechny karty: {n} (minimum na tvůj tier: {min})", en: "All cards: {n} (minimum for your tier: {min})" },
   replayBattlecryMsg: { sk: "🌸 znova spustil Pri vyložení:", cs: "🌸 znovu spustil Při vyložení:", en: "🌸 replayed the Battlecry of" },
-  copyToDeckMsg: { sk: "do balíčka pribudla kópia:", cs: "do balíčku přibyla kopie:", en: "copy added to your deck:" },
   echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {
     sk: "🐶 do balíčka pribudlo",
@@ -826,6 +825,7 @@ L.cards = (() => {
     afterSpell: { sk: "Po kúzle", cs: "Po kouzle", en: "After a spell" },
     onAttack: { sk: "Pri útoku", cs: "Při útoku", en: "On attack" },
     raceDeath: { sk: "Kamarát padol", cs: "Kamarád padl", en: "Friend fell" }, // proc badge
+    allyDeath: { sk: "Keď zomrie tvoja príšerka", cs: "Když zemře tvá příšerka", en: "When a friendly minion dies" }, // D009
     onEnemySummon: { sk: "Výboj na token", cs: "Výboj na token", en: "Token zap" }, // proc badge
     afterAttack: { sk: "Po údere", cs: "Po úderu", en: "After attacking" }, // psíci: Aport (P004)
     packLeader: { sk: "Vodca svorky", cs: "Vůdce smečky", en: "Pack Leader" }, // psíci t6 (P009), pasívna v nákupe
@@ -1173,14 +1173,12 @@ L.cards = (() => {
       cs: `vyber příšerku – její Při vyložení se spustí znovu${m > 1 ? ` ${m}×` : ""}`,
       en: `pick a minion – its Battlecry triggers again${m > 1 ? ` ${m} times` : ""}`,
     }),
-    copyTarget: (f, m) => {
-      const n = f.n * m;
-      return {
-        sk: `vyber príšerku – vlož ${n}× jej kópiu (1. stupňa) do balíčka`,
-        cs: `vyber příšerku – vlož ${n}× její kopii (1. stupně) do balíčku`,
-        en: `pick a minion – put ${n}× rank-1 cop${n > 1 ? "ies" : "y"} of it into your deck`,
-      };
-    },
+    // D009: staty padlej vlastnej príšerky do konca boja (½ / celé / 2×).
+    absorbStats: (f, m) => ({
+      sk: `dostane ${["polovicu", "všetky", "dvojnásobok"][Math.min(m, 3) - 1]} jej statov do konca boja`,
+      cs: `dostane ${["polovinu", "všechny", "dvojnásobek"][Math.min(m, 3) - 1]} jejích statů do konce boje`,
+      en: `gains ${["half of", "all of", "double"][Math.min(m, 3) - 1]} its stats until the fight ends`,
+    }),
     buffTopRace: (f, m) => ({
       sk: `tvoja najpočetnejšia rasa dostane +${f.a * m}/+${f.h * m}`,
       cs: `tvá nejpočetnější rasa dostane +${f.a * m}/+${f.h * m}`,

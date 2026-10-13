@@ -172,7 +172,7 @@ const Bot = (() => {
     // draci sú len telá – ich battlecry sa v skóre neráta (hráč: „ostatní
     // draci nemajú takú power").
     const dragonFx = def.race === "dragon" ? Cards.powersOf(def).map(x => x.fx.type) : [];
-    const topDragon = dragonFx.includes("discoverRace") || dragonFx.includes("copyTarget");
+    const topDragon = dragonFx.includes("discoverRace") || dragonFx.includes("replayBattlecry");
     const plainDragon = def.race === "dragon" && !topDragon;
     let score = (foreignMain || plainDragon ? pw.body : pw.total) / 8;
     const owned = ownedCount(p, defId);
@@ -195,7 +195,7 @@ const Bot = (() => {
         else if (plainDragon) score -= 1; // žoldnier bez tej power – len keď nič lepšie
       }
       if (dragonFx.includes("discoverRace")) score += 8; // D004: vždy top nákup
-      if (dom && dragonFx.includes("copyTarget")) score += 3; // D010 (t6)
+      if (dom && dragonFx.includes("replayBattlecry")) score += 3; // D010 (t6)
     }
     // Synergické bonusy za schopnosť – nie pre cudziu hlavnú rasu (jej Pečať
     // ani motor v tomto balíčku nič nekŕmi).
@@ -280,13 +280,13 @@ const Bot = (() => {
   function isBattlecryBuffer(defId) {
     const pw = Cards.byId[defId].power;
     return !!pw && pw.kw === "battlecry" &&
-      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "copyTarget", "replayBattlecry"].includes(pw.fx.type) ||
+      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "replayBattlecry"].includes(pw.fx.type) ||
         RACE_TARGETED.has(pw.fx.type));
   }
 
   // Cieľ cieleného battlecry (draci, U004): rasové efekty na NAJSILNEJŠIU
   // kartu dominantnej rasy (engine fallback berie najsilnejšiu bez ohľadu na
-  // rasu – drak by buffoval cudzí splash), copyTarget (D010) na kartu s najviac
+  // rasu – drak by buffoval cudzí splash), replayBattlecry (D010) na najcennejšie Pri vyložení,
   // kópiami (stupeň < 3), copyAbility nechaj enginu (vyberá najsilnejšieho Nemŕtveho).
   function battlecryTarget(state, p, defId) {
     const pw = Cards.byId[defId].power;
@@ -306,12 +306,6 @@ const Bot = (() => {
       const cands = others.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(q => q.kw === "battlecry" && q.fx.type !== "replayBattlecry"));
       if (!cands.length) return undefined;
       return [...cands].sort((a, b) => cardPower(Cards.byId[b.defId]).ability * b.rank - cardPower(Cards.byId[a.defId]).ability * a.rank)[0].uid;
-    }
-    if (pw.fx.type === "copyTarget") {
-      // kópia najbližšie k trojici (tiebreak najsilnejšia), ako Zrkadlo
-      const cands = others.filter(x => !Cards.byId[x.defId].token);
-      if (!cands.length) return undefined;
-      return [...cands].sort((a, b) => (ownedCount(p, b.defId) - ownedCount(p, a.defId)) || ((b.atk + b.hp) - (a.atk + a.hp)))[0].uid;
     }
     return undefined;
   }
@@ -775,7 +769,7 @@ const Bot = (() => {
       case "addSpell": return 2;
       case "gold": return f.n * m * 1.5 * perTrigger;
       case "goldLater": return f.n * 1.5;
-      case "copyTarget": return f.n * m * 7;                    // D010 (t6): Zrkadlo na tele
+      case "absorbStats": return [0.5, 1, 2][Math.min(m, 3) - 1] * 3 * PW_DEATHS; // D009: staty padlých kamarátov na boj
       case "replayBattlecry": return m * 9;                     // D009: Pri vyložení cieľa znova
       case "shrinkEnemy": return ab;
       case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu

@@ -94,26 +94,25 @@ test("drak futureRaceOf: permanentná aura pre rasu cieľa", () => {
   assert.equal(fresh2.atk, C.byId["U002"].atk + 1);
 });
 
-test("D010 copyTarget: kópia 1. stupňa cieľa do balíčka (strieborný drak 2), cieľ sa nemení; trojica sa spojí", () => {
+test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty do konca boja (bronz ½, striebro celé)", () => {
   const { state, E, C } = fresh(82);
   E.startRound(state);
-  const p = state.p1;
-  const bear = E.makeInst(state, "B008", 1); bear.slot = 0;
-  p.board = [bear]; p.deck = []; p.discard = [];
-  p.hand = [E.makeInst(state, "D010", 1)];
-  const ev = E.playMinion(state, "p1", 0, bear.uid);
-  assert.ok(ev.some(e => e.type === "copyToDeck" && e.n === 1 && e.defId === "B008"));
-  assert.equal(bear.rank, 1, "cieľ ostáva bronzový");
-  assert.deepEqual(p.deck.map(c => c.defId + c.rank), ["B0081"]);
-  // strieborný D010: 2 kópie → s cieľom na ploche trojica → spojí sa
-  p.hand = [E.makeInst(state, "D010", 2)];
-  p.deck = [];
-  const ev2 = E.playMinion(state, "p1", 0, bear.uid);
-  assert.ok(ev2.some(e => e.type === "copyToDeck" && e.n === 2));
-  assert.ok(ev2.some(e => e.type === "evolve" && e.defId === "B008" && e.rank === 2));
-  assert.match(C.cardText(C.byId.D010, 2, "sk"), /vlož 2× jej kópiu/);
+  E.endShopTurn(state, "p1");
+  const small = E.makeInst(state, "O008", 1); small.slot = 0; small.atk = 4; small.hp = small.maxHp = 6; // padne prvý
+  const drake = E.makeInst(state, "D009", 2); drake.slot = 1; // strieborný 14/14 – celé staty
+  state.p1.board = [small, drake];
+  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
+  for (const pid of ["p1", "p2"]) { state[pid].hand = []; state[pid].deck = []; state[pid].discard = []; }
+  state.p1.trinkets = ["initiative"];
+  const events = E.doBattle(state);
+  const iDie = events.findIndex(e => e.type === "die" && e.uid === small.uid);
+  assert.ok(iDie >= 0);
+  const absorb = events.find((e, i) => i > iDie - 3 && e.type === "buff" && e.uid === drake.uid);
+  assert.ok(absorb, "D009 dostal staty padlého");
+  assert.equal(absorb.a, 4); assert.equal(absorb.h, 6);
+  assert.match(C.cardText(C.byId.D009, 1, "sk"), /Keď zomrie tvoja príšerka: dostane polovicu jej statov/);
+  assert.ok(!state.p1.discard.some(c => c.defId === "D009" && (c.pa || c.ph)), "nie je to trvalé");
 });
-
 test("drak discoverRace: ponuka len z rasy cieľa a vlastného tieru", () => {
   const { state, E, C } = fresh(83);
   E.startRound(state);
@@ -3149,16 +3148,16 @@ test("D004 strieborný objaví striebornú kartu rasy cieľa; O006 sa trafí za 
   assert.equal(hit.n, Math.floor(10 / 4), "strieborný 10/10 sa trafí za štvrtinu");
 });
 
-test("D009 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); bez cieľa vezme najsilnejší battlecry", () => {
+test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); bez cieľa vezme najsilnejší battlecry", () => {
   const { state, E, C } = fresh(205);
   E.startRound(state);
   const p = state.p1;
   const seal = E.makeInst(state, "B002", 1, p); seal.slot = 0; // Pečať +1/+1 Zvieratám
   const vanilla = E.makeInst(state, "O008", 1, p); vanilla.slot = 1;
   p.board = [seal, vanilla];
-  p.hand = [E.makeInst(state, "D009", 2)];
+  p.hand = [E.makeInst(state, "D010", 2)];
   const ev = E.playMinion(state, "p1", 0, vanilla.uid); // vanilla nemá battlecry → vezme B002
   assert.ok(ev.some(e => e.type === "replayBattlecry" && e.defId === "B002" && e.n === 2));
   assert.deepEqual({ ...p.raceBuffs.beast }, { a: 2, h: 2 }, "Pečať B002 dvakrát");
-  assert.match(C.cardText(C.byId.D009, 2, "sk"), /spustí znova 2×/);
+  assert.match(C.cardText(C.byId.D010, 2, "sk"), /spustí znova 2×/);
 });

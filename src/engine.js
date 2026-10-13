@@ -1456,8 +1456,8 @@ const Engine = (() => {
     },
     // Drak t6: cieľ evolvne o stupeň (bronz→striebro→zlato); zlatú nezdvihne.
     // Buffy cieľa NAD základ (bez aury) sa prenesú, perma rast tiež.
-    // D009: Pri vyložení vybranej vlastnej príšerky (nie seba) sa spustí znova
-    // m× (stupeň draka), so stupňom CIEĽA. Iný D009 ako cieľ sa preskočí
+    // D010: Pri vyložení vybranej vlastnej príšerky (nie seba) sa spustí znova
+    // m× (stupeň draka), so stupňom CIEĽA. Iný D010 ako cieľ sa preskočí
     // (žiadna rekurzia). Bez platného cieľa vezme najvyšší tier × stupeň.
     replayBattlecry({ state, p, m, self, target, events }) {
       const bcs = x => Cards.powersOf(Cards.byId[x.defId]).filter(pw => pw.kw === "battlecry" && pw.fx.type !== "replayBattlecry");
@@ -1469,21 +1469,6 @@ const Engine = (() => {
       for (let i = 0; i < m; i++) {
         for (const pw of bcs(t)) applyShopFx(state, p, pw.fx, t.rank, t, events);
       }
-    },
-    // D010: n×stupeň kópií 1. stupňa vybranej vlastnej príšerky do balíčka
-    // (ako Zrkadlo – z vlastného poolu, kým v ňom je). Tokeny nie. Trojica
-    // sa môže hneď spojiť (checkEvolve, platí aj minimum kariet).
-    copyTarget({ state, p, fx, m, self, target, events }) {
-      const t = shopTarget(p, self, target);
-      if (!t || Cards.byId[t.defId].token) return;
-      const n = fx.n * m;
-      for (let i = 0; i < n; i++) {
-        let src;
-        if (state.pools[p.id][t.defId] > 0) { state.pools[p.id][t.defId]--; src = { [p.id]: 1 }; }
-        addToDeck(state, p, t.defId, src);
-      }
-      events.push({ type: "copyToDeck", pid: p.id, defId: t.defId, n });
-      checkEvolve(state, p, events);
     },
     // Drak: náhodná TVOJA rasa na ploche +a/+h (do konca boja).
     buffRandomRace({ state, p, fx, m, self, events }) {
@@ -2601,6 +2586,23 @@ const Engine = (() => {
     const ddef = Cards.byId[dead.defId];
     runObservers(state, sides, pid, dead, "raceDeath", fx => isRace(state, pid, ddef, fx.race), events);
     runPackBonus(state, sides, pid, dead, events);
+    runAbsorbers(state, sides, pid, dead, events);
+  }
+
+  // D009 (allyDeath/absorbStats): keď zomrie VLASTNÁ príšerka (aj token),
+  // živý D009 dostane jej útok a max. život do konca boja – bronz ½
+  // (zaokrúhlené dole), striebro celé, zlato 2×. Nie je to trvalé.
+  const ABSORB_MULT = [0.5, 1, 2];
+  function runAbsorbers(state, sides, pid, dead, events) {
+    for (const f of sides[pid]) {
+      if (f === dead || f.hp <= 0 || f.silenced) continue;
+      if (!instPowers(f).some(pw => pw.kw === "allyDeath")) continue;
+      const k = ABSORB_MULT[Math.min(f.rank, 3) - 1];
+      const a = Math.floor(Math.max(0, dead.atk) * k), h = Math.floor(Math.max(0, dead.maxHp) * k);
+      if (!a && !h) continue;
+      events.push({ type: "proc", pid, uid: f.uid, kw: "allyDeath" });
+      buffWithEvent(f, pid, a, h, events);
+    }
   }
 
   function runObservers(state, sides, pid, dead, kw, matches, events) {
