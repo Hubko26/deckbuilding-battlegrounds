@@ -115,8 +115,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   Keywords: Pri
   vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
   bojom, Po nákupe, Pri útoku, Po údere (afterAttack – po vlastnom útoku,
-  ak obaja prežili; psík P004 Aport), Vodca svorky (packLeader – psík P009:
-  kým je na ploche, každé Pohladkanie pohladká všetkých Psíkov), Po kúzle (afterSpell – spustí sa každým
+  ak obranca prežil; psík P004: Pohladkanie do balíčka), Vodca svorky
+  (packLeader – psík P009: kým je na ploche, každé Pohladkanie pohladká
+  všetkých Psíkov; strieborný 2×, zlatý 3×), Po kúzle (afterSpell – spustí sa každým
   zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
   sa zruší; z kúzla Svätožiara), Pečať (Imprint = trvalá rasová aura,
   na karte „Pečať +1/+1 Zvieratám"). Buffy z boja sú dočasné; trvalé sú buffy
@@ -243,9 +244,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     = +1/+1 za každé ZOSLANÉ pohladkanie (počet, nie body), P007 (t4) Pečať
     Psíkom, P006 Zavýjanie = +1/+1 Psíkom za každého Psíka na ploche (plná
     plocha psov = +5/+5 každému). Triky: P003 Ocikaj (náhodný súper má
-    staty na polovicu, stupeň = počet), P004 Aport (Po údere ukradne polovicu
-    zvyšných statov obrancu kamarátovi – daj ho vľavo, nech útočí prvý,
-    s Vichorom dvakrát). P009 (t6) Vodca svorky: kým je na ploche, každé
+    staty na polovicu, stupeň = počet), P004 (Po údere: ak súper prežije,
+    1/2/3 Pohladkania do balíčka – daj ho na veľké telá súpera, s
+    Vichorom dvakrát). P009 (t6) Vodca svorky: kým je na ploche, každé
     Pohladkanie pohladká cieľ AJ všetkých ostatných Psíkov (vylož P009 PRED
     hladkaním, hladkaj s plnou psou plochou – v boji nerobí nič, je to
     telo 8/8). Psie trinkety – v psom builde vždy ber: Hladkacia rukavica
@@ -395,7 +396,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
   (2–3× O006 vľavo, Vichor 🌪️ na O006) Pečať zrýchľuje. O003 len bez
   vlastného swarmu. Ako splash bez generátorov je ogre stále len telo.
 - **Doggy**: P001/P002 (t1 generátory – vykladaj každé kolo), P005 (t3
-  tutor), P003 (t2 Ocikaj), P004 (t2 Aport, vľavo), P007 (t4 Pečať), P006
+  tutor), P003 (t2 Ocikaj), P004 (t2 Pohladkania z prežitých úderov), P007 (t4 Pečať), P006
   (t4 Zavýjanie pri plnej psej ploche), P008 (t5, vykladaj až keď máš 10+
   zoslaní), P009 (t6, vpravo). Každé Pohladkanie z ruky hneď na
   najsilnejšieho Psíka na ploche; nikdy ho nepredávaj (0 zlata).

@@ -1151,11 +1151,15 @@ L.cards = (() => {
       cs: `vyber příšerku – ${imprint.cs} +${f.a * m}/+${f.h * m} její rase`,
       en: `pick a minion – ${imprint.en} +${f.a * m}/+${f.h * m} to its race`,
     }),
-    discoverRace: () => ({
+    discoverRace: (f, m) => m === 1 ? {
       sk: "vyber príšerku – vyber si 1 z 3 kariet jej rasy",
       cs: "vyber příšerku – vyber si 1 ze 3 karet její rasy",
       en: "pick a minion – discover a card of its race",
-    }),
+    } : {
+      sk: `vyber príšerku – vyber si 1 z 3 kariet jej rasy, ${m === 2 ? "striebornú" : "zlatú"}`,
+      cs: `vyber příšerku – vyber si 1 ze 3 karet její rasy, ${m === 2 ? "stříbrnou" : "zlatou"}`,
+      en: `pick a minion – discover a ${m === 2 ? "silver" : "golden"} card of its race`,
+    },
     copyTarget: (f, m) => {
       const n = f.n * m;
       return {
@@ -1180,11 +1184,14 @@ L.cards = (() => {
       cs: `hoď mincí 🪙 – +${f.a * m}/+${f.h * m} nebo −${f.da * m}/−${f.dh * m}`,
       en: `flip a coin 🪙 – +${f.a * m}/+${f.h * m} or −${f.da * m}/−${f.dh * m}`,
     }),
-    drunkStrike: () => ({
-      sk: `50 % šanca, že sa trafí sám za polovicu svojho útoku`,
-      cs: `50% šance, že se trefí sám za polovinu svého útoku`,
-      en: `50% chance to smack itself for half its attack`,
-    }),
+    drunkStrike: (f, m) => {
+      const k = Math.min(m, 3) - 1;
+      return {
+        sk: `50 % šanca, že sa trafí sám za ${["polovicu", "štvrtinu", "osminu"][k]} svojho útoku`,
+        cs: `50% šance, že se trefí sám za ${["polovinu", "čtvrtinu", "osminu"][k]} svého útoku`,
+        en: `50% chance to smack itself for ${["half", "a quarter", "an eighth"][k]} of its attack`,
+      };
+    },
     dmgAllBoth: (f, m, hl) => ({
       sk: `chaos výbuch: ${hl(f.n * m)} damage VŠETKÝM príšerkám – aj tvojim`,
       cs: `chaos výbuch: ${hl(f.n * m)} damage VŠEM příšerkám – i tvým`,
@@ -1241,12 +1248,15 @@ L.cards = (() => {
       cs: `Očůrej ${m} náhodné soupeře – jejich útok i životy klesnou na polovinu`,
       en: `pee on ${m} random enemies – their attack and health are halved`,
     }),
-    // Aport (P004, Po údere): polovica zvyšných statov súpera ide kamarátovi.
-    fetchSteal: () => ({
-      sk: "Aport – ak súper prežije, polovicu jeho zvyšných statov ukradne a dá náhodnému kamarátovi",
-      cs: "Aport – když soupeř přežije, polovinu jeho zbylých statů ukradne a dá náhodnému kamarádovi",
-      en: "Fetch – if the enemy survives, steal half of its remaining stats and give them to a random friend",
-    }),
+    // P004 (Po údere): súper prežil → Pohladkania do balíčka.
+    petIfSurvive: (f, m) => {
+      const n = f.n * m;
+      return {
+        sk: `ak súper prežije, pridaj do balíčka ${n > 1 ? n + "× " : ""}Pohladkanie`,
+        cs: `když soupeř přežije, přidej do balíčku ${n > 1 ? n + "× " : ""}Pohlazení`,
+        en: `if the enemy survives, add ${n > 1 ? n + "× " : ""}a Pet to your deck`,
+      };
+    },
     // Zavýjanie (P006): všetci Psíci +a/+h za každého Psíka na ploche.
     howl: (f, m) => ({
       sk: `Zavýjanie – všetci Psíci +${f.a * m}/+${f.h * m} za každého Psíka na ploche`,
@@ -1261,10 +1271,10 @@ L.cards = (() => {
     }),
     // P009 Vodca svorky (t6): kým je na ploche, každé Pohladkanie pohladká
     // všetkých tvojich Psíkov.
-    packLeader: () => ({
-      sk: "kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov",
-      cs: "dokud je na ploše, každé Pohlazení pohladí všechny tvé Pejsky",
-      en: "while it is on the board, every Pet pets all your Doggies",
+    packLeader: (f, m) => ({
+      sk: `kým je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov${m > 1 ? ` ${m}×` : ""}`,
+      cs: `dokud je na ploše, každé Pohlazení pohladí všechny tvé Pejsky${m > 1 ? ` ${m}×` : ""}`,
+      en: `while it is on the board, every Pet pets all your Doggies${m > 1 ? ` ${m} times` : ""}`,
     }),
     // O010: hod mincou – hlava Pečať Ogrom, chvost Pečať rase súperovej príšerky.
     ogreGamble: (f, m) => ({

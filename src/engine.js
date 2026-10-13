@@ -1076,7 +1076,10 @@ const Engine = (() => {
       // každý ďalší Psík na ploche dostane to isté (navždy). Endgame psíkov:
       // rast už nejde len na jedno telo. Je to schopnosť t6 psíka, nie
       // kúzla (hráčovo rozhodnutie 16. 9. 2026).
-      if (p.board.some(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "packLeader"))) {
+      // Strieborný Vodca pohladká svorku 2×, zlatý 3× (najvyšší stupeň na ploche).
+      const leaders = p.board.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "packLeader"));
+      const times = leaders.length ? Math.max(...leaders.map(x => x.rank)) : 0;
+      for (let k = 0; k < times; k++) {
         for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
       }
       p.petsCast = (p.petsCast || 0) + 1;
@@ -1205,7 +1208,7 @@ const Engine = (() => {
     const p = state[pid];
     // Nevybrané možnosti späť do poolu, z ktorého boli vylosované.
     pd.options.forEach((id, i) => { if (i !== choiceIdx) returnToPool(state, pd.poolKey, id); });
-    const inst = makeInst(state, defId, 1, p);
+    const inst = makeInst(state, defId, pd.rank || 1, p); // D004 strieborný/zlatý = karta toho stupňa
     inst.src = { [pd.poolKey]: 1 };
     inst.slot = freeSlot(p.hand, HAND_MAX);
     p.hand.push(inst);
@@ -1427,7 +1430,8 @@ const Engine = (() => {
     },
     // Drak: Discover karta RASY cieľa (1 z 3, tier <= vlastný, z vlastného poolu).
     // Druhé echo (mutácia echoCry) by prepísalo čakajúci discover – preskoč.
-    discoverRace({ state, p, self, target, events }) {
+    // Stupeň draka = stupeň objavenej karty (strieborný D004 dá striebornú).
+    discoverRace({ state, p, m, self, target, events }) {
       if (state.pendingDiscover) return;
       const t = shopTarget(p, self, target);
       if (!t) return;
@@ -1438,8 +1442,8 @@ const Engine = (() => {
         if (id) options.push(id);
       }
       if (!options.length) return;
-      state.pendingDiscover = { pid: p.id, options, poolKey: p.id };
-      events.push({ type: "discoverStart", pid: p.id, options });
+      state.pendingDiscover = { pid: p.id, options, poolKey: p.id, rank: m };
+      events.push({ type: "discoverStart", pid: p.id, options, rank: m });
     },
     // Drak t6: cieľ evolvne o stupeň (bronz→striebro→zlato); zlatú nezdvihne.
     // Buffy cieľa NAD základ (bez aury) sa prenesú, perma rast tiež.
@@ -2057,7 +2061,7 @@ const Engine = (() => {
     // Po údere (psík P004 Aport): obaja žijú → polovica zvyšných statov
     // obrancu ide kamarátovi útočníka. Pred handleDeaths – smrti zo zásahu sa
     // riešia až po ňom (obranca, čo padol, už nemá čo ukradnúť: hp <= 0).
-    if (a.hp > 0 && d.hp > 0) runAfterAttack(state, sides, attacker, a, d, events);
+    if (d.hp > 0) runAfterAttack(state, sides, attacker, a, d, events);
     handleDeaths(state, sides, events);
     return true;
   }
@@ -2068,26 +2072,8 @@ const Engine = (() => {
     for (const pw of Cards.powersOf(Cards.byId[a.defId])) {
       if (pw.kw !== "afterAttack") continue;
       events.push({ type: "proc", pid, uid: a.uid, kw: "afterAttack" });
-      if (pw.fx.type === "fetchSteal") fetchSteal(state, sides, pid, a, d, events);
+      applyBattleFx(state, sides, pid, a, pw.fx, a.rank, events, "afterAttack");
     }
-  }
-
-  // Aport: obranca stratí polovicu zvyšného útoku aj života (zaokrúhlené
-  // dole – 1 ostane 1, nikdy nepadne), náhodný iný živý kamarát útočníka
-  // ich dostane (bez kamaráta si ich nechá útočník). Nie je to damage
-  // (štít nepomôže). Dočasné ako všetky bojové buffy. S Vichorom dvakrát.
-  function fetchSteal(state, sides, pid, a, d, events) {
-    const foe = other(pid);
-    const sa = Math.floor(d.atk / 2), sh = Math.floor(d.hp / 2);
-    if (!sa && !sh) return;
-    d.atk -= sa;
-    d.hp -= sh; d.maxHp = Math.max(d.hp, d.maxHp - sh);
-    const friends = aliveOn(sides, pid).filter(f => f !== a);
-    const to = friends.length ? pick(friends, state.rng) : a;
-    events.push({ type: "fetch", pid, uid: a.uid, defId: a.defId, targetPid: foe, targetUid: d.uid, targetDefId: d.defId, targetRank: d.rank, toUid: to.uid, a: sa, h: sh });
-    events.push({ type: "shrink", pid: foe, uid: d.uid, defId: d.defId, rank: d.rank, a: 0 - sa, h: 0 - sh, icon: "🦴" });
-    pushHp(events, foe, d);
-    buffWithEvent(to, pid, sa, sh, events);
   }
 
   // Číslo zásahu príšerky: útok, alebo pri Divokom údere (O009, def.wildAtk)
@@ -2317,9 +2303,11 @@ const Engine = (() => {
       }
     },
     // Ogr O006 (Pri útoku): 50 % šanca, že sa trafí sám za ½ svojho útoku.
-    drunkStrike({ state, sides, pid, self, events }) {
+    // Šanca 50 %; zásah do seba klesá so stupňom: ½ / ¼ / ⅛ útoku
+    // (evolvnutý ogor sa trafí slabšie – menej backstab Pečatí, nerf ogrov).
+    drunkStrike({ state, sides, pid, self, m, events }) {
       if (isCareful(state, pid) || state.rng() >= 0.5) return; // Opatrný ogr sa netrafí
-      const dmg = Math.floor(self.atk / 2);
+      const dmg = Math.floor(self.atk / 2 ** Math.min(m || 1, 3));
       if (dmg <= 0) return;
       dealDmg(self, dmg, pid, events);
       events.push({ type: "drunkHit", pid, uid: self.uid, n: dmg });
@@ -2375,6 +2363,10 @@ const Engine = (() => {
     // ťahu – checkEvolve v beginShopTurn).
     addPet({ state, pid, fx, m, events }) {
       addPets(state, state[pid], fx.n * m, fx.rank || 1, events);
+    },
+    // P004 (Po údere): súper prežil → n×stupeň Pohladkaní do balíčka.
+    petIfSurvive({ state, pid, fx, m, events }) {
+      addPets(state, state[pid], fx.n * m, 1, events);
     },
     // P003 Ocikaj: m náhodných živých súperov (každý raz za boj – flag
     // `peed`) má útok aj životy na polovicu, zaokrúhlené HORE (1 ostane 1).

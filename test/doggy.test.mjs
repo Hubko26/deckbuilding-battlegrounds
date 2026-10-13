@@ -181,30 +181,39 @@ test("psíci: P003 Ocikaj – náhodný súper má útok aj životy na polovicu 
   assert.ok(firstSummon === -1 || firstSummon > firstAttack);
 });
 
-test("psíci: P004 Aport (Po údere) – ak obranca prežije, polovica jeho zvyšných statov ide kamarátovi; padnutý nič", () => {
+test("psíci: P004 (Po údere) – ak súper prežije, Pohladkanie do balíčka (strieborný 2); padnutý súper nič", () => {
   const { state, E, put } = bareFight(19);
-  const dog = put("p1", "P004");    // 3/2
-  const friend = put("p1", "O004"); // 3/4
-  const wall = put("p2", "B006");   // 7/9 – prežije; psa chráni Božský štít
+  const dog = put("p1", "P004", 2); // strieborný 6/4
+  put("p2", "B006");                // 7/9 – prežije
   dog.shield = true;
   state.p1.trinkets = ["initiative"]; // p1 začína, pes útočí prvý
   const ev = E.doBattle(state);
-  const fetch = ev.find(e => e.type === "fetch");
-  assert.ok(fetch);
-  assert.equal(fetch.targetUid, wall.uid);
-  // po údere 3: 7/6 → ukradne floor(7/2)=3, floor(6/2)=3
-  assert.equal(fetch.a, 3); assert.equal(fetch.h, 3);
-  assert.equal(fetch.toUid, friend.uid);
-  const shr = ev.find(e => e.type === "shrink" && e.uid === wall.uid);
-  assert.equal(shr.a, -3); assert.equal(shr.icon, "🦴");
-  assert.ok(ev.some(e => e.type === "buff" && e.uid === friend.uid && e.a === 3 && e.h === 3));
-  // obranca padne z úderu → žiadny Aport
+  const add = ev.find(e => e.type === "addPet" && e.pid === "p1");
+  assert.ok(add, "prežitý úder = Pohladkania");
+  assert.equal(add.n, 2);
+  assert.ok(state.p1.deck.concat(state.p1.discard).filter(c => c.defId === "pet").length >= 2);
+  // súper padne z úderu → nič
   const { state: s2, E: E2, put: put2 } = bareFight(20);
   put2("p1", "P004");
   put2("p2", "U001"); // 1/1 padne
   s2.p1.trinkets = ["initiative"];
   const ev2 = E2.doBattle(s2);
-  assert.ok(!ev2.some(e => e.type === "fetch"));
+  assert.ok(!ev2.some(e => e.type === "addPet" && e.pid === "p1" && ev2.indexOf(e) < ev2.findIndex(x => x.type === "die")));
+});
+
+test("psíci: P009 strieborný Vodca – každé Pohladkanie pohladká ostatných Psíkov 2×", () => {
+  const { state, E } = fresh(53);
+  E.startRound(state);
+  const p = state.p1;
+  const d1 = E.makeInst(state, "P001", 1); d1.slot = 0;
+  const d2 = E.makeInst(state, "P002", 1); d2.slot = 1;
+  const lead = E.makeInst(state, "P009", 2); lead.slot = 2;
+  p.board = [d1, d2, lead];
+  p.hand = [E.makeInst(state, "pet", 1)];
+  const a2 = d2.atk;
+  E.castSpell(state, "p1", 0, d1.uid);
+  assert.equal(d2.atk, a2 + 2, "d2 pohladkaný 2× (+1/+1 dvakrát)");
+  assert.equal(d2.pets, 2);
 });
 
 test("psíci: P006 Zavýjanie – všetci Psíci +1/+1 za každého Psíka na ploche (aj sám); P007 Pečať Psíkom", () => {

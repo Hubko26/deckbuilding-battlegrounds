@@ -3125,3 +3125,32 @@ test("deckMin: celá hra bot vs bot s limitom dobehne a nikto nespadne pod 8 kar
   }
   assert.equal(state.phase, "over");
 });
+
+test("D004 strieborný objaví striebornú kartu rasy cieľa; O006 sa trafí za ½ / ¼ / ⅛ útoku", () => {
+  const { state, E, C } = fresh(204);
+  E.startRound(state);
+  const p = state.p1;
+  const bone = E.makeInst(state, "U001", 1); bone.slot = 0;
+  p.board = [bone];
+  p.hand = [E.makeInst(state, "D004", 2)];
+  E.playMinion(state, "p1", 0, bone.uid);
+  assert.equal(state.pendingDiscover.rank, 2);
+  E.pickDiscover(state, "p1", 0);
+  const got = p.hand.find(c => C.byId[c.defId].race === "undead" && c.rank === 2);
+  assert.ok(got, "objavená karta je strieborná");
+  assert.match(C.cardText(C.byId.D004, 3, "sk"), /zlatú/);
+  assert.match(C.cardText(C.byId.O006, 2, "sk"), /štvrtinu/);
+  // O006 zásah: nájdi boj, kde sa strieborný trafí
+  let hit = null;
+  for (let seed = 1; seed <= 60 && !hit; seed++) {
+    const { state: s, E: E2 } = fresh(seed);
+    E2.startRound(s); E2.endShopTurn(s, "p1");
+    const ogre = Object.assign(E2.makeInst(s, "O006", 2), { slot: 0 }); // 10/10
+    s.p1.board = [ogre];
+    s.p2.board = [Object.assign(E2.makeInst(s, "U008", 2), { slot: 0 })];
+    for (const pid of ["p1", "p2"]) { s[pid].hand = []; s[pid].deck = []; s[pid].discard = []; }
+    hit = E2.doBattle(s).find(e => e.type === "drunkHit");
+  }
+  assert.ok(hit);
+  assert.equal(hit.n, Math.floor(10 / 4), "strieborný 10/10 sa trafí za štvrtinu");
+});

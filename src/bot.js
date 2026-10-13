@@ -772,7 +772,7 @@ const Bot = (() => {
       case "copyTarget": return f.n * m * 7;                    // D010 (t6): Zrkadlo na tele
       case "shrinkEnemy": return ab;
       case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu
-      case "drunkStrike": return -2;
+      case "drunkStrike": return -2 / m;
       case "triggerRandom": return f.n * m * 2;
       // O010: hlava = Pečať Ogrom (50 %); chvost = Pečať súperovi, ale backstab
       // dá Ogrom +1/+1 – tie dve sa zhruba vyrušia.
@@ -790,10 +790,10 @@ const Bot = (() => {
       case "addPet": return f.n * m * 2.5 * (kw === "endTurn" ? PW_HORIZON : 1);
       case "fetchPet": return f.n * m * (3 + 2 * (f.grow || 0)); // tutor ako draw + rast navždy
       case "halveEnemy": return m * 6;                         // polovica ~12-statového tela
-      case "fetchSteal": return 4 * PW_ATTACKS;                // ~4 body presunuté za útok
+      case "petIfSurvive": return f.n * m * 3;                  // Pohladkanie za prežitý úder
       case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
       case "petScale": return ab * 8;                          // ~8 pohladkaní zahraných za hru
-      case "packLeader": return 3 * PW_BOARD * PW_HORIZON / 2; // každé pohladkanie na celú svorku navždy, kým je na ploche
+      case "packLeader": return m * 3 * PW_BOARD * PW_HORIZON / 2; // každé pohladkanie na celú svorku (×stupeň) navždy, kým je na ploche
       default: return 0;
     }
   }

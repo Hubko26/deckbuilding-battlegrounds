@@ -128,6 +128,13 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
 
 ## Evolve
 
+- **Schopnosti, ktoré sa škálujú stupňom inak než číslom** (13. 10. 2026):
+  D004 strieborný/zlatý objaví kartu **toho istého stupňa**
+  (`pendingDiscover.rank`); O006 sa trafí za **½ / ¼ / ⅛** útoku (šanca
+  stále 50 % – menej backstab Pečatí, nerf ogrieho škálovania); P004 Po
+  údere: ak súper prežije, **1/2/3 Pohladkania** do balíčka (nahradilo
+  Aport – krádež statov); P009 Vodca svorky pohladká svorku **1×/2×/3×**
+  (najvyšší stupeň Vodcu na ploche).
 - **3 rovnaké príšerky (rovnaká karta, rovnaký stupeň) KDEKOĽVEK** – plocha,
   ruka, balíček aj kôpka – sa automaticky zlúčia na vyšší stupeň:
   bronz → **strieborná** → **zlatá**. Kópie sa spotrebujú v poradí

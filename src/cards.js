@@ -280,8 +280,10 @@ const Cards = (() => {
       { power: { kw: "startFight", fx: { type: "halveEnemy" } } }),
     // P004 Aport (Po údere): ak súper úder prežije, polovicu jeho zvyšných
     // statov ukradne a dá náhodnému kamarátovi. Bez stupňa (ako O006).
+    // P004 od 13. 10. 2026: namiesto Aportu (krádež statov) Pohladkania –
+    // ak súper prežije úder, 1/2/3 Pohladkania do balíčka.
     M("P004", 2, "doggy", ["Zipbolt", "Gearhound", "Clockwork Ace"], 3, 2,
-      { power: { kw: "afterAttack", fx: { type: "fetchSteal" } } }),
+      { power: { kw: "afterAttack", fx: { type: "petIfSurvive", n: 1 } } }),
     // P005 Vyňuchaj: tutor – Pohladkanie z balíčka (najvyšší stupeň), inak
     // náhodná karta. Psí draw – bez neho by pohladkania riedili balíček.
     M("P005", 3, "doggy", ["Snifflecap", "Trailwhisker", "Grand Scentmaster"], 4, 5,
