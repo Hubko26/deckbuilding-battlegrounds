@@ -2126,7 +2126,7 @@ function markZones(src, on) {
 }
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
-const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "evolveTarget", "reviveAs", "buffOne"]);
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyTarget", "reviveAs", "buffOne"]);
 // Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
 const TARGETED_SPELL = new Set(["buffTarget", "petBuff", "copyToDeck", "transform", "swapDeck"]);
 
@@ -2262,6 +2262,9 @@ function act(events) {
     }
     // Psíci: Pohladkanie do balíčka / spojenie troch na vyšší stupeň.
     if (ev.type === "petGift" && ev.pid === MY) log(petGiftMsg(ev));
+    if (ev.type === "copyToDeck" && ev.pid === MY) {
+      log(`🌌 ${t(L.copyToDeckMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}`);
+    }
     // Trojica čaká na limit kariet – hlás raz za kolo, nech to nespamuje.
     if (ev.type === "evolveWait" && ev.pid === MY && evolveWaitRound !== state.round) {
       evolveWaitRound = state.round;

@@ -94,24 +94,24 @@ test("drak futureRaceOf: permanentná aura pre rasu cieľa", () => {
   assert.equal(fresh2.atk, C.byId["U002"].atk + 1);
 });
 
-test("drak evolveTarget: cieľ evolvne o stupeň, zlatú už nezdvihne", () => {
+test("D010 copyTarget: kópia 1. stupňa cieľa do balíčka (strieborný drak 2), cieľ sa nemení; trojica sa spojí", () => {
   const { state, E, C } = fresh(82);
   E.startRound(state);
   const p = state.p1;
-  const bear = E.makeInst(state, "B001", 1); bear.slot = 0;
-  p.board = [bear];
+  const bear = E.makeInst(state, "B008", 1); bear.slot = 0;
+  p.board = [bear]; p.deck = []; p.discard = [];
   p.hand = [E.makeInst(state, "D010", 1)];
-  E.playMinion(state, "p1", 0, bear.uid);
-  const up = p.board.find(x => x.defId === "B001");
-  assert.equal(up.rank, 2);
-  assert.equal(up.atk, C.byId["B001"].atk * 2);
-  // zlatá ostáva zlatá
-  const gold = E.makeInst(state, "B003", 3); gold.slot = 2;
-  p.board.push(gold);
-  p.hand = [E.makeInst(state, "D010", 1)];
-  E.playMinion(state, "p1", 0, gold.uid);
-  assert.equal(gold.rank, 3);
-  assert.ok(p.board.includes(gold));
+  const ev = E.playMinion(state, "p1", 0, bear.uid);
+  assert.ok(ev.some(e => e.type === "copyToDeck" && e.n === 1 && e.defId === "B008"));
+  assert.equal(bear.rank, 1, "cieľ ostáva bronzový");
+  assert.deepEqual(p.deck.map(c => c.defId + c.rank), ["B0081"]);
+  // strieborný D010: 2 kópie → s cieľom na ploche trojica → spojí sa
+  p.hand = [E.makeInst(state, "D010", 2)];
+  p.deck = [];
+  const ev2 = E.playMinion(state, "p1", 0, bear.uid);
+  assert.ok(ev2.some(e => e.type === "copyToDeck" && e.n === 2));
+  assert.ok(ev2.some(e => e.type === "evolve" && e.defId === "B008" && e.rank === 2));
+  assert.match(C.cardText(C.byId.D010, 2, "sk"), /vlož 2× jej kópiu/);
 });
 
 test("drak discoverRace: ponuka len z rasy cieľa a vlastného tieru", () => {
@@ -345,20 +345,6 @@ test("evolve: dočasné buffy prepadnú, permanentný rast DVOCH najsilnejších
   E.checkEvolve(state, q, []);
   assert.equal(q.hand[0].rank, 2);
   assert.equal(q.hand[0].atk, C.byId["B001"].atk * 2 + 1); // základ 4 + aura 1
-});
-
-test("drak evolveTarget prenáša buffy cieľa (nad základ, bez aury)", () => {
-  const { state, E, C } = fresh(86);
-  E.startRound(state);
-  const p = state.p1;
-  const bear = E.makeInst(state, "B001", 1); bear.slot = 0;
-  bear.atk += 2; bear.hp += 2; bear.maxHp += 2; // dočasný buff +2/+2
-  p.board = [bear];
-  p.hand = [E.makeInst(state, "D010", 1)];
-  E.playMinion(state, "p1", 0, bear.uid);
-  const up = p.board.find(x => x.defId === "B001");
-  assert.equal(up.rank, 2);
-  assert.equal(up.atk, C.byId["B001"].atk * 2 + 2); // základ 4 + prenesený buff
 });
 
 test("kúpa tretej kópie (2 v ruke/na ploche) ide do ruky a hneď evolvne", () => {

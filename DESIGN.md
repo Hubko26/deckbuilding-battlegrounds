@@ -155,8 +155,8 @@ Upgrade zvýši tier ponúkaných kariet a pridá jednu súkromnú kartu do obch
   cykle balíčka – karta „ide do ruky" ako nová. Pôvodne (do 2026-09-11)
   sa prenášali aj dočasné buffy: dva O001 s hlavou (6/7) dali striebornú
   12/14 v ruke, čo hráča mýlilo (po dotiahnutí z balíčka by buffy neboli).
-  Galaxy Dragon (D010, cielený evolve battlecry) si buffy cieľa berie so
-  sebou ďalej – je to jeho zámerná schopnosť, nie automatický evolve.
+  (Galaxy Dragon D010 do 13. 10. 2026 evolvoval cieľ aj s buffmi – teraz
+  vkladá kópie cieľa do balíčka, pozri Draci.)
 - Kúzla sa neevolvujú.
 
 ## Boj (automatický)
@@ -619,9 +619,11 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   D003 (t4) a D009 (t5) battlecry **permanentná aura rasy cieľa** +1/+1
   (`futureRaceOf` – cielený futureRace, čísla nízko lebo vždy trafí
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
-  D010 (t6) battlecry **cieľ evolvne o stupeň** (`evolveTarget`,
-  bronz→striebro→zlato, zlatú nezdvihne; buffy cieľa sa prenesú ako
-  pri bežnom evolve).
+  D010 (t6) battlecry **Zrkadlo na tele** (`copyTarget`, od 13. 10. 2026):
+  vlož kópiu 1. stupňa vybranej vlastnej príšerky do balíčka – počet =
+  stupeň draka (1/2/3), z vlastného poolu kým je; trojica sa môže hneď
+  spojiť. Predtým cieľ okamžite evolvol o stupeň (free striebro/zlato pre
+  každú rasu – prisilné).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
 **👹 Ogre (Ogr) – derpy chaos (implementované)**
@@ -1329,8 +1331,8 @@ len staty + keyword badge.
   undead bot v zázname kúpil B006 4×, B002 a B010, lebo sila 71 prebila −3
   za cudziu rasu. **Draci** (2026-09-14, hráčova skúsenosť): D004 (discover
   karty rasy cieľa) je vždy najsilnejšia karta – v skóre +8 vždy, `isWanted`
-  (lov rasy) ho vždy berie, `cardPower` discoverRace 14; D010 (t6 evolve
-  cieľa) +3 s dominantnou rasou, sila 16; ostatní draci majú len telo
+  (lov rasy) ho vždy berie, `cardPower` discoverRace 14; D010 (t6 kópie
+  cieľa do balíčka) +3 s dominantnou rasou, sila 7 za kópiu; ostatní draci majú len telo
   (battlecry sa neráta, −1 po zafixovaní rasy) – kupujú sa, len keď nič
   vlastnej rasy nie je. Dračia Pečať D003/D009 má v tabuľke sily polovicu
   vlastnej Pečate.

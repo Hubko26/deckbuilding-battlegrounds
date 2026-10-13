@@ -214,8 +214,11 @@ const Cards = (() => {
       { taunt: true, power: { kw: "battlecry", fx: { type: "buffRaceOf", a: 2, h: 2 } } }),
     M("D009", 5, "dragon", ["Petalwyrm", "Rosescale", "Spring Sovereign"], 7, 7,
       { power: { kw: "battlecry", fx: { type: "futureRaceOf", a: 1, h: 1 } } }),
+    // D010: Zrkadlo na tele – kópie (1. stupňa) cieľa do balíčka, počet =
+    // stupeň draka. Nerf 13. 10. 2026: predtým cieľ okamžite evolvol o stupeň
+    // (free striebro/zlato pre každú rasu, t6 drak bol prisilný).
     M("D010", 6, "dragon", ["Specklestar", "Cometcoil", "Galaxy Dragon"], 8, 8,
-      { power: { kw: "battlecry", fx: { type: "evolveTarget" } } }),
+      { power: { kw: "battlecry", fx: { type: "copyTarget", n: 1 } } }),
 
     // ---------- Ogri (Ogre) – derpy chaos: veľké staty, efekt sa môže
     // obrátiť proti vlastníkovi. Všetka náhoda cez state.rng. ----------

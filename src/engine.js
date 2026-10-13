@@ -1443,20 +1443,20 @@ const Engine = (() => {
     },
     // Drak t6: cieľ evolvne o stupeň (bronz→striebro→zlato); zlatú nezdvihne.
     // Buffy cieľa NAD základ (bez aury) sa prenesú, perma rast tiež.
-    evolveTarget({ state, p, self, target, events }) {
+    // D010: n×stupeň kópií 1. stupňa vybranej vlastnej príšerky do balíčka
+    // (ako Zrkadlo – z vlastného poolu, kým v ňom je). Tokeny nie. Trojica
+    // sa môže hneď spojiť (checkEvolve, platí aj minimum kariet).
+    copyTarget({ state, p, fx, m, self, target, events }) {
       const t = shopTarget(p, self, target);
-      if (!t || t.rank >= 3 || Cards.byId[t.defId].token) return;
-      const tdef = Cards.byId[t.defId];
-      const aura = auraFor(state, p, tdef) || { a: 0, h: 0 };
-      const bonusA = Math.max(0, t.atk - tdef.atk * Cards.STAT_MULT[t.rank] - aura.a);
-      const bonusH = Math.max(0, t.maxHp - tdef.hp * Cards.STAT_MULT[t.rank] - aura.h);
-      const up = makeInst(state, t.defId, t.rank + 1, p);
-      buff(up, bonusA, bonusH);
-      if (t.pa || t.ph) { up.pa = t.pa; up.ph = t.ph; }
-      if (t.src) up.src = t.src;
-      up.slot = t.slot;
-      p.board[p.board.indexOf(t)] = up;
-      events.push({ type: "evolve", pid: p.id, uid: up.uid, defId: up.defId, rank: up.rank, replaced: t.uid });
+      if (!t || Cards.byId[t.defId].token) return;
+      const n = fx.n * m;
+      for (let i = 0; i < n; i++) {
+        let src;
+        if (state.pools[p.id][t.defId] > 0) { state.pools[p.id][t.defId]--; src = { [p.id]: 1 }; }
+        addToDeck(state, p, t.defId, src);
+      }
+      events.push({ type: "copyToDeck", pid: p.id, defId: t.defId, n });
+      checkEvolve(state, p, events);
     },
     // Drak: náhodná TVOJA rasa na ploche +a/+h (do konca boja).
     buffRandomRace({ state, p, fx, m, self, events }) {

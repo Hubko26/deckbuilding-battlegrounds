@@ -642,6 +642,7 @@ const L = {
     en: "🂠 Triple is waiting to merge: you have {n} cards, need at least {min}. Buy another card.",
   },
   deckMinTip: { sk: "Všetky karty: {n} (minimum na tvoj tier: {min})", cs: "Všechny karty: {n} (minimum na tvůj tier: {min})", en: "All cards: {n} (minimum for your tier: {min})" },
+  copyToDeckMsg: { sk: "do balíčka pribudla kópia:", cs: "do balíčku přibyla kopie:", en: "copy added to your deck:" },
   echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {
     sk: "🐶 do balíčka pribudlo",
@@ -1155,11 +1156,14 @@ L.cards = (() => {
       cs: "vyber příšerku – vyber si 1 ze 3 karet její rasy",
       en: "pick a minion – discover a card of its race",
     }),
-    evolveTarget: () => ({
-      sk: "vyber príšerku – evolvne o stupeň vyššie (zlatú už nezdvihne)",
-      cs: "vyber příšerku – evolvne o stupeň výše (zlatou už nezvedne)",
-      en: "pick a minion – it evolves one rank up (gold can't go higher)",
-    }),
+    copyTarget: (f, m) => {
+      const n = f.n * m;
+      return {
+        sk: `vyber príšerku – vlož ${n}× jej kópiu (1. stupňa) do balíčka`,
+        cs: `vyber příšerku – vlož ${n}× její kopii (1. stupně) do balíčku`,
+        en: `pick a minion – put ${n}× rank-1 cop${n > 1 ? "ies" : "y"} of it into your deck`,
+      };
+    },
     buffTopRace: (f, m) => ({
       sk: `tvoja najpočetnejšia rasa dostane +${f.a * m}/+${f.h * m}`,
       cs: `tvá nejpočetnější rasa dostane +${f.a * m}/+${f.h * m}`,
