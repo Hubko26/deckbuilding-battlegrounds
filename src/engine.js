@@ -112,6 +112,10 @@ const Engine = (() => {
     { id: "fairySpark", race: "fairy", lvl: 1 },         // každý ťah Iskrička do ruky
     { id: "undeadReborn", race: "undead", lvl: 2 },      // príšerka úplne vľavo má v boji Znovuzrodenie
     { id: "elemWind", race: "elemental", lvl: 2 },       // príšerka úplne vľavo má v boji Vichor
+    { id: "undeadFirstBone", race: "undead", lvl: 1 },   // prvá tvoja príšerka, čo v boji padne, vyvolá Kostíka
+    { id: "undeadTauntBones", race: "undead", lvl: 1 },  // Kostíky majú Obrancu
+    { id: "elemBubble", race: "elemental", lvl: 1 },     // pred bojom vyvolaj Bublinu
+    { id: "elemZap", race: "elemental", lvl: 1 },        // prvý výboj v každom boji +2
     { id: "cheapUpgrade", lvl: 1 },  // upgrade o 2 lacnejší (min. 2)
     { id: "richSell", lvl: 1 },      // predaj dáva 2
     { id: "twinEvolve1", lvl: 1 },   // kartám t1 stačia 2 kópie
@@ -1890,11 +1894,15 @@ const Engine = (() => {
   // slot) dostane na boj Znovuzrodenie / Vichor. Na kópii – originál nič.
   function leftmostTrinkets(state, sides, pid, events) {
     const left = [...sides[pid]].sort((a, b) => a.slot - b.slot)[0];
-    if (!left) return;
     for (const [id, key] of [["undeadReborn", "revive"], ["elemWind", "windfury"]]) {
-      if (!hasTrinket(state, pid, id)) continue;
+      if (!left || !hasTrinket(state, pid, id)) continue;
       left[key] = true;
       events.push({ type: "trinketProc", pid, id, uid: left.uid });
+    }
+    // Bublinková zásoba: pred bojom Bublina na najpravejší voľný slot.
+    if (hasTrinket(state, pid, "elemBubble")) {
+      events.push({ type: "trinketProc", pid, id: "elemBubble" });
+      trinketSummon(state, sides, pid, "bublina", BOARD_MAX - 1, events);
     }
   }
   const aliveOn = (sides, pid) => sides[pid].filter(x => x.hp > 0);
@@ -2052,7 +2060,7 @@ const Engine = (() => {
       p.bolts--;
       const targets = aliveOn(sides, foe);
       if (!targets.length) continue;
-      powerHit(pick(targets, state.rng), foe, BOLT_DMG + p.dmgBoost, undefined, events);
+      powerHit(pick(targets, state.rng), foe, BOLT_DMG + p.dmgBoost + firstZapBonus(state, pid, events), undefined, events);
       handleDeaths(state, sides, events);
     }
   }
@@ -2235,6 +2243,7 @@ const Engine = (() => {
       p.fightRaceBuffs = {}; // dračie buffy „do konca boja"
       p.fightTokenBuffs = {}; // bojové buffy tokenov (U002)
       p.graveUsed = false; // Hrobárova lopata platí raz za boj
+      p.firstBoneUsed = false; p.zapUsed = false; // Kostená odplata, Prvý výboj – raz za boj
       if (state.mutator === "bloodMoon" || hasTrinket(state, pid, "bloodMoon")) applyBloodMoon(p, sides[pid], events);
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
@@ -2308,6 +2317,7 @@ const Engine = (() => {
     if (hasTrinket(state, p.id, "strongTokens")) buff(tok, 1, 1);
     if (PUP_TOKENS.has(tokenId) && hasTrinket(state, p.id, "beastPups")) buff(tok, 1, 1);
     if (tokenId === "kostik" && hasTrinket(state, p.id, "undeadBones")) buff(tok, 1, 0);
+    if (tokenId === "kostik" && hasTrinket(state, p.id, "undeadTauntBones")) tok.taunt = true; // Kostená stráž
     return tok;
   }
 
@@ -2332,6 +2342,37 @@ const Engine = (() => {
     events.push({ type: "trinketProc", pid, id: "beastPack", uid: f.uid });
     buffWithEvent(f, pid, 1, 1, events);
     growPermanently(state, pid, f.uid, 1, 1);
+  }
+
+  // Token z trinketu (Bublina, Kostík) – bez summon chargí a Hrobárovej
+  // lopaty (tie patria kartám); plná plocha = nič. `want` = želaný slot
+  // (obsadený → najbližší voľný smerom doľava, potom doprava); do poľa
+  // ide podľa slotu, aby poradie útokov sedelo s plochou.
+  function trinketSummon(state, sides, pid, tokenId, want, events) {
+    const alive = aliveOn(sides, pid);
+    if (alive.length >= BOARD_MAX) return;
+    const taken = new Set(alive.map(x => x.slot));
+    let slot = -1;
+    for (let d = 0; d < BOARD_MAX && slot < 0; d++) {
+      for (const c of [want - d, want + d]) if (c >= 0 && c < BOARD_MAX && !taken.has(c)) { slot = c; break; }
+    }
+    const tok = makeFightToken(state, state[pid], tokenId, 1);
+    tok.slot = slot;
+    const board = sides[pid];
+    const at = board.findIndex(x => x.hp > 0 && x.slot > slot);
+    board.splice(at < 0 ? board.length : at, 0, tok);
+    events.push({ type: "summon", pid, uid: tok.uid, defId: tokenId, slot: tok.slot, rank: tok.rank, atk: tok.atk, hp: tok.hp });
+    huntToken(state, sides, pid, tok, events);
+  }
+
+  // Prvý výboj (trinket Živlov): prvý cielený výboj strany v boji (výboj
+  // karty, Blesk, lovec tokenov) +2. AoE výbuchy sa nerátajú.
+  function firstZapBonus(state, pid, events) {
+    const p = state[pid];
+    if (!hasTrinket(state, pid, "elemZap") || p.zapUsed) return 0;
+    p.zapUsed = true;
+    events.push({ type: "trinketProc", pid, id: "elemZap" });
+    return 2;
   }
 
   // Lovecká značka: keď padne vlastné Zviera (aj token), každé živé označené
@@ -2361,7 +2402,7 @@ const Engine = (() => {
       for (let i = 0; i < (fx.hits || m); i++) {
         const enemies = aliveOn(sides, foe);
         if (!enemies.length) break;
-        powerHit(pick(enemies, state.rng), foe, hitDmg, self.uid, events);
+        powerHit(pick(enemies, state.rng), foe, hitDmg + firstZapBonus(state, pid, events), self.uid, events);
         handleDeaths(state, sides, events);
       }
     },
@@ -2597,7 +2638,7 @@ const Engine = (() => {
       const fx = pw.fx, m = h.rank;
       h.hunted = true;
       events.push({ type: "proc", pid: hunterPid, uid: h.uid, kw: "onEnemySummon" });
-      powerHit(tok, tokPid, scaledPowerDmg(state, hunterPid, fx, m), h.uid, events);
+      powerHit(tok, tokPid, scaledPowerDmg(state, hunterPid, fx, m) + firstZapBonus(state, hunterPid, events), h.uid, events);
       hit = true;
       if (tok.hp <= 0) {
         buffWithEvent(h, hunterPid, fx.a * m, fx.h * m, events);
@@ -2647,6 +2688,12 @@ const Engine = (() => {
         runDeathrattle(state, sides, pid, inst, events);
         runScavengers(state, sides, pid, inst, events);
         events.push({ type: "die", pid, uid: inst.uid, defId: inst.defId });
+        // Kostená odplata: prvá vlastná príšerka, ktorá v boji padne, vyvolá Kostíka.
+        if (!inst.boss && hasTrinket(state, pid, "undeadFirstBone") && !state[pid].firstBoneUsed) {
+          state[pid].firstBoneUsed = true;
+          events.push({ type: "trinketProc", pid, id: "undeadFirstBone" });
+          trinketSummon(state, sides, pid, "kostik", inst.slot, events);
+        }
       }
     }
   }

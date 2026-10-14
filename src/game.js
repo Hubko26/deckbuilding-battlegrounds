@@ -1638,12 +1638,9 @@ function showTrinketInfo(id, off) {
 }
 
 // Art trinketu: okrúhly medailón s rámom (assets/trinkets/<id>.webp, 512 px).
-// Trinkety bez vlastného artu si zatiaľ požičajú medailón príbuzného trinketu.
-const TRINKET_ART_ALIAS = {
-  doggyGlove: "doggyLeash", doggyBrush: "doggyLeash", doggyDouble: "doggyLeash",
-  dragonBook: "dragonPact", ogreLuck: "ogreSabotage", fairySpark: "fairyDiscount",
-  beastHunt: "beastPack", beastHunt2: "beastPack", undeadReborn: "undeadGrave", elemWind: "elemStorm",
-};
+// Trinkety bez ilustrácie majú dočasný medailón: rám + emoji
+// (tools/trinket-placeholder.py). Alias = požičaný medailón iného trinketu.
+const TRINKET_ART_ALIAS = {};
 const trinketArt = id => `assets/trinkets/${TRINKET_ART_ALIAS[id] || id}.webp`;
 
 // Ponuka trinketov (kolo 4 a 8): overlay s tromi kartami, len vo vlastnom ťahu.

@@ -627,3 +627,35 @@ test("trinkety: Večný strážca a Zadný vietor – príšerka úplne vľavo m
   assert.ok(events.some(e => e.type === "revive" && e.uid === left.uid));
   assert.ok(!events.some(e => e.type === "revive" && e.uid === right.uid));
 });
+
+test("trinkety: Kostená odplata (prvá padlá príšerka vyvolá Kostíka) a Kostená stráž (Kostíky s Obrancom)", () => {
+  const { state, E } = fresh(29);
+  E.startRound(state);
+  const pid = state.active, foe = pid === "p1" ? "p2" : "p1";
+  state[pid].trinkets.push("undeadFirstBone", "undeadTauntBones");
+  clear(state);
+  put(E, state, pid, "B001", 0);
+  put(E, state, pid, "B001", 1);
+  put(E, state, foe, "B002", 0);
+  const events = fight(state, E);
+  assert.equal(events.filter(e => e.type === "trinketProc" && e.id === "undeadFirstBone").length, 1, "raz za boj");
+  const bones = events.filter(e => e.type === "summon" && e.pid === pid && e.defId === "kostik");
+  assert.equal(bones.length, 1);
+});
+
+test("trinkety: Bublinková zásoba – Bublina pred bojom; Prvý výboj +2 len na prvý výboj", () => {
+  const { state, E } = fresh(30);
+  E.startRound(state);
+  const pid = state.active, foe = pid === "p1" ? "p2" : "p1";
+  state[pid].trinkets.push("elemBubble", "elemZap");
+  clear(state);
+  put(E, state, pid, "B002", 0);
+  const a = put(E, state, foe, "B002", 0);
+  const b = put(E, state, foe, "B002", 1);
+  state[pid].bolts = 2;
+  const events = fight(state, E);
+  assert.ok(events.some(e => e.type === "summon" && e.pid === pid && e.defId === "bublina"));
+  const hits = events.filter(e => e.type === "powerDmg" && (e.uid === a.uid || e.uid === b.uid)).map(e => e.n);
+  assert.equal(hits.slice(0, 2).join(), "5,3");
+  assert.equal(events.filter(e => e.type === "trinketProc" && e.id === "elemZap").length, 1);
+});

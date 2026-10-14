@@ -1156,6 +1156,9 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 - **Art**: okrúhle medailóny s rámom `assets/trinkets/<id>.webp` (512 px,
   priehľadné rohy; zdroj `Fantasy_Trinkets_UI.zip`, neverzuje sa) – ponuka
   v overlayi, ikonky za menom hrdinu a tlačidlo Štítu (`trinketArt(id)`).
+  Trinkety bez ilustrácie majú **dočasný medailón**: prázdny rám
+  `assets/frames/trinket-frame.png` + emoji trinketu v strede
+  (`python tools/trinket-placeholder.py [id …]`, zoznam `EMOJI` v skripte).
 
 | id | rasa | úroveň | pravidlo |
 |---|---|---|---|
@@ -1182,6 +1185,10 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `fairySpark` | 🧚 | 1 | na začiatku ťahu Iskrička do ruky |
 | `undeadReborn` | 💀 | 2 | príšerka úplne vľavo má v boji Znovuzrodenie |
 | `elemWind` | ✨ | 2 | príšerka úplne vľavo má v boji Vichor |
+| `undeadFirstBone` | 💀 | 1 | prvá vlastná príšerka, ktorá v boji padne, vyvolá Kostíka (`p.firstBoneUsed`) |
+| `undeadTauntBones` | 💀 | 1 | Kostíky majú Obrancu |
+| `elemBubble` | ✨ | 1 | pred bojom Bublina na najpravejší voľný slot (PvP aj DMG Meter) |
+| `elemZap` | ✨ | 1 | prvý cielený výboj v boji (výboj karty, Blesk, lovec tokenov) +2 (`p.zapUsed`); AoE nie |
 | `cheapUpgrade` | – | 1 | upgrade o 2 lacnejší (min. 2) |
 | `richSell` | – | 1 | predaj dáva 2 |
 | `twinEvolve1` | – | 1 | kartám tieru 1 stačia 2 kópie |
