@@ -710,16 +710,17 @@ const Engine = (() => {
   // „prepadne", výhra je kompresia balíčka a jedno zoslanie namiesto troch). Bez stropu
   // stupňa. Kúzla zahrané v tomto ťahu (spentSpells) sa NErátajú – inak by
   // zoslané pohladkanie splynulo do Super a jeho hodnota by sa zahrala 2×.
-  // Výsledok ide do ruky, ak je hráč práve na ťahu a má miesto (dieťa vidí
-  // „Super!" a môže ho hneď zahrať), inak do balíčka. Kópie sa berú v poradí
+  // Výsledok ide do ruky, ak je hráč práve na ťahu, má miesto a aspoň jedna
+  // spojená kópia bola v ruke (dieťa vidí „Super!" a môže ho hneď zahrať;
+  // ruka nikdy nenarastie), inak do balíčka. Kópie sa berú v poradí
   // ruka → balíček → kôpka; hidden = použila sa aj neviditeľná kópia.
   function checkPetMerge(state, p, events) {
     for (;;) {
       const group = findPetGroup(p);
       if (!group) return;
       if (deckLow(state, p)) return; // ako evolve: málo kariet na tier
-      let need = 3, hidden = false;
-      for (const inst of group.hand) { if (need <= 0) break; p.hand.splice(p.hand.indexOf(inst), 1); need--; }
+      let need = 3, hidden = false, fromHand = 0;
+      for (const inst of group.hand) { if (need <= 0) break; p.hand.splice(p.hand.indexOf(inst), 1); need--; fromHand++; }
       for (const zone of ["deck", "discard"]) {
         for (const idx of group[zone].reverse()) {
           if (need <= 0) break;
@@ -729,7 +730,10 @@ const Engine = (() => {
         }
       }
       const rank = group.rank + 1;
-      const toHand = state.phase === "shop" && state.active === p.id && p.hand.length < HAND_MAX;
+      // Do ruky len vtedy, keď sa spojilo aj pohladkanie z ruky – spojenie
+      // samých kópií z balíčka/kôpky by bolo karta navyše (hlásenie 14. 10.
+      // 2026: začiatok ťahu so 6 kartami, D010 na P001 „dotiahol" kartu).
+      const toHand = fromHand > 0 && state.phase === "shop" && state.active === p.id && p.hand.length < HAND_MAX;
       let uid = null;
       if (toHand) {
         const sp = makeInst(state, "pet", rank);
@@ -1519,7 +1523,15 @@ const Engine = (() => {
     replayBattlecry({ state, p, m, self, target, events }) {
       const bcs = x => Cards.powersOf(Cards.byId[x.defId]).filter(pw => pw.kw === "battlecry" && pw.fx.type !== "replayBattlecry");
       const ok = x => x !== self && bcs(x).length > 0;
-      const t = target && p.board.includes(target) && ok(target) ? target
+      // Hráč vybral cieľ bez Pri vyložení (napr. Vodcu svorky) = nič sa
+      // nezopakuje. Predtým sa potichu zopakovala NAJLEPŠIA iná karta
+      // (hlásenie 14. 10. 2026: D010 na P009 „potiahol dve karty" cez P005).
+      // Náhradný cieľ len keď hráč nevybral nikoho.
+      if (target && p.board.includes(target) && !ok(target)) {
+        events.push({ type: "replayNone", pid: p.id, uid: self.uid, targetUid: target.uid, defId: target.defId });
+        return;
+      }
+      const t = target && p.board.includes(target) ? target
         : p.board.filter(ok).sort((a, b) => Cards.byId[b.defId].tier * b.rank - Cards.byId[a.defId].tier * a.rank)[0];
       if (!t) return;
       events.push({ type: "replayBattlecry", pid: p.id, uid: self.uid, targetUid: t.uid, defId: t.defId, n: m });

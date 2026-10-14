@@ -481,6 +481,10 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   vytláčali telá z ruky. (Krátko platilo „Pohladkanie sa do ruky neráta“
   – nahradené, zoslanie s dotiahnutím je pre deti zrozumiteľnejšie.)
   Žiadny nekonečný cyklus: zoslané kúzlo je v karanténe (`spentSpells`).
+  Spojenie 3 pohladkaní ide do ruky LEN keď sa spojilo aj pohladkanie
+  z ruky (inak do balíčka) – spojenie samých kópií z balíčka dávalo kartu
+  navyše (14. 10. 2026: začiatok ťahu so 6 kartami). Testy dotahovania:
+  `test/draw.test.mjs`.
   **Od 14. 10. 2026 ťahá len PRVÉ Pohladkanie v kole** (`p.petDrawUsed`,
   reset v `startRound`): s Vodcom svorky a balíčkom plným pohladkaní sa
   celá svorka hladkala dokola, kým bolo čo ťahať – psíci boli prisilní.
@@ -638,7 +642,9 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
   D010 (t6) battlecry **spustí Pri vyložení vybranej vlastnej príšerky
   znova** (`replayBattlecry`, striebro 2×, zlato 3×; stupeň cieľa; iný D010
-  sa nereplayuje). História: okamžitý evolve cieľa (prisilné) → kópie cieľa
+  sa nereplayuje). Vybraný cieľ bez Pri vyložení = nič sa nezopakuje
+  (event `replayNone`, od 14. 10. 2026 – predtým sa potichu zopakovala
+  najlepšia iná karta); náhradný cieľ len bez výberu. História: okamžitý evolve cieľa (prisilné) → kópie cieľa
   do balíčka → replay (krátko na D009, kde bol na t5 top kartou sim).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 

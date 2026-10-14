@@ -668,6 +668,7 @@ const L = {
     en: "🂠 Triple is waiting to merge: you have {n} cards, need at least {min}. Buy another card.",
   },
   deckMinTip: { sk: "Všetky karty: {n} (minimum na tvoj tier: {min})", cs: "Všechny karty: {n} (minimum na tvůj tier: {min})", en: "All cards: {n} (minimum for your tier: {min})" },
+  replayNoneMsg: { sk: "nemá Pri vyložení – drak nemal čo zopakovať", cs: "nemá Při vyložení – drak neměl co zopakovat", en: "has no Battlecry – the dragon had nothing to replay" },
   replayBattlecryMsg: { sk: "🌸 znova spustil Pri vyložení:", cs: "🌸 znovu spustil Při vyložení:", en: "🌸 replayed the Battlecry of" },
   echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {

@@ -2281,6 +2281,9 @@ function act(events) {
     }
     // Psíci: Pohladkanie do balíčka / spojenie troch na vyšší stupeň.
     if (ev.type === "petGift" && ev.pid === MY) log(petGiftMsg(ev));
+    if (ev.type === "replayNone" && ev.pid === MY) {
+      log(`${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)} ${t(L.replayNoneMsg)}`);
+    }
     if (ev.type === "replayBattlecry" && ev.pid === MY) {
       log(`${t(L.replayBattlecryMsg)} ${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}${ev.n > 1 ? " ×" + ev.n : ""}`);
       const el = cardById(ev.targetUid);

@@ -3160,7 +3160,7 @@ test("D004 strieborný objaví striebornú kartu rasy cieľa; O006 sa trafí za 
   assert.equal(hit.n, Math.floor(10 / 4), "strieborný 10/10 sa trafí za štvrtinu");
 });
 
-test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); bez cieľa vezme najsilnejší battlecry", () => {
+test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); cieľ bez battlecry nič, bez cieľa najsilnejší battlecry", () => {
   const { state, E, C } = fresh(205);
   E.startRound(state);
   const p = state.p1;
@@ -3168,7 +3168,12 @@ test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupe�
   const vanilla = E.makeInst(state, "O008", 1, p); vanilla.slot = 1;
   p.board = [seal, vanilla];
   p.hand = [E.makeInst(state, "D010", 2)];
-  const ev = E.playMinion(state, "p1", 0, vanilla.uid); // vanilla nemá battlecry → vezme B002
+  // Vybraný cieľ bez battlecry = nič (od 14. 10. 2026, predtým náhrada).
+  const none = E.playMinion(state, "p1", 0, vanilla.uid);
+  assert.ok(none.some(e => e.type === "replayNone") && !none.some(e => e.type === "replayBattlecry"));
+  p.board = [seal, vanilla];
+  p.hand = [E.makeInst(state, "D010", 2)];
+  const ev = E.playMinion(state, "p1", 0); // bez cieľa → vezme najsilnejší battlecry (B002)
   assert.ok(ev.some(e => e.type === "replayBattlecry" && e.defId === "B002" && e.n === 2));
   assert.deepEqual({ ...p.raceBuffs.beast }, { a: 2, h: 2 }, "Pečať B002 dvakrát");
   assert.match(C.cardText(C.byId.D010, 2, "sk"), /spustí znova 2×/);
