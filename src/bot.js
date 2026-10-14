@@ -344,9 +344,31 @@ const Bot = (() => {
     // pár a striebro balast neboli. Strieborná cudzia t1–2 je balast od
     // tieru 4. Draci t1–2 sú žoldnieri, kým je telo relevantné – od tieru 3
     // balast (záznam z 11. 9. 2026: D001, D006×2, D007×2 v balíčku do konca).
-    if (!dom || def.race === dom || def.tier > 2) return false;
-    if (def.race === "dragon") return inst.rank === 1 && p.tier >= 3;
+    if (!dom || def.race === dom) return false;
+    // Neskorá hra (záznam zo 14. 10. 2026: psí bot na t6 hral E001:2,
+    // E002:2, D001:2, D007 do 16. kola): cudzia karta 3+ tiery pod mojím
+    // tierom je balast aj ako striebro a aj drak – telo už nestačí.
+    // Zlatú nechaj (×4 staty).
+    if (inst.rank < 3 && def.tier <= p.tier - 3) return true;
+    if (def.tier > 2) return false;
+    if (def.race === "dragon") return inst.rank === 1 ? p.tier >= 3 : inst.rank === 2 && p.tier >= 4;
     return inst.rank === 1 || (inst.rank === 2 && p.tier >= 4);
+  }
+
+  // Balast na ploche (vyložený, lebo minimum kariet nedovolilo predaj
+  // pred nákupmi): po nákupoch ho vymeň za nebalastové telo z ruky.
+  // Bez náhrady ostáva – telo v boji je lepšie než diera.
+  function swapJunkFromBoard(state, p, push) {
+    let guard = 5;
+    while (guard-- > 0) {
+      const junk = p.board.find(x => isJunk(state, p, x));
+      const repl = p.hand.find(x => x && !x.spell && !isJunk(state, p, x));
+      if (!junk || !repl) return;
+      const sold = act("sellCard", state, p.id, "board", p.board.indexOf(junk));
+      if (!sold) return; // minimum kariet tieru
+      push(sold);
+      push(act("playMinion", state, p.id, p.hand.indexOf(repl)));
+    }
   }
 
   function botTurn(state, pid, difficulty) {
@@ -511,8 +533,11 @@ const Bot = (() => {
       }
     }
 
-    // 4b. Príšerky dokúpené/dotiahnuté počas ťahu (zvyšok ruky).
+    // 4b. Príšerky dokúpené/dotiahnuté počas ťahu (zvyšok ruky). Po
+    //     nákupoch je kariet viac – balast, ktorý pred nákupmi blokovalo
+    //     minimum kariet tieru, teraz predaj (z ruky aj z plochy).
     deployMinions(state, p, cfg, push);
+    if (cfg.sellJunk) { sellJunk(state, p, push); swapJunkFromBoard(state, p, push); }
     if (cfg.swapBoard) swapWeakBodies(state, p, push);
     if (cfg.sellJunk) trimDeck(state, p, push);
 

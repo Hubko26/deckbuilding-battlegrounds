@@ -672,3 +672,42 @@ test("bot (hard, víly): silné kúzlo kúpi; slabé len keď nie je za čo refr
   B.botTurn(state, "p2", "hard");
   assert.equal(B.ownedCount(p, "koren"), 0, "slabé kúzlo nekúpi, keď môže refreshnúť");
 });
+
+test("bot balast: v neskorej hre je cudzia karta 3+ tiery pod mojím tierom balast aj ako striebro a aj drak (zlatá nie)", () => {
+  // Záznam zo 14. 10. 2026: psí bot na t6 držal E001:2, E002:2, D001:2, D007 do konca hry.
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(35), null);
+  state.round = 12;
+  const p = state.p2;
+  p.deck = ["P001", "P002", "P005", "P007", "P008"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = [];
+  assert.equal(B.dominantRace(state, p), "doggy");
+  const junk = (id, rank, tier) => { p.tier = tier; return B.isJunk(state, p, E.makeInst(state, id, rank)); };
+  assert.equal(junk("E001", 2, 6), true, "strieborný cudzí t1 na t6");
+  assert.equal(junk("D001", 2, 6), true, "strieborný drak t1 na t6");
+  assert.equal(junk("D004", 1, 6), true, "drak t3 na t6");
+  assert.equal(junk("D004", 1, 5), false, "drak t3 na t5 ešte nie");
+  assert.equal(junk("U008", 1, 6), false, "cudzí t4 na t6 nie");
+  assert.equal(junk("E001", 3, 6), false, "zlatá ostáva");
+  assert.equal(junk("D001", 2, 3), false, "strieborný drak t1 na t3 ešte drží");
+  assert.equal(junk("P001", 1, 6), false, "vlastná rasa nikdy");
+});
+
+test("bot balast: po nákupoch vymení balast z plochy za telo z ruky", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(36), null);
+  E.startRound(state);
+  state.round = 12;
+  const pid = state.active, p = state[pid];
+  p.tier = 6; p.money = 0;
+  p.deck = ["P001", "P002", "P005", "P007", "P008", "P006"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = [];
+  p.board = ["P007", "P008", "P005", "P006", "E001"].map((id, i) => Object.assign(E.makeInst(state, id, 1, p), { slot: i }));
+  p.hand = [Object.assign(E.makeInst(state, "P009", 1, p), { slot: 0 })];
+  B.botTurn(state, pid, "hard");
+  const all = [...p.board, ...p.hand, ...p.deck, ...p.discard].map(c => c.defId);
+  assert.ok(!all.includes("E001"), "E001 predaný");
+  assert.ok(all.includes("P009"));
+});

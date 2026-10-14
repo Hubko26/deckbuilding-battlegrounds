@@ -1401,6 +1401,12 @@ len staty + keyword badge.
   z ruky preč ešte pred vyložením, do 8. kola bez ohľadu na počet tiel, od
   9. kola ostanú aspoň 2 telá. Bývalý strop „aspoň 4 telá“ nechával balast
   hrať namiesto predaja (záznam: 8 kôl s cudzími kartami na ploche).
+  **Neskorá hra** (2026-10-14): cudzia karta **3+ tiery pod tierom hráča**
+  je balast aj ako striebro a aj drak (zlatá nie) – psí bot na t6 hral
+  E001:2, E002:2, D001:2 a D007 do 16. kola. Minimum kariet tieru často
+  blokuje predaj pred nákupmi, preto po nákupoch prebehne predaj znova
+  a balast z plochy sa vymení za nebalastové telo z ruky
+  (`swapJunkFromBoard`); bez náhrady ostane hrať (telo > diera).
   **Strop balíčka** (`Bot.DECK_CAP` = 14 kariet vo všetkých zónach bez
   tokenov): nad ním bot predá z ruky najslabšie telá stupňa 1 bez páru
   a bez aury – po boji ide plocha do kôpky a ruka sa ťahá náhodne, takže
