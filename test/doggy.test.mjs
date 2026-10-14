@@ -482,4 +482,11 @@ test("psíci buff: P001 2/2, P002 2/3, P005 4/5 a Vyňuchaj za nájdené Pohladk
   assert.ok(ev.some(e => e.type === "draw" && e.defId === "B003"));
   assert.deepEqual(p.hand.map(c => c.defId), ["B003"]);
   assert.equal(s.atk, 6, "pohladkaný Snifflecap 5 + 1");
+  // druhé Pohladkanie v kole už kartu neťahá
+  p.hand = [E.makeInst(state, "pet", 1)];
+  p.deck = [{ defId: "B001", rank: 1 }];
+  const ev2 = E.castSpell(state, "p1", 0, s.uid);
+  assert.ok(!ev2.some(e => e.type === "draw"));
+  assert.equal(p.hand.length, 0);
+  assert.equal(s.atk, 7);
 });

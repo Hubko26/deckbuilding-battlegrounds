@@ -591,7 +591,7 @@ const Engine = (() => {
       p.lastSold = null; p.buyBackUsed = false; // buyback platí raz za ťah
       p.goldNext = 0;
       p.bought = [];
-      p.freeRefreshUsed = false; p.spellDiscountUsed = false; p.petTwiceUsed = false; // trinkety „raz za kolo"
+      p.freeRefreshUsed = false; p.spellDiscountUsed = false; p.petTwiceUsed = false; p.petDrawUsed = false; // „raz za kolo"
       for (const s of p.priv) if (!s.frozen) returnToPool(state, pid, s.defId);
       p.priv = p.priv.filter(s => s.frozen);
       for (const s of p.priv) s.frozen = false;
@@ -1129,10 +1129,14 @@ const Engine = (() => {
         for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
       }
       p.petsCast = (p.petsCast || 0) + 1;
-      // Pohladkanie dotiahne kartu (od 13. 10. 2026) – pohladkania v ruke
-      // tak nevytláčajú príšerky. Zahrané kúzlo je v karanténe (spentSpells),
-      // takže reshuffle ho nevráti hneď späť – žiadny nekonečný cyklus.
-      drawCards(state, p, 1, events);
+      // Pohladkanie dotiahne kartu – len PRVÉ v kole (od 14. 10. 2026).
+      // Predtým ťahalo každé: s Vodcom svorky a balíčkom plným pohladkaní
+      // sa celá svorka hladkala dokola, kým bolo čo ťahať. Zahrané kúzlo
+      // je v karanténe (spentSpells), reshuffle ho nevráti hneď späť.
+      if (!p.petDrawUsed) {
+        p.petDrawUsed = true;
+        drawCards(state, p, 1, events);
+      }
       checkEvolve(state, p, events);
       return events;
     },
