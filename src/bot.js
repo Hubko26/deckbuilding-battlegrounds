@@ -94,7 +94,7 @@ const Bot = (() => {
   function fillerSpell(def) {
     const fx = def.fx;
     return fx.type === "buffTarget" && !fx.a && !fx.h &&
-      !fx.shield && !fx.revive && !fx.windfury && !fx.echo;
+      !fx.shield && !fx.revive && !fx.windfury && !fx.echo && !fx.hunt;
   }
 
   // Koľko kópií karty bot vlastní (všade) – kvôli skladaniu trojíc.
@@ -539,6 +539,13 @@ const Bot = (() => {
             : cands[Math.floor(state.rng() * cands.length)];
           push(act("castSpell", state, pid, i, target.uid));
         }
+      } else if (fx.type === "buffTarget" && fx.hunt) {
+        // Lovecká značka: Zviera úplne vpravo – útočí posledné, kamaráti
+        // padnú pred ním a značka ho stihne nakŕmiť.
+        const beasts = p.board.filter(x => Cards.byId[x.defId].race === "beast"
+          || (Cards.byId[x.defId].race === "dragon" && Engine.hasTrinket(state, pid, "dragonBlood")));
+        const target = [...beasts].sort((a, b) => b.slot - a.slot)[0];
+        if (target) push(act("castSpell", state, pid, i, target.uid));
       } else if (fx.type === "buffTarget" && p.board.length) {
         // Vichor (2 útoky): najlepšie na „Pri útoku" kartu, inak najväčší útok.
         const score = fx.windfury
@@ -781,7 +788,7 @@ const Bot = (() => {
       case "silence": return 4; case "bolt": return 4; case "hex": return 6; case "polymorph": return 6;
       case "transform": return 3; case "copyToDeck": return 6; case "swapDeck": return 2;
       case "starPower": return ab * (PW_BOARD + 1) * PW_PERM + (f.n || 0) * PW_BOOST; // Pečať všetkým + Živelná sila
-      case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0) + (f.echo ? 7 : 0);
+      case "buffTarget": return ab * 2 + (f.taunt ? 2 : 0) + (f.shield ? 5 : 0) + (f.revive ? 8 : 0) + (f.windfury ? 8 : 0) + (f.echo ? 7 : 0) + (f.hunt ? 4 : 0);
       // ----- Psíci -----
       // Pohladkanie: +v/+v (v = 2^(stupeň−1)) navždy na psíkovi – ako Jablko
       // ×1,5 za trvalosť. rank tu = stupeň kúzla.

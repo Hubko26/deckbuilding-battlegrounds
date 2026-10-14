@@ -52,10 +52,8 @@ test("trinkety: bez opts žiadna ponuka, s opts v kole 4 ponuka 3 trinketov úro
       const def = E.TRINKETS.find(t => t.id === id);
       assert.ok(def, `neznámy trinket ${id}`);
       assert.equal(def.lvl, 1, `v kole 4 len úroveň 1 (${id})`);
-      if (def.race && !E.SUPPORT_RACES.has(def.race)) {
-        let n = 0;
-        for (const zone of ["deck", "discard", "hand", "board"]) for (const c of state[pid][zone]) if (C.byId[c.defId].race === def.race) n++;
-        assert.ok(n >= 3, `rasový trinket ${id} bez aspoň 3 kariet rasy`);
+      if (def.race && !E.TRINKET_FREE_RACES.has(def.race)) {
+        assert.ok(E.majorityRaces(state[pid]).has(def.race), `rasový trinket ${id} nie je väčšinovej rasy`);
       }
     }
   }
@@ -517,4 +515,115 @@ test("trinkety: bot vyberie trinket a Claude hygiena ho vyberie tiež (completeT
   const events = B.botTurn(state, pid, "hard");
   assert.ok(events.some(e => e.type === "trinketPick" && e.auto === false));
   assert.equal(state[pid].trinkets.length, 1);
+});
+
+test("trinkety: Iskričkový prach, Lovecká značka a Dračia knižnica (párne kolá) dajú jednorazové kúzla do ruky", () => {
+  const { state, E } = fresh(24);
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  p.trinkets.push("fairySpark", "beastHunt", "dragonBook");
+  const gifted = round => {
+    state.round = round;
+    p.hand = [];
+    E.beginShopTurn(state, pid);
+    return p.hand.map(c => c.defId).filter(id => ["iskricka", "znacka", "knihaDar"].includes(id)).sort().join();
+  };
+  assert.equal(gifted(5), "iskricka,znacka");
+  assert.equal(gifted(6), "iskricka,knihaDar,znacka");
+  // Po ťahu zmiznú – do kôpky nejdú.
+  state.round = 1;
+  const discard = p.discard.length + p.hand.filter(c => !["iskricka", "znacka", "knihaDar"].includes(c.defId)).length;
+  E.endShopTurn(state, pid);
+  assert.equal(p.discard.length, discard);
+  assert.ok(!p.discard.some(c => ["iskricka", "znacka", "knihaDar"].includes(c.defId)));
+});
+
+test("trinkety: Dvojité pohladkanie – prvé pohladkanie v kole 2×, ďalšie 1×, karta sa ťahá raz", () => {
+  const { state, E } = fresh(25);
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  p.trinkets.push("doggyDouble");
+  p.board = [];
+  const bear = put(E, state, pid, "B002", 0);
+  const atk = bear.atk;
+  const cast = () => {
+    p.hand = [Object.assign(E.makeInst(state, "pet", 1), { slot: 0 })];
+    return E.castSpell(state, pid, 0, bear.uid);
+  };
+  const ev = cast();
+  assert.equal(bear.atk, atk + 2);
+  assert.ok(ev.some(e => e.type === "trinketProc" && e.id === "doggyDouble"));
+  assert.ok(ev.filter(e => e.type === "draw").length <= 1);
+  cast();
+  assert.equal(bear.atk, atk + 3, "druhé pohladkanie v kole len raz");
+  fight(state, E);
+  assert.equal(p.petTwiceUsed, false, "nové kolo – znova dvakrát");
+});
+
+test("trinkety: Ogria šťastena – ogor bez schopnosti hodí mincou (karta / Pečať +1/+0), ogor so schopnosťou nie", () => {
+  const { state, E } = fresh(26);
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  p.trinkets.push("ogreLuck");
+  let heads = 0, tails = 0;
+  for (let i = 0; i < 12; i++) {
+    p.board = [];
+    p.hand = [Object.assign(E.makeInst(state, "O004", 1, p), { slot: 0 })];
+    p.deck.push({ defId: "B001", rank: 1 });
+    const ev = E.playMinion(state, pid, 0);
+    const proc = ev.find(e => e.type === "trinketProc" && e.id === "ogreLuck");
+    assert.ok(proc);
+    if (proc.heads) { heads++; assert.ok(ev.some(e => e.type === "draw")); }
+    else { tails++; assert.ok(ev.some(e => e.type === "futureBuff" && e.race === "ogre" && e.a === 1 && e.h === 0)); }
+  }
+  assert.ok(heads && tails, `${heads}/${tails}`);
+  p.board = [];
+  p.hand = [Object.assign(E.makeInst(state, "O001", 1, p), { slot: 0 })];
+  assert.ok(!E.playMinion(state, pid, 0).some(e => e.id === "ogreLuck"));
+});
+
+test("trinkety: Lovecká značka – len na Zviera; označené rastie za padlé Zvieratá (Majster lovu navždy)", () => {
+  const run = trinkets => {
+    const { state, E } = fresh(27);
+    E.startRound(state);
+    const pid = state.active, foe = pid === "p1" ? "p2" : "p1", p = state[pid];
+    p.trinkets.push(...trinkets);
+    clear(state);
+    put(E, state, pid, "B001", 0);
+    put(E, state, pid, "B001", 1);
+    const ogre = put(E, state, pid, "O004", 2);
+    const bear = put(E, state, pid, "B002", 3);
+    bear.taunt = false;
+    p.hand = [Object.assign(E.makeInst(state, "znacka", 1), { slot: 0 })];
+    assert.equal(E.castSpell(state, pid, 0, ogre.uid), null, "značka len na Zviera");
+    assert.ok(E.castSpell(state, pid, 0, bear.uid));
+    assert.equal(bear.hunt, 1);
+    put(E, state, foe, "B002", 0);
+    const events = fight(state, E);
+    const procs = events.filter(e => e.type === "trinketProc" && e.uid === bear.uid);
+    return { procs, orig: p.discard.find(c => c.defId === "B002") };
+  };
+  const temp = run(["beastHunt"]);
+  assert.ok(temp.procs.length >= 1);
+  assert.ok(!temp.orig.pa, "bez Majstra lovu len do konca boja");
+  const perm = run(["beastHunt", "beastHunt2"]);
+  assert.ok(perm.procs.length >= 1);
+  assert.equal(perm.orig.pa, perm.procs.length);
+});
+
+test("trinkety: Večný strážca a Zadný vietor – príšerka úplne vľavo má Znovuzrodenie a Vichor", () => {
+  const { state, E } = fresh(28);
+  E.startRound(state);
+  const pid = state.active, foe = pid === "p1" ? "p2" : "p1";
+  state[pid].trinkets.push("undeadReborn", "elemWind");
+  clear(state);
+  const right = put(E, state, pid, "B001", 3);
+  const left = put(E, state, pid, "B001", 1);
+  put(E, state, foe, "B002", 0);
+  const events = fight(state, E);
+  const procs = events.filter(e => e.type === "trinketProc" && e.pid === pid);
+  assert.equal(procs.map(e => e.id).sort().join(), "elemWind,undeadReborn");
+  assert.ok(procs.every(e => e.uid === left.uid));
+  assert.ok(events.some(e => e.type === "revive" && e.uid === left.uid));
+  assert.ok(!events.some(e => e.type === "revive" && e.uid === right.uid));
 });

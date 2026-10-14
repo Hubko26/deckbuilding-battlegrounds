@@ -384,6 +384,14 @@ const Cards = (() => {
     // (nejde do kôpky ani balíčka), rovnako prepadne nezahraná na konci ťahu.
     { id: "iskricka", tier: 1, emoji: "✨", spell: true, token: true, cost: 0,
       fx: { type: "buffTarget", a: 1, h: 0 } },
+    // Lovecká značka: jednorazové kúzlo z trinketu Zvierat (beastHunt) –
+    // označené Zviera dostane v boji +1/+1 za každé padlé vlastné Zviera.
+    { id: "znacka", tier: 1, emoji: "🎯", spell: true, token: true, cost: 0,
+      fx: { type: "buffTarget", a: 0, h: 0, hunt: true } },
+    // Darovaná Kniha prianí (dračí trinket dragonBook): jednorazová, po ťahu
+    // zmizne – v balíčku nezavadzia. Art zdieľa s kúpenou Knihou.
+    { id: "knihaDar", tier: 1, emoji: "📖", spell: true, token: true, cost: 0, art: "kniha",
+      fx: { type: "discover" } },
     // Mláďa má Obrancu: berie údery, padne skoro a kŕmi sovu B004 („Keď
     // zomrie tvoje Mláďa"); chráni aj mrchožrúta B009.
     { id: "mlada", tier: 1, race: "beast", emoji: "🐣", atk: 1, hp: 1, token: true, taunt: true },
@@ -416,12 +424,12 @@ const Cards = (() => {
   // Kúzla majú kompletnú kartu (assets/cards/<id>_1.webp, rovnaký rám ako
   // príšery: kryštál s tierom vľavo hore, banner mena, textový box, kruh na
   // cenu dole). Nové kúzlo bez artu pridaj sem, kým art nemá – dostane emoji.
-  const SPELL_NO_ART = new Set();
+  const SPELL_NO_ART = new Set(["znacka"]);
 
   // Cesta k obrázku pre daný stupeň; kúzla bez artu, tokeny a príšery
   // s noArt (psíci) majú emoji.
   function artOf(def, rank) {
-    if (def.spell) return SPELL_NO_ART.has(def.id) ? null : `assets/cards/${def.id}_1.webp`;
+    if (def.spell) return SPELL_NO_ART.has(def.id) ? null : `assets/cards/${def.art || def.id}_1.webp`;
     if (!def.stageNames || def.noArt) return null;
     return `assets/cards/${def.id}_${Math.min(rank, 3)}.webp`;
   }

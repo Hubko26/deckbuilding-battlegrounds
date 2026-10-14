@@ -1113,13 +1113,23 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 - **Úrovne sily** (`lvl` v `Engine.TRINKETS`): kolo 4 ponúka úroveň 1,
   kolo 8 úrovne 2–3 (`TRINKET_ROUNDS = { 4: [1], 8: [2, 3] }`); keď je na
   úrovniach kola menej ako 3 prípustné, doplní sa z ostatných.
-- **Ponuka** (`Engine.trinketPool`): trinket HLAVNEJ rasy len hráčovi, ktorý
-  má aspoň **3 karty rasy** vo všetkých zónach (`TRINKET_RACE_MIN`);
-  trinkety podporných rás (drak, ogr – `Engine.SUPPORT_RACES`) dostane každý
-  bez ohľadu na balíček (drak je žoldnier do každého buildu, hráč ho nemusí
-  držať vopred – 14. 9. 2026: hráč 12 hier nevidel dračí trinket, lebo
-  drakov nekupoval); zabanovaná rasa nikdy; trinket s id zhodným s mutáciou
-  hry (`richSell`, `bloodMoon`, `bigHand`…) sa neponúka – nestackujú sa.
+- **Ponuka** (`Engine.trinketPool`): rasový trinket len pre **väčšinovú
+  rasu** hráča (`Engine.majorityRaces` – najviac kariet vo všetkých zónach
+  bez tokenov; remíza = všetky rovnako početné rasy). Od 14. 10. 2026
+  (predtým stačili 3 karty rasy a ogrie trinkety chodili každému – hráč
+  dostával trinkety rás, ktorých mal jedinú kartu). Výnimka: **dračie
+  trinkety** (`TRINKET_FREE_RACES`) dostane každý – drak je žoldnier do
+  každého buildu (14. 9. 2026: hráč 12 hier nevidel dračí trinket, lebo
+  drakov nekupoval). Ak je v pooli rasový trinket úrovne kola, ponuka má
+  aspoň jeden (nahradí posledný neutrálny). Zabanovaná rasa nikdy; trinket
+  s id zhodným s mutáciou hry (`richSell`, `bloodMoon`, `bigHand`…) sa
+  neponúka – nestackujú sa.
+- **Jednorazové kúzla z trinketov** (`giftTrinkets` v `beginShopTurn`):
+  Iskrička (víly), Lovecká značka (zvieratá) a každé **párne** kolo Kniha
+  prianí (`knihaDar`, draci) prídu do ruky ako tokeny – po ťahu zmiznú,
+  balíček nezanášajú. Plná ruka = prepadnú.
+- **Príšerka úplne vľavo** (najnižší slot) dostane na boj Znovuzrodenie /
+  Vichor (`leftmostTrinkets`, PvP aj DMG Meter) – len na kópii v boji.
 - **Ogrí kľúč** hodí na začiatku každého kola mincou (`sabotage` event):
   chvost = súperove trinkety to kolo (nákup aj boj) nefungujú
   (`p.trinketOff = kolo`); p1 hádže prvý – ak vypne p2 kľúč, p2 nehádže.
@@ -1164,6 +1174,14 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `doggyGlove` | 🐶 | 1 | na začiatku ťahu 1 Pohladkanie do ruky (`petTrinkets`, event `petGift`) |
 | `doggyBrush` | 🐶 | 2 | na začiatku ťahu 2 Pohladkania do ruky; s rukavicou 3 = Super |
 | `doggyLeash` | 🐶 | 3 | každé generovanie Pohladkania (P001, P002, rukavica, kefa) dá o 1 viac – endgame palivo pre Veľké pohladkanie |
+| `doggyDouble` | 🐶 | 1 | prvé Pohladkanie v kole zaúčinkuje 2× (cieľ aj svorka Vodcu), ťahá 1 kartu (`p.petTwiceUsed`) |
+| `dragonBook` | 🐲 | 1 | každé párne kolo jednorazová Kniha prianí (`knihaDar`) do ruky |
+| `ogreLuck` | 👹 | 1 | ogor bez schopnosti (bez power, Divokého úderu, Rozmachu): Pri vyložení minca – hlava potiahne kartu, chvost Pečať +1/+0 Ogrom (×stupeň) |
+| `beastHunt` | 🐾 | 1 | každý ťah Lovecká značka (`znacka`, len na Zviera): označené Zviera +1/+1 za každé padlé vlastné Zviera (aj token), do konca boja |
+| `beastHunt2` | 🐾 | 2 | ďalšia značka každý ťah a bonusy zo všetkých značiek navždy (`pa/ph`) |
+| `fairySpark` | 🧚 | 1 | na začiatku ťahu Iskrička do ruky |
+| `undeadReborn` | 💀 | 2 | príšerka úplne vľavo má v boji Znovuzrodenie |
+| `elemWind` | ✨ | 2 | príšerka úplne vľavo má v boji Vichor |
 | `cheapUpgrade` | – | 1 | upgrade o 2 lacnejší (min. 2) |
 | `richSell` | – | 1 | predaj dáva 2 |
 | `twinEvolve1` | – | 1 | kartám tieru 1 stačia 2 kópie |

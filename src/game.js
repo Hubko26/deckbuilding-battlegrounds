@@ -1457,7 +1457,7 @@ async function playSpellCast(ev, fromRect) {
       // (ev.a/ev.h už aj so Živelnou silou).
       const f = def.fx;
       const a = ev.a ?? f.a, h = ev.h ?? f.h;
-      const tags = [f.taunt && "🛡️", f.shield && "😇", f.revive && "🪶", f.windfury && "🌪️", f.echo && "🔔"].filter(Boolean);
+      const tags = [f.taunt && "🛡️", f.shield && "😇", f.revive && "🪶", f.windfury && "🌪️", f.echo && "🔔", f.hunt && "🎯"].filter(Boolean);
       if (a || h) tags.unshift(fmtBuff(a, h));
       if (tags.length) floatText(targetEl, tags.join(" "), true);
     }
@@ -1638,8 +1638,12 @@ function showTrinketInfo(id, off) {
 }
 
 // Art trinketu: okrúhly medailón s rámom (assets/trinkets/<id>.webp, 512 px).
-// Psie trinkety Rukavica a Kefa zatiaľ nemajú vlastný art – medailón Vodítka.
-const TRINKET_ART_ALIAS = { doggyGlove: "doggyLeash", doggyBrush: "doggyLeash" };
+// Trinkety bez vlastného artu si zatiaľ požičajú medailón príbuzného trinketu.
+const TRINKET_ART_ALIAS = {
+  doggyGlove: "doggyLeash", doggyBrush: "doggyLeash", doggyDouble: "doggyLeash",
+  dragonBook: "dragonPact", ogreLuck: "ogreSabotage", fairySpark: "fairyDiscount",
+  beastHunt: "beastPack", beastHunt2: "beastPack", undeadReborn: "undeadGrave", elemWind: "elemStorm",
+};
 const trinketArt = id => `assets/trinkets/${TRINKET_ART_ALIAS[id] || id}.webp`;
 
 // Ponuka trinketov (kolo 4 a 8): overlay s tromi kartami, len vo vlastnom ťahu.
@@ -1840,6 +1844,7 @@ function cardEl(instOrId, opts) {
   if (isInst && instOrId.revive) inner += `<span class="revive-badge">🪶</span>`;
   if (isInst && instOrId.windfury) inner += `<span class="windfury-badge">🌪️</span>`;
   if (isInst && instOrId.echo) inner += `<span class="echo-badge">🔔</span>`;
+  if (isInst && instOrId.hunt) inner += `<span class="hunt-badge">🎯</span>`;
   if (isInst && instOrId.cloneOf) inner += `<span class="clone-badge" title="${Cards.nameOf(Cards.byId[instOrId.cloneOf], 1, I18N.lang)}">🦋</span>`;
   // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
@@ -2262,6 +2267,10 @@ function act(events) {
       log(`${t(ev.auto ? L.trinketAuto : L.trinketPicked)} ${x.e} ${t(x)} – ${t(x.d)}`);
     }
     if (ev.type === "heroShieldArm" && ev.pid === MY) log(t(L.heroShieldArmMsg));
+    if (ev.type === "trinketProc" && ev.pid === MY && ev.id === "ogreLuck") {
+      const x = L.trinkets.ogreLuck;
+      log(`${x.e} ${t(x)}: ${t(ev.heads ? L.ogreLuckDraw : L.ogreLuckImprint)}`);
+    }
     if (ev.type === "sabotage") log(sabotageMsg(ev));
     if (ev.type === "toHand" && ev.pid === MY) log(t(L.pulledCopies));
     if (ev.type === "backstab" && ev.pid === MY) { Sfx.drunk(); log(t(L.backstabMsg)); }

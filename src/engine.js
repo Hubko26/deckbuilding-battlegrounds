@@ -72,18 +72,21 @@ const Engine = (() => {
   // (pickTrinket); nevybraný do konca ťahu = prvý z ponuky (hra sa nesmie
   // zaseknúť). `lvl` = sila trinketu 1–3; TRINKET_ROUNDS hovorí, ktoré
   // úrovne sa v danom kole ponúkajú (kolo 4 slabšie, kolo 8 silnejšie).
-  // Rasový trinket HLAVNEJ rasy sa ponúka len hráčovi, ktorý má aspoň
-  // TRINKET_RACE_MIN kariet rasy (všetky zóny); trinkety podporných rás
-  // (SUPPORT_RACES: drak, ogr) sa ponúkajú každému – drak je žoldnier do
-  // každého balíčka, hráč ich nemusí držať vopred; zabanovaná rasa nikdy;
-  // trinket s id zhodným s mutáciou hry sa neponúka (nestackujú sa). Ak je
-  // na úrovniach kola menej ako TRINKET_OFFER prípustných, doplní sa zo
-  // zvyšných úrovní. Texty a ikonky rieši UI (i18n L.trinkets).
+  // Rasový trinket sa ponúka len pre VÄČŠINOVÚ rasu hráča – rasu, ktorej
+  // má najviac kariet (všetky zóny, bez tokenov; remíza = všetky rovnako
+  // početné). Hlásenie hráča 14. 10. 2026: pri pravidle „aspoň 3 karty"
+  // chodili trinkety vedľajších rás aj ogrov s jedinou kartou. Výnimka:
+  // dračie trinkety (TRINKET_FREE_RACES) dostane každý – drak je žoldnier
+  // do každého balíčka. Zabanovaná rasa nikdy; trinket s id zhodným
+  // s mutáciou hry sa neponúka (nestackujú sa). Ak je v pooli rasový
+  // trinket úrovne kola, ponuka má aspoň jeden (neutrálne ho nevytlačia).
+  // Ak je na úrovniach kola menej ako TRINKET_OFFER prípustných, doplní sa
+  // zo zvyšných úrovní. Texty a ikonky rieši UI (i18n L.trinkets).
   // Ogrí kľúč (ogreSabotage): každé kolo hod mincou – chvost = súperove
   // trinkety to kolo (nákup aj boj) nefungujú (p.trinketOff = kolo).
   const TRINKET_ROUNDS = { 4: [1], 8: [2, 3] };
   const TRINKET_OFFER = 3;
-  const TRINKET_RACE_MIN = 3;
+  const TRINKET_FREE_RACES = new Set(["dragon"]); // rasové trinkety pre každého
   const SUPPORT_RACES = new Set(["dragon", "ogre"]); // podporné rasy (aj Bot.SUPPORT_RACES)
   const TRINKETS = [
     { id: "beastPups", race: "beast", lvl: 1 },          // Mláďatá a SuperMláďatá +1/+1
@@ -101,6 +104,14 @@ const Engine = (() => {
     { id: "doggyGlove", race: "doggy", lvl: 1 },         // na začiatku ťahu 1 Pohladkanie do ruky
     { id: "doggyBrush", race: "doggy", lvl: 2 },         // na začiatku ťahu 2 Pohladkania do ruky (s rukavicou 3 = Super)
     { id: "doggyLeash", race: "doggy", lvl: 3 },         // každé generovanie Pohladkania dá o 1 viac (endgame psíkov)
+    { id: "doggyDouble", race: "doggy", lvl: 1 },        // prvé Pohladkanie v kole zaúčinkuje 2× (karta sa ťahá 1)
+    { id: "dragonBook", race: "dragon", lvl: 1 },        // každé párne kolo jednorazová Kniha prianí do ruky
+    { id: "ogreLuck", race: "ogre", lvl: 1 },            // ogri bez schopnosti: Pri vyložení 50 % potiahni kartu, inak Pečať +1/+0 Ogrom
+    { id: "beastHunt", race: "beast", lvl: 1 },          // každý ťah Lovecká značka: Zviera +1/+1 za každé padlé Zviera (do konca boja)
+    { id: "beastHunt2", race: "beast", lvl: 2 },         // ako beastHunt, ale bonus zo značiek je navždy
+    { id: "fairySpark", race: "fairy", lvl: 1 },         // každý ťah Iskrička do ruky
+    { id: "undeadReborn", race: "undead", lvl: 2 },      // príšerka úplne vľavo má v boji Znovuzrodenie
+    { id: "elemWind", race: "elemental", lvl: 2 },       // príšerka úplne vľavo má v boji Vichor
     { id: "cheapUpgrade", lvl: 1 },  // upgrade o 2 lacnejší (min. 2)
     { id: "richSell", lvl: 1 },      // predaj dáva 2
     { id: "twinEvolve1", lvl: 1 },   // kartám t1 stačia 2 kópie
@@ -475,12 +486,21 @@ const Engine = (() => {
 
   const isBossRound = (state, round = state.round) => round > 0 && round % BOSS_EVERY === 0;
 
+  // Väčšinové rasy hráča (najviac kariet; remíza = viac rás). Bez kariet nič.
+  function majorityRaces(p) {
+    const counts = {};
+    for (const r of Object.keys(Cards.RACES)) counts[r] = raceCardCount(p, r);
+    const max = Math.max(0, ...Object.values(counts));
+    return new Set(max > 0 ? Object.keys(counts).filter(r => counts[r] === max) : []);
+  }
+
   function trinketPool(state, pid) {
     const p = state[pid];
+    const major = majorityRaces(p);
     return TRINKETS.filter(t => !p.trinkets.includes(t.id)
       && t.id !== state.mutator
       && !(t.race && (state.banned === t.race
-        || (!SUPPORT_RACES.has(t.race) && raceCardCount(p, t.race) < TRINKET_RACE_MIN))));
+        || (!TRINKET_FREE_RACES.has(t.race) && !major.has(t.race)))));
   }
 
   // Začiatok kola: Ogrí kľúč hodí mincou za súperove trinkety (p1 prvý –
@@ -501,7 +521,12 @@ const Engine = (() => {
       const main = shuffle(pool.filter(t => lvls.includes(t.lvl)).map(t => t.id), state.rng);
       const rest = main.length < TRINKET_OFFER
         ? shuffle(pool.filter(t => !lvls.includes(t.lvl)).map(t => t.id), state.rng) : [];
-      p.trinketOffer = [...main, ...rest].slice(0, TRINKET_OFFER);
+      const offer = [...main, ...rest].slice(0, TRINKET_OFFER);
+      // Aspoň jeden rasový trinket (ak nejaký na úrovni kola je) – nahradí posledný.
+      const isRaceT = id => !!TRINKETS.find(t => t.id === id).race;
+      const raceT = main.find(isRaceT);
+      if (raceT && !offer.some(isRaceT)) offer[offer.length - 1] = raceT;
+      p.trinketOffer = offer;
       events.push({ type: "trinketOffer", pid, ids: p.trinketOffer.slice() });
     }
   }
@@ -562,7 +587,7 @@ const Engine = (() => {
       p.lastSold = null; p.buyBackUsed = false; // buyback platí raz za ťah
       p.goldNext = 0;
       p.bought = [];
-      p.freeRefreshUsed = false; p.spellDiscountUsed = false; // trinkety „raz za kolo"
+      p.freeRefreshUsed = false; p.spellDiscountUsed = false; p.petTwiceUsed = false; // trinkety „raz za kolo"
       for (const s of p.priv) if (!s.frozen) returnToPool(state, pid, s.defId);
       p.priv = p.priv.filter(s => s.frozen);
       for (const s of p.priv) s.frozen = false;
@@ -586,6 +611,7 @@ const Engine = (() => {
     drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
     bossReward(state, p, events);
     petTrinkets(state, p, events);
+    giftTrinkets(state, p, events);
     // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
     // aby nebralo miesto normálnemu draw).
     if (state.mutator === "gift" && p.giftRound !== state.round && p.hand.length < HAND_MAX) {
@@ -993,6 +1019,22 @@ const Engine = (() => {
         applyShopFx(state, p, pw.fx, inst.rank, inst, events, target);
       }
     }
+    ogreLuck(state, p, inst, def, events);
+  }
+
+  // Ogria šťastena (trinket): Ogor bez schopnosti má Pri vyložení hod
+  // mincou – hlava: potiahni kartu (×stupeň), chvost: Pečať +1/+0 Ogrom
+  // (×stupeň). Mutácia „echoCry" ho spustí dvakrát ako každý battlecry.
+  const plainMinion = def => !Cards.powersOf(def).length && !def.wildAtk && !def.cleave && !def.reborn;
+  function ogreLuck(state, p, inst, def, events) {
+    if (def.race !== "ogre" || !plainMinion(def) || !hasTrinket(state, p.id, "ogreLuck")) return;
+    const times = state.mutator === "echoCry" ? 2 : 1;
+    for (let r = 0; r < times; r++) {
+      const heads = state.rng() < 0.5;
+      events.push({ type: "trinketProc", pid: p.id, id: "ogreLuck", uid: inst.uid, heads });
+      if (heads) drawCards(state, p, inst.rank, events);
+      else grantRaceAura(state, p, "ogre", inst.rank, 0, events);
+    }
   }
 
   // Po kúzle (víly): každé úspešné zoslanie kúzla spustí schopnosti víl
@@ -1063,9 +1105,14 @@ const Engine = (() => {
         if (isDog(x)) { x.pa = (x.pa || 0) + a; x.ph = (x.ph || 0) + h; x.pets = (x.pets || 0) + 1; }
         if (events) events.push({ type: "buff", pid: p.id, uid: x.uid, a, h });
       };
-      pat(target);
+      // Dvojité pohladkanie (trinket): prvé pohladkanie v kole zaúčinkuje 2×
+      // (cieľ aj svorka Vodcu), karta sa ťahá len raz.
+      const reps = hasTrinket(state, p.id, "doggyDouble") && !p.petTwiceUsed ? 2 : 1;
+      if (reps > 1) p.petTwiceUsed = true;
+      for (let r = 0; r < reps; r++) pat(target);
       const perm = isDog(target);
-      const events = [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a, h, perm }];
+      const events = [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a: a * reps, h: h * reps, perm }];
+      if (reps > 1) events.push({ type: "trinketProc", pid: p.id, id: "doggyDouble", uid: targetUid });
       // Vodca svorky (P009 na ploche): každé pohladkanie objíme celú svorku –
       // každý ďalší Psík na ploche dostane to isté (navždy). Endgame psíkov:
       // rast už nejde len na jedno telo. Je to schopnosť t6 psíka, nie
@@ -1073,7 +1120,7 @@ const Engine = (() => {
       // Vodcovia sa sčítajú podľa stupňa: bronz 1×, striebro 2×, zlato 3×
       // – dvaja bronzoví = svorka pohladkaná 2×.
       const leaders = p.board.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "packLeader"));
-      const times = leaders.reduce((sum, x) => sum + x.rank, 0);
+      const times = leaders.reduce((sum, x) => sum + x.rank, 0) * reps;
       for (let k = 0; k < times; k++) {
         for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
       }
@@ -1089,6 +1136,7 @@ const Engine = (() => {
       const target = ownMinion(p, targetUid);
       if (!target) return null;
       if (def.fx.echo && !hasEchoPower(target)) return null; // Ozvena len na bojovú schopnosť
+      if (def.fx.hunt && !isRace(state, p.id, Cards.byId[target.defId], "beast")) return null; // Lovecká značka len na Zviera
       spendSpell(p, inst, def);
       const fx = def.fx;
       const { a, h } = sparkBonus(fx, 1, p.dmgBoost); // Živelná sila zosilňuje buffy kúziel
@@ -1098,6 +1146,7 @@ const Engine = (() => {
       if (fx.revive) target.revive = true; // Fénixovo pierko: po smrti sa raz vráti s 1 HP
       if (fx.windfury) target.windfury = true; // Vichor: útočí dvakrát
       if (fx.echo) target.echo = (target.echo || 0) + 1; // Ozvena: bojová schopnosť navyše
+      if (fx.hunt) target.hunt = (target.hunt || 0) + 1; // Lovecká značka: rast za padlé Zvieratá
       return [{ type: "spell", pid: p.id, defId: inst.defId, targetUid, a, h }];
     },
     // Zrkadlo: kópia 1. stupňa vybranej vlastnej príšerky do balíčka –
@@ -1708,6 +1757,22 @@ const Engine = (() => {
     events.push({ type: "petGift", pid: p.id, n });
   }
 
+  // Jednorazové kúzla z trinketov na začiatku ťahu (po ťahu zmiznú, do
+  // balíčka nejdú): Iskrička (víly), Lovecká značka (zvieratá, každá úroveň
+  // jedna) a každé párne kolo Kniha prianí (draci). Plná ruka = prepadne.
+  function giftTrinkets(state, p, events) {
+    const gifts = [["fairySpark", "iskricka"], ["beastHunt", "znacka"], ["beastHunt2", "znacka"]];
+    if (state.round % 2 === 0) gifts.unshift(["dragonBook", "knihaDar"]); // vzácnejšia – prvá
+    for (const [id, defId] of gifts) {
+      if (!hasTrinket(state, p.id, id) || p.hand.length >= HAND_MAX) continue;
+      const inst = makeInst(state, defId, 1);
+      inst.slot = freeSlot(p.hand, HAND_MAX);
+      p.hand.push(inst);
+      events.push({ type: "trinketProc", pid: p.id, id });
+      events.push({ type: "draw", pid: p.id, defId });
+    }
+  }
+
   // ---------- Koniec nákupnej fázy ----------
   function endShopTurn(state, pid) {
     // Nelegálne ukončenie (nie je nákupná fáza / nie je na ťahu) = null,
@@ -1755,6 +1820,7 @@ const Engine = (() => {
     const sides = { p1: copyBoard(state.p1), p2: copyBoard(state.p2) };
     const first = pickFirstSide(state, sides);
     events.push({ type: "battleStart", first });
+    for (const pid of sideOrder(first)) leftmostTrinkets(state, sides, pid, events);
     chargeStorms(state, first, events);
     applyPendingCurses(state, sides, first, events);
     runStartFightProcs(state, sides, first, events);
@@ -1777,6 +1843,7 @@ const Engine = (() => {
       const boss = bossBoard(state);
       const sides = { [pid]: copyBoard(state[pid]), [other(pid)]: boss };
       events.push({ type: "bossStart", pid, boss: boss.map(x => ({ ...x })) });
+      leftmostTrinkets(state, sides, pid, events);
       runStartFightProcs(state, sides, pid, events);
       runBossAttackLoop(state, sides, pid, events);
       dmg[pid] = boss.reduce((sum, x) => sum + x.taken, 0);
@@ -1818,6 +1885,18 @@ const Engine = (() => {
   }
 
   const copyBoard = p => p.board.map(x => ({ ...x }));
+
+  // Večný strážca / Zadný vietor (trinkety): príšerka úplne vľavo (najnižší
+  // slot) dostane na boj Znovuzrodenie / Vichor. Na kópii – originál nič.
+  function leftmostTrinkets(state, sides, pid, events) {
+    const left = [...sides[pid]].sort((a, b) => a.slot - b.slot)[0];
+    if (!left) return;
+    for (const [id, key] of [["undeadReborn", "revive"], ["elemWind", "windfury"]]) {
+      if (!hasTrinket(state, pid, id)) continue;
+      left[key] = true;
+      events.push({ type: "trinketProc", pid, id, uid: left.uid });
+    }
+  }
   const aliveOn = (sides, pid) => sides[pid].filter(x => x.hp > 0);
   // Poradie strán pri spúšťaní efektov: začínajúca strana prvá.
   const sideOrder = first => [first, other(first)];
@@ -2255,6 +2334,20 @@ const Engine = (() => {
     growPermanently(state, pid, f.uid, 1, 1);
   }
 
+  // Lovecká značka: keď padne vlastné Zviera (aj token), každé živé označené
+  // Zviera dostane +1/+1 za každú značku – do konca boja, s Majstrom lovu
+  // (beastHunt2) navždy (pa/ph na origináli).
+  function runHuntMarks(state, sides, pid, dead, events) {
+    if (!isRace(state, pid, Cards.byId[dead.defId], "beast")) return;
+    const perm = hasTrinket(state, pid, "beastHunt2");
+    for (const f of sides[pid]) {
+      if (f === dead || f.hp <= 0 || !f.hunt) continue;
+      events.push({ type: "trinketProc", pid, id: perm ? "beastHunt2" : "beastHunt", uid: f.uid });
+      buffWithEvent(f, pid, f.hunt, f.hunt, events);
+      if (perm) growPermanently(state, pid, f.uid, f.hunt, f.hunt);
+    }
+  }
+
   // Efekty boja podľa fx.type. Kontext: state, sides (kópie plôch), pid
   // (strana zdroja), self (zdroj), fx, m (stupeň = násobič), events, kw.
   const BATTLE_FX = {
@@ -2586,6 +2679,7 @@ const Engine = (() => {
     const ddef = Cards.byId[dead.defId];
     runObservers(state, sides, pid, dead, "raceDeath", fx => isRace(state, pid, ddef, fx.race), events);
     runPackBonus(state, sides, pid, dead, events);
+    runHuntMarks(state, sides, pid, dead, events);
     runAbsorbers(state, sides, pid, dead, events);
   }
 
@@ -2617,7 +2711,7 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
-    TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_RACE_MIN, SUPPORT_RACES, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
+    TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_FREE_RACES, SUPPORT_RACES, majorityRaces, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
     handDraw, heroDmgCap, deckMin, cardCount, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,

@@ -42,9 +42,11 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   vlastnej nákupnej fáze (`Engine.pickTrinket`); nevybraný = prvý z ponuky.
   Kolo 4 ponúka úroveň 1, kolo 8 úrovne 2–3. Claude ich dostáva v stave ako
   `trinketOffer` (s anglickým textom), `yourTrinkets`, `opponentTrinkets`,
-  `trinketsOffThisRound` (súperov Ogrí kľúč) a `heroShieldReady`. Trinket
-  hlavnej rasy dostane len hráč s ≥ 3 kartami rasy, dračie/ogrie trinkety
-  dostane každý. Vyberaj: rasový trinket dominantnej rasy > ekonomika/telá
+  `trinketsOffThisRound` (súperov Ogrí kľúč) a `heroShieldReady`. Rasový
+  trinket dostane hráč len pre svoju väčšinovú rasu (najviac kariet; remíza
+  = obe), dračie trinkety dostane každý. Iskrička, Lovecká značka (len na
+  Zviera – daj ju Zvieraťu úplne vpravo) a darovaná Kniha prianí z
+  trinketov po ťahu zmiznú – vždy ich zahraj. Vyberaj: rasový trinket dominantnej rasy > ekonomika/telá
   (Zľava tavernára, Veľká ruka, Rýchly štart, Silné tokeny pri
   vyvolávačoch) > Krvavý mesiac v kole 8 pri stabilnej ploche. Štít hrdinu
   (`Engine.useHeroShield`) zapni raz, keď hrozí veľká prehra (nízke HP,

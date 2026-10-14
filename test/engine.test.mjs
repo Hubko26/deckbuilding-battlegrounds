@@ -2578,17 +2578,18 @@ test("mutácie: newGame bez parametra žrebuje, null = žiadna, string = vynúte
   assert.equal(forced.mutator, "gift");
 });
 
-test("trinkety: dračie a ogrie trinkety sa ponúkajú aj bez kariet rasy, trinket hlavnej rasy až od 3 kariet", () => {
+test("trinkety: rasový trinket len väčšinovej rasy (remíza = obe), dračie každému", () => {
   const { E, state } = fresh(61);
   const p = state.p1;
-  p.deck = ["U001", "U002", "E001", "E002", "F001"].map(id => ({ defId: id, rank: 1 }));
+  p.deck = ["U001", "U002", "E001", "E002", "F001", "O001"].map(id => ({ defId: id, rank: 1 }));
   p.hand = []; p.board = []; p.discard = [];
-  const ids = E.trinketPool(state, "p1").map(t => t.id);
-  assert.ok(ids.includes("dragonPact") && ids.includes("dragonBlood"), ids.join(","));
-  assert.ok(ids.includes("ogreCareful"), ids.join(","));
-  assert.ok(!ids.includes("undeadBones") && !ids.includes("fairyDiscount"), ids.join(",")); // < 3 karty rasy
+  const ids = () => E.trinketPool(state, "p1").map(t => t.id);
+  assert.ok(ids().includes("dragonPact") && ids().includes("dragonBlood"), ids().join(","));
+  assert.ok(ids().includes("undeadBones") && ids().includes("elemStorm"), ids().join(",")); // remíza 2:2
+  assert.ok(!ids().includes("ogreCareful") && !ids().includes("fairyDiscount"), ids().join(",")); // menšinové rasy
   p.deck.push({ defId: "U003", rank: 1 });
-  assert.ok(E.trinketPool(state, "p1").some(t => t.id === "undeadBones"));
+  assert.ok(ids().includes("undeadBones"));
+  assert.ok(!ids().includes("elemStorm"), "živly už nie sú väčšina");
   state.banned = "dragon";
   assert.ok(!E.trinketPool(state, "p1").some(t => t.race === "dragon")); // zabanovaná rasa nikdy
 });
