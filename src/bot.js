@@ -18,6 +18,7 @@ const Bot = (() => {
     hard: {
       randomBuy: false, upgradeAggro: 2, smartSpells: true, refreshHunt: 3, raceFocus: 1.0, buyBar: 3,
       sellJunk: true, swapBoard: true, orderBoard: true, freeze: true, raceHunt: true,
+      recycle: true, // plná plocha: odhoď vybitý battlecry a vylož ďalší (recycleBattlecries)
       tierLure: true, // upgrade skôr, keď ďalší tier má silnú kartu mojej rasy (cardPower)
       rollBias: 3, // súkromná ponuka losuje karty dominantnej rasy 3× častejšie (handicap)
       goldBonus: 1, // +1 zlato každé kolo od prvého (handicap)
@@ -426,6 +427,8 @@ const Bot = (() => {
     //    Príšerky na plochu HNEĎ – víly („Po kúzle“) tak zachytia triggery
     //    zo všetkých kúziel zahraných v tomto ťahu.
     deployMinions(state, p, cfg, push);
+    if (cfg.sellJunk) swapJunkFromBoard(state, p, push); // balast z plochy skôr, než ruku minie recyklácia
+    if (cfg.recycle) recycleBattlecries(state, p, push);
 
     // 0b. Hard: čo ostalo v ruke po zaplnení plochy – silnejšie telo vymeň za
     //     najslabšie na ploche (predaj + vylož), balast predaj (+1 zlato,
@@ -538,6 +541,7 @@ const Bot = (() => {
     //     minimum kariet tieru, teraz predaj (z ruky aj z plochy).
     deployMinions(state, p, cfg, push);
     if (cfg.sellJunk) { sellJunk(state, p, push); swapJunkFromBoard(state, p, push); }
+    if (cfg.recycle) recycleBattlecries(state, p, push);
     if (cfg.swapBoard) swapWeakBodies(state, p, push);
     if (cfg.sellJunk) trimDeck(state, p, push);
 
@@ -608,6 +612,47 @@ const Bot = (() => {
     //    telá, pomalé škálovače (mrchožrúti, lovci, rast Po nákupe) vpravo,
     //    nech útočia posledné a prežijú.
     if (cfg.orderBoard) orderBoard(state, p, push);
+  }
+
+  // Recyklácia battlecry (návyk hráča zo 14. 10. 2026, víly: F001 dotiahni,
+  // F006 Iskrička… vyložiť, odhodiť z plochy, vyložiť ďalšiu). Battlecry,
+  // ktorého hodnota ostáva aj po odchode z plochy (karta, kúzlo, Pečať,
+  // kliatba, charga…), je „vybitý" hneď po vyložení – jeho telo už nie je
+  // dôvod držať miesto. Odhodenie (nie predaj) nechá kartu v balíčku, takže
+  // battlecry príde znova. Plná plocha:
+  //  - v ruke battlecry karta → najslabšiu príšerku (vybitú odhoď, obyčajnú
+  //    predaj), ak je vybitá alebo slabšia než nová, a vylož;
+  //  - v ruke len telo → vymeň ho za najslabšiu VYBITÚ príšerku, ak je silnejšie.
+  const RECYCLE_FX = new Set(["draw", "addSpell", "addPet", "fetchPet", "discoverRace", "dmgBoost",
+    "futureRace", "futureRaceOf", "shrinkEnemy", "summonCharge", "buffRaceOf", "buffOne", "replayBattlecry"]);
+  const recyclable = inst => !Cards.byId[inst.defId].token &&
+    Cards.powersOf(Cards.byId[inst.defId]).some(pw => pw.kw === "battlecry" && RECYCLE_FX.has(pw.fx.type));
+  function recycleBattlecries(state, p, push) {
+    let guard = 10;
+    while (p.board.length >= Engine.BOARD_MAX && guard-- > 0) {
+      const bodies = p.hand.filter(x => x && !x.spell && !isJunk(state, p, x));
+      if (!bodies.length) return;
+      const byValue = list => [...list].sort((a, b) => bodyValue(a, p) - bodyValue(b, p));
+      const cry = byValue(bodies.filter(recyclable)).at(-1);
+      let out = null, inn = null;
+      if (cry) {
+        const weakest = byValue(p.board)[0];
+        if (recyclable(weakest) || bodyValue(weakest, p) <= bodyValue(cry, p)) { out = weakest; inn = cry; }
+      }
+      if (!out) {
+        const spent = byValue(p.board.filter(recyclable))[0];
+        const best = byValue(bodies).at(-1);
+        if (spent && bodyValue(best, p) > bodyValue(spent, p)) { out = spent; inn = best; }
+      }
+      if (!out) return;
+      // Vybitý battlecry sa odhodí (príde znova), obyčajné slabé telo sa
+      // predá ako pri swapWeakBodies; predaj blokovaný minimom = odhoď.
+      const idx = p.board.indexOf(out);
+      const ev = (!recyclable(out) && act("sellCard", state, p.id, "board", idx)) || act("discardCard", state, p.id, "board", idx);
+      if (!ev) return;
+      push(ev);
+      push(act("playMinion", state, p.id, p.hand.indexOf(inn)));
+    }
   }
 
   // Vyloženie príšer: obyčajné prvé (najsilnejšie), battlecry buffery na

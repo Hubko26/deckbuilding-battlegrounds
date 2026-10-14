@@ -711,3 +711,22 @@ test("bot balast: po nákupoch vymení balast z plochy za telo z ruky", () => {
   assert.ok(!all.includes("E001"), "E001 predaný");
   assert.ok(all.includes("P009"));
 });
+
+test("bot recyklácia: pri plnej ploche odhodí vybitý battlecry (F001) a vyloží ďalší – karta ostane v balíčku", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(37), null);
+  E.startRound(state);
+  const pid = state.active, p = state[pid];
+  p.money = 0; p.tier = 3;
+  p.deck = ["F002", "F004", "F003", "F002", "F004", "B001"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = [];
+  p.board = ["F004", "F004", "F002", "F002", "F001"].map((id, i) => Object.assign(E.makeInst(state, id, 1, p), { slot: i }));
+  p.hand = [Object.assign(E.makeInst(state, "F006", 1, p), { slot: 0 })]; // Pri vyložení: Iskrička
+  const ev = B.botTurn(state, pid, "hard");
+  assert.ok(ev.some(e => e.type === "discard" && e.defId === "F001"), "vybitý F001 odhodený");
+  assert.ok(!ev.some(e => e.type === "sell" && e.defId === "F001"), "nie predaný – ostáva v balíčku");
+  assert.ok(ev.some(e => e.type === "play" && e.defId === "F006"));
+  assert.ok(ev.some(e => e.type === "spell" && e.defId === "iskricka"), "Iskrička zoslaná");
+  assert.ok([...p.deck, ...p.discard].some(c => c.defId === "F001"));
+});

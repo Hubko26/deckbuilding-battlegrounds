@@ -1407,6 +1407,12 @@ len staty + keyword badge.
   blokuje predaj pred nákupmi, preto po nákupoch prebehne predaj znova
   a balast z plochy sa vymení za nebalastové telo z ruky
   (`swapJunkFromBoard`); bez náhrady ostane hrať (telo > diera).
+  **Recyklácia battlecry** (2026-10-14, návyk hráča, ktorý hard bota
+  prevalcoval vílami): pri plnej ploche bot odhodí z plochy „vybitú"
+  príšerku – battlecry, ktorého hodnota ostáva aj bez tela (dotiahni,
+  kúzlo, pohladkanie, Pečať, kliatba, charga, rasový buff…, `RECYCLE_FX`)
+  – a vyloží ďalšiu. Odhodenie (nie predaj) nechá kartu v balíčku, takže
+  battlecry príde znova; obyčajné slabé telo sa predá. `recycleBattlecries`.
   **Strop balíčka** (`Bot.DECK_CAP` = 14 kariet vo všetkých zónach bez
   tokenov): nad ním bot predá z ruky najslabšie telá stupňa 1 bez páru
   a bez aury – po boji ide plocha do kôpky a ruka sa ťahá náhodne, takže

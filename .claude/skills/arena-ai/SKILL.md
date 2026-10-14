@@ -319,6 +319,12 @@ plochou. Rob VŠETKY kroky, každý ťah:
 3. **Výmena na plnej ploche**: ak máš v ruke telo aspoň o 3 staty
    (útok + život + 2 za schopnosť) lepšie než najslabšie na ploche, predaj
    najslabšie a vylož lepšie.
+   **Recyklácia battlecry**: battlecry, ktorého hodnota ostáva aj bez tela
+   (dotiahni F001, Iskrička F006, pohladkanie P001, Vyňuchaj P005, Pečate,
+   kliatba D001, rasový buff drakov…), je po vyložení vybitý. Pri plnej
+   ploche ho **odhoď z plochy** (`discardCard` board – nie predaj, karta
+   ostane v balíčku a battlecry príde znova) a vylož ďalšiu kartu. Víly tak
+   ťahajú karty a kúzla, kým rastúce F002/F004 držia plochu.
 4. **Upgrade tieru podľa plánu**: t2 v 2.–3. kole, t3 v 4.–5., t4 v 7.,
    t5 v 9.–10., t6 v 12. (pravidlo `kolo ≥ tier·2−1` je NAJNESKÔR). Tier
    o jeden za hráčom = slabšia súkromná ponuka a spoločná ponuka sa rolluje
