@@ -324,7 +324,7 @@ function startGame() {
     const nm = (localStorage.getItem("arena.playerName") || "").trim();
     // Jazyk pozdravu per hráč (Adam vždy po slovensky), inak podľa UI.
     const gl = ClaudeBot.langFor(nm, I18N.lang);
-    setTimeout(() => showTauntBubble((L.claudeGreeting[gl] || L.claudeGreeting.sk).replace("{n}", nm), 6000), 900);
+    if (!botMuted) setTimeout(() => showTauntBubble((L.claudeGreeting[gl] || L.claudeGreeting.sk).replace("{n}", nm), 6000), 900);
   }
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
@@ -655,6 +655,11 @@ async function driveFlow() {
 // je to čisto UI, determinizmus enginu a replay ostávajú nedotknuté.
 // Texty hlášok: L.botTaunts (src/i18n.js).
 let lastTauntAt = 0;
+// Stlmený bot (💬/🤐 v hlavičke): žiadne jeho bubliny – náhodné hlášky,
+// Claudov pozdrav ani trash-talk. Odpoveď na hráčov chat ostáva (hráč sa
+// pýtal sám) a súper v sieťovej hre sa nestlmuje. Pamätá sa v localStorage.
+let botMuted = false;
+try { botMuted = localStorage.getItem("arena.botMuted") === "1"; } catch (e) { /* bez úložiska */ }
 // `mine` = bublina pri mojom hrdinovi (vlastná chatová správa), inak pri súperovi.
 function showTauntBubble(text, ms, mine) {
   document.querySelectorAll(mine ? ".taunt-bubble.mine" : ".taunt-bubble:not(.mine)").forEach(b => b.remove());
@@ -665,7 +670,7 @@ function showTauntBubble(text, ms, mine) {
   setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, ms || 3800);
 }
 function botTaunt(kind, chance) {
-  if (mode !== "bot" || !state || state.phase === "over") return;
+  if (mode !== "bot" || !state || state.phase === "over" || botMuted) return;
   if (difficulty === "claude") return; // Claude trash-talkuje vlastnými hláškami
   const now = Date.now();
   if (now - lastTauntAt < 6000) return; // nespamuj
@@ -760,7 +765,7 @@ async function runClaudeTurn() {
     await playOppEvents(Bot.botTurn(state, OPP, "hard"));
     return;
   }
-  if (res.taunt) showTauntBubble(res.taunt, 6000);
+  if (res.taunt && !botMuted) showTauntBubble(res.taunt, 6000);
   await playOppEvents(res.events);
 }
 
@@ -2472,6 +2477,17 @@ $("overAgain").addEventListener("click", () => {
   else startGame();
 });
 $("muteBtn").textContent = Sfx.muted ? "🔇" : "🔊";
+function renderBotMute() {
+  $("botMuteBtn").textContent = botMuted ? "🤐" : "💬";
+  $("botMuteBtn").title = t(botMuted ? L.botMutedTitle : L.botMuteTitle);
+}
+renderBotMute();
+$("botMuteBtn").addEventListener("click", () => {
+  botMuted = !botMuted;
+  try { localStorage.setItem("arena.botMuted", botMuted ? "1" : "0"); } catch (e) { /* bez úložiska */ }
+  if (botMuted) document.querySelectorAll(".taunt-bubble:not(.mine)").forEach(b => b.remove());
+  renderBotMute();
+});
 $("muteBtn").addEventListener("click", () => {
   $("muteBtn").textContent = Sfx.toggleMute() ? "🔇" : "🔊";
 });

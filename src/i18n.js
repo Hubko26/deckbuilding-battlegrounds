@@ -333,6 +333,8 @@ const L = {
   sabotageHeads: { sk: "🔧 Ogrí kľúč: hlava – súperov trinket funguje", cs: "🔧 Obří klíč: hlava – soupeřův trinket funguje", en: "🔧 Ogre Key: heads – the opponent's trinkets work" },
   sabotageTails: { sk: "🔧 Ogrí kľúč: chvost – súperove trinkety toto kolo NEFUNGUJÚ", cs: "🔧 Obří klíč: orel – soupeřovy trinkety toto kolo NEFUNGUJÍ", en: "🔧 Ogre Key: tails – the opponent's trinkets are OFF this round" },
   sabotagedMsg: { sk: "🔧 Súperov Ogrí kľúč: tvoje trinkety toto kolo nefungujú!", cs: "🔧 Soupeřův Obří klíč: tvoje trinkety toto kolo nefungují!", en: "🔧 Enemy Ogre Key: your trinkets are off this round!" },
+  botMuteTitle: { sk: "Stlmiť hlášky bota", cs: "Ztlumit hlášky bota", en: "Mute the bot's chatter" },
+  botMutedTitle: { sk: "Hlášky bota sú stlmené – zapnúť", cs: "Hlášky bota jsou ztlumené – zapnout", en: "Bot chatter muted – turn back on" },
   heroShieldBtn: { sk: "🛡️ Štít hrdinu", cs: "🛡️ Štít hrdiny", en: "🛡️ Hero Shield" },
   heroShieldArmed: { sk: "🛡️ Štít aktívny", cs: "🛡️ Štít aktivní", en: "🛡️ Shield active" },
   heroShieldArmMsg: { sk: "🛡️ Štít hrdinu zapnutý – drží, kým ťa niečo nezraní (to zranenie zablokuje)", cs: "🛡️ Štít hrdiny zapnutý – drží, dokud tě něco nezraní (to zranění zablokuje)", en: "🛡️ Hero Shield up – it stays until something would hurt you and blocks that hit" },
