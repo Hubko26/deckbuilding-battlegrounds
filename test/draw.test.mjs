@@ -192,14 +192,18 @@ test("D010: zopakované Vyňuchaj (P005) vytiahne presne 1 pohladkanie", () => {
   assert.equal(p.hand[0].defId, "pet");
 });
 
-test("D010: cieľ bez Pri vyložení (Vodca svorky) – nič sa nezopakuje, žiadna karta", () => {
+test("D010: cieľ bez Pri vyložení (Vodca svorky) – zopakuje náhodnú príšerku s Pri vyložení; bez nej nič", () => {
   const { state, E, pid, p } = setup(16, ["pet", "pet", ...TEN]);
-  onBoard(E, state, p, "P005"); // predtým sa potichu zopakovalo toto
+  const sniff = onBoard(E, state, p, "P005");
   const miso = onBoard(E, state, p, "P009");
   inHand(E, state, p, "D010");
   const ev = E.playMinion(state, pid, 0, miso.uid);
-  assert.ok(ev.some(e => e.type === "replayNone" && e.targetUid === miso.uid));
-  assert.ok(!ev.some(e => e.type === "replayBattlecry"));
-  assert.equal(draws(ev), 0);
-  assert.equal(p.hand.length, 0);
+  assert.ok(ev.some(e => e.type === "replayBattlecry" && e.targetUid === sniff.uid && e.random));
+  assert.equal(draws(ev), 1, "Vyňuchaj vytiahne 1 pohladkanie");
+  const b = setup(17, TEN);
+  const miso2 = onBoard(b.E, b.state, b.p, "P009");
+  inHand(b.E, b.state, b.p, "D010");
+  const ev2 = b.E.playMinion(b.state, b.pid, 0, miso2.uid);
+  assert.ok(ev2.some(e => e.type === "replayNone"));
+  assert.equal(draws(ev2), 0);
 });

@@ -1523,18 +1523,20 @@ const Engine = (() => {
     replayBattlecry({ state, p, m, self, target, events }) {
       const bcs = x => Cards.powersOf(Cards.byId[x.defId]).filter(pw => pw.kw === "battlecry" && pw.fx.type !== "replayBattlecry");
       const ok = x => x !== self && bcs(x).length > 0;
-      // Hráč vybral cieľ bez Pri vyložení (napr. Vodcu svorky) = nič sa
-      // nezopakuje. Predtým sa potichu zopakovala NAJLEPŠIA iná karta
-      // (hlásenie 14. 10. 2026: D010 na P009 „potiahol dve karty" cez P005).
-      // Náhradný cieľ len keď hráč nevybral nikoho.
-      if (target && p.board.includes(target) && !ok(target)) {
-        events.push({ type: "replayNone", pid: p.id, uid: self.uid, targetUid: target.uid, defId: target.defId });
+      // Vybraný cieľ bez Pri vyložení (napr. Vodca svorky) = zopakuje sa
+      // NÁHODNÁ vlastná príšerka s Pri vyložení (state.rng) – t6 drak nesmie
+      // byť zahodená karta (rozhodnutie hráča 14. 10. 2026). Bez výberu
+      // cieľa najsilnejšia. Nikto s Pri vyložení = replayNone.
+      const cands = p.board.filter(ok);
+      const picked = target && p.board.includes(target);
+      let t = picked && ok(target) ? target : null;
+      if (!t && picked && cands.length) t = pick(cands, state.rng);
+      if (!t) t = [...cands].sort((a, b) => Cards.byId[b.defId].tier * b.rank - Cards.byId[a.defId].tier * a.rank)[0];
+      if (!t) {
+        if (picked) events.push({ type: "replayNone", pid: p.id, uid: self.uid, targetUid: target.uid, defId: target.defId });
         return;
       }
-      const t = target && p.board.includes(target) ? target
-        : p.board.filter(ok).sort((a, b) => Cards.byId[b.defId].tier * b.rank - Cards.byId[a.defId].tier * a.rank)[0];
-      if (!t) return;
-      events.push({ type: "replayBattlecry", pid: p.id, uid: self.uid, targetUid: t.uid, defId: t.defId, n: m });
+      events.push({ type: "replayBattlecry", pid: p.id, uid: self.uid, targetUid: t.uid, defId: t.defId, n: m, random: picked && t !== target });
       for (let i = 0; i < m; i++) {
         for (const pw of bcs(t)) applyShopFx(state, p, pw.fx, t.rank, t, events);
       }

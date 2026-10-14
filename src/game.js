@@ -2290,7 +2290,7 @@ function act(events) {
       log(`${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)} ${t(L.replayNoneMsg)}`);
     }
     if (ev.type === "replayBattlecry" && ev.pid === MY) {
-      log(`${t(L.replayBattlecryMsg)} ${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}${ev.n > 1 ? " ×" + ev.n : ""}`);
+      log(`${t(ev.random ? L.replayRandomMsg : L.replayBattlecryMsg)} ${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}${ev.n > 1 ? " ×" + ev.n : ""}`);
       const el = cardById(ev.targetUid);
       if (el) floatText(el, "🌸", true);
     }

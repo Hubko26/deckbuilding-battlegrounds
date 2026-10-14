@@ -642,9 +642,10 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   dominantnú rasu); D008 (t5) taunt 6/9, battlecry rasa cieľa +2/+2;
   D010 (t6) battlecry **spustí Pri vyložení vybranej vlastnej príšerky
   znova** (`replayBattlecry`, striebro 2×, zlato 3×; stupeň cieľa; iný D010
-  sa nereplayuje). Vybraný cieľ bez Pri vyložení = nič sa nezopakuje
-  (event `replayNone`, od 14. 10. 2026 – predtým sa potichu zopakovala
-  najlepšia iná karta); náhradný cieľ len bez výberu. História: okamžitý evolve cieľa (prisilné) → kópie cieľa
+  sa nereplayuje). Vybraný cieľ bez Pri vyložení = zopakuje sa **náhodná**
+  vlastná príšerka s Pri vyložení (`state.rng`, event `random: true`) –
+  t6 drak nesmie byť zahodená karta; bez výberu cieľa najsilnejšia; nikto
+  s Pri vyložení = `replayNone`. História: okamžitý evolve cieľa (prisilné) → kópie cieľa
   do balíčka → replay (krátko na D009, kde bol na t5 top kartou sim).
 - Sim po pridaní: draci 48–64 % per-card, free-vs-free 52/48 – neutrálne.
 
