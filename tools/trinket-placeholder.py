@@ -12,14 +12,10 @@ OUT = ROOT / "assets" / "trinkets"
 FONT = "C:/Windows/Fonts/seguiemj.ttf"
 SIZE = 512
 
-# id trinketu -> emoji (rovnaké ako L.trinkets[id].e v src/i18n.js)
-EMOJI = {
-    "doggyGlove": "🧤", "doggyBrush": "🪮", "doggyDouble": "💞",
-    "dragonBook": "📖", "ogreLuck": "🍀", "fairySpark": "✨",
-    "beastHunt": "🎯", "beastHunt2": "🏹", "undeadReborn": "🪦",
-    "elemWind": "🌬️", "undeadFirstBone": "🦴", "undeadTauntBones": "🛡️",
-    "elemBubble": "🫧", "elemZap": "⚡",
-}
+# id trinketu -> emoji (rovnaké ako L.trinkets[id].e v src/i18n.js).
+# Prázdne: všetky trinkety majú vlastný art (Gemini, 15. 10. 2026). Nový
+# trinket bez artu sem dočasne pridaj – inak by skript prepísal hotový art.
+EMOJI = {}
 
 
 def render(emoji):
