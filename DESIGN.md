@@ -1125,7 +1125,10 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
   poradia (`runRushAttacks`) → celý roj zaútočí naraz. UI animuje
   Včielky zrýchlene (`fastAnim`).
 - I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
-- I004 Kobylka (t2, 3/2): Pred bojom +1/+1 za každý iný Hmyz na ploche.
+- I004 Kobylka (t2, 3/2): Pri vyložení pridá do balíčka ďalšiu Kobylku
+  (raz za kolo na hráča, `p.breedRound`). Vyliahnuté kópie (`bred`) sa
+  predávajú za 0. Kobylky sa množia samé a roj ich posilňuje, ale balíček
+  rastie – hráč sa musí rozhodnúť, či do Kobyliek ide.
 - I005 Svätojánska muška (t3, 3/3): Pri vyložení (cielené ako draci)
   vybraný Hmyz na ploche +X/+X **navždy** (X = Húsenice, aspoň 1) –
   jednorazový ťah, potom odhodiť (bot recykluje).

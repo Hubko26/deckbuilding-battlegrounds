@@ -894,7 +894,7 @@ const Bot = (() => {
       case "handGrowSwarm": return ab * swarmN(p, f.of) * 2 * PW_PERM / 2; // ~2 Hmyz v ruke, navždy
       case "deckGrowSwarm": return ab * swarmN(p, f.of) * PW_HORIZON / 2;
       case "deckGrow": return ab * PW_HORIZON / 2;
-      case "growPerRace": return ab * (PW_BOARD - 1);
+      case "breed": return 2 + swarmN(p, "I004") * 1.5;          // kópia navyše = +1/+1 každej Kobylke
       case "growTargetSwarm": return ab * swarmN(p, f.of) * PW_HORIZON / 2; // rast navždy, battlecry
       case "summonDeckCopy": return swarmN(p, f.of) * 3;      // každá Včielka v balíčku zaútočí
       case "imprintCard": return ab * swarmN(p, f.of) * PW_PERM;

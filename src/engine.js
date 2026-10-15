@@ -760,6 +760,7 @@ const Engine = (() => {
     const c = { defId: inst.defId, rank: inst.rank || 1 };
     if (inst.pa || inst.ph) { c.pa = inst.pa || 0; c.ph = inst.ph || 0; }
     if (inst.pets) c.pets = inst.pets; // koľko Pohladkaní karta dostala (súhrn v preview)
+    if (inst.bred) c.bred = true; // vyliahnutá Kobylka (Hmyz) – predaj za 0
     if (inst.src) c.src = inst.src;
     return c;
   }
@@ -776,6 +777,7 @@ const Engine = (() => {
       const inst = makeInst(state, c.defId, c.rank, p);
       if (c.src) inst.src = c.src;
       if (c.pets) inst.pets = c.pets;
+      if (c.bred) inst.bred = true;
       if (c.pa || c.ph) {
         inst.pa = c.pa || 0;
         inst.ph = c.ph || 0;
@@ -1450,7 +1452,7 @@ const Engine = (() => {
     p[zone].splice(idx, 1);
     // Pohladkanie sa predáva za 0 – zbavíš sa ho, ale generátory (P001/P002)
     // nesmú byť zlatý motor (2–3 pohladkania za kolo = 2–3 zlata).
-    const gain = Cards.byId[inst.defId].pet ? 0
+    const gain = Cards.byId[inst.defId].pet || inst.bred ? 0 // vyliahnutá Kobylka tiež za 0
       : SELL_GAIN + (state.mutator === "richSell" || hasTrinket(state, pid, "richSell") ? 1 : 0);
     p.money += gain;
     returnSrc(state, inst.defId, inst.src); // kópie späť do poolov, z ktorých boli
@@ -1891,6 +1893,16 @@ const Engine = (() => {
       const x = Math.max(1, copiesOwned(p, fx.of));
       growCard(t, fx.a * x, fx.h * x, true);
       events.push({ type: "buff", pid: p.id, uid: t.uid, a: fx.a * x, h: fx.h * x });
+    },
+    // Kobylka (Pri vyložení): do balíčka ďalšia kópia karty (vyliahnutá –
+    // predaj za 0, inak by bola zlatý motor). Raz za kolo na hráča
+    // (p.breedRound) – každá kópia posilní celý roj Kobyliek.
+    breed({ state, p, self, events }) {
+      if (p.breedRound === state.round) return;
+      p.breedRound = state.round;
+      const i = Math.floor(state.rng() * (p.deck.length + 1));
+      p.deck.splice(i, 0, { defId: self.defId, rank: 1, bred: true });
+      events.push({ type: "breed", pid: p.id, defId: self.defId });
     },
     // Mravec (Po nákupe): náhodný Hmyz v balíčku/kôpke +X·a/+X·h navždy,
     // X = kópie karty fx.of.
@@ -2891,11 +2903,6 @@ const Engine = (() => {
       const c = pick(refs, state.rng);
       growCard(c, fx.a * m, fx.h * m, false);
       events.push({ type: "deckGrow", pid, defId: c.defId, a: fx.a * m, h: fx.h * m });
-    },
-    // Kobylka (Pred bojom): +a/+h za každého iného živého kamaráta rasy.
-    growPerRace({ state, sides, pid, self, fx, m, events }) {
-      const n = aliveOn(sides, pid).filter(f => f !== self && isRace(state, pid, Cards.byId[f.defId], fx.race)).length;
-      if (n) buffWithEvent(self, pid, fx.a * m * n, fx.h * m * n, events);
     },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.

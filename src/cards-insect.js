@@ -40,9 +40,12 @@
     // t2 Lienka: Pri vyložení Hmyz v ruke +X/+X navždy, X = Lienky v balíčku.
     M("I003", 2, N("Lienka", "Beruška", "Ladybug"), "🐞", 2, 3,
       { power: { kw: "battlecry", fx: { type: "handGrowSwarm", of: "I003", a: 1, h: 1 } } }),
-    // t2 Kobylka: Pred bojom +1/+1 za každý iný Hmyz na ploche.
+    // t2 Kobylka: Pri vyložení pridá do balíčka ďalšiu Kobylku (raz za kolo).
+    // Množí sa sama – každá kópia posilní všetky Kobylky (roj), ale balíček
+    // rastie a ruky sa plnia Kobylkami: hráč volí, či ide do Kobyliek.
+    // Vyliahnuté kópie sa predávajú za 0.
     M("I004", 2, N("Kobylka", "Kobylka", "Grasshopper"), "🦗", 3, 2,
-      { power: { kw: "startFight", fx: { type: "growPerRace", race: R, a: 1, h: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "breed" } } }),
     // t3 Svätojánska muška: Pri vyložení (cielené ako draci) vybraný Hmyz na
     // ploche +X/+X NAVŽDY, X = Húsenice v balíčku (min. 1). Jednorazový ťah –
     // vylož, potom odhoď (príde znova cyklom balíčka).
@@ -132,9 +135,9 @@
     deckGrowSwarm: () => t("náhodný Hmyz v balíčku +X/+X navždy (X = Mravce)",
       "náhodný Hmyz v balíčku +X/+X navždy (X = Mravenci)",
       "random Insect in deck +X/+X forever (X = Ants)"),
-    growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`,
-      `+${f.a * m}/+${f.h * m} za každý další Hmyz na ploše`,
-      `+${f.a * m}/+${f.h * m} per other Insect on board`),
+    breed: () => t("pridaj do balíčka ďalšiu Kobylku (raz za kolo; vyliahnutá sa predáva za 0)",
+      "přidej do balíčku další Kobylku (jednou za kolo; vylíhnutá se prodává za 0)",
+      "add another Grasshopper to your deck (once per round; hatched ones sell for 0)"),
     growTargetSwarm: () => t("vybraný Hmyz +X/+X navždy (X = Húsenice v balíčku, aspoň 1)",
       "vybraný Hmyz +X/+X navždy (X = Housenky v balíčku, aspoň 1)",
       "chosen Insect +X/+X forever (X = Caterpillars in deck, at least 1)"),

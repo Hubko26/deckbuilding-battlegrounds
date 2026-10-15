@@ -306,3 +306,33 @@ test("hmyz: Svätojánska muška – Pri vyložení vybraný Hmyz +X/+X navždy 
   E.playMinion(state, "p1", 0, bee.uid);
   assert.equal(bee.pa, 4); // bez Húseníc aspoň +1
 });
+
+test("hmyz: Kobylka sa množí – Pri vyložení kópia do balíčka raz za kolo; vyliahnutá sa predáva za 0", () => {
+  const { state, E, put } = bare(23);
+  const p = state.p1;
+  state.active = "p1";
+  put("p1", "I004", "hand");
+  put("p1", "I004", "hand");
+  E.playMinion(state, "p1", 0);
+  E.playMinion(state, "p1", 0);
+  const bred = p.deck.filter(c => c.defId === "I004");
+  assert.equal(bred.length, 1); // druhá Kobylka v tom istom kole už nie
+  assert.ok(bred[0].bred);
+  // cyklus balíčka: vyliahnutá ostane vyliahnutá, predaj za 0
+  const inst = (E.drawCards(state, p, 1, []), p.hand.find(x => x.defId === "I004"));
+  assert.ok(inst.bred);
+  const money = p.money;
+  E.sellCard(state, "p1", "hand", p.hand.indexOf(inst));
+  assert.equal(p.money, money);
+  // kúpená Kobylka na ploche sa predáva normálne
+  const m2 = p.money;
+  E.sellCard(state, "p1", "board", 0);
+  assert.equal(p.money, m2 + 1);
+  // ďalšie kolo sa množí znova
+  state.round++;
+  put("p1", "I004", "hand");
+  E.playMinion(state, "p1", p.hand.length - 1);
+  assert.equal(p.deck.filter(c => c.defId === "I004").length, 1);
+  const back = E.pileCard(p.board.find(x => x.defId === "I004"));
+  assert.equal(back.bred, undefined);
+});

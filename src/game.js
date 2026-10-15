@@ -2345,6 +2345,9 @@ function act(events) {
     if (ev.type === "addPet" && ev.pid === MY) {
       log(`${t(L.addPetMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId.pet, ev.rank, I18N.lang)}`);
     }
+    if (ev.type === "breed" && ev.pid === MY) { // Kobylka (Hmyz) sa vyliahla do balíčka
+      log(`🦗 ${t(L.addPetMsg).replace(/^🐶 /, "")} ${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}`);
+    }
     if (ev.type === "petMerge" && ev.pid === MY) {
       Sfx.evolve();
       log(`${t(L.petMergeMsg)} ${Cards.nameOf(Cards.byId.pet, ev.rank, I18N.lang)}`);
