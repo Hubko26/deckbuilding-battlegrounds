@@ -149,6 +149,17 @@ const Engine = (() => {
   const HEAL_WIN = 2;      // Liečivé víťazstvo
   const PUP_TOKENS = new Set(["mlada", "supermlada"]); // Vypasené mláďatá
 
+  // ---------- Hmyz (EXPERIMENT, src/cards-insect.js – hra ho nenačíta) ----------
+  // Bez hmyzích kariet sú háčiky nižšie nečinné. Hmyz nemá evolve
+  // (def.noEvolve) – sila rastie s počtom kópií v celom balíčku (všetky zóny):
+  // def.swarm = { of?: defId, race?: rasa, a, h, others?: true } dá v boji
+  // +a/+h za každú kópiu karty `of` (alebo kartu rasy `race`); others = bez seba.
+  // Kukla (KUKLA_ID): jediná na hráča, na začiatku ťahu sa VŽDY potiahne
+  // navyše (6. karta) z balíčka/kôpky; nezahraná v ruke na konci ťahu rastie
+  // +KUKLA_GROW navždy. Húsenica (cocoon) ju vytvorí alebo zväčší.
+  const KUKLA_ID = "kukla";
+  const KUKLA_GROW = { a: 2, h: 2 };
+
   function hasTrinket(state, pid, id) {
     const p = state[pid];
     return !!p && !!p.trinkets && p.trinkets.includes(id) && p.trinketOff !== state.round;
@@ -176,6 +187,74 @@ const Engine = (() => {
   const pactBonus = (state, p, self) =>
     self && Cards.byId[self.defId].race === "dragon" && hasTrinket(state, p.id, "dragonPact") ? PACT_BONUS : 0;
   const handDraw = (state, pid) => HAND_DRAW + (hasTrinket(state, pid, "bigHand") ? 1 : 0);
+  // Počet kópií karty vo všetkých zónach hráča (Hmyz – roj). Bojové kópie
+  // z Kráľovnej (plocha boja) sa nerátajú – rátajú sa originály.
+  function copiesOwned(p, defId) {
+    let n = 0;
+    for (const zone of ["deck", "discard", "hand", "board"]) {
+      for (const c of p[zone]) if (c && c.defId === defId) n++;
+    }
+    return n;
+  }
+  // Bonus roja pre kartu hráča (0/0 bez def.swarm). Pre bota a UI aj boj.
+  // def.swarm môže byť aj pole (viac zdrojov roja sa sčíta); per = 1 bod za
+  // každých `per` kópií (zaokrúhlené dole).
+  function swarmBonus(p, def) {
+    const out = { a: 0, h: 0 };
+    for (const s of [].concat(def.swarm || [])) {
+      let n = s.of ? copiesOwned(p, s.of) : raceCardCount(p, s.race);
+      if (s.others) n = Math.max(0, n - 1);
+      n = Math.floor(n / (s.per || 1));
+      out.a += s.a * n; out.h += s.h * n;
+    }
+    return out;
+  }
+  function withSwarm(p, inst) {
+    const b = swarmBonus(p, Cards.byId[inst.defId]);
+    if (b.a || b.h) buff(inst, b.a, b.h);
+    return inst;
+  }
+  // Trvalý rast karty v ľubovoľnej zóne: inštancia (ruka/plocha) dostane
+  // staty hneď aj pa/ph, referencia v balíčku/kôpke len pa/ph.
+  function growCard(c, a, h, isInst) {
+    if (isInst) buff(c, a, h);
+    c.pa = (c.pa || 0) + a;
+    c.ph = (c.ph || 0) + h;
+  }
+  // Hmyzie karty v balíčku a kôpke (referencie) – cieľ rastu „v balíčku".
+  function insectRefs(p) {
+    return [...p.deck, ...p.discard].filter(c => Cards.byId[c.defId].race === "insect");
+  }
+  // Kukla: hľadá ju vo všetkých zónach. Vráti { c, isInst } alebo null.
+  function findKukla(p) {
+    for (const zone of ["hand", "board"]) {
+      const c = p[zone].find(x => x && x.defId === KUKLA_ID);
+      if (c) return { c, isInst: true };
+    }
+    for (const zone of ["deck", "discard"]) {
+      const c = p[zone].find(x => x.defId === KUKLA_ID);
+      if (c) return { c, isInst: false };
+    }
+    return null;
+  }
+  // Začiatok ťahu: Kukla z balíčka/kôpky do ruky NAVYŠE. Vráti 1/0.
+  function pullKukla(state, p, events) {
+    if (p.hand.length >= HAND_MAX) return 0;
+    for (const zone of ["deck", "discard"]) {
+      const i = p[zone].findIndex(c => c.defId === KUKLA_ID);
+      if (i < 0) continue;
+      const [c] = p[zone].splice(i, 1);
+      const inst = makeInst(state, c.defId, c.rank, p);
+      if (c.src) inst.src = c.src;
+      if (c.pa || c.ph) { inst.pa = c.pa || 0; inst.ph = c.ph || 0; buff(inst, inst.pa, inst.ph); }
+      inst.slot = freeSlot(p.hand, HAND_MAX);
+      p.hand.push(inst);
+      events.push({ type: "draw", pid: p.id, defId: c.defId, kukla: true });
+      return 1;
+    }
+    return 0;
+  }
+
   function evolveNeed(state, p, defId) {
     if (state.mutator === "twinEvolve") return 2;
     if (Cards.byId[defId].tier === 1 && hasTrinket(state, p.id, "twinEvolve1")) return 2;
@@ -267,7 +346,7 @@ const Engine = (() => {
   // bez zmeny). Náhoda stále cez state.rng – determinizmus a replay platia.
   function rollCard(state, tierLimit, poolKey, filter) {
     const pool = state.pools[poolKey];
-    const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !isBanned(state, d) && (!filter || filter(d)));
+    const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !d.gen && !isBanned(state, d) && (!filter || filter(d)));
     const bias = poolKey !== "common" && state[poolKey] && state[poolKey].rollBias;
     const weighted = [];
     for (const d of defs) {
@@ -431,7 +510,7 @@ const Engine = (() => {
   // trojica by sa hneď spojila (evolve) a lámala by early game.
   function setupStart(state) {
     const { rng, mutator } = state;
-    const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell && !isBanned(state, d));
+    const basics = Cards.DEFS.filter(d => d.tier === 1 && !d.spell && !d.gen && !isBanned(state, d));
     for (const pid of ["p1", "p2"]) {
       const p = state[pid];
       for (let i = 0; i < 10; i++) {
@@ -629,7 +708,8 @@ const Engine = (() => {
   function beginShopTurn(state, pid) {
     const p = state[pid];
     const events = [];
-    drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
+    const kukla = pullKukla(state, p, events); // Kukla (Hmyz) je karta NAVYŠE
+    drawCards(state, p, handDraw(state, pid) + kukla - p.hand.length, events);
     bossReward(state, p, events);
     // Pohladkania z psích trinketov idú do BALÍČKA až po dotiahnutí (hlásenie
     // hráča 15. 10. 2026: rukavica + Vodítko = začiatok ťahu so 7 kartami).
@@ -654,7 +734,7 @@ const Engine = (() => {
       const before = p.hand.length;
       checkEvolve(state, p, events);
       if (p.hand.length >= before) break; // nič sa nespojilo z ruky
-      const want = handDraw(state, pid) - p.hand.length;
+      const want = handDraw(state, pid) + kukla - p.hand.length;
       if (want <= 0 || (!p.deck.length && !p.discard.length)) break;
       drawCards(state, p, want, events);
     }
@@ -783,7 +863,7 @@ const Engine = (() => {
   // Do evolve sa počítajú len príšerky pod zlatým stupňom (kúzla a tokeny nie).
   function evolvable(defId, rank) {
     const def = Cards.byId[defId];
-    return rank < 3 && !def.spell && !def.token;
+    return rank < 3 && !def.spell && !def.token && !def.noEvolve; // Hmyz evolve nemá
   }
 
   // Zoskupí kópie podľa (karta, stupeň) naprieč zónami a vráti prvú skupinu,
@@ -1765,6 +1845,38 @@ const Engine = (() => {
       SHOP_FX.futureAll(ctx);
       SHOP_FX.dmgBoost(ctx);
     },
+    // ----- Hmyz (experiment) -----
+    // Húsenica: Kukla neexistuje → nová do balíčka; inak Kukla +a/+h navždy.
+    cocoon({ state, p, fx, events }) {
+      const k = findKukla(p);
+      if (!k) {
+        addToDeckRef(state, p, KUKLA_ID, 1, 0, 0);
+        events.push({ type: "kukla", pid: p.id, created: true });
+        return;
+      }
+      growCard(k.c, fx.a, fx.h, k.isInst);
+      if (k.isInst) events.push({ type: "buff", pid: p.id, uid: k.c.uid, a: fx.a, h: fx.h });
+      events.push({ type: "kukla", pid: p.id, created: false, a: fx.a, h: fx.h });
+    },
+    // Lienka: Hmyz v ruke +X·a/+X·h navždy, X = kópie karty fx.of.
+    handGrowSwarm({ p, fx, events }) {
+      const x = copiesOwned(p, fx.of);
+      for (const inst of p.hand) {
+        if (inst.spell || Cards.byId[inst.defId].race !== "insect") continue;
+        growCard(inst, fx.a * x, fx.h * x, true);
+        events.push({ type: "buff", pid: p.id, uid: inst.uid, a: fx.a * x, h: fx.h * x });
+      }
+    },
+    // Mravec (Po nákupe): náhodný Hmyz v balíčku/kôpke +X·a/+X·h navždy,
+    // X = kópie karty fx.of.
+    deckGrowSwarm({ state, p, fx, events }) {
+      const refs = insectRefs(p);
+      if (!refs.length) return;
+      const x = copiesOwned(p, fx.of);
+      const c = pick(refs, state.rng);
+      growCard(c, fx.a * x, fx.h * x, false);
+      events.push({ type: "deckGrow", pid: p.id, defId: c.defId, a: fx.a * x, h: fx.h * x });
+    },
   };
 
   function buff(inst, a, h) {
@@ -1837,6 +1949,12 @@ const Engine = (() => {
       for (const pw of instPowers(inst)) {
         if (pw.kw === "endTurn") applyShopFx(state, p, pw.fx, inst.rank, inst, events);
       }
+    }
+    // Nezahraná Kukla (Hmyz) v ruke rastie navždy.
+    for (const inst of p.hand) {
+      if (inst.defId !== KUKLA_ID) continue;
+      growCard(inst, KUKLA_GROW.a, KUKLA_GROW.h, true);
+      events.push({ type: "buff", pid, uid: inst.uid, a: KUKLA_GROW.a, h: KUKLA_GROW.h });
     }
     // Nezahrané karty z ruky do discard pile (jednorazové kúzla miznú).
     for (const inst of p.hand.splice(0)) {
@@ -1931,7 +2049,7 @@ const Engine = (() => {
     }
   }
 
-  const copyBoard = p => p.board.map(x => ({ ...x }));
+  const copyBoard = p => p.board.map(x => withSwarm(p, { ...x })); // roj (Hmyz) len na bojovú kópiu
 
   // Večný strážca / Zadný vietor (trinkety): príšerka úplne vľavo (najnižší
   // slot) dostane na boj Znovuzrodenie / Vichor. Na kópii – originál nič.
@@ -2670,6 +2788,61 @@ const Engine = (() => {
         huntToken(state, sides, pid, tok, events);
       }
     },
+    // ----- Hmyz (experiment) -----
+    // Včielka (Pri smrti): náhodný Hmyz v balíčku/kôpke +a/+h navždy.
+    deckGrow({ state, pid, fx, m, events }) {
+      const p = state[pid];
+      const refs = insectRefs(p);
+      if (!refs.length) return;
+      const c = pick(refs, state.rng);
+      growCard(c, fx.a * m, fx.h * m, false);
+      events.push({ type: "deckGrow", pid, defId: c.defId, a: fx.a * m, h: fx.h * m });
+    },
+    // Kobylka (Pred bojom): +a/+h za každého iného živého kamaráta rasy.
+    growPerRace({ state, sides, pid, self, fx, m, events }) {
+      const n = aliveOn(sides, pid).filter(f => f !== self && isRace(state, pid, Cards.byId[f.defId], fx.race)).length;
+      if (n) buffWithEvent(self, pid, fx.a * m * n, fx.h * m * n, events);
+    },
+    // Svätojánska muška (Pred bojom): náhodný iný živý Hmyz +X·a/+X·h,
+    // X = kópie karty fx.of (Húsenice) v balíčku.
+    buffRandomSwarm({ state, sides, pid, self, fx, events }) {
+      const cands = aliveOn(sides, pid).filter(f => f !== self && Cards.byId[f.defId].race === "insect");
+      const x = copiesOwned(state[pid], fx.of);
+      if (!cands.length || !x) return;
+      buffWithEvent(pick(cands, state.rng), pid, fx.a * x, fx.h * x, events);
+    },
+    // Osa (Pred bojom): toľko výbojov po n, koľko je živého Hmyzu na ploche (aj Osa).
+    stingSwarm({ state, sides, pid, self, fx, events }) {
+      const foe = other(pid);
+      const hits = aliveOn(sides, pid).filter(f => Cards.byId[f.defId].race === "insect").length;
+      for (let i = 0; i < hits; i++) {
+        const enemies = aliveOn(sides, foe);
+        if (!enemies.length) break;
+        powerHit(state, sides, pick(enemies, state.rng), foe, fx.n + state[pid].dmgBoost, self.uid, events);
+        handleDeaths(state, sides, events);
+      }
+    },
+    // Kráľovná (Pri smrti): bojové kópie až n náhodných príšer z balíčka
+    // a kôpky (po voľné miesto). Balíček sa nemení, kópie po boji zmiznú.
+    summonFromDeck({ state, sides, pid, self, fx, events }) {
+      const p = state[pid];
+      const board = sides[pid];
+      const refs = shuffle([...p.deck, ...p.discard].filter(c => !Cards.byId[c.defId].spell), state.rng);
+      let idx = board.indexOf(self);
+      for (let i = 0; i < fx.n && i < refs.length; i++) {
+        const alive = aliveOn(sides, pid);
+        if (alive.length >= BOARD_MAX) break;
+        const c = refs[i];
+        const inst = makeInst(state, c.defId, c.rank, p);
+        if (c.pa || c.ph) buff(inst, c.pa || 0, c.ph || 0);
+        withSwarm(p, inst);
+        const fb = fightBuffFor(state, p, Cards.byId[c.defId]);
+        if (fb && (fb.a || fb.h)) buff(inst, fb.a, fb.h);
+        inst.slot = freeSlot(alive, BOARD_MAX);
+        board.splice(++idx, 0, inst);
+        events.push({ type: "summon", pid, uid: inst.uid, defId: c.defId, slot: inst.slot, rank: inst.rank, atk: inst.atk, hp: inst.hp });
+      }
+    },
   };
 
   // Lovci tokenov (onEnemySummon, E005): súperove živé príšerky s týmto
@@ -2830,7 +3003,7 @@ const Engine = (() => {
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
     TIER_MAX, RACE_CAP, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_FREE_RACES, SUPPORT_RACES, majorityRaces, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
-    handDraw, heroDmgCap, deckMin, cardCount, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
+    handDraw, heroDmgCap, deckMin, cardCount, swarmBonus, copiesOwned, KUKLA_ID, KUKLA_GROW, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, raceOut, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,

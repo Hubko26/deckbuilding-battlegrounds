@@ -177,7 +177,13 @@ const Bot = (() => {
     const plainDragon = def.race === "dragon" && !topDragon;
     let score = (foreignMain || plainDragon ? pw.body : pw.total) / 8;
     const owned = ownedCount(p, defId);
-    if (!def.spell) {
+    if (def.noEvolve) {
+      // Hmyz (experiment): trojica nie je, každá kópia posilní roj –
+      // karta, ktorá rastie s vlastnými kópiami, o to viac.
+      const selfSwarm = [].concat(def.swarm || []).some(sw => sw.of === defId) ||
+        Cards.powersOf(def).some(x => x.fx.of === defId);
+      score += owned * (selfSwarm ? 1.5 : 0.5);
+    } else if (!def.spell) {
       if (owned === 2) score += 6;      // dokončí trojicu
       else if (owned === 1) score += 2; // rozbieha trojicu
     }
@@ -317,7 +323,8 @@ const Bot = (() => {
   // Mláďa alebo D001 áno.
   function bodyValue(inst, p) {
     const def = Cards.byId[inst.defId];
-    return inst.atk + inst.hp + (inst.taunt ? 1 : 0) + cardPower(def, { rank: inst.rank || 1, p }).ability;
+    const sw = Engine.swarmBonus(p, def); // roj (Hmyz) sa pripočíta až v boji
+    return inst.atk + inst.hp + sw.a + sw.h + (inst.taunt ? 1 : 0) + cardPower(def, { rank: inst.rank || 1, p }).ability;
   }
 
   // „Balast": telo, ktoré sa neoplatí držať v cykle balíčka – 0 útoku
@@ -700,8 +707,9 @@ const Bot = (() => {
       if (!handBest) break;
       const weakIdx = p.board
         .map((inst, i) => ({ inst, i }))
+        .filter(x => !Cards.byId[x.inst.defId].gen) // Kukla (Hmyz) sa nepredáva
         .sort((a, b) => bodyValue(a.inst, p) - bodyValue(b.inst, p))[0];
-      if (bodyValue(handBest.inst, p) < bodyValue(weakIdx.inst, p) + 3) break;
+      if (!weakIdx || bodyValue(handBest.inst, p) < bodyValue(weakIdx.inst, p) + 3) break;
       push(act("sellCard", state, p.id, "board", weakIdx.i));
       const handIdx = p.hand.indexOf(handBest.inst);
       push(act("playMinion", state, p.id, handIdx));
@@ -743,7 +751,7 @@ const Bot = (() => {
     while (deckSize(p) > DECK_CAP && guard-- > 0) {
       const spare = p.hand
         .map((inst, i) => ({ inst, i }))
-        .filter(({ inst }) => inst && !inst.spell && inst.rank === 1 &&
+        .filter(({ inst }) => inst && !inst.spell && inst.rank === 1 && !Cards.byId[inst.defId].gen &&
           ownedCount(p, inst.defId) < 2 && !Cards.powersOf(Cards.byId[inst.defId]).some(pw => pw.fx.type === "futureRace"))
         .sort((a, b) => bodyValue(a.inst, p) - bodyValue(b.inst, p));
       if (!spare.length) break;
@@ -872,9 +880,21 @@ const Bot = (() => {
       case "howl": return ab * PW_BOARD * PW_BOARD / 2;        // 4 psy × +4/+4 ≈ 16
       case "petScale": return ab * 8;                          // ~8 pohladkaní zahraných za hru
       case "packLeader": return m * 3 * PW_BOARD * PW_HORIZON / 2; // každé pohladkanie na celú svorku (×stupeň) navždy, kým je na ploche
+      // ----- Hmyz (experiment) – X = kópie v balíčku, bez majiteľa odhad 3 -----
+      case "cocoon": return 2 * 2 + ab;                        // Kukla: telo navyše každý ťah + rast
+      case "handGrowSwarm": return ab * swarmN(p, f.of) * 2 * PW_PERM / 2; // ~2 Hmyz v ruke, navždy
+      case "deckGrowSwarm": return ab * swarmN(p, f.of) * PW_HORIZON / 2;
+      case "deckGrow": return ab * PW_HORIZON / 2;
+      case "growPerRace": return ab * (PW_BOARD - 1);
+      case "buffRandomSwarm": return ab * swarmN(p, f.of);
+      case "stingSwarm": return f.n * PW_BOARD * 1.5;
+      case "summonFromDeck": return 5 * 8 / 2;                 // ~2–3 telá z balíčka
       default: return 0;
     }
   }
+  // Kópie karty u majiteľa (Hmyz – roj); bez majiteľa odhad 3.
+  const swarmN = (p, defId) => p ? Math.max(1, ownedCount(p, defId)) : 3;
+
   // opts.rank: stupeň (telo ×2/×4, efekty podľa powerValue); opts.p: majiteľ –
   // tokeny sa rátajú aj s jeho Pečaťou (evolvnutý undead vyvolávač so
   // U003/U008 je preto výrazne silnejší než jeho bronzová verzia bez aury).
@@ -888,7 +908,11 @@ const Bot = (() => {
     const body = (def.atk + def.hp) * mult + (def.taunt ? 1 : 0) + (def.cleave ? 5 : 0); // Divoký úder: priemer 1–14 ≈ útok, bez bonusu
     let ability = 0;
     for (const pw of Cards.powersOf(def)) ability += powerValue(pw, rank, p);
-    if (def.fickle) ability += 2; // Vrtkavá koža: priemerný damage rovnaký, smola = Pečať Ogrom
+    if (def.fickle) ability += 2;
+    if (def.swarm) { // roj: skutočný bonus u majiteľa, inak odhad (3 kópie / 8 Hmyzu)
+      if (p) { const sw = Engine.swarmBonus(p, def); ability += sw.a + sw.h; }
+      else for (const sw of [].concat(def.swarm)) ability += (sw.a + sw.h) * (sw.of ? 2 : 8) / (sw.per || 1);
+    } // Vrtkavá koža: priemerný damage rovnaký, smola = Pečať Ogrom
     return { body, ability: Math.round(ability * 10) / 10, total: Math.round((body + ability) * 10) / 10 };
   }
 
@@ -896,7 +920,7 @@ const Bot = (() => {
   const tierAvgCache = {};
   function tierAvgPower(tier) {
     if (tierAvgCache[tier] === undefined) {
-      const vals = Cards.DEFS.filter(d => !d.spell && d.tier === tier).map(d => cardPower(d).total);
+      const vals = Cards.DEFS.filter(d => !d.spell && !d.gen && d.tier === tier).map(d => cardPower(d).total);
       tierAvgCache[tier] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     }
     return tierAvgCache[tier];

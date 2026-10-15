@@ -23,6 +23,8 @@
 //   rounds   strop kôl (potom remíza)
 //   mirror   1 = aj zrkadlové strety (rasa proti sebe)
 //   verbose  1 = vypíš priebeh prvej hry každého matchupu po kolách
+//   exp      experimentálne rasy (čiarkou), napr. exp=insect načíta
+//            src/cards-insect.js (Hmyz – hra ho nenačíta) a pridá rasu
 //
 // Injekcie do zdrojov (engine aj bot ostávajú nedotknuté v repe):
 //   engine.rollCard  – state.raceLock[poolKey] obmedzí losovanie na rasu
@@ -68,11 +70,13 @@ function loadCtx() {
   const read = f => fs.readFileSync(path.join(ROOT, f), "utf8").replace(/\r\n/g, "\n");
   vm.runInContext(toVar(read("src/i18n.js")), ctx, { filename: "src/i18n.js" });
   vm.runInContext(toVar(read("src/cards.js")), ctx, { filename: "src/cards.js" });
+  ctx.EXP_VARIANT = opts.variant || ""; // varianty experimentálnej rasy (cards-<rasa>.js)
+  for (const r of EXP) vm.runInContext(read(`src/cards-${r}.js`), ctx, { filename: `src/cards-${r}.js` });
 
   let eng = read("src/engine.js");
   eng = patch(eng,
-    `const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !isBanned(state, d) && (!filter || filter(d)));`,
-    `const defs0 = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !isBanned(state, d) && (!filter || filter(d)));
+    `const defs = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !d.gen && !isBanned(state, d) && (!filter || filter(d)));`,
+    `const defs0 = Cards.DEFS.filter(d => d.tier <= tierLimit && !d.spell && !d.gen && !isBanned(state, d) && (!filter || filter(d)));
     const lock = state.raceLock && state.raceLock[poolKey];
     const defsL = lock ? defs0.filter(d => lock.includes(d.race)) : defs0;
     const defs = defsL.length ? defsL : defs0;`);
@@ -125,8 +129,10 @@ function loadCtx() {
 }
 
 // ---------- jedna hra ----------
-const boardSum = p => p.board.reduce((n, x) => n + x.atk + x.hp, 0);
-const boardStr = p => p.board.map(x => `${x.defId}${x.rank > 1 ? ":" + x.rank : ""}(${x.atk}/${x.hp}${x.taunt ? "T" : ""})`).join(" ") || "-";
+// Roj (Hmyz) sa pridá až bojovej kópii – do sily plochy ho započítaj tiež.
+const swarm = (p, x) => ctx.Engine.swarmBonus(p, ctx.Cards.byId[x.defId]);
+const boardSum = p => p.board.reduce((n, x) => { const s = swarm(p, x); return n + x.atk + x.hp + s.a + s.h; }, 0);
+const boardStr = p => p.board.map(x => { const s = swarm(p, x); return `${x.defId}${x.rank > 1 ? ":" + x.rank : ""}(${x.atk + s.a}/${x.hp + s.h}${x.taunt ? "T" : ""})`; }).join(" ") || "-";
 
 function playGame(ctx, seed, raceA, raceB, cfg) {
   const E = ctx.Engine, B = ctx.Bot;
@@ -176,6 +182,7 @@ function ownedWeighted(p, Cards) {
 // ---------- parametre ----------
 const opts = {};
 for (const a of process.argv.slice(2)) { const i = a.indexOf("="); if (i > 0) opts[a.slice(0, i)] = a.slice(i + 1); }
+const EXP = opts.exp ? opts.exp.split(",") : [];
 const cfg = {
   n: Number(opts.n || 100),
   hp: Number(opts.hp || HP_DEFAULT),
@@ -190,6 +197,7 @@ const cfg = {
   targeted: Number(opts.targeted || 0),
   runs: Math.max(1, Number(opts.runs || 1)),
 };
+ALL_RACES.push(...EXP);
 const races = opts.races ? opts.races.split(",") : cfg.targeted ? ALL_RACES.filter(r => r !== "fairy") : ALL_RACES;
 for (const r of races) if (!ALL_RACES.includes(r)) { console.error("Neznáma rasa: " + r); process.exit(1); }
 
@@ -295,7 +303,7 @@ for (let run = 0; run < cfg.runs; run++) {
 }
 
 const pct = (a, tot) => tot ? (a / tot * 100).toFixed(0).padStart(3) + "%" : "   -";
-const short = r => ({ beast: "zviera", elemental: "živel", undead: "nemŕtvy", fairy: "víla", dragon: "drak", ogre: "ogr", doggy: "psík" })[r] || r;
+const short = r => ({ beast: "zviera", elemental: "živel", undead: "nemŕtvy", fairy: "víla", dragon: "drak", ogre: "ogr", doggy: "psík", insect: "hmyz" })[r] || r;
 const col = 9;
 
 console.log("\n--- Winrate (riadok proti stĺpcu, % výhier riadku z rozhodnutých hier) ---");

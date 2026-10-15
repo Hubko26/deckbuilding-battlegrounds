@@ -18,7 +18,9 @@ function toVar(src) {
 export function loadEngine(opts = {}) {
   const ctx = { console, Math, JSON, Object, Array, module: undefined };
   vm.createContext(ctx);
-  for (const f of ["src/i18n.js", "src/cards.js", "src/engine.js", "src/bot.js"]) {
+  // opts.exp: experimentálne rasy (napr. ["insect"] → src/cards-insect.js po cards.js).
+  const exp = (opts.exp || []).map(r => `src/cards-${r}.js`);
+  for (const f of ["src/i18n.js", "src/cards.js", ...exp, "src/engine.js", "src/bot.js"]) {
     vm.runInContext(toVar(fs.readFileSync(path.join(ROOT, f), "utf8")), ctx, { filename: f });
   }
   if (!opts.deckMin) {
