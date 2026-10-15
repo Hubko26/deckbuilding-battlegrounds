@@ -333,6 +333,9 @@ const Bot = (() => {
   function isJunk(state, p, inst) {
     const def = Cards.byId[inst.defId];
     if (def.token) return false;
+    // Kukla (Hmyz, gen) nie je nikdy balast: karta navyše každý ťah, rastie
+    // navždy a je jediná – predaná by sa vrátila malá (hlásenie 15. 10. 2026).
+    if (def.gen && !def.spell) return false;
     if (inst.atk === 0) return true;
     const dom = dominantRace(state, p);
     // Kúzlo nad strop je balast: zahrané ide do kôpky a vráti sa cyklom
@@ -642,11 +645,12 @@ const Bot = (() => {
       const cry = byValue(bodies.filter(recyclable)).at(-1);
       let out = null, inn = null;
       if (cry) {
-        const weakest = byValue(p.board)[0];
+        const weakest = byValue(p.board.filter(x => !Cards.byId[x.defId].gen))[0]; // Kukla (Hmyz) nikdy von
+        if (!weakest) return;
         if (recyclable(weakest) || bodyValue(weakest, p) <= bodyValue(cry, p)) { out = weakest; inn = cry; }
       }
       if (!out) {
-        const spent = byValue(p.board.filter(recyclable))[0];
+        const spent = byValue(p.board.filter(x => recyclable(x) && !Cards.byId[x.defId].gen))[0];
         const best = byValue(bodies).at(-1);
         if (spent && bodyValue(best, p) > bodyValue(spent, p)) { out = spent; inn = best; }
       }

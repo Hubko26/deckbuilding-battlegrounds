@@ -261,3 +261,14 @@ test("hmyz: Kráľovná má roj aj z Včielok (+1/+1 za každú Včielku a inú 
   assert.deepEqual({ ...E.swarmBonus(p, C.byId.I002) }, { a: 2, h: 2 }); // Včielky z Kráľovnej nič
   assert.match(C.cardText(C.byId.I010, 1, "en", false, 0), /per other copy you own and per Bee/);
 });
+
+test("hmyz: bot Kuklu nikdy nepovažuje za balast (ani v cudzej rase)", () => {
+  const { ctx, state, put } = bare(20);
+  const p = state.p1;
+  state.round = 10; p.tier = 5;
+  for (let i = 0; i < 5; i++) p.deck.push({ defId: "B003", rank: 1 }); // zafixovaný na Zvieratá
+  assert.equal(ctx.Bot.dominantRace(state, p), "beast");
+  const k = put("p1", "kukla", "hand");
+  assert.equal(ctx.Bot.isJunk(state, p, k), false);
+  assert.equal(ctx.Bot.isJunk(state, p, put("p1", "I002", "hand")), true); // obyčajný cudzí t1 balast je
+});
