@@ -18,54 +18,58 @@
   L.cards.racesNom[R] = { sk: "Hmyz", cs: "Hmyz", en: "Insects" };
   Cards.RACE_ICON[R] = "🐛";
 
-  const M = (id, tier, name, emoji, atk, hp, extra = {}) =>
-    ({ id, tier, race: R, stageNames: [name, name, name], atk, hp, emoji, noEvolve: true, ...extra });
+  // Mená hmyzu sa PREKLADAJÚ (iné rasy majú vlastné mená zo sady artu):
+  // def.names { sk, cs, en } – Cards.nameOf ich berie prednostne (nižšie).
+  // stageNames = SK meno (art, nástroje, staré výpisy).
+  const M = (id, tier, names, emoji, atk, hp, extra = {}) =>
+    ({ id, tier, race: R, stageNames: [names.sk, names.sk, names.sk], names, atk, hp, emoji, noEvolve: true, ...extra });
+  const N = (sk, cs, en) => ({ sk, cs, en });
 
   const DEFS = [
     // t1 Húsenica: +1/+1 za každú INÚ Húsenicu (5 kópií = 5/5 každá).
     // Pri vyložení: Kukla do balíčka, alebo Kukla +1/+1 navždy.
-    M("I001", 1, "Húsenica", "🐛", 1, 1,
+    M("I001", 1, N("Húsenica", "Housenka", "Caterpillar"), "🐛", 1, 1,
       { swarm: { of: "I001", a: 1, h: 1, others: true },
         power: { kw: "battlecry", fx: { type: "cocoon", a: 1, h: 1 } } }),
     // t1 Včielka: Žihadlo – po vlastnom útoku vždy padne. Pri smrti vyvolá
     // ďalšiu Včielku z balíčka (každú raz za boj), ktorá HNEĎ zaútočí →
     // celý roj zaútočí naraz.
     // fastAnim: UI animuje útok, smrť a vyvolanie zrýchlene (roj 10 Včielok).
-    M("I002", 1, "Včielka", "🐝", 2, 1,
+    M("I002", 1, N("Včielka", "Včelka", "Bee"), "🐝", 2, 1,
       { diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002" } } }),
     // t2 Lienka: Pri vyložení Hmyz v ruke +X/+X navždy, X = Lienky v balíčku.
-    M("I003", 2, "Lienka", "🐞", 2, 3,
+    M("I003", 2, N("Lienka", "Beruška", "Ladybug"), "🐞", 2, 3,
       { power: { kw: "battlecry", fx: { type: "handGrowSwarm", of: "I003", a: 1, h: 1 } } }),
     // t2 Kobylka: Pred bojom +1/+1 za každý iný Hmyz na ploche.
-    M("I004", 2, "Kobylka", "🦗", 3, 2,
+    M("I004", 2, N("Kobylka", "Kobylka", "Grasshopper"), "🦗", 3, 2,
       { power: { kw: "startFight", fx: { type: "growPerRace", race: R, a: 1, h: 1 } } }),
     // t3 Svätojánska muška: Pred bojom náhodný iný Hmyz +X/+X, X = Húsenice.
-    M("I005", 3, "Svätojánska muška", "✨", 3, 3,
+    M("I005", 3, N("Svätojánska muška", "Světluška", "Firefly"), "✨", 3, 3,
       { power: { kw: "startFight", fx: { type: "buffRandomSwarm", of: "I001", a: 1, h: 1 } } }),
     // t3 Roháč: Obranca, +0/+1 za každý Hmyz v balíčku.
-    M("I006", 3, "Roháč", "🪲", 2, 5,
+    M("I006", 3, N("Roháč", "Roháč", "Stag Beetle"), "🪲", 2, 5,
       { taunt: true, swarm: { race: R, a: 0, h: 1, others: true } }),
     // t4 Mravec: Po nákupe náhodný Hmyz v balíčku +X/+X navždy, X = Mravce.
-    M("I007", 4, "Mravec", "🐜", 4, 4,
+    M("I007", 4, N("Mravec", "Mravenec", "Ant"), "🐜", 4, 4,
       { power: { kw: "endTurn", fx: { type: "deckGrowSwarm", of: "I007", a: 1, h: 1 } } }),
     // t5 Osa: Pri vyložení Pečať +1/+1 Hmyzu (fixný damage v neskorej hre
     // nemal význam). Bez evolve – každé vyloženie Pečať zopakuje.
-    M("I008", 5, "Osa", "🪰", 5, 4,
+    M("I008", 5, N("Osa", "Vosa", "Wasp"), "🪰", 5, 4,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: R, a: 1, h: 1 } } }),
     // t5 Modlivka: Pri smrti vyvolá Jedovatú spóru (1/1, Jed – zabije
     // a umlčí, čo zraní: Pri smrti ani Znovuzrodenie sa nespustia). Counter
     // na veľké telá (Zvieratá, ogri, rasy s veľkým rastom) aj deathrattle.
-    M("I009", 5, "Modlivka", "🦟", 6, 6,
+    M("I009", 5, N("Modlivka", "Kudlanka", "Mantis"), "🦟", 6, 6,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "spora", n: 1 } } }),
     // t6 Kráľovná: Pri smrti Pečať +1/+1 všetkým Včielkam (aj budúcim).
-    M("I010", 6, "Kráľovná", "👑", 7, 7,
+    M("I010", 6, N("Kráľovná", "Královna", "Queen"), "👑", 7, 7,
       { power: { kw: "deathrattle", fx: { type: "imprintCard", of: "I002", a: 1, h: 1 } } }),
   ];
   // Kukla: generovaná (nie je v obchode), jediná na hráča, Obranca.
   // grow = rast nezahranej Kukly v ruke na konci ťahu, growPlayed = rast
   // vyloženej. Sim (targeted, 50 HP): vyložená +0/+0 → hmyz 38 %, +0/+1 →
   // 50 %, +1/+1 → 67 %, +2/+2 → 83 % – citlivý gombík.
-  const KUKLA = { id: "kukla", tier: 1, race: R, stageNames: ["Kukla", "Kukla", "Kukla"], atk: 1, hp: 3,
+  const KUKLA = { id: "kukla", tier: 1, race: R, stageNames: ["Kukla", "Kukla", "Kukla"], names: N("Kukla", "Kukla", "Cocoon"), atk: 1, hp: 3,
     taunt: true, emoji: "🪺", noEvolve: true, gen: true, grow: { a: 2, h: 2 }, growPlayed: { a: 0, h: 1 } };
 
   // Roj (pravidlo rasy): KAŽDÝ Hmyz +1/+1 za každú inú svoju kópiu
@@ -86,7 +90,8 @@
   L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
   const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
     stageNames: ["Jedovatá spóra", "Jedovatá spóra", "Jedovatá spóra"], // stageNames = art (spora_1.webp)
-    name: { sk: "Jedovatá spóra", cs: "Jedovatá spora", en: "Poison Spore" } };
+    names: N("Jedovatá spóra", "Jedovatá spora", "Poison Spore"),
+    name: N("Jedovatá spóra", "Jedovatá spora", "Poison Spore") };
   if (V.includes("hold4")) KUKLA.grow = { a: 4, h: 4 };
   if (V.includes("always")) KUKLA.growPlayed = { a: 2, h: 2 };
   if (V.includes("always1")) KUKLA.growPlayed = { a: 1, h: 1 };
@@ -108,18 +113,37 @@
   for (const d of [...DEFS, KUKLA]) { Cards.DEFS.push(d); Cards.byId[d.id] = d; }
 
   // Texty schopností (pracovné, SK = CS = EN tam, kde sa nechce prekladať).
-  const t = (sk, en) => ({ sk, cs: sk, en: en || sk });
+  const t = (sk, cs, en) => ({ sk, cs, en });
   Object.assign(L.cards.fx, {
-    cocoon: f => t(`Kukla do balíčka, alebo Kukla +${f.a}/+${f.h} navždy`, `Cocoon to deck, or Cocoon +${f.a}/+${f.h} forever`),
-    handGrowSwarm: () => t("Hmyz v ruke +X/+X navždy (X = Lienky v balíčku)", "Insects in hand +X/+X forever (X = Ladybugs in deck)"),
-    deckGrowSwarm: () => t("náhodný Hmyz v balíčku +X/+X navždy (X = Mravce)", "random Insect in deck +X/+X forever (X = Ants)"),
-    deckGrow: (f, m) => t(`náhodný Hmyz v balíčku +${f.a * m}/+${f.h * m} navždy`, `random Insect in deck +${f.a * m}/+${f.h * m} forever`),
-    growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`, `+${f.a * m}/+${f.h * m} per other Insect`),
-    buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)", "random other Insect +X/+X (X = Caterpillars)"),
-    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí", "summons the next Bee from your deck, it attacks at once"),
-    imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`, `Imprint +${f.a}/+${f.h} to all Bees`),
-    summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu (raz za boj)`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon (once per fight)`),
+    cocoon: f => t(`Kukla do balíčka, alebo Kukla +${f.a}/+${f.h} navždy`,
+      `Kukla do balíčku, nebo Kukla +${f.a}/+${f.h} navždy`,
+      `Cocoon into your deck, or Cocoon +${f.a}/+${f.h} forever`),
+    handGrowSwarm: () => t("Hmyz v ruke +X/+X navždy (X = Lienky v balíčku)",
+      "Hmyz v ruce +X/+X navždy (X = Berušky v balíčku)",
+      "Insects in hand +X/+X forever (X = Ladybugs in deck)"),
+    deckGrowSwarm: () => t("náhodný Hmyz v balíčku +X/+X navždy (X = Mravce)",
+      "náhodný Hmyz v balíčku +X/+X navždy (X = Mravenci)",
+      "random Insect in deck +X/+X forever (X = Ants)"),
+    growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`,
+      `+${f.a * m}/+${f.h * m} za každý další Hmyz na ploše`,
+      `+${f.a * m}/+${f.h * m} per other Insect on board`),
+    buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)",
+      "náhodný další Hmyz +X/+X (X = Housenky v balíčku)",
+      "random other Insect +X/+X (X = Caterpillars in deck)"),
+    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí",
+      "vyvolá další Včelku z balíčku, která hned zaútočí",
+      "summons the next Bee from your deck, it attacks at once"),
+    imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`,
+      `Pečeť +${f.a}/+${f.h} všem Včelkám`,
+      `Imprint +${f.a}/+${f.h} to all Bees`),
+    summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu (raz za boj)`,
+      `${Math.round(f.chance * 100)} % šance vyvolat tvou Kuklu (jednou za boj)`,
+      `${Math.round(f.chance * 100)}% chance to summon your Cocoon (once per fight)`),
   });
+
+  // Preložené meno (def.names) má prednosť pred stageNames.
+  const baseName = Cards.nameOf;
+  Cards.nameOf = (def, rank, lang) => def.names ? (def.names[lang] ?? def.names.sk) : baseName(def, rank, lang);
 
   // Pravidlá hmyzu na karte (pred schopnosťami): Roj, Žihadlo, Jed, Kukla.
   // opts.swarm = aktuálny bonus roja majiteľa (game.js) – ukáže „teraz +X/+Y".

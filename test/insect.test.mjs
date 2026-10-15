@@ -241,3 +241,14 @@ test("hmyz: Kukla zo šance pri smrti sa vyvolá najviac raz za boj", () => {
   assert.equal(ev.filter(e => e.type === "summon" && e.defId === "kukla").length, 1);
   assert.ok(!p.kuklaSummoned); // po boji sa limit nuluje – ďalší boj môže znova
 });
+
+test("hmyz: mená a texty sú preložené (SK/CS/EN)", () => {
+  const { C } = fresh(18);
+  assert.equal(C.nameOf(C.byId.I001, 1, "en"), "Caterpillar");
+  assert.equal(C.nameOf(C.byId.I009, 1, "cs"), "Kudlanka");
+  assert.equal(C.nameOf(C.byId.kukla, 1, "en"), "Cocoon");
+  assert.equal(C.nameOf(C.byId.spora, 1, "en"), "Poison Spore");
+  assert.equal(C.nameOf(C.byId.B001, 1, "en"), C.byId.B001.stageNames[0]); // ostatné rasy bez zmeny
+  assert.match(C.cardText(C.byId.I002, 1, "en", false, 0), /Bee from your deck/);
+  assert.match(C.cardText(C.byId.I002, 1, "cs", false, 0), /Včelku z balíčku/);
+});
