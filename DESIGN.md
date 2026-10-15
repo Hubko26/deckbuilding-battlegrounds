@@ -520,9 +520,9 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   dole a náhodný iný kamarát útočníka ich dostane; bez kamaráta útočník;
   bez stupňa, s Vichorom dvakrát), P005 Vyňuchaj (t3 3/4, Pri vyložení:
   z balíčka vytiahne Pohladkanie najvyššieho stupňa, bez pohladkania
-  náhodnú kartu – psí draw, stupeň = počet), P006 Zavýjanie (t4 4/7, Pred
+  náhodnú kartu – psí draw, stupeň = počet), P006 Zavýjanie (t5 4/7 – do 15. 10. 2026 t4, prisilné, Pred
   bojom: všetci Psíci +1/+1 za každého Psíka na ploche, aj sám; ×stupeň).
-- P007 (t4 5/6): Pečať +1/+1 Psíkom. P008 (t5 6/6): +1/+1 za každé
+- P007 (t4 5/6): Pečať +1/+1 Psíkom. P008 (t4 6/6, do 15. 10. 2026 t5): +1/+1 za každé
   Pohladkanie zahrané v hre (`p.petsCast` – **počet zoslaní**, Super = 1;
   body pohladkaní by dali 60+). Dočasné, bez stupňa (ako F010).
 - **P009 (t6 8/8) – Vodca svorky** (`kw packLeader`, pasívna v nákupnej

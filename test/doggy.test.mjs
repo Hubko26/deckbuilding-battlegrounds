@@ -293,7 +293,7 @@ test("bot (psíci): Pohladkanie hodí na najsilnejšieho Psíka; pohladkania nie
   assert.equal(B.cardScore(state, p, "minca", { raceFocus: 1 }), withPets);
 });
 
-test("cardPower (psíci): každá psia karta a Pohladkanie majú silu; P009 t6 a P008 t5 nad t1 telom", () => {
+test("cardPower (psíci): každá psia karta a Pohladkanie majú silu; P009 t6 a P008 t4 nad t1 telom", () => {
   const { B, C } = fresh(1);
   const power = id => B.cardPower(C.byId[id]).total;
   for (const d of C.DEFS.filter(x => x.race === "doggy")) assert.ok(power(d.id) > 0, d.id);
