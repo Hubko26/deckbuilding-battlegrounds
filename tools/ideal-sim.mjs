@@ -153,7 +153,7 @@ function playGame(ctx, seed, raceA, raceB, cfg) {
     const rec = { round: s.round };
     for (const pid of ["p1", "p2"]) {
       const p = s[pid];
-      rec[pid] = { sum: boardSum(p), n: p.board.length, tier: p.tier, hp: p.hp, board: cfg.verbose ? boardStr(p) : null };
+      rec[pid] = { sum: boardSum(p), n: p.board.length, tier: p.tier, hp: p.hp, board: cfg.verbose ? boardStr(p) : null, kukla: kuklaSize(p) };
     }
     const ev = E.doBattle(s);
     const dmg = ev.find(e => e.type === "heroDmg");
@@ -162,6 +162,20 @@ function playGame(ctx, seed, raceA, raceB, cfg) {
     rounds.push(rec);
   }
   return { state: s, rounds, winner: s.phase === "over" ? s.winner : "draw" };
+}
+
+// Kukla (Hmyz): veľkosť pred bojom v ktorejkoľvek zóne (inštancia má staty,
+// referencia v balíčku len pa/ph), null = hráč Kuklu nemá.
+function kuklaSize(p) {
+  for (const zone of ["board", "hand"]) {
+    const x = p[zone].find(c => c && c.defId === "kukla");
+    if (x) return { a: x.atk, h: x.hp };
+  }
+  for (const zone of ["deck", "discard"]) {
+    const c = p[zone].find(c => c.defId === "kukla");
+    if (c) { const d = ctx.Cards.byId.kukla; return { a: d.atk + (c.pa || 0), h: d.hp + (c.ph || 0) }; }
+  }
+  return null;
 }
 
 // Kópie karty vo všetkých zónach, zlatá = 9 kópií, strieborná = 3.
@@ -207,6 +221,7 @@ const Cards = ctx.Cards;
 // ---------- agregácie ----------
 const win = {};      // win[A][B] = { a, b, draw, rounds }
 const scale = {};    // scale[race][round] = { sum, n, tier, hp, count }
+const kuk = {};      // kuk[race][round] = { a, h, has, count } – Kukla (Hmyz)
 const dmgBy = {};    // dmgBy[race][bucket] = { dmg, n } – damage, ktorý rasa DALA
 const endOwned = {}; // endOwned[race][defId] = súčet vážených kópií
 const games = {};    // games[race] = počet odohraných hier (na priemer)
@@ -214,7 +229,7 @@ const winByLen = {}; // winByLen[race][bucket] = { w, n } – výhry podľa dĺ�
 const bucket = r => r <= 8 ? "1–8" : r <= 15 ? "9–15" : "16+";
 const BUCKETS = ["1–8", "9–15", "16+"];
 for (const r of races) {
-  win[r] = {}; scale[r] = {}; dmgBy[r] = {}; endOwned[r] = {}; games[r] = 0; winByLen[r] = {};
+  win[r] = {}; scale[r] = {}; kuk[r] = {}; dmgBy[r] = {}; endOwned[r] = {}; games[r] = 0; winByLen[r] = {};
   for (const b of BUCKETS) { dmgBy[r][b] = { dmg: 0, n: 0 }; winByLen[r][b] = { w: 0, n: 0 }; }
 }
 
@@ -224,6 +239,9 @@ function record(res, raceOf) {
       const race = raceOf[pid];
       const sc = (scale[race][rec.round] ||= { sum: 0, n: 0, tier: 0, hp: 0, count: 0 });
       sc.sum += rec[pid].sum; sc.n += rec[pid].n; sc.tier += rec[pid].tier; sc.hp += rec[pid].hp; sc.count++;
+      const kk = (kuk[race][rec.round] ||= { a: 0, h: 0, has: 0, count: 0 });
+      kk.count++;
+      if (rec[pid].kukla) { kk.a += rec[pid].kukla.a; kk.h += rec[pid].kukla.h; kk.has++; }
     }
     if (rec.dmgTo) {
       const dealer = rec.dmgTo === "p1" ? "p2" : "p1";
@@ -366,5 +384,18 @@ console.log("\n--- Karty na konci hry (priemer vážených kópií na hru: bronz
 for (const r of races) {
   const rows = Object.entries(endOwned[r]).map(([id, n]) => [id, n / games[r]]).sort((a, b) => b[1] - a[1]).slice(0, 8);
   console.log(short(r).padEnd(10) + rows.map(([id, v]) => `${id} ${v.toFixed(1)}`).join("  "));
+}
+const kukRaces = races.filter(r => Object.values(kuk[r]).some(k => k.has));
+if (kukRaces.length) {
+  const KR = [4, 6, 8, 10, 12, 14, 15, 16, 17, 18, 20];
+  console.log("\n--- Kukla (Hmyz): priemerná veľkosť pred bojom u hráčov, čo ju majú (% hráčov s Kuklou) ---");
+  console.log("kolo".padEnd(10) + KR.map(r => String(r).padStart(12)).join(""));
+  for (const r of kukRaces) {
+    console.log(short(r).padEnd(10) + KR.map(rd => {
+      const k = kuk[r][rd];
+      if (!k || !k.has) return "-".padStart(12);
+      return `${(k.a / k.has).toFixed(0)}/${(k.h / k.has).toFixed(0)} ${(k.has / k.count * 100).toFixed(0)}%`.padStart(12);
+    }).join(""));
+  }
 }
 console.log(`\n(${((Date.now() - t0) / 1000).toFixed(1)} s)`);

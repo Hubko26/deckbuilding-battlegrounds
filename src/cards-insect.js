@@ -57,14 +57,20 @@
       { power: { kw: "deathrattle", fx: { type: "summonFromDeck", n: 5 } } }),
   ];
   // Kukla: generovaná (nie je v obchode), jediná na hráča, Obranca.
+  // grow = rast nezahranej Kukly v ruke na konci ťahu, growPlayed = rast
+  // vyloženej. Sim (targeted, 50 HP): vyložená +0/+0 → hmyz 38 %, +0/+1 →
+  // 50 %, +1/+1 → 67 %, +2/+2 → 83 % – citlivý gombík.
   const KUKLA = { id: "kukla", tier: 1, race: R, stageNames: ["Kukla", "Kukla", "Kukla"], atk: 1, hp: 3,
-    taunt: true, noArt: true, emoji: "🪺", noEvolve: true, gen: true };
+    taunt: true, noArt: true, emoji: "🪺", noEvolve: true, gen: true, grow: { a: 2, h: 2 }, growPlayed: { a: 0, h: 1 } };
 
   // Roj (pravidlo rasy): KAŽDÝ Hmyz +1/+1 za každú inú svoju kópiu
   // v balíčku (všetky zóny). Húsenica to má priamo v definícii.
   // Varianty pre simuláciu (ideal-sim variant=…, čiarkou):
   //   tier – namiesto +1/+1 je to +T/+T za kópiu (T = tier karty)
   //   race – Húsenica rastie z celého roja: +1/+1 za každé 2 iné Hmyzy
+  //   hold4 – nezahraná Kukla +4/+4 (namiesto +2/+2)
+  //   always – vyložená Kukla rastie +2/+2 každý ťah (always1: +1/+1, still: +0/+0)
+  //   noCocoon – bez 25 % šance na Kuklu pri smrti (porovnanie)
   const V = (typeof EXP_VARIANT === "string" ? EXP_VARIANT : "").split(",");
   for (const d of DEFS) {
     if (d.id === "I001") continue;
@@ -75,6 +81,18 @@
   L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
   const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
     name: { sk: "Jedovatá spóra", cs: "Jedovatá spora", en: "Poison Spore" } };
+  if (V.includes("hold4")) KUKLA.grow = { a: 4, h: 4 };
+  if (V.includes("always")) KUKLA.growPlayed = { a: 2, h: 2 };
+  if (V.includes("always1")) KUKLA.growPlayed = { a: 1, h: 1 };
+  if (V.includes("still")) delete KUKLA.growPlayed;
+  // Pravidlo rasy: každý Hmyz (okrem Kukly) má Pri smrti 1/4 šancu vyvolať
+  // bojovú kópiu tvojej Kukly – druhá schopnosť (power2) vedľa vlastnej.
+  if (!V.includes("noCocoon")) {
+    for (const d of DEFS) {
+      const pw = { kw: "deathrattle", fx: { type: "summonKukla", chance: 0.25 } };
+      if (d.power) d.power2 = pw; else d.power = pw;
+    }
+  }
   if (V.includes("sporeTaunt")) SPORA.taunt = true;            // varianty spóry
   if (V.includes("spore2")) DEFS.find(d => d.id === "I009").power.fx.n = 2;
   Cards.TOKENS.push(SPORA);
@@ -93,6 +111,7 @@
     growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`, `+${f.a * m}/+${f.h * m} per other Insect`),
     buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)", "random other Insect +X/+X (X = Caterpillars)"),
     stingSwarm: f => t(`výboj ${f.n} za každý Hmyz na ploche`, `zap ${f.n} per Insect on board`),
+    summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon`),
     summonFromDeck: f => t(`vyloží až ${f.n} náhodných príšer z balíčka`, `summons up to ${f.n} random minions from your deck`),
   });
 })();

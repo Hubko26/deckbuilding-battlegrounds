@@ -81,11 +81,11 @@ test("hmyz: Húsenica vytvorí Kuklu, ďalšia ju zväčší; Kukla je 6. karta 
   assert.equal(p.hand.length, 6);
   const inst = p.hand.find(x => x.defId === "kukla");
   assert.deepEqual([inst.atk, inst.hp], [2, 4]);
-  // nezahraná Kukla na konci ťahu +2/+2 navždy
+  // nezahraná Kukla na konci ťahu +grow navždy, vyložená +growPlayed
   state.first = "p2"; // p1 je druhý – koniec ťahu ide do boja
   E.endShopTurn(state, "p1");
   const back = p.discard.find(c => c.defId === "kukla");
-  assert.deepEqual([back.pa, back.ph], [1 + E.KUKLA_GROW.a, 1 + E.KUKLA_GROW.h]);
+  assert.deepEqual([back.pa, back.ph], [1 + C.byId.kukla.grow.a, 1 + C.byId.kukla.grow.h]);
 });
 
 test("hmyz: Lienka – Hmyz v ruke +X/+X navždy (X = Lienky); Mravec Po nákupe rastie Hmyz v balíčku", () => {
@@ -114,7 +114,7 @@ test("hmyz: Kráľovná Pri smrti vyloží bojové kópie z balíčka, balíček
   const big = put("p2", "B003");
   Object.assign(big, { atk: 50, hp: 50, maxHp: 50 });
   const ev = E.doBattle(state);
-  const summons = ev.filter(e => e.type === "summon" && e.pid === "p1");
+  const summons = ev.filter(e => e.type === "summon" && e.pid === "p1" && e.defId !== "kukla"); // Kukla = 1/4 šanca pri smrti
   assert.equal(summons.length, 2);
   assert.ok(summons.some(e => e.defId === "I002" && e.atk === 5));
   assert.equal(p.deck.length + p.discard.length, 3); // 2 v balíčku + Kráľovná po boji
@@ -150,4 +150,31 @@ test("hmyz: Modlivka Pri smrti vyvolá Jedovatú spóru; Jed zabije veľké telo
   const ev2 = s2.E.doBattle(s2.state);
   assert.ok(!ev2.some(e => e.type === "poison"), "štít zastaví jed");
   assert.ok(sp.poison);
+});
+
+test("hmyz: Pri smrti 1/4 šanca vyvolať bojovú kópiu Kukly (s jej rastom)", () => {
+  const { state, E, C, put } = bare(12);
+  const p = state.p1;
+  assert.equal(C.byId.I004.power2 ? C.byId.I004.power2.fx.type : C.byId.I004.power.fx.type, "summonKukla");
+  assert.equal(C.byId.kukla.power, undefined);
+  p.deck.push({ defId: "kukla", rank: 1, pa: 5, ph: 5 });
+  const bug = put("p1", "I004");
+  Object.assign(bug, { atk: 0, hp: 1, maxHp: 1 });
+  const big = put("p2", "B003");
+  Object.assign(big, { atk: 1, hp: 99, maxHp: 99 });
+  state.rng = () => 0; // šanca vždy padne
+  const ev = E.doBattle(state);
+  const s = ev.find(e => e.type === "summon" && e.defId === "kukla");
+  assert.ok(s, "Kukla vyvolaná");
+  assert.deepEqual([s.atk, s.hp], [6, 8]);
+  assert.equal(p.deck.length + p.discard.length, 2); // Kukla v balíčku ostala jedna
+});
+
+test("hmyz: vyložená Kukla na konci ťahu rastie o growPlayed (navždy, pred bojom)", () => {
+  const { state, E, C, put } = bare(13);
+  state.active = "p1"; state.first = "p2";
+  const k = put("p1", "kukla");
+  const g = C.byId.kukla.growPlayed;
+  E.endShopTurn(state, "p1");
+  assert.deepEqual([k.atk, k.hp, k.pa, k.ph], [1 + g.a, 3 + g.h, g.a, g.h]);
 });

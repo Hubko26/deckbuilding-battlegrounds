@@ -156,9 +156,10 @@ const Engine = (() => {
   // +a/+h za každú kópiu karty `of` (alebo kartu rasy `race`); others = bez seba.
   // Kukla (KUKLA_ID): jediná na hráča, na začiatku ťahu sa VŽDY potiahne
   // navyše (6. karta) z balíčka/kôpky; nezahraná v ruke na konci ťahu rastie
-  // +KUKLA_GROW navždy. Húsenica (cocoon) ju vytvorí alebo zväčší.
+  // def.grow navždy (vyložená na ploche def.growPlayed, ak ho má). Húsenica
+  // (cocoon) ju vytvorí alebo zväčší; Hmyz pri smrti môže vyvolať jej kópiu
+  // (summonKukla).
   const KUKLA_ID = "kukla";
-  const KUKLA_GROW = { a: 2, h: 2 };
 
   function hasTrinket(state, pid, id) {
     const p = state[pid];
@@ -1951,11 +1952,19 @@ const Engine = (() => {
         if (pw.kw === "endTurn") applyShopFx(state, p, pw.fx, inst.rank, inst, events);
       }
     }
+    // Vyložená Kukla (Hmyz) rastie o def.growPlayed (ak ho má) – pred bojom.
+    const gp = Cards.byId[KUKLA_ID] && Cards.byId[KUKLA_ID].growPlayed;
+    for (const inst of gp ? p.board : []) {
+      if (inst.defId !== KUKLA_ID) continue;
+      growCard(inst, gp.a, gp.h, true);
+      events.push({ type: "buff", pid, uid: inst.uid, a: gp.a, h: gp.h });
+    }
     // Nezahraná Kukla (Hmyz) v ruke rastie navždy.
     for (const inst of p.hand) {
       if (inst.defId !== KUKLA_ID) continue;
-      growCard(inst, KUKLA_GROW.a, KUKLA_GROW.h, true);
-      events.push({ type: "buff", pid, uid: inst.uid, a: KUKLA_GROW.a, h: KUKLA_GROW.h });
+      const g = Cards.byId[KUKLA_ID].grow;
+      growCard(inst, g.a, g.h, true);
+      events.push({ type: "buff", pid, uid: inst.uid, a: g.a, h: g.h });
     }
     // Nezahrané karty z ruky do discard pile (jednorazové kúzla miznú).
     for (const inst of p.hand.splice(0)) {
@@ -2834,6 +2843,22 @@ const Engine = (() => {
         handleDeaths(state, sides, events);
       }
     },
+    // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
+    // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.
+    summonKukla({ state, sides, pid, self, fx, events }) {
+      if (state.rng() >= fx.chance) return;
+      const p = state[pid];
+      const alive = aliveOn(sides, pid);
+      if (alive.length >= BOARD_MAX) return;
+      const k = findKukla(p);
+      const inst = makeInst(state, KUKLA_ID, 1, p);
+      if (k) buff(inst, k.c.pa || 0, k.c.ph || 0);
+      const fb = fightBuffFor(state, p, Cards.byId[KUKLA_ID]);
+      if (fb && (fb.a || fb.h)) buff(inst, fb.a, fb.h);
+      inst.slot = freeSlot(alive, BOARD_MAX);
+      sides[pid].splice(sides[pid].indexOf(self) + 1, 0, inst);
+      events.push({ type: "summon", pid, uid: inst.uid, defId: KUKLA_ID, slot: inst.slot, rank: 1, atk: inst.atk, hp: inst.hp });
+    },
     // Kráľovná (Pri smrti): bojové kópie až n náhodných príšer z balíčka
     // a kôpky (po voľné miesto). Balíček sa nemení, kópie po boji zmiznú.
     summonFromDeck({ state, sides, pid, self, fx, events }) {
@@ -3015,7 +3040,7 @@ const Engine = (() => {
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
     TIER_MAX, RACE_CAP, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_FREE_RACES, SUPPORT_RACES, majorityRaces, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
-    handDraw, heroDmgCap, deckMin, cardCount, swarmBonus, copiesOwned, KUKLA_ID, KUKLA_GROW, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
+    handDraw, heroDmgCap, deckMin, cardCount, swarmBonus, copiesOwned, KUKLA_ID, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, raceOut, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,
