@@ -229,3 +229,15 @@ test("hmyz: vyvolaná Včielka zaútočí hneď – súper medzi útokmi roja ne
   // 3 Včielky útočia za sebou, prvý útok súpera až po nich (roj vymrel)
   assert.equal(attacks.slice(0, 3).map(e => e.aPid).join(","), "p1,p1,p1");
 });
+
+test("hmyz: Kukla zo šance pri smrti sa vyvolá najviac raz za hru", () => {
+  const { state, E, put } = bare(17);
+  const p = state.p1;
+  for (let i = 0; i < 3; i++) { const b = put("p1", "I004"); Object.assign(b, { atk: 0, hp: 1, maxHp: 1 }); }
+  const big = put("p2", "B003");
+  Object.assign(big, { atk: 1, hp: 99, maxHp: 99 });
+  state.rng = () => 0; // šanca vždy padne
+  const ev = E.doBattle(state);
+  assert.equal(ev.filter(e => e.type === "summon" && e.defId === "kukla").length, 1);
+  assert.ok(p.kuklaSummoned);
+});

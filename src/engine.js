@@ -2880,11 +2880,14 @@ const Engine = (() => {
     },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.
+    // Raz za hru (p.kuklaSummoned) – po vyvolaní už šanca nepadá.
     summonKukla({ state, sides, pid, self, fx, events }) {
-      if (state.rng() >= fx.chance) return;
       const p = state[pid];
+      if (p.kuklaSummoned) return;
+      if (state.rng() >= fx.chance) return;
       const alive = aliveOn(sides, pid);
       if (alive.length >= BOARD_MAX) return;
+      p.kuklaSummoned = true;
       const k = findKukla(p);
       const inst = makeInst(state, KUKLA_ID, 1, p);
       if (k) buff(inst, k.c.pa || 0, k.c.ph || 0);
