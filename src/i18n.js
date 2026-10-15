@@ -217,6 +217,20 @@ const L = {
   },
   play: { sk: "Hraj!", cs: "Hraj!", en: "Play!" },
   newGame: { sk: "Nová hra", cs: "Nová hra", en: "New game" },
+  // Pravidlo rasy pod doskou hráča (game.js renderRaceNote) – len rasy,
+  // ktoré majú pravidlo platné pre celú rasu, nie na jednej karte.
+  raceNote: {
+    insect: {
+      sk: "🐛 Roj: každý Hmyz +1/+1 za každú inú svoju kópiu v balíčku. Hmyz sa nevyvíja (evolve).",
+      cs: "🐛 Roj: každý Hmyz +1/+1 za každou další svou kopii v balíčku. Hmyz se nevyvíjí (evolve).",
+      en: "🐛 Swarm: every Insect gets +1/+1 for each other copy of itself you own. Insects don't evolve.",
+    },
+    ogre: {
+      sk: "👹 Backstab: keď Ogrovi nevyjde hod, všetci Ogri dostanú Pečať +1/+1 navždy.",
+      cs: "👹 Backstab: když Zlobrovi nevyjde hod, všichni Zlobři dostanou Pečeť +1/+1 navždy.",
+      en: "👹 Backstab: when an Ogre's roll goes wrong, all Ogres get Imprint +1/+1 forever.",
+    },
+  },
   // Experimentálna rasa Hmyz (src/cards-insect.js, engine opts.exp).
   insectToggle: {
     sk: "🐛 Hmyz (nová rasa na skúšku: roj bez evolve, Kukla)",

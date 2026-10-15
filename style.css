@@ -148,6 +148,12 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    výšky dosky – doladené podľa screenshotu, centroid zlata ťahá číslo hore. */
 .hero-plate.top .tier-shield { transform: translateY(1.6cqh); }
 .hero-plate.bottom .tier-shield { transform: translateY(.4cqh); }
+/* Pravidlo rasy, ktorú hráč hrá (game.js renderRaceNote) – pod doskou hráča. */
+.race-note {
+  position: absolute; left: 22%; width: 56%; top: 93.4%;
+  text-align: center; color: #fff; font-weight: 700; font-size: 1.75cqh; line-height: 1.25;
+  text-shadow: 0 1px 3px rgba(0,0,0,.75); pointer-events: none;
+}
 
 /* Rohové rámiky: balíček a kôpka. */
 .corner {
@@ -692,6 +698,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   }
 
   .hero-plate { left: 35.1%; width: 29.7%; grid-template-columns: 1fr 5cqw 1fr; font-size: 2.4cqh; }
+  .race-note { display: none; } /* nízka obrazovka na šírku: pod doskou nie je miesto */
   .hero-plate.top { top: 1.2%; height: 9.4%; }
   .hero-plate.bottom { top: 89.6%; height: 9.4%; }
   .hero-plate .tier-shield { font-size: 4cqh; }
@@ -762,6 +769,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .log { width: 98vw; font-size: .8rem; min-height: 1.2em; }
   .hero-plate { left: 21%; width: 58%; grid-template-columns: 1fr 12cqw 1fr; font-size: 1.9cqh; }
   .hero-plate.top { top: 2.4%; height: 5.6%; }
+  .race-note { top: 94.7%; left: 6%; width: 88%; font-size: 1.4cqh; } /* pod doskou hráča (2 riadky) */
   .hero-plate.bottom { top: 89%; height: 5.6%; }
   .hero-plate .tier-shield { font-size: 3cqh; }
   /* optický stred štítu v mobilnom obrázku: hore ~6.75 %, dole ~92 % výšky dosky */

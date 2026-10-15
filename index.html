@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=c1108a76">
+  <link rel="stylesheet" href="style.css?v=f1ffccfb">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -127,6 +127,8 @@
         <div class="board mine" id="myBoard"></div>
         <div class="hand" id="handEl"></div>
         <div class="hero-plate bottom" id="myHero"></div>
+        <!-- Pravidlo rasy, ktorú hráč hrá (Hmyz: roj, Ogri: backstab) – pod tierom. -->
+        <div class="race-note hidden" id="myRaceNote"></div>
       </div>
       <!-- Chat s Claudom (len Claude mód) – odpoveď príde bublinou -->
       <div id="chatRow" class="chat-row hidden">
@@ -191,17 +193,17 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=d196e32c"></script>
+  <script src="version.js?v=134452b3"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=a27b678f"></script>
+  <script src="src/i18n.js?v=fed652fd"></script>
   <script src="src/net.js?v=f8a1c39c"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=253c9890"></script>
-  <script src="src/cards-insect.js?v=04e82f01"></script>
+  <script src="src/cards-insect.js?v=96b20211"></script>
   <script src="src/engine.js?v=d9437297"></script>
   <script src="src/bot.js?v=c4ed0a0d"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=79db6db8"></script>
+  <script src="src/game.js?v=a6d609cb"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=24b5cf89"></script>

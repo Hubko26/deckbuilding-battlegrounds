@@ -1658,6 +1658,25 @@ function renderHero(el, p) {
   for (const b of el.querySelectorAll(".tk")) {
     b.addEventListener("click", e => { e.stopPropagation(); showTrinketInfo(b.dataset.id, off); });
   }
+  if (p.id === MY) renderRaceNote(p);
+}
+
+// Pravidlo rasy pod doskou hráča: rasa, ktorej má najviac kariet (aspoň
+// RACE_NOTE_MIN, všetky zóny) a ktorá má pravidlo pre celú rasu (L.raceNote).
+const RACE_NOTE_MIN = 3;
+function renderRaceNote(p) {
+  const el = $("myRaceNote");
+  if (!el) return;
+  const counts = {};
+  for (const c of [...p.deck, ...p.discard, ...p.hand, ...p.board]) {
+    const d = c && Cards.byId[c.defId];
+    if (d && d.race && !d.token) counts[d.race] = (counts[d.race] || 0) + 1;
+  }
+  const race = Object.keys(L.raceNote)
+    .filter(r => (counts[r] || 0) >= RACE_NOTE_MIN)
+    .sort((a, b) => counts[b] - counts[a])[0];
+  el.classList.toggle("hidden", !race);
+  el.textContent = race ? t(L.raceNote[race]) : "";
 }
 
 // Ťuk na ikonku trinketu: veľký medailón s menom a popisom (na mobile je

@@ -186,12 +186,14 @@
     if (def.race !== R) return out;
     const b = x => (html ? `<strong>${x}</strong>` : x);
     const parts = [];
-    for (const sw of [].concat(def.swarm || [])) {
-      // roj z inej karty (Kráľovná ← Včielky) sa pripojí k predošlému riadku
-      if (sw.also && parts.length) { parts[parts.length - 1] += ` ${sw.also[lang]}`; continue; }
+    // Roj za vlastné kópie je pravidlo rasy – vysvetlí ho riadok pod doskou
+    // hráča (L.raceNote), na kartu sa nepíše. Na karte len odlišný roj
+    // (Kráľovná: z celého hmyzu) s aktuálnym bonusom.
+    const special = [].concat(def.swarm || []).filter(sw => sw.of !== def.id);
+    for (const sw of special) {
       parts.push(`${b(X.swarm[lang])}: +${sw.a}/+${sw.h} ${(sw.of ? X.copy : X.race)[lang]}`);
     }
-    if (def.swarm && opts && opts.swarm && (opts.swarm.a || opts.swarm.h)) {
+    if (special.length && opts && opts.swarm && (opts.swarm.a || opts.swarm.h)) {
       parts[parts.length - 1] += ` (${X.now[lang]} +${opts.swarm.a}/+${opts.swarm.h})`;
     }
     if (def.thorns) parts.push(`${b(X.thorns[lang])}: ${X.thornsText[lang].replace("{p}", Math.round(def.thorns * 100))}`);
