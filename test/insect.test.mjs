@@ -252,3 +252,12 @@ test("hmyz: mená a texty sú preložené (SK/CS/EN)", () => {
   assert.match(C.cardText(C.byId.I002, 1, "en", false, 0), /Bee from your deck/);
   assert.match(C.cardText(C.byId.I002, 1, "cs", false, 0), /Včelku z balíčku/);
 });
+
+test("hmyz: Kráľovná má roj aj z Včielok (+1/+1 za každú Včielku a inú Kráľovnú)", () => {
+  const { state, E, C } = bare(19);
+  const p = state.p1;
+  p.deck.push({ defId: "I010", rank: 1 }, { defId: "I010", rank: 1 }, { defId: "I002", rank: 1 }, { defId: "I002", rank: 1 }, { defId: "I002", rank: 1 });
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I010) }, { a: 4, h: 4 }); // 1 iná Kráľovná + 3 Včielky
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I002) }, { a: 2, h: 2 }); // Včielky z Kráľovnej nič
+  assert.match(C.cardText(C.byId.I010, 1, "en", false, 0), /per other copy you own and per Bee/);
+});

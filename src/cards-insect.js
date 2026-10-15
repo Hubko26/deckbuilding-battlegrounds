@@ -62,6 +62,7 @@
     M("I009", 5, N("Modlivka", "Kudlanka", "Mantis"), "🦟", 6, 6,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "spora", n: 1 } } }),
     // t6 Kráľovná: Pri smrti Pečať +1/+1 všetkým Včielkam (aj budúcim).
+    // Roj aj z Včielok: +1/+1 za každú Včielku (nižšie).
     M("I010", 6, N("Kráľovná", "Královna", "Queen"), "👑", 7, 7,
       { power: { kw: "deathrattle", fx: { type: "imprintCard", of: "I002", a: 1, h: 1 } } }),
   ];
@@ -86,6 +87,10 @@
     const k = V.includes("tier") ? d.tier : 1;
     d.swarm = [].concat(d.swarm || [], { of: d.id, a: k, h: k, others: true });
   }
+  // Kráľovná: roj aj s Včielkami – +1/+1 za každú Včielku (k vlastným kópiám).
+  // `also` = doplnok textu k predošlému riadku roja (rovnaké +a/+h).
+  DEFS.find(d => d.id === "I010").swarm.push({ of: "I002", a: 1, h: 1,
+    also: N("a každú Včielku", "a každou Včelku", "and per Bee") });
   // Jedovatá spóra: token Modlivky – Jed (úder, ktorý zraní, zabije a umlčí).
   L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
   const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
@@ -168,6 +173,8 @@
     const b = x => (html ? `<strong>${x}</strong>` : x);
     const parts = [];
     for (const sw of [].concat(def.swarm || [])) {
+      // roj z inej karty (Kráľovná ← Včielky) sa pripojí k predošlému riadku
+      if (sw.also && parts.length) { parts[parts.length - 1] += ` ${sw.also[lang]}`; continue; }
       parts.push(`${b(X.swarm[lang])}: +${sw.a}/+${sw.h} ${(sw.of ? X.copy : X.race)[lang]}`);
     }
     if (def.swarm && opts && opts.swarm && (opts.swarm.a || opts.swarm.h)) {
