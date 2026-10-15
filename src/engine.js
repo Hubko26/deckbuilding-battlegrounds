@@ -321,6 +321,7 @@ const Engine = (() => {
       atk: def.atk * m, hp: def.hp * m, maxHp: def.hp * m,
       taunt: !!def.taunt,
     };
+    if (def.poison) inst.poison = true; // Jed (Hmyz – Jedovatá spóra)
     if (def.reborn) inst.revive = true; // Znovuzrodenie (U010): ako Fénixovo pierko
     // Permanentné rasové aury dostávajú AJ tokeny – kostíky s aurami
     // škálujú do late game (bez toho undead scaling zaostával).
@@ -2315,7 +2316,11 @@ const Engine = (() => {
       const ev = events.slice(n0).find(e => e.type === "fickle");
       return ev ? { n: out, lucky: ev.lucky } : null;
     };
+    const aHp0 = a.hp, dHp0 = d.hp;
     const fa = fk(a, dDmg), fd = fk(d, aDmg);
+    // Jed (Hmyz – Jedovatá spóra): úder, ktorý prešiel (nie štít), zabije.
+    poisonHit(d, dHp0, a, defender, events);
+    poisonHit(a, aHp0, d, attacker, events);
     if (fa) { atkEv.dDmg = fa.n; atkEv.aFickle = fa.lucky ? "lucky" : "bad"; }
     if (fd) { atkEv.aDmg = fd.n; atkEv.dFickle = fd.lucky ? "lucky" : "bad"; }
     pushHp(events, attacker, a);
@@ -2327,6 +2332,13 @@ const Engine = (() => {
     if (d.hp > 0) runAfterAttack(state, sides, attacker, a, d, events);
     handleDeaths(state, sides, events);
     return true;
+  }
+
+  // Jed: zranený cieľ (hp kleslo, ešte žije) padne. Strážca arény nie.
+  function poisonHit(target, hp0, from, pid, events) {
+    if (!from.poison || from.silenced || target.boss || target.hp <= 0 || target.hp >= hp0) return;
+    target.hp = 0;
+    events.push({ type: "poison", pid, uid: target.uid, from: from.uid });
   }
 
   // „Po údere" schopnosti útočníka (kw afterAttack) – zatiaľ len Aport.

@@ -119,3 +119,35 @@ test("hmyz: Kráľovná Pri smrti vyloží bojové kópie z balíčka, balíček
   assert.ok(summons.some(e => e.defId === "I002" && e.atk === 5));
   assert.equal(p.deck.length + p.discard.length, 3); // 2 v balíčku + Kráľovná po boji
 });
+
+test("hmyz: roj je pravidlo rasy – každý Hmyz +1/+1 za každú inú svoju kópiu", () => {
+  const { state, E, C, put } = bare(8);
+  const p = state.p1;
+  put("p1", "I007");
+  p.deck.push({ defId: "I007", rank: 1 }, { defId: "I007", rank: 1 }, { defId: "I002", rank: 1 });
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I007) }, { a: 2, h: 2 });
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I002) }, { a: 0, h: 0 });
+  // Roháč: +0/+1 za každý iný Hmyz + +1/+1 za každú inú svoju kópiu
+  p.deck.push({ defId: "I006", rank: 1 }, { defId: "I006", rank: 1 });
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I006) }, { a: 1, h: 6 });
+});
+
+test("hmyz: Modlivka Pri smrti vyvolá Jedovatú spóru; Jed zabije veľké telo, štít ho zastaví", () => {
+  const { state, E, put } = bare(9);
+  const m = put("p1", "I009");
+  Object.assign(m, { atk: 0, hp: 1, maxHp: 1 });
+  const big = put("p2", "B003");
+  Object.assign(big, { atk: 40, hp: 40, maxHp: 40 });
+  const ev = E.doBattle(state);
+  assert.ok(ev.some(e => e.type === "summon" && e.pid === "p1" && e.defId === "spora"));
+  assert.ok(ev.some(e => e.type === "poison" && e.pid === "p2" && e.uid === big.uid));
+  assert.ok(ev.some(e => e.type === "die" && e.pid === "p2" && e.uid === big.uid));
+
+  const s2 = bare(10);
+  const sp = s2.put("p1", "spora");
+  const shielded = s2.put("p2", "B003");
+  Object.assign(shielded, { atk: 1, hp: 40, maxHp: 40, shield: true }); // spóra padne na prvý výmenný úder
+  const ev2 = s2.E.doBattle(s2.state);
+  assert.ok(!ev2.some(e => e.type === "poison"), "štít zastaví jed");
+  assert.ok(sp.poison);
+});

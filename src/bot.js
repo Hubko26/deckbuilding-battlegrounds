@@ -813,7 +813,7 @@ const Bot = (() => {
     const t = Cards.byId[id];
     if (!t) return 0;
     const aura = (p && t.race && p.raceBuffs && p.raceBuffs[t.race]) || { a: 0, h: 0 };
-    return t.atk + t.hp + aura.a + aura.h + (t.taunt ? 1 : 0) + (t.power ? powerValue(t.power, 1, p) : 0);
+    return t.atk + t.hp + aura.a + aura.h + (t.taunt ? 1 : 0) + (t.poison ? 8 : 0) + (t.power ? powerValue(t.power, 1, p) : 0); // Jed ≈ zabitá veľká príšera
   }
   // rank: stupeň karty – efekty sa násobia (Pečať striebro +2/+2), vyvolanie
   // dáva o 1 token viac za stupeň (n + rank − 1), nie väčšie tokeny.

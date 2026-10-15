@@ -47,10 +47,10 @@
     // t5 Osa: Pred bojom výboj 2 za každý Hmyz na ploche (aj seba).
     M("I008", 5, "Osa", "🪰", 5, 4,
       { power: { kw: "startFight", fx: { type: "stingSwarm", n: 2 } } }),
-    // t5 Modlivka: Pri vyložení Pečať +1/+1 Hmyzu. Bez evolve, ale každá
-    // kópia a každé vyloženie Pečať zopakuje.
+    // t5 Modlivka: Pri smrti vyvolá Jedovatú spóru (1/1, Jed – zabije, čo
+    // zraní). Counter na veľké telá (Zvieratá, ogri, rasy s veľkým rastom).
     M("I009", 5, "Modlivka", "🦟", 6, 6,
-      { power: { kw: "battlecry", fx: { type: "futureRace", race: R, a: 1, h: 1 } } }),
+      { power: { kw: "deathrattle", fx: { type: "summon", token: "spora", n: 1 } } }),
     // t6 Kráľovná: Pri smrti vyloží bojové kópie až 5 náhodných príšer
     // z balíčka (po voľné miesto).
     M("I010", 6, "Kráľovná", "👑", 7, 7,
@@ -60,16 +60,25 @@
   const KUKLA = { id: "kukla", tier: 1, race: R, stageNames: ["Kukla", "Kukla", "Kukla"], atk: 1, hp: 3,
     taunt: true, noArt: true, emoji: "🪺", noEvolve: true, gen: true };
 
+  // Roj (pravidlo rasy): KAŽDÝ Hmyz +1/+1 za každú inú svoju kópiu
+  // v balíčku (všetky zóny). Húsenica to má priamo v definícii.
   // Varianty pre simuláciu (ideal-sim variant=…, čiarkou):
-  //   copy – KAŽDÝ Hmyz +1/+1 za každú inú svoju kópiu (aj t2–t6)
-  //   tier – KAŽDÝ Hmyz +T/+T za každú inú svoju kópiu (T = tier karty)
+  //   tier – namiesto +1/+1 je to +T/+T za kópiu (T = tier karty)
   //   race – Húsenica rastie z celého roja: +1/+1 za každé 2 iné Hmyzy
   const V = (typeof EXP_VARIANT === "string" ? EXP_VARIANT : "").split(",");
   for (const d of DEFS) {
     if (d.id === "I001") continue;
-    const k = V.includes("tier") ? d.tier : V.includes("copy") ? 1 : 0;
-    if (k) d.swarm = [].concat(d.swarm || [], { of: d.id, a: k, h: k, others: true });
+    const k = V.includes("tier") ? d.tier : 1;
+    d.swarm = [].concat(d.swarm || [], { of: d.id, a: k, h: k, others: true });
   }
+  // Jedovatá spóra: token Modlivky – Jed (úder, ktorý zraní, zabije).
+  L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
+  const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
+    name: { sk: "Jedovatá spóra", cs: "Jedovatá spora", en: "Poison Spore" } };
+  if (V.includes("sporeTaunt")) SPORA.taunt = true;            // varianty spóry
+  if (V.includes("spore2")) DEFS.find(d => d.id === "I009").power.fx.n = 2;
+  Cards.TOKENS.push(SPORA);
+  Cards.byId.spora = SPORA;
   if (V.includes("race")) DEFS[0].swarm = { race: R, a: 1, h: 1, others: true, per: 2 };
 
   for (const d of [...DEFS, KUKLA]) { Cards.DEFS.push(d); Cards.byId[d.id] = d; }
