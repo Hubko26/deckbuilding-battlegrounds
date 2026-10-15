@@ -1880,6 +1880,18 @@ const Engine = (() => {
         events.push({ type: "buff", pid: p.id, uid: inst.uid, a: fx.a * x, h: fx.h * x });
       }
     },
+    // Svätojánska muška (Pri vyložení, cielené): vybraný Hmyz na ploche
+    // +X·a/+X·h NAVŽDY, X = kópie karty fx.of (Húsenice), min. 1. Cieľ mimo
+    // Hmyzu / bez cieľa = najsilnejší iný Hmyz na ploche.
+    growTargetSwarm({ p, fx, self, target, events }) {
+      const ins = x => x !== self && Cards.byId[x.defId].race === "insect" && !Cards.byId[x.defId].token;
+      let t = target && p.board.includes(target) && ins(target) ? target : null;
+      if (!t) t = p.board.filter(ins).sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0];
+      if (!t) return;
+      const x = Math.max(1, copiesOwned(p, fx.of));
+      growCard(t, fx.a * x, fx.h * x, true);
+      events.push({ type: "buff", pid: p.id, uid: t.uid, a: fx.a * x, h: fx.h * x });
+    },
     // Mravec (Po nákupe): náhodný Hmyz v balíčku/kôpke +X·a/+X·h navždy,
     // X = kópie karty fx.of.
     deckGrowSwarm({ state, p, fx, events }) {
@@ -2884,14 +2896,6 @@ const Engine = (() => {
     growPerRace({ state, sides, pid, self, fx, m, events }) {
       const n = aliveOn(sides, pid).filter(f => f !== self && isRace(state, pid, Cards.byId[f.defId], fx.race)).length;
       if (n) buffWithEvent(self, pid, fx.a * m * n, fx.h * m * n, events);
-    },
-    // Svätojánska muška (Pred bojom): náhodný iný živý Hmyz +X·a/+X·h,
-    // X = kópie karty fx.of (Húsenice) v balíčku.
-    buffRandomSwarm({ state, sides, pid, self, fx, events }) {
-      const cands = aliveOn(sides, pid).filter(f => f !== self && Cards.byId[f.defId].race === "insect");
-      const x = copiesOwned(state[pid], fx.of);
-      if (!cands.length || !x) return;
-      buffWithEvent(pick(cands, state.rng), pid, fx.a * x, fx.h * x, events);
     },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.

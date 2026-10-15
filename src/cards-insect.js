@@ -43,9 +43,11 @@
     // t2 Kobylka: Pred bojom +1/+1 za každý iný Hmyz na ploche.
     M("I004", 2, N("Kobylka", "Kobylka", "Grasshopper"), "🦗", 3, 2,
       { power: { kw: "startFight", fx: { type: "growPerRace", race: R, a: 1, h: 1 } } }),
-    // t3 Svätojánska muška: Pred bojom náhodný iný Hmyz +X/+X, X = Húsenice.
+    // t3 Svätojánska muška: Pri vyložení (cielené ako draci) vybraný Hmyz na
+    // ploche +X/+X NAVŽDY, X = Húsenice v balíčku (min. 1). Jednorazový ťah –
+    // vylož, potom odhoď (príde znova cyklom balíčka).
     M("I005", 3, N("Svätojánska muška", "Světluška", "Firefly"), "✨", 3, 3,
-      { power: { kw: "startFight", fx: { type: "buffRandomSwarm", of: "I001", a: 1, h: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "growTargetSwarm", of: "I001", a: 1, h: 1 } } }),
     // t3 Roháč: Obranca, Tŕne – útočník dostane navyše 50 % zranenia, ktoré
     // Roháčovi spôsobil. (Pôvodne +0/+1 za každý Hmyz v balíčku – na t3
     // prisilné: 4/22 Obranca v neskorej hre.)
@@ -133,9 +135,9 @@
     growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`,
       `+${f.a * m}/+${f.h * m} za každý další Hmyz na ploše`,
       `+${f.a * m}/+${f.h * m} per other Insect on board`),
-    buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)",
-      "náhodný další Hmyz +X/+X (X = Housenky v balíčku)",
-      "random other Insect +X/+X (X = Caterpillars in deck)"),
+    growTargetSwarm: () => t("vybraný Hmyz +X/+X navždy (X = Húsenice v balíčku, aspoň 1)",
+      "vybraný Hmyz +X/+X navždy (X = Housenky v balíčku, aspoň 1)",
+      "chosen Insect +X/+X forever (X = Caterpillars in deck, at least 1)"),
     summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí",
       "vyvolá další Včelku z balíčku, která hned zaútočí",
       "summons the next Bee from your deck, it attacks at once"),

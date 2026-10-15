@@ -289,3 +289,20 @@ test("hmyz: Roháč – Tŕne vrátia útočníkovi navyše 50 % spôsobeného z
   const firstHp = ev.find(e => e.type === "hp" && e.uid === ogre.uid);
   assert.equal(firstHp.hp, 40 - 2 - 3); // vlastný úder Roháča 2 + Tŕne 3
 });
+
+test("hmyz: Svätojánska muška – Pri vyložení vybraný Hmyz +X/+X navždy (X = Húsenice, min. 1)", () => {
+  const { state, E, put } = bare(22);
+  const p = state.p1;
+  state.active = "p1";
+  const bee = put("p1", "I002");
+  const dog = put("p1", "P001");
+  p.deck.push({ defId: "I001", rank: 1 }, { defId: "I001", rank: 1 }, { defId: "I001", rank: 1 });
+  put("p1", "I005", "hand");
+  E.playMinion(state, "p1", 0, dog.uid); // cieľ mimo Hmyzu → najsilnejší Hmyz
+  assert.deepEqual([bee.atk, bee.hp, bee.pa, bee.ph], [5, 4, 3, 3]);
+  assert.equal(dog.atk, 2);
+  p.deck.length = 0;
+  put("p1", "I005", "hand");
+  E.playMinion(state, "p1", 0, bee.uid);
+  assert.equal(bee.pa, 4); // bez Húseníc aspoň +1
+});

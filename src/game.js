@@ -2183,7 +2183,7 @@ function markZones(src, on) {
 }
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
-const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyAbility", "replayBattlecry", "buffOne"]);
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyAbility", "replayBattlecry", "buffOne", "growTargetSwarm"]);
 // Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
 const TARGETED_SPELL = new Set(["buffTarget", "petBuff", "copyToDeck", "transform", "swapDeck"]);
 

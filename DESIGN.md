@@ -1126,7 +1126,9 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
   Včielky zrýchlene (`fastAnim`).
 - I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
 - I004 Kobylka (t2, 3/2): Pred bojom +1/+1 za každý iný Hmyz na ploche.
-- I005 Svätojánska muška (t3, 3/3): Pred bojom náhodný iný Hmyz +X/+X (X = Húsenice).
+- I005 Svätojánska muška (t3, 3/3): Pri vyložení (cielené ako draci)
+  vybraný Hmyz na ploche +X/+X **navždy** (X = Húsenice, aspoň 1) –
+  jednorazový ťah, potom odhodiť (bot recykluje).
 - I006 Roháč (t3, 2/6, Obranca): **Tŕne** – kto ho napadne, dostane navyše
   50 % zranenia, ktoré Roháčovi spôsobil (zaokrúhlené hore; štít = 0, len pri
   obrane). Pôvodný rast +0/+1 za každý Hmyz v balíčku bol na t3 prisilný.

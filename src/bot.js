@@ -286,7 +286,7 @@ const Bot = (() => {
   const RACE_TARGETED = new Set(["buffRaceOf", "futureRaceOf", "discoverRace"]);
   function isBattlecryBuffer(defId) {
     return Cards.powersOf(Cards.byId[defId]).some(pw => pw.kw === "battlecry" &&
-      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "replayBattlecry", "replayAfterSpell"].includes(pw.fx.type) ||
+      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "growTargetSwarm", "futureRace", "replayBattlecry", "replayAfterSpell"].includes(pw.fx.type) ||
         RACE_TARGETED.has(pw.fx.type)));
   }
 
@@ -307,6 +307,10 @@ const Bot = (() => {
       return (mine.length ? strongest(mine) : strongest(others)).uid;
     }
     if (pw.fx.type === "buffOne") return strongest(others).uid; // stat buff na najsilnejšie telo
+    if (pw.fx.type === "growTargetSwarm") { // Svätojánska muška: najsilnejší Hmyz (rast navždy)
+      const ins = others.filter(x => Cards.byId[x.defId].race === "insect");
+      return ins.length ? strongest(ins).uid : undefined;
+    }
     if (pw.fx.type === "replayBattlecry") {
       // najcennejšie Pri vyložení na ploche (sila schopnosti × stupeň)
       const cands = others.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(q => q.kw === "battlecry" && q.fx.type !== "replayBattlecry"));
@@ -633,7 +637,8 @@ const Bot = (() => {
   //    predaj), ak je vybitá alebo slabšia než nová, a vylož;
   //  - v ruke len telo → vymeň ho za najslabšiu VYBITÚ príšerku, ak je silnejšie.
   const RECYCLE_FX = new Set(["draw", "addSpell", "addPet", "fetchPet", "discoverRace", "dmgBoost",
-    "futureRace", "futureRaceOf", "shrinkEnemy", "summonCharge", "buffRaceOf", "buffOne", "replayBattlecry", "replayAfterSpell"]);
+    "futureRace", "futureRaceOf", "shrinkEnemy", "summonCharge", "buffRaceOf", "buffOne", "replayBattlecry", "replayAfterSpell",
+    "growTargetSwarm", "cocoon", "handGrowSwarm"]); // Hmyz: rast navždy – telo potom môže ísť
   const recyclable = inst => !Cards.byId[inst.defId].token &&
     Cards.powersOf(Cards.byId[inst.defId]).some(pw => pw.kw === "battlecry" && RECYCLE_FX.has(pw.fx.type));
   function recycleBattlecries(state, p, push) {
@@ -890,7 +895,7 @@ const Bot = (() => {
       case "deckGrowSwarm": return ab * swarmN(p, f.of) * PW_HORIZON / 2;
       case "deckGrow": return ab * PW_HORIZON / 2;
       case "growPerRace": return ab * (PW_BOARD - 1);
-      case "buffRandomSwarm": return ab * swarmN(p, f.of);
+      case "growTargetSwarm": return ab * swarmN(p, f.of) * PW_HORIZON / 2; // rast navždy, battlecry
       case "summonDeckCopy": return swarmN(p, f.of) * 3;      // každá Včielka v balíčku zaútočí
       case "imprintCard": return ab * swarmN(p, f.of) * PW_PERM;
       case "summonKukla": return f.chance * 10;                 // ~kópia Kukly (8–15 statov) raz za 4 smrti
