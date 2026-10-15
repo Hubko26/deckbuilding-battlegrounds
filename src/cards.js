@@ -298,14 +298,14 @@ const Cards = (() => {
     M("P005", 3, "doggy", ["Snifflecap", "Trailwhisker", "Grand Scentmaster"], 4, 5,
       { power: { kw: "battlecry", fx: { type: "fetchPet", n: 1, grow: 1 } } }),
     // P006 Zavýjanie: všetci Psíci +1/+1 za každého Psíka na ploche (aj seba).
-    // 15. 10. 2026 výmena tierov s P008: Zavýjanie bolo na t4 prisilné → t5.
+    // 15. 10. 2026: Zavýjanie bolo na t4 prisilné → t5 (vedľa P008).
     M("P006", 5, "doggy", ["Snowblink", "Aurorawoof", "Froststar Shaman"], 4, 7,
       { power: { kw: "startFight", fx: { type: "howl", a: 1, h: 1 } } }),
     M("P007", 4, "doggy", ["Sunnytail", "Kindheart", "Dawn Shepherd"], 5, 6,
       { power: { kw: "battlecry", fx: { type: "futureRace", race: "doggy", a: 1, h: 1 } } }),
     // P008: +1/+1 za každé zahrané Pohladkanie (počet zoslaní – po spojení
     // je to 15–25 za hru; body pohladkaní by dali 60+).
-    M("P008", 4, "doggy", ["Spotpop", "Emberdot", "Grand Firemaster"], 6, 6,
+    M("P008", 5, "doggy", ["Spotpop", "Emberdot", "Grand Firemaster"], 6, 6,
       { power: { kw: "battlecry", fx: { type: "petScale", a: 1, h: 1 } } }),
     // P009 (t6): Vodca svorky (kw packLeader, pasívna v nákupnej fáze) – kým
     // je na ploche, každé Pohladkanie pohladká všetkých tvojich Psíkov

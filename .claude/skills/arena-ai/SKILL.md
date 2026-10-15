@@ -244,7 +244,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     PRVÉ zoslané Pohladkanie v kole dotiahne kartu (ďalšie už nie) – hraj
     ho skoro v ťahu (nová karta môže byť príšerka na plochu).
     P005 (4/5) Vyňuchaj = tutor pohladkania (najvyšší stupeň z balíčka) a za
-    nájdené +1/+1 navždy sebe, P008 (t4)
+    nájdené +1/+1 navždy sebe, P008 (t5)
     = +1/+1 za každé ZOSLANÉ pohladkanie (počet, nie body), P007 (t4) Pečať
     Psíkom, P006 (t5) Zavýjanie = +1/+1 Psíkom za každého Psíka na ploche (plná
     plocha psov = +5/+5 každému). Triky: P003 Ocikaj (náhodný súper má
@@ -407,7 +407,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
   vlastného swarmu. Ako splash bez generátorov je ogre stále len telo.
 - **Doggy**: P001/P002 (t1 generátory – vykladaj každé kolo), P005 (t3
   tutor), P003 (t2 Ocikaj), P004 (t2 Pohladkania z prežitých úderov), P007 (t4 Pečať), P006
-  (t5 Zavýjanie pri plnej psej ploche), P008 (t4, vykladaj až keď máš 10+
+  (t5 Zavýjanie pri plnej psej ploche), P008 (t5, vykladaj až keď máš 10+
   zoslaní), P009 (t6, vpravo). Každé Pohladkanie z ruky hneď na
   najsilnejšieho Psíka na ploche; nikdy ho nepredávaj (0 zlata).
 - **Draci**: **D004 (discover karty rasy cieľa) je VŽDY, absolútne vždy,
