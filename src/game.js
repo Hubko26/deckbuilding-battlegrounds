@@ -237,6 +237,9 @@ function doAction(name, ...args) {
 const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
 const ANIM = REDUCED ? 0.5 : 1;
 const sleep = ms => new Promise(r => setTimeout(r, ms * ANIM));
+// Zrýchlená animácia kariet s def.fastAnim (Včielky – reťaz celého roja).
+const FAST_ANIM = 0.3;
+const fastAnim = el => !!(el && Cards.byId[el.dataset.defid] && Cards.byId[el.dataset.defid].fastAnim);
 
 // ---------- Statické texty ----------
 function applyI18n() {
@@ -877,14 +880,15 @@ async function runBattle() {
       case "attack": {
         const a = cardById(ev.aUid), d = cardById(ev.dUid);
         if (a && d) {
+          const k = fastAnim(a) ? FAST_ANIM : 1; // roj Včielok (Hmyz) – rýchlo
           // Útočník priletí pred obrancu a zrazia sa.
           const ra = a.getBoundingClientRect(), rd = d.getBoundingClientRect();
           const dx = (rd.left + rd.width / 2) - (ra.left + ra.width / 2);
           const dy = (rd.top + rd.height / 2) - (ra.top + ra.height / 2);
           a.style.zIndex = "20";
-          a.style.transition = "transform .35s ease-in";
+          a.style.transition = `transform ${0.35 * k}s ease-in`;
           a.style.transform = `translate(${dx * 0.88}px, ${dy * 0.88}px) scale(1.08)`;
-          await sleep(370);
+          await sleep(370 * k);
           Sfx.hit();
           d.classList.add("hit");
           impactRing(d, "#ff6b6b");
@@ -897,10 +901,10 @@ async function runBattle() {
           // Divoký úder (O009): hodené číslo aj do logu – deti vidia, čo padlo.
           if (ev.aWild) log(`${t(L.wildMsg)}: ${ev.aDmg}`);
           if (ev.dWild) log(`${t(L.wildMsg)}: ${ev.dDmg}`);
-          await sleep(480);
-          a.style.transition = "transform .25s ease-out";
+          await sleep(480 * k);
+          a.style.transition = `transform ${0.25 * k}s ease-out`;
           a.style.transform = "";
-          await sleep(300);
+          await sleep(300 * k);
           d.classList.remove("hit");
           a.style.zIndex = "";
           a.style.transition = "";
@@ -1176,7 +1180,7 @@ async function runBattle() {
           // mouseleave po remove() nepríde – zatvor preview padlej karty ručne.
           if (previewEl && previewEl._srcCard === el) hidePreview();
           spawnParticles(el, { n: 10, color: "#868e96", emoji: "💨", spread: 55 });
-          el.classList.add("dying"); await sleep(500); el.remove();
+          el.classList.add("dying"); await sleep(fastAnim(el) ? 500 * FAST_ANIM : 500); el.remove();
         }
         break;
       }
@@ -1193,7 +1197,7 @@ async function runBattle() {
         Sfx.summon();
         impactRing(el, "#4dabf7");
         spawnParticles(el, { n: 8, color: "#4dabf7", emoji: "✨", spread: 50 });
-        await sleep(450);
+        await sleep(def.fastAnim ? 450 * FAST_ANIM : 450);
         break;
       }
       case "overflow": {

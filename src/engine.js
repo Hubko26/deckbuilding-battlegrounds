@@ -332,6 +332,9 @@ const Engine = (() => {
       inst.hp += aura.h;
       inst.maxHp += aura.h;
     }
+    // Pečať jednej karty (Hmyz – Kráľovná: všetky Včielky): p.cardBuffs[defId].
+    const cb = p && p.cardBuffs && p.cardBuffs[defId];
+    if (cb) buff(inst, cb.a, cb.h);
     return inst;
   }
 
@@ -2059,6 +2062,8 @@ const Engine = (() => {
     }
   }
 
+  // Včielky už vyvolané v danom boji (summonDeckCopy) – kľúč = objekt sides.
+  const summonedRefs = new WeakMap();
   const copyBoard = p => p.board.map(x => withSwarm(p, { ...x })); // roj (Hmyz) len na bojovú kópiu
 
   // Večný strážca / Zadný vietor (trinkety): príšerka úplne vľavo (najnižší
@@ -2339,6 +2344,12 @@ const Engine = (() => {
     // obrancu ide kamarátovi útočníka. Pred handleDeaths – smrti zo zásahu sa
     // riešia až po ňom (obranca, čo padol, už nemá čo ukradnúť: hp <= 0).
     if (d.hp > 0) runAfterAttack(state, sides, attacker, a, d, events);
+    // Žihadlo (Hmyz – Včielka, def.diesOnAttack): po vlastnom útoku vždy padne.
+    if (a.hp > 0 && !a.silenced && Cards.byId[a.defId].diesOnAttack) {
+      a.hp = 0;
+      events.push({ type: "sting", pid: attacker, uid: a.uid });
+      pushHp(events, attacker, a);
+    }
     handleDeaths(state, sides, events);
     return true;
   }
@@ -2837,17 +2848,6 @@ const Engine = (() => {
       if (!cands.length || !x) return;
       buffWithEvent(pick(cands, state.rng), pid, fx.a * x, fx.h * x, events);
     },
-    // Osa (Pred bojom): toľko výbojov po n, koľko je živého Hmyzu na ploche (aj Osa).
-    stingSwarm({ state, sides, pid, self, fx, events }) {
-      const foe = other(pid);
-      const hits = aliveOn(sides, pid).filter(f => Cards.byId[f.defId].race === "insect").length;
-      for (let i = 0; i < hits; i++) {
-        const enemies = aliveOn(sides, foe);
-        if (!enemies.length) break;
-        powerHit(state, sides, pick(enemies, state.rng), foe, fx.n + state[pid].dmgBoost, self.uid, events);
-        handleDeaths(state, sides, events);
-      }
-    },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.
     summonKukla({ state, sides, pid, self, fx, events }) {
@@ -2864,26 +2864,36 @@ const Engine = (() => {
       sides[pid].splice(sides[pid].indexOf(self) + 1, 0, inst);
       events.push({ type: "summon", pid, uid: inst.uid, defId: KUKLA_ID, slot: inst.slot, rank: 1, atk: inst.atk, hp: inst.hp });
     },
-    // Kráľovná (Pri smrti): bojové kópie až n náhodných príšer z balíčka
-    // a kôpky (po voľné miesto). Balíček sa nemení, kópie po boji zmiznú.
-    summonFromDeck({ state, sides, pid, self, fx, events }) {
+    // Včielka (Pri smrti): bojová kópia ĎALŠEJ karty fx.of z balíčka/kôpky,
+    // ktorá v tomto boji ešte nebola (každá kópia raz) – reťaz, kým nezaútočí
+    // celý roj. Kópia nesie svoj rast (pa/ph), Pečate a roj.
+    summonDeckCopy({ state, sides, pid, self, fx, events }) {
       const p = state[pid];
-      const board = sides[pid];
-      const refs = shuffle([...p.deck, ...p.discard].filter(c => !Cards.byId[c.defId].spell), state.rng);
-      let idx = board.indexOf(self);
-      for (let i = 0; i < fx.n && i < refs.length; i++) {
-        const alive = aliveOn(sides, pid);
-        if (alive.length >= BOARD_MAX) break;
-        const c = refs[i];
-        const inst = makeInst(state, c.defId, c.rank, p);
-        if (c.pa || c.ph) buff(inst, c.pa || 0, c.ph || 0);
-        withSwarm(p, inst);
-        const fb = fightBuffFor(state, p, Cards.byId[c.defId]);
-        if (fb && (fb.a || fb.h)) buff(inst, fb.a, fb.h);
-        inst.slot = freeSlot(alive, BOARD_MAX);
-        board.splice(++idx, 0, inst);
-        events.push({ type: "summon", pid, uid: inst.uid, defId: c.defId, slot: inst.slot, rank: inst.rank, atk: inst.atk, hp: inst.hp });
-      }
+      const alive = aliveOn(sides, pid);
+      if (alive.length >= BOARD_MAX) return;
+      let used = summonedRefs.get(sides);
+      if (!used) summonedRefs.set(sides, used = new Set());
+      const c = [...p.deck, ...p.discard].find(x => x.defId === fx.of && !used.has(x));
+      if (!c) return;
+      used.add(c);
+      const inst = makeInst(state, c.defId, c.rank, p);
+      if (c.pa || c.ph) buff(inst, c.pa || 0, c.ph || 0);
+      withSwarm(p, inst);
+      const fb = fightBuffFor(state, p, Cards.byId[c.defId]);
+      if (fb && (fb.a || fb.h)) buff(inst, fb.a, fb.h);
+      inst.slot = freeSlot(alive, BOARD_MAX);
+      sides[pid].splice(sides[pid].indexOf(self) + 1, 0, inst);
+      events.push({ type: "summon", pid, uid: inst.uid, defId: c.defId, slot: inst.slot, rank: inst.rank, atk: inst.atk, hp: inst.hp });
+    },
+    // Kráľovná (Pri smrti): Pečať +a/+h všetkým kartám fx.of (Včielkam) –
+    // aj budúcim (p.cardBuffs v makeInst); živé v boji hneď.
+    imprintCard({ state, sides, pid, fx, events }) {
+      const p = state[pid];
+      p.cardBuffs = p.cardBuffs || {};
+      const cb = p.cardBuffs[fx.of] || (p.cardBuffs[fx.of] = { a: 0, h: 0 });
+      cb.a += fx.a; cb.h += fx.h;
+      buffAlive(sides, pid, f => f.defId === fx.of, fx.a, fx.h, events);
+      events.push({ type: "cardImprint", pid, defId: fx.of, a: fx.a, h: fx.h });
     },
   };
 

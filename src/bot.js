@@ -887,9 +887,9 @@ const Bot = (() => {
       case "deckGrow": return ab * PW_HORIZON / 2;
       case "growPerRace": return ab * (PW_BOARD - 1);
       case "buffRandomSwarm": return ab * swarmN(p, f.of);
-      case "stingSwarm": return f.n * PW_BOARD * 1.5;
+      case "summonDeckCopy": return swarmN(p, f.of) * 3;      // každá Včielka v balíčku zaútočí
+      case "imprintCard": return ab * swarmN(p, f.of) * PW_PERM;
       case "summonKukla": return f.chance * 10;                 // ~kópia Kukly (8–15 statov) raz za 4 smrti
-      case "summonFromDeck": return 5 * 8 / 2;                 // ~2–3 telá z balíčka
       default: return 0;
     }
   }

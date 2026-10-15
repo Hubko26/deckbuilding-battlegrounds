@@ -106,18 +106,36 @@ test("hmyz: Lienka – Hmyz v ruke +X/+X navždy (X = Lienky); Mravec Po nákupe
   assert.ok(grown.some(c => c.pa >= 1), "Mravec zväčšil Hmyz v balíčku");
 });
 
-test("hmyz: Kráľovná Pri smrti vyloží bojové kópie z balíčka, balíček ostane", () => {
+test("hmyz: Včielka po útoku padne a vyvolá ďalšiu Včielku z balíčka – zaútočí celý roj", () => {
   const { state, E, put } = bare(7);
   const p = state.p1;
-  put("p1", "I010");
-  p.deck.push({ defId: "I002", rank: 1, pa: 3, ph: 3 }, { defId: "I001", rank: 1 });
-  const big = put("p2", "B003");
-  Object.assign(big, { atk: 50, hp: 50, maxHp: 50 });
+  put("p1", "I002");
+  p.deck.push({ defId: "I002", rank: 1 }, { defId: "I002", rank: 1, pa: 2, ph: 2 }, { defId: "I001", rank: 1 });
+  const wall = put("p2", "B003");
+  Object.assign(wall, { atk: 0, hp: 99, maxHp: 99 });
+  state.rng = (() => { const r = state.rng; return () => Math.max(0.3, r()); })(); // bez Kukly zo šance
   const ev = E.doBattle(state);
-  const summons = ev.filter(e => e.type === "summon" && e.pid === "p1" && e.defId !== "kukla"); // Kukla = 1/4 šanca pri smrti
-  assert.equal(summons.length, 2);
-  assert.ok(summons.some(e => e.defId === "I002" && e.atk === 5));
-  assert.equal(p.deck.length + p.discard.length, 3); // 2 v balíčku + Kráľovná po boji
+  const bees = ev.filter(e => e.type === "summon" && e.pid === "p1" && e.defId === "I002");
+  assert.equal(bees.length, 2); // obe Včielky z balíčka, každá raz
+  assert.equal(ev.filter(e => e.type === "sting").length, 3);
+  // roj 3 Včielok: +2/+2 každej; Včielka s rastom 2+2+2 = 6 útoku
+  assert.ok(bees.some(e => e.atk === 6));
+  assert.equal(p.deck.length + p.discard.length, 4); // balíček sa nemení
+});
+
+test("hmyz: Kráľovná Pri smrti – Pečať +1/+1 všetkým Včielkam, aj budúcim", () => {
+  const { state, E, put } = bare(15);
+  const p = state.p1;
+  const q = put("p1", "I010");
+  Object.assign(q, { atk: 0, hp: 1, maxHp: 1 });
+  const big = put("p2", "B003");
+  Object.assign(big, { atk: 5, hp: 99, maxHp: 99 });
+  E.doBattle(state);
+  assert.deepEqual({ ...p.cardBuffs.I002 }, { a: 1, h: 1 });
+  const bee = E.makeInst(state, "I002", 1, p);
+  assert.deepEqual([bee.atk, bee.hp], [3, 2]);
+  const other = E.makeInst(state, "I001", 1, p);
+  assert.deepEqual([other.atk, other.hp], [1, 1]);
 });
 
 test("hmyz: roj je pravidlo rasy – každý Hmyz +1/+1 za každú inú svoju kópiu", () => {

@@ -26,9 +26,11 @@
     M("I001", 1, "Húsenica", "🐛", 1, 1,
       { swarm: { of: "I001", a: 1, h: 1, others: true },
         power: { kw: "battlecry", fx: { type: "cocoon", a: 1, h: 1 } } }),
-    // t1 Včielka: Pri smrti náhodný Hmyz v balíčku +1/+1 navždy.
+    // t1 Včielka: Žihadlo – po vlastnom útoku vždy padne. Pri smrti vyvolá
+    // ďalšiu Včielku z balíčka (každú raz za boj) → zaútočí celý roj.
+    // fastAnim: UI animuje útok, smrť a vyvolanie zrýchlene (roj 10 Včielok).
     M("I002", 1, "Včielka", "🐝", 2, 1,
-      { power: { kw: "deathrattle", fx: { type: "deckGrow", a: 1, h: 1 } } }),
+      { diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002" } } }),
     // t2 Lienka: Pri vyložení Hmyz v ruke +X/+X navždy, X = Lienky v balíčku.
     M("I003", 2, "Lienka", "🐞", 2, 3,
       { power: { kw: "battlecry", fx: { type: "handGrowSwarm", of: "I003", a: 1, h: 1 } } }),
@@ -44,18 +46,18 @@
     // t4 Mravec: Po nákupe náhodný Hmyz v balíčku +X/+X navždy, X = Mravce.
     M("I007", 4, "Mravec", "🐜", 4, 4,
       { power: { kw: "endTurn", fx: { type: "deckGrowSwarm", of: "I007", a: 1, h: 1 } } }),
-    // t5 Osa: Pred bojom výboj 2 za každý Hmyz na ploche (aj seba).
+    // t5 Osa: Pri vyložení Pečať +1/+1 Hmyzu (fixný damage v neskorej hre
+    // nemal význam). Bez evolve – každé vyloženie Pečať zopakuje.
     M("I008", 5, "Osa", "🪰", 5, 4,
-      { power: { kw: "startFight", fx: { type: "stingSwarm", n: 2 } } }),
+      { power: { kw: "battlecry", fx: { type: "futureRace", race: R, a: 1, h: 1 } } }),
     // t5 Modlivka: Pri smrti vyvolá Jedovatú spóru (1/1, Jed – zabije
     // a umlčí, čo zraní: Pri smrti ani Znovuzrodenie sa nespustia). Counter
     // na veľké telá (Zvieratá, ogri, rasy s veľkým rastom) aj deathrattle.
     M("I009", 5, "Modlivka", "🦟", 6, 6,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "spora", n: 1 } } }),
-    // t6 Kráľovná: Pri smrti vyloží bojové kópie až 5 náhodných príšer
-    // z balíčka (po voľné miesto).
+    // t6 Kráľovná: Pri smrti Pečať +1/+1 všetkým Včielkam (aj budúcim).
     M("I010", 6, "Kráľovná", "👑", 7, 7,
-      { power: { kw: "deathrattle", fx: { type: "summonFromDeck", n: 5 } } }),
+      { power: { kw: "deathrattle", fx: { type: "imprintCard", of: "I002", a: 1, h: 1 } } }),
   ];
   // Kukla: generovaná (nie je v obchode), jediná na hráča, Obranca.
   // grow = rast nezahranej Kukly v ruke na konci ťahu, growPlayed = rast
@@ -111,8 +113,8 @@
     deckGrow: (f, m) => t(`náhodný Hmyz v balíčku +${f.a * m}/+${f.h * m} navždy`, `random Insect in deck +${f.a * m}/+${f.h * m} forever`),
     growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`, `+${f.a * m}/+${f.h * m} per other Insect`),
     buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)", "random other Insect +X/+X (X = Caterpillars)"),
-    stingSwarm: f => t(`výboj ${f.n} za každý Hmyz na ploche`, `zap ${f.n} per Insect on board`),
+    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka", "summons the next Bee from your deck"),
+    imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`, `Imprint +${f.a}/+${f.h} to all Bees`),
     summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon`),
-    summonFromDeck: f => t(`vyloží až ${f.n} náhodných príšer z balíčka`, `summons up to ${f.n} random minions from your deck`),
   });
 })();
