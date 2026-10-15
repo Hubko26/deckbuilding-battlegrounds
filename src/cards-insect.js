@@ -118,7 +118,7 @@
     buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)", "random other Insect +X/+X (X = Caterpillars)"),
     summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí", "summons the next Bee from your deck, it attacks at once"),
     imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`, `Imprint +${f.a}/+${f.h} to all Bees`),
-    summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu (raz za hru)`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon (once per game)`),
+    summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu (raz za boj)`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon (once per fight)`),
   });
 
   // Pravidlá hmyzu na karte (pred schopnosťami): Roj, Žihadlo, Jed, Kukla.

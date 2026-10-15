@@ -1112,8 +1112,8 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
 **Roj: +1/+1 za každú inú svoju kópiu** v celom balíčku (všetky zóny,
 `def.swarm`, pripočíta sa bojovej kópii v `copyBoard`; UI ho ukáže v texte
 „teraz +X/+Y" a v snímke boja). Každý Hmyz má navyše **Pri smrti 25 %
-šancu vyvolať bojovú kópiu tvojej Kukly** – max. raz za hru
-(`p.kuklaSummoned`).
+šancu vyvolať bojovú kópiu tvojej Kukly** – max. raz za boj
+(`p.kuklaSummoned`, nuluje sa po boji).
 
 - **Kukla** (gen, nie v obchode, jediná na hráča, 1/3 Obranca): vytvorí ju
   Húsenica; na začiatku ťahu ide VŽDY do ruky navyše (6. karta). Nezahraná

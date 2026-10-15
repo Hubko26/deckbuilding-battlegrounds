@@ -2481,6 +2481,7 @@ const Engine = (() => {
       p.fightTokenBuffs = {}; // bojové buffy tokenov (U002)
       p.graveUsed = false; // Hrobárova lopata platí raz za boj
       p.firstBoneUsed = false; p.zapUsed = false; // Kostená odplata, Prvý výboj – raz za boj
+      p.kuklaSummoned = false; // Hmyz: Kukla zo šance pri smrti – raz za boj
       if (state.mutator === "bloodMoon" || hasTrinket(state, pid, "bloodMoon")) applyBloodMoon(p, sides[pid], events);
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
@@ -2880,7 +2881,7 @@ const Engine = (() => {
     },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.
-    // Raz za hru (p.kuklaSummoned) – po vyvolaní už šanca nepadá.
+    // Raz za boj (p.kuklaSummoned, nuluje clearBoards) – po vyvolaní už šanca nepadá.
     summonKukla({ state, sides, pid, self, fx, events }) {
       const p = state[pid];
       if (p.kuklaSummoned) return;
