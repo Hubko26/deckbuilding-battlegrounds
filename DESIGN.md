@@ -545,7 +545,10 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   rukavica** (`doggyGlove`, úroveň 1 – kolo 4) = na začiatku ťahu 1
   Pohladkanie do ruky, **Hladkacia kefa** (`doggyBrush`, úroveň 2 – kolo 8)
   = 2 do ruky. Sčítajú sa: rukavica + kefa = 3 → Super pohladkanie každé
-  kolo (max roll), rukavica + Vodítko = 2. Plná ruka = do balíčka. Art
+  kolo (max roll), rukavica + Vodítko = 2. Plná ruka = do balíčka.
+  **Od 15. 10. 2026 sa pohladkania z trinketov rátajú do 5 kariet** –
+  dajú sa do ruky PRED dotiahnutím (hlásenie: rukavica + Vodítko =
+  začiatok ťahu so 7 kartami). Art
   zatiaľ medailón Vodítka (`TRINKET_ART_ALIAS` v game.js).
 - Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo (a s raceCap mimo celej hry).
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
@@ -1211,7 +1214,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `dragonPact` | 🐲 | 2 | dračie bojové aury (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) +1/+1 |
 | `ogreSabotage` | 👹 | 2 | Pečať +1/+0 Ogrom; minca za súperove trinkety |
 | `ogreCareful` | 👹 | 1 | hody padnú vždy dobre, bonusy polovičné (min. 1) |
-| `doggyGlove` | 🐶 | 1 | na začiatku ťahu 1 Pohladkanie do ruky (`petTrinkets`, event `petGift`) |
+| `doggyGlove` | 🐶 | 1 | na začiatku ťahu 1 Pohladkanie do ruky – ráta sa do 5 kariet (`petTrinkets` pred dotiahnutím, event `petGift`) |
 | `doggyBrush` | 🐶 | 2 | na začiatku ťahu 2 Pohladkania do ruky; s rukavicou 3 = Super |
 | `doggyLeash` | 🐶 | 3 | každé generovanie Pohladkania (P001, P002, rukavica, kefa) dá o 1 viac – endgame palivo pre Veľké pohladkanie |
 | `doggyDouble` | 🐶 | 1 | prvé Pohladkanie v kole zaúčinkuje 2× (cieľ aj svorka Vodcu), ťahá 1 kartu (`p.petTwiceUsed`) |

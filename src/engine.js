@@ -629,9 +629,11 @@ const Engine = (() => {
   function beginShopTurn(state, pid) {
     const p = state[pid];
     const events = [];
+    // Pohladkania z psích trinketov PRED dotiahnutím – rátajú sa do 5 kariet
+    // (hlásenie hráča 15. 10. 2026: rukavica + Vodítko = začiatok ťahu so 7).
+    petTrinkets(state, p, events);
     drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
     bossReward(state, p, events);
-    petTrinkets(state, p, events);
     giftTrinkets(state, p, events);
     // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
     // aby nebralo miesto normálnemu draw).

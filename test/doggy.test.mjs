@@ -422,10 +422,10 @@ test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na za�
   };
   const pets = (zone, rank) => p[zone].filter(c => c.defId === "pet" && (c.rank || 1) === rank).length;
 
-  // rukavica: 5 kariet + 1 Pohladkanie navyše
+  // rukavica: 1 Pohladkanie sa ráta do 5 kariet (nie navyše)
   let ev = setup(["doggyGlove"]);
   assert.equal(pets("hand", 1), 1);
-  assert.equal(p.hand.length, 6);
+  assert.equal(p.hand.length, 5);
   assert.ok(ev.some(e => e.type === "petGift" && e.n === 1));
   assert.ok(ev.some(e => e.type === "trinketProc" && e.id === "doggyGlove"));
 
@@ -439,6 +439,7 @@ test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na za�
   ev = setup(["doggyGlove", "doggyLeash"]);
   assert.ok(ev.some(e => e.type === "petGift" && e.n === 2));
   assert.equal(pets("hand", 1), 2);
+  assert.equal(p.hand.length, 5, "2 Pohladkania + 3 karty z balíčka, nie 7");
 
   // plná ruka (bigHand nie, HAND_MAX) – prebytok ide do balíčka
   p.trinkets = ["doggyBrush"];

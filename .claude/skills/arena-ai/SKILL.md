@@ -262,7 +262,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     telo 8/8). Psie trinkety – v psom builde vždy ber: Hladkacia rukavica
     (kolo 4, 1 Pohladkanie do ruky každý ťah), Hladkacia kefa (kolo 8,
     2 každý ťah; s rukavicou 3 = Super pohladkanie každé kolo), Vodítko
-    (kolo 8): každé generovanie Pohladkania dá o 1 viac.
+    (kolo 8): každé generovanie Pohladkania dá o 1 viac. Pohladkania
+    z trinketov sa rátajú do 5 kariet ruky (nahradia ťah z balíčka).
     Pohladkanie je kúzlo: víly „Po kúzle" ho vidia, Živelná sila nie.
   - **Tokeny dostávajú permanentné aury** (`futureRace`) – kostík aj
     Mláďa s aurami škálujú. Stupeň vyvolávača škáluje POČET tokenov (+1
