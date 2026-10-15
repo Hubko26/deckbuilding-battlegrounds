@@ -367,14 +367,14 @@ const Engine = (() => {
   }
 
   // Obmedzenie na nízkej krčme (Hmyz – Včielka, Húsenica: def.lowTierCap =
-  // { priv, common }): kým je tier ponuky pod LOW_TIER_UNTIL, z poolu je
-  // v obehu len `cap` kópií (zvyšok poolu čaká); od tieru 3 všetky. Kópie
-  // v štartovacom balíčku sa rátajú (uberajú z vlastného poolu).
-  const LOW_TIER_UNTIL = 3;
+  // { <tier>: { priv, common } }): na tieri ponuky, ktorý má záznam, je
+  // z poolu v obehu len `cap` kópií (zvyšok poolu čaká); tier bez záznamu =
+  // celý pool. Kópie v štartovacom balíčku sa rátajú (uberajú z vlastného poolu).
   function lowTierAvail(d, pool, poolKey, tierLimit) {
     const n = pool[d.id] || 0;
-    if (!d.lowTierCap || tierLimit >= LOW_TIER_UNTIL) return n;
-    const cap = poolKey === "common" ? d.lowTierCap.common : d.lowTierCap.priv;
+    const caps = d.lowTierCap && d.lowTierCap[tierLimit];
+    if (!caps) return n;
+    const cap = poolKey === "common" ? caps.common : caps.priv;
     return Math.max(0, n - (poolCap(poolKey, d.id) - cap));
   }
 

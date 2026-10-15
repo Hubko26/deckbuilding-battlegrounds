@@ -382,8 +382,7 @@ plochou. Rob VŠETKY kroky, každý ťah:
   nespájajú, každý Hmyz má +1/+1 za každú inú svoju kópiu (roj), takže
   zbieraj KÓPIE tej istej karty, nepredávaj ich. Kukla (z I001 Húsenice) ide
   každý ťah do ruky navyše; nezahraná +1/+1, vyložená +0/+1 navždy. Húsenic
-  a Včielok je na krčme 1–2 v obchode málo (2 vlastné + 1 spoločná kópia),
-  všetky až od tieru 3. Priorita:
+  a Včielok je v obehu podľa krčmy: T1 3 kópie, T2 6, od T3 všetkých 9. Priorita:
   I008 Osa (t5 Pečať, každé vyloženie znova), I001 Húsenice (Kukla + roj),
   I002 Včielky (útočia celým rojom z balíčka), I010 Kráľovná (Pečať
   Včielkam), I007 Mravec, I003 Lienka. I009 Modlivka dá Jedovatú spóru –

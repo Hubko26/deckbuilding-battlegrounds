@@ -24,10 +24,10 @@
   const M = (id, tier, names, emoji, atk, hp, extra = {}) =>
     ({ id, tier, race: R, stageNames: [names.sk, names.sk, names.sk], names, atk, hp, emoji, noEvolve: true, ...extra });
   const N = (sk, cs, en) => ({ sk, cs, en });
-  // Húsenice a Včielky na krčme 1–2: v obehu len 2 kópie z vlastného poolu
-  // a 1 zo spoločného (aj štartovací balíček sa ráta); od tieru 3 všetky.
-  // Nerf: lacný t1 roj bez upgradu rástol prirýchlo (aj Kukla z Húseníc).
-  const LOW_CAP = { priv: 2, common: 1 };
+  // Húsenice a Včielky v obehu podľa krčmy (vlastný + spoločný pool, aj
+  // štartovací balíček sa ráta): T1 2 + 1 = 3, T2 4 + 2 = 6, od T3 celý pool
+  // 6 + 3 = 9. Nerf: lacný t1 roj bez upgradu rástol prirýchlo (aj Kukla).
+  const LOW_CAP = { 1: { priv: 2, common: 1 }, 2: { priv: 4, common: 2 } };
 
   const DEFS = [
     // t1 Húsenica: +1/+1 za každú INÚ Húsenicu (5 kópií = 5/5 každá).

@@ -1120,8 +1120,9 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
   na konci ťahu +1/+1 navždy (pôvodne +2/+2 – nerf), vyložená +0/+1 navždy (sim: +0/+0 → 38 %,
   +0/+1 → 50 %, +1/+1 → 67 % – citlivý gombík).
 - **Obmedzenie na krčme 1–2** (`def.lowTierCap`, engine `lowTierAvail`):
-  Húsenic aj Včielok je v obehu len 2 kópie z vlastného poolu a 1 zo
-  spoločného (štartovací balíček sa ráta); od tieru 3 všetky. Nerf: bez
+  Húsenic aj Včielok je v obehu na T1 2 z vlastného poolu + 1 zo spoločného
+  (spolu 3), na T2 4 + 2 (6), od T3 celý pool 6 + 3 (9). Štartovací balíček
+  sa ráta; spoločná ponuka ide podľa nižšieho tieru oboch hráčov. Nerf: bez
   upgradu sa dal vykúpiť celý lacný roj a Kukla z Húseníc rástla prirýchlo.
 - I001 Húsenica (t1, 1/1): Pri vyložení Kukla do balíčka, alebo Kukla +1/+1 navždy.
 - I002 Včielka (t1, 2/1): Žihadlo – po svojom útoku padne; Pri smrti vyvolá
