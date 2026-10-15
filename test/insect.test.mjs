@@ -355,3 +355,11 @@ test("hmyz: Húsenice/Včielky v obehu podľa krčmy – T1 2 + 1, T2 4 + 2, od 
   assert.equal(count(3, "common", "I002"), E.POOL_COMMON - 2);
   assert.equal(C.byId.kukla.grow.a, 1);
 });
+
+test("hmyz: text karty ukáže aktuálne X majiteľa (Húsenice v balíčku: n)", () => {
+  const { state, C } = bare(25);
+  const p = state.p1;
+  p.deck.push({ defId: "I001", rank: 1 }, { defId: "I001", rank: 1 }, { defId: "I001", rank: 1 });
+  assert.match(C.cardText(C.byId.I005, 1, "en", false, 0, { owner: p }), /Caterpillars in deck: 3, at least 1/);
+  assert.match(C.cardText(C.byId.I005, 1, "sk", false, 0), /Húsenice v balíčku, aspoň 1/); // bez majiteľa bez čísla
+});

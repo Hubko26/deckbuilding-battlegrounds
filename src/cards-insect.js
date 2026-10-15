@@ -129,22 +129,26 @@
 
   // Texty schopností (pracovné, SK = CS = EN tam, kde sa nechce prekladať).
   const t = (sk, cs, en) => ({ sk, cs, en });
+  // Aktuálne X do textu karty („X = Húsenice v balíčku: 4"): majiteľa karty
+  // posiela game.js v opts.owner, wrapper cardText ho nastaví na čas volania.
+  let textOwner = null;
+  const xNow = f => textOwner && f.of && typeof Engine !== "undefined" ? `: ${Engine.copiesOwned(textOwner, f.of)}` : "";
   Object.assign(L.cards.fx, {
     cocoon: f => t(`Kukla do balíčka, alebo Kukla +${f.a}/+${f.h} navždy`,
       `Kukla do balíčku, nebo Kukla +${f.a}/+${f.h} navždy`,
       `Cocoon into your deck, or Cocoon +${f.a}/+${f.h} forever`),
-    handGrowSwarm: () => t("Hmyz v ruke +X/+X navždy (X = Lienky v balíčku)",
-      "Hmyz v ruce +X/+X navždy (X = Berušky v balíčku)",
-      "Insects in hand +X/+X forever (X = Ladybugs in deck)"),
-    deckGrowSwarm: () => t("náhodný Hmyz v balíčku +X/+X navždy (X = Mravce)",
-      "náhodný Hmyz v balíčku +X/+X navždy (X = Mravenci)",
-      "random Insect in deck +X/+X forever (X = Ants)"),
+    handGrowSwarm: f => t(`Hmyz v ruke +X/+X navždy (X = Lienky v balíčku${xNow(f)})`,
+      `Hmyz v ruce +X/+X navždy (X = Berušky v balíčku${xNow(f)})`,
+      `Insects in hand +X/+X forever (X = Ladybugs in deck${xNow(f)})`),
+    deckGrowSwarm: f => t(`náhodný Hmyz v balíčku +X/+X navždy (X = Mravce v balíčku${xNow(f)})`,
+      `náhodný Hmyz v balíčku +X/+X navždy (X = Mravenci v balíčku${xNow(f)})`,
+      `random Insect in deck +X/+X forever (X = Ants in deck${xNow(f)})`),
     breed: () => t("pridaj do balíčka ďalšiu Kobylku (raz za kolo; vyliahnutá sa predáva za 0)",
       "přidej do balíčku další Kobylku (jednou za kolo; vylíhnutá se prodává za 0)",
       "add another Grasshopper to your deck (once per round; hatched ones sell for 0)"),
-    growTargetSwarm: () => t("vybraný Hmyz +X/+X navždy (X = Húsenice v balíčku, aspoň 1)",
-      "vybraný Hmyz +X/+X navždy (X = Housenky v balíčku, aspoň 1)",
-      "chosen Insect +X/+X forever (X = Caterpillars in deck, at least 1)"),
+    growTargetSwarm: f => t(`vybraný Hmyz +X/+X navždy (X = Húsenice v balíčku${xNow(f)}, aspoň 1)`,
+      `vybraný Hmyz +X/+X navždy (X = Housenky v balíčku${xNow(f)}, aspoň 1)`,
+      `chosen Insect +X/+X forever (X = Caterpillars in deck${xNow(f)}, at least 1)`),
     summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí",
       "vyvolá další Včelku z balíčku, která hned zaútočí",
       "summons the next Bee from your deck, it attacks at once"),
@@ -182,7 +186,9 @@
   const st = g => g ? `${g.a}/+${g.h}` : "0/+0";
   const baseText = Cards.cardText;
   Cards.cardText = (def, rank, lang, html, boost, opts) => {
-    const out = baseText(def, rank, lang, html, boost, opts);
+    textOwner = (opts && opts.owner) || null; // pre xNow v šablónach (aktuálne X)
+    let out;
+    try { out = baseText(def, rank, lang, html, boost, opts); } finally { textOwner = null; }
     if (def.race !== R) return out;
     const b = x => (html ? `<strong>${x}</strong>` : x);
     const parts = [];

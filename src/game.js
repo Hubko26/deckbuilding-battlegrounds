@@ -827,7 +827,7 @@ async function runBattle() {
   // by životy z hp eventov skákali nad zobrazené.
   const withSwarm = (pid, x) => {
     const sw = Engine.swarmBonus(state[pid], Cards.byId[x.defId]);
-    return { ...x, atk: x.atk + sw.a, hp: x.hp + sw.h, maxHp: (x.maxHp ?? x.hp) + sw.h };
+    return { ...x, atk: x.atk + sw.a, hp: x.hp + sw.h, maxHp: (x.maxHp ?? x.hp) + sw.h, swarmIn: true };
   };
   const snap = {
     p1: state.p1.board.map(x => withSwarm("p1", x)),
@@ -1201,7 +1201,7 @@ async function runBattle() {
         const el = cardEl({
           uid: ev.uid, defId: ev.defId, rank: ev.rank || 1,
           atk: ev.atk ?? def.atk, hp: ev.hp ?? def.hp, maxHp: ev.hp ?? def.hp,
-          taunt: !!def.taunt,
+          taunt: !!def.taunt, swarmIn: true, // staty z engine už s rojom
         }, { owner: ev.pid });
         el.style.order = String(ev.slot ?? 0);
         row.appendChild(el);
@@ -1874,8 +1874,10 @@ function cardEl(instOrId, opts) {
   const boost = (owner && owner.dmgBoost) || 0;
   // Divoký úder (O009): rozsah podľa aktuálneho útoku inštancie (buffy ho posúvajú).
   const txOpts = isInst ? { atk: instOrId.atk } : {};
-  // Roj (Hmyz): aktuálny bonus majiteľa do textu karty („teraz +X/+Y").
+  // Roj (Hmyz): aktuálny bonus majiteľa do textu karty („teraz +X/+Y");
+  // owner = aktuálne X v textoch hmyzu („X = Húsenice v balíčku: 4").
   if (def.swarm && owner) txOpts.swarm = Engine.swarmBonus(owner, def);
+  if (owner && def.race === "insect") txOpts.owner = owner;
   const text = Cards.cardText(def, rank, I18N.lang, true, boost, txOpts);
   const plainText = Cards.cardText(def, rank, I18N.lang, false, boost, txOpts);
   const name = Cards.nameOf(def, rank, I18N.lang);
@@ -1915,13 +1917,17 @@ function cardEl(instOrId, opts) {
   if (!(art && def.spell)) inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
   if (!def.spell) {
-    const atk = isInst ? instOrId.atk : def.atk;
-    const hp = isInst ? instOrId.hp : def.hp;
+    // Roj (Hmyz): v ruke a na ploche ukáž staty už s rojom (engine ho
+    // pripočíta až bojovej kópii). Bojové karty (snímka boja, vyvolané) ho
+    // už majú – nesú swarmIn, nepripočítava sa druhýkrát.
+    const sw = isInst && def.swarm && owner && !instOrId.swarmIn ? Engine.swarmBonus(owner, def) : { a: 0, h: 0 };
+    const atk = (isInst ? instOrId.atk : def.atk) + sw.a;
+    const hp = (isInst ? instOrId.hp : def.hp) + sw.h;
     // Buffnuté staty zelenou – vidno rozdiel oproti základu daného stupňa.
     // Zranená príšerka (hp < maxHp) má život červený; červená vyhráva.
     const baseAtk = def.atk * Cards.STAT_MULT[rank];
     const baseHp = def.hp * Cards.STAT_MULT[rank];
-    const maxHp = isInst ? (instOrId.maxHp ?? hp) : def.hp;
+    const maxHp = isInst ? (instOrId.maxHp ?? instOrId.hp) + sw.h : def.hp;
     const hurt = isInst && hp < maxHp;
     el.dataset.maxhp = String(maxHp);
     inner += `<span class="atk${atk > baseAtk && !def.boss ? " buffed" : ""}">${statNum(atk)}</span>` +
