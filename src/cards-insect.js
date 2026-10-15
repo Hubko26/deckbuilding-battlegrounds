@@ -24,19 +24,23 @@
   const M = (id, tier, names, emoji, atk, hp, extra = {}) =>
     ({ id, tier, race: R, stageNames: [names.sk, names.sk, names.sk], names, atk, hp, emoji, noEvolve: true, ...extra });
   const N = (sk, cs, en) => ({ sk, cs, en });
+  // Húsenice a Včielky na krčme 1–2: v obehu len 2 kópie z vlastného poolu
+  // a 1 zo spoločného (aj štartovací balíček sa ráta); od tieru 3 všetky.
+  // Nerf: lacný t1 roj bez upgradu rástol prirýchlo (aj Kukla z Húseníc).
+  const LOW_CAP = { priv: 2, common: 1 };
 
   const DEFS = [
     // t1 Húsenica: +1/+1 za každú INÚ Húsenicu (5 kópií = 5/5 každá).
     // Pri vyložení: Kukla do balíčka, alebo Kukla +1/+1 navždy.
     M("I001", 1, N("Húsenica", "Housenka", "Caterpillar"), "🐛", 1, 1,
-      { swarm: { of: "I001", a: 1, h: 1, others: true },
+      { lowTierCap: LOW_CAP, swarm: { of: "I001", a: 1, h: 1, others: true },
         power: { kw: "battlecry", fx: { type: "cocoon", a: 1, h: 1 } } }),
     // t1 Včielka: Žihadlo – po vlastnom útoku vždy padne. Pri smrti vyvolá
     // ďalšiu Včielku z balíčka (každú raz za boj), ktorá HNEĎ zaútočí →
     // celý roj zaútočí naraz.
     // fastAnim: UI animuje útok, smrť a vyvolanie zrýchlene (roj 10 Včielok).
     M("I002", 1, N("Včielka", "Včelka", "Bee"), "🐝", 2, 1,
-      { diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002" } } }),
+      { lowTierCap: LOW_CAP, diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002" } } }),
     // t2 Lienka: Pri vyložení Hmyz v ruke +X/+X navždy, X = Lienky v balíčku.
     M("I003", 2, N("Lienka", "Beruška", "Ladybug"), "🐞", 2, 3,
       { power: { kw: "battlecry", fx: { type: "handGrowSwarm", of: "I003", a: 1, h: 1 } } }),
@@ -78,14 +82,14 @@
   // vyloženej. Sim (targeted, 50 HP): vyložená +0/+0 → hmyz 38 %, +0/+1 →
   // 50 %, +1/+1 → 67 %, +2/+2 → 83 % – citlivý gombík.
   const KUKLA = { id: "kukla", tier: 1, race: R, stageNames: ["Kukla", "Kukla", "Kukla"], names: N("Kukla", "Kukla", "Cocoon"), atk: 1, hp: 3,
-    taunt: true, emoji: "🪺", noEvolve: true, gen: true, grow: { a: 2, h: 2 }, growPlayed: { a: 0, h: 1 } };
+    taunt: true, emoji: "🪺", noEvolve: true, gen: true, grow: { a: 1, h: 1 }, growPlayed: { a: 0, h: 1 } };
 
   // Roj (pravidlo rasy): KAŽDÝ Hmyz +1/+1 za každú inú svoju kópiu
   // v balíčku (všetky zóny). Húsenica to má priamo v definícii.
   // Varianty pre simuláciu (ideal-sim variant=…, čiarkou):
   //   tier – namiesto +1/+1 je to +T/+T za kópiu (T = tier karty)
   //   race – Húsenica rastie z celého roja: +1/+1 za každé 2 iné Hmyzy
-  //   hold4 – nezahraná Kukla +4/+4 (namiesto +2/+2)
+  //   hold4 – nezahraná Kukla +4/+4 (namiesto +1/+1)
   //   always – vyložená Kukla rastie +2/+2 každý ťah (always1: +1/+1, still: +0/+0)
   //   noCocoon – bez 25 % šance na Kuklu pri smrti (porovnanie)
   const V = (typeof EXP_VARIANT === "string" ? EXP_VARIANT : "").split(",");

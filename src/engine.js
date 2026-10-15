@@ -355,7 +355,7 @@ const Engine = (() => {
     const bias = poolKey !== "common" && state[poolKey] && state[poolKey].rollBias;
     const weighted = [];
     for (const d of defs) {
-      const w = (pool[d.id] || 0) * (bias && d.race === bias.race ? bias.weight : 1);
+      const w = lowTierAvail(d, pool, poolKey, tierLimit) * (bias && d.race === bias.race ? bias.weight : 1);
       for (let i = 0; i < w; i++) weighted.push(d.id);
     }
     if (weighted.length) {
@@ -364,6 +364,18 @@ const Engine = (() => {
       return id;
     }
     return defs.length ? pick(defs, state.rng).id : null;
+  }
+
+  // Obmedzenie na nízkej krčme (Hmyz – Včielka, Húsenica: def.lowTierCap =
+  // { priv, common }): kým je tier ponuky pod LOW_TIER_UNTIL, z poolu je
+  // v obehu len `cap` kópií (zvyšok poolu čaká); od tieru 3 všetky. Kópie
+  // v štartovacom balíčku sa rátajú (uberajú z vlastného poolu).
+  const LOW_TIER_UNTIL = 3;
+  function lowTierAvail(d, pool, poolKey, tierLimit) {
+    const n = pool[d.id] || 0;
+    if (!d.lowTierCap || tierLimit >= LOW_TIER_UNTIL) return n;
+    const cap = poolKey === "common" ? d.lowTierCap.common : d.lowTierCap.priv;
+    return Math.max(0, n - (poolCap(poolKey, d.id) - cap));
   }
 
   // Vrátenie kópií do poolu (strop = základný počet – záložne vylosované

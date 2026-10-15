@@ -1117,8 +1117,12 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
 
 - **Kukla** (gen, nie v obchode, jediná na hráča, 1/3 Obranca): vytvorí ju
   Húsenica; na začiatku ťahu ide VŽDY do ruky navyše (6. karta). Nezahraná
-  na konci ťahu +2/+2 navždy, vyložená +0/+1 navždy (sim: +0/+0 → 38 %,
+  na konci ťahu +1/+1 navždy (pôvodne +2/+2 – nerf), vyložená +0/+1 navždy (sim: +0/+0 → 38 %,
   +0/+1 → 50 %, +1/+1 → 67 % – citlivý gombík).
+- **Obmedzenie na krčme 1–2** (`def.lowTierCap`, engine `lowTierAvail`):
+  Húsenic aj Včielok je v obehu len 2 kópie z vlastného poolu a 1 zo
+  spoločného (štartovací balíček sa ráta); od tieru 3 všetky. Nerf: bez
+  upgradu sa dal vykúpiť celý lacný roj a Kukla z Húseníc rástla prirýchlo.
 - I001 Húsenica (t1, 1/1): Pri vyložení Kukla do balíčka, alebo Kukla +1/+1 navždy.
 - I002 Včielka (t1, 2/1): Žihadlo – po svojom útoku padne; Pri smrti vyvolá
   ďalšiu Včielku z balíčka (každú raz za boj), ktorá **hneď zaútočí** mimo

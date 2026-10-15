@@ -336,3 +336,19 @@ test("hmyz: Kobylka sa množí – Pri vyložení kópia do balíčka raz za kol
   const back = E.pileCard(p.board.find(x => x.defId === "I004"));
   assert.equal(back.bred, undefined);
 });
+
+test("hmyz: na krčme 1–2 sú v obchode len 2 vlastné + 1 spoločná Húsenica/Včielka, od tieru 3 všetky", () => {
+  const { state, E, C } = fresh(24);
+  const p = state.p1;
+  // koľko kópií sa dá z poolu vytiahnuť (záložné losovanie bez poolu sa neráta)
+  const count = (tier, key, id) => {
+    const before = state.pools[key][id];
+    for (let i = 0; i < 400; i++) E.rollCard(state, tier, key, d => d.id === id);
+    return before - state.pools[key][id];
+  };
+  state.pools.p1.I002 = E.POOL_PRIVATE; state.pools.common.I002 = E.POOL_COMMON;
+  assert.equal(count(2, "p1", "I002"), 2);
+  assert.equal(count(1, "common", "I002"), 1);
+  assert.equal(count(3, "p1", "I002"), E.POOL_PRIVATE - 2); // na t3 dostupný zvyšok
+  assert.equal(C.byId.kukla.grow.a, 1);
+});
