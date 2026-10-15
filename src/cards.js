@@ -178,8 +178,12 @@ const Cards = (() => {
       { power: { kw: "battlecry", fx: { type: "spellScale", a: 1, h: 1 } } }),
     // F009 (t5): prebrala bývalú t6 schopnosť – Po kúzle +2/+2 všetkým
     // kamarátom (dočasné, aj iné rasy). Telo 8/8 → 6/6, lebo nesie ability.
+    // Od 15. 10. 2026 navyše Pri vyložení: spustí Po kúzle všetkých víl na
+    // ploche (bez zoslania kúzla, stupeň 1/2/3×) – víly majú vlastný payoff
+    // z D010 (t6 drak opakuje Pri vyložení), ktorý inak kŕmil hlavne iné rasy.
     M("F009", 5, "fairy", ["Honeyfizz", "Nectarbolt", "Hivecrown"], 6, 6,
-      { power: { kw: "afterSpell", fx: { type: "buffAllFriends", a: 2, h: 2 } } }),
+      { power: { kw: "afterSpell", fx: { type: "buffAllFriends", a: 2, h: 2 } },
+        power2: { kw: "battlecry", fx: { type: "replayAfterSpell" } } }),
     // F008 (t6, finálna víla): Po kúzle PERMANENTNE +1/+1 VŠETKÝM tvojim
     // príšerkám bez ohľadu na rasu (futureAll = aura pre každú rasu naraz,
     // aj balíček, tokeny). Endgame akcelerátor – t6 musí rásť rýchlejšie než t5.

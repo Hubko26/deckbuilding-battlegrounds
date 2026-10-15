@@ -173,7 +173,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     stupňa, NIE Po kúzle), F005 vracia zlato, F006
     battlecry pridá Iskričku ✨ (jednorazové kúzlo +1 útok – nejde do
     balíčka, po ťahu zmizne; spúšťa Po kúzle), F009 (t5, 6/6) Po kúzle
-    +2/+2 všetkým kamarátom (dočasné, aj iné rasy), F008 (t6) Po kúzle
+    +2/+2 všetkým kamarátom (dočasné, aj iné rasy) a Pri vyložení spustí
+    Po kúzle všetkých víl na ploche (1/2/3×; hraj ju AŽ po ostatných
+    vílach, ideálne s F008 na ploche; D010 na F009 = ďalšie kolo), F008 (t6) Po kúzle
     VŠETKY tvoje príšerky každej rasy +1/+1 NAVŽDY (aj balíček, tokeny –
     každé kúzlo s ňou na ploche = permanentná aura). Self-rast F002/F004 je
     PERMANENTNÝ (prežije cyklus balíčka) – kúzla do nich sú investícia

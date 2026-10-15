@@ -672,6 +672,7 @@ const L = {
   deckMinTip: { sk: "Všetky karty: {n} (minimum na tvoj tier: {min})", cs: "Všechny karty: {n} (minimum na tvůj tier: {min})", en: "All cards: {n} (minimum for your tier: {min})" },
   replayNoneMsg: { sk: "nemá Pri vyložení a nikto iný tiež – drak nemal čo zopakovať", cs: "nemá Při vyložení a nikdo jiný taky – drak neměl co zopakovat", en: "has no Battlecry and nobody else does – the dragon had nothing to replay" },
   replayRandomMsg: { sk: "🎲 cieľ nemal Pri vyložení – drak zopakoval náhodnú príšerku:", cs: "🎲 cíl neměl Při vyložení – drak zopakoval náhodnou příšerku:", en: "🎲 the target had no Battlecry – the dragon replayed a random minion:" },
+  replayAfterSpellMsg: { sk: "🍯 víly spustili Po kúzle", cs: "🍯 víly spustily Po kouzle", en: "🍯 Fairies triggered After a spell" },
   replayBattlecryMsg: { sk: "🌸 znova spustil Pri vyložení:", cs: "🌸 znovu spustil Při vyložení:", en: "🌸 replayed the Battlecry of" },
   echoProcMsg: { sk: "Ozvena:", cs: "Ozvěna:", en: "Echo:" },
   addPetMsg: {
@@ -1205,6 +1206,12 @@ L.cards = (() => {
       cs: `vyber příšerku – vyber si 1 ze 3 karet její rasy, ${m === 2 ? "stříbrnou" : "zlatou"}`,
       en: `pick a minion – discover a ${m === 2 ? "silver" : "golden"} card of its race`,
     },
+    // F009: Po kúzle víl bez kúzla (stupeň = počet opakovaní).
+    replayAfterSpell: (f, m) => ({
+      sk: `spustí Po kúzle všetkých víl na ploche${m > 1 ? ` ${m}×` : ""}`,
+      cs: `spustí Po kouzle všech víl na ploše${m > 1 ? ` ${m}×` : ""}`,
+      en: `triggers the After a spell of all your Fairies${m > 1 ? ` ${m} times` : ""}`,
+    }),
     replayBattlecry: (f, m) => ({
       sk: `vyber príšerku – jej Pri vyložení sa spustí znova${m > 1 ? ` ${m}×` : ""} (bez Pri vyložení: náhodná, ktorá ho má)`,
       cs: `vyber příšerku – její Při vyložení se spustí znovu${m > 1 ? ` ${m}×` : ""} (bez Při vyložení: náhodná, která ho má)`,

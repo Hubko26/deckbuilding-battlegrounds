@@ -1812,10 +1812,10 @@ test("buffAllFriends z príšerky (battlecry) Živelnou silou NEškáluje – le
   const m = E.makeInst(state, "B001", 1); m.slot = 0; // 2/2
   p.board = [m];
   p.hand = [E.makeInst(state, "F009", 1)]; // Po kúzle +2/+2 kamarátom
-  E.playMinion(state, "p1", 0);
+  E.playMinion(state, "p1", 0); // Pri vyložení spustí vlastné Po kúzle (+2/+2)
   p.hand = [E.makeInst(state, "minca", 1)];
   E.castSpell(state, "p1", 0); // spustí F009 afterSpell buffAllFriends (self = F009)
-  assert.equal(m.atk, 4); assert.equal(m.maxHp, 4); // +2/+2, bez +3
+  assert.equal(m.atk, 6); assert.equal(m.maxHp, 6); // 2× +2/+2, bez +3
 });
 
 test("Hviezdna moc (t6): Pečať +1/+1 každej rase + Živelná sila +1, oboje trvalé", () => {
@@ -3158,6 +3158,32 @@ test("D004 strieborný objaví striebornú kartu rasy cieľa; O006 sa trafí za 
   }
   assert.ok(hit);
   assert.equal(hit.n, Math.floor(10 / 4), "strieborný 10/10 sa trafí za štvrtinu");
+});
+
+test("F009 Pri vyložení: spustí Po kúzle víl na ploche (strieborná 2×), počítadlo kúziel nerastie; D010 ho zopakuje", () => {
+  const { state, E, C } = fresh(206);
+  E.startRound(state);
+  const p = state.p1;
+  const cap = E.makeInst(state, "F002", 1, p); cap.slot = 0;  // Po kúzle sebe +1/+1 navždy
+  const bear = E.makeInst(state, "B002", 1, p); bear.slot = 1;
+  p.board = [cap, bear];
+  p.hand = [E.makeInst(state, "F009", 2)];
+  const spells = p.spellsCast;
+  const ev = E.playMinion(state, "p1", 0);
+  assert.ok(ev.some(e => e.type === "replayAfterSpell" && e.n === 2));
+  // 2 opakovania: F002 sebe +1/+1, F009 (už na ploche, striebro) +4/+4 kamarátom
+  assert.equal(cap.atk, 1 + 2 * (1 + 4));
+  assert.equal(cap.pa, 2);                   // trvalý rast F002
+  assert.equal(bear.atk, 4 + 2 * 4);
+  const hive = p.board.find(x => x.defId === "F009");
+  assert.equal(p.spellsCast, spells);
+  assert.match(C.cardText(C.byId["F009"], 2, "sk"), /Po kúzle všetkých víl na ploche 2×/);
+  // D010 na F009 = Po kúzle víl znova
+  p.hand = [E.makeInst(state, "D010", 1)];
+  const capPa = cap.pa;
+  const ev2 = E.playMinion(state, "p1", 0, hive.uid);
+  assert.ok(ev2.some(e => e.type === "replayBattlecry" && e.defId === "F009"));
+  assert.equal(cap.pa, capPa + 2);           // F009 stupňa 2 → 2× F002
 });
 
 test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); cieľ bez battlecry náhodný, bez cieľa najsilnejší battlecry", () => {

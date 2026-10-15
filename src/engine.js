@@ -1050,6 +1050,10 @@ const Engine = (() => {
   // trvalé počítadlo zahraných kúziel (spellScale karty).
   function afterSpellProcs(state, p, events) {
     p.spellsCast++;
+    runAfterSpell(state, p, events);
+  }
+  // Samotné Po kúzle víl na ploche (bez počítadla kúziel) – aj F009 battlecry.
+  function runAfterSpell(state, p, events) {
     for (const inst of [...p.board]) {
       for (const pw of instPowers(inst)) {
         if (pw.kw !== "afterSpell") continue;
@@ -1540,6 +1544,13 @@ const Engine = (() => {
       for (let i = 0; i < m; i++) {
         for (const pw of bcs(t)) applyShopFx(state, p, pw.fx, t.rank, t, events);
       }
+    },
+    // F009: Po kúzle všetkých víl na ploche (aj seba) sa spustí m× (stupeň),
+    // ako keby si zoslal kúzlo – ale bez kúzla, takže počítadlo kúziel
+    // (spellScale) nerastie.
+    replayAfterSpell({ state, p, m, self, events }) {
+      events.push({ type: "replayAfterSpell", pid: p.id, uid: self.uid, n: m });
+      for (let i = 0; i < m; i++) runAfterSpell(state, p, events);
     },
     // Drak: náhodná TVOJA rasa na ploche +a/+h (do konca boja).
     buffRandomRace({ state, p, fx, m, self, events }) {

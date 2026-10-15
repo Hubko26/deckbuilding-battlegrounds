@@ -414,7 +414,9 @@ cez rôzne keywordy (Pri smrti, Pred bojom, Pri útoku), nie len deathrattle.
   F006 (4/4) **Pri vyložení: pridaj do ruky Iskričku** ✨,
   F007 taunt +1/+1 Vílam, F009 (t5, 6/6) +2/+2 všetkým tvojim príšerkám
   (dočasné, aj iné rasy – prebrala bývalú t6 schopnosť, vanilka 8/8
-  bola mimo vílej témy), **F008 (t6, 7/8) Po kúzle: VŠETKY tvoje
+  bola mimo vílej témy; od 15. 10. 2026 navyše **Pri vyložení: spustí
+  Po kúzle všetkých víl na ploche** 1/2/3× podľa stupňa, bez kúzla –
+  počítadlo kúziel nerastie; víly tak profitujú aj z D010), **F008 (t6, 7/8) Po kúzle: VŠETKY tvoje
   príšerky každej rasy +1/+1 NAVŽDY** (`futureAll` – zapíše sa do
   `raceBuffs` všetkých rás naraz, takže ju berú aj tokeny, balíček,
   evolve aj reviveAs; evolve ×2/×3). Finálna víla = endgame akcelerátor,

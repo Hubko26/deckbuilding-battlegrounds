@@ -279,10 +279,9 @@ const Bot = (() => {
   // dračie battlecry tiež – cieľ dominantnej rasy musí byť už na ploche.
   const RACE_TARGETED = new Set(["buffRaceOf", "futureRaceOf", "discoverRace"]);
   function isBattlecryBuffer(defId) {
-    const pw = Cards.byId[defId].power;
-    return !!pw && pw.kw === "battlecry" &&
-      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "replayBattlecry"].includes(pw.fx.type) ||
-        RACE_TARGETED.has(pw.fx.type));
+    return Cards.powersOf(Cards.byId[defId]).some(pw => pw.kw === "battlecry" &&
+      (["buffRace", "buffAllFriends", "buffFriend", "buffOne", "futureRace", "replayBattlecry", "replayAfterSpell"].includes(pw.fx.type) ||
+        RACE_TARGETED.has(pw.fx.type)));
   }
 
   // Cieľ cieleného battlecry (draci, U004): rasové efekty na NAJSILNEJŠIU
@@ -624,7 +623,7 @@ const Bot = (() => {
   //    predaj), ak je vybitá alebo slabšia než nová, a vylož;
   //  - v ruke len telo → vymeň ho za najslabšiu VYBITÚ príšerku, ak je silnejšie.
   const RECYCLE_FX = new Set(["draw", "addSpell", "addPet", "fetchPet", "discoverRace", "dmgBoost",
-    "futureRace", "futureRaceOf", "shrinkEnemy", "summonCharge", "buffRaceOf", "buffOne", "replayBattlecry"]);
+    "futureRace", "futureRaceOf", "shrinkEnemy", "summonCharge", "buffRaceOf", "buffOne", "replayBattlecry", "replayAfterSpell"]);
   const recyclable = inst => !Cards.byId[inst.defId].token &&
     Cards.powersOf(Cards.byId[inst.defId]).some(pw => pw.kw === "battlecry" && RECYCLE_FX.has(pw.fx.type));
   function recycleBattlecries(state, p, push) {
@@ -847,7 +846,8 @@ const Bot = (() => {
       case "gold": return f.n * m * 1.5 * perTrigger;
       case "goldLater": return f.n * 1.5;
       case "absorbStats": return [0.25, 0.5, 1][Math.min(m, 3) - 1] * 3 * PW_DEATHS; // D009: staty padlých kamarátov na boj
-      case "replayBattlecry": return m * 9;                     // D009: Pri vyložení cieľa znova
+      case "replayBattlecry": return m * 9;                     // D010: Pri vyložení cieľa znova
+      case "replayAfterSpell": return m * 6;                    // F009: Po kúzle víl bez kúzla
       case "shrinkEnemy": return ab;
       case "coinflip": return ((f.a + f.h) - (f.da + f.dh)) * m / 2; // očakávaná hodnota hodu
       case "drunkStrike": return -2 / m;
