@@ -47,8 +47,9 @@
     // t5 Osa: Pred bojom výboj 2 za každý Hmyz na ploche (aj seba).
     M("I008", 5, "Osa", "🪰", 5, 4,
       { power: { kw: "startFight", fx: { type: "stingSwarm", n: 2 } } }),
-    // t5 Modlivka: Pri smrti vyvolá Jedovatú spóru (1/1, Jed – zabije, čo
-    // zraní). Counter na veľké telá (Zvieratá, ogri, rasy s veľkým rastom).
+    // t5 Modlivka: Pri smrti vyvolá Jedovatú spóru (1/1, Jed – zabije
+    // a umlčí, čo zraní: Pri smrti ani Znovuzrodenie sa nespustia). Counter
+    // na veľké telá (Zvieratá, ogri, rasy s veľkým rastom) aj deathrattle.
     M("I009", 5, "Modlivka", "🦟", 6, 6,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "spora", n: 1 } } }),
     // t6 Kráľovná: Pri smrti vyloží bojové kópie až 5 náhodných príšer
@@ -77,7 +78,7 @@
     const k = V.includes("tier") ? d.tier : 1;
     d.swarm = [].concat(d.swarm || [], { of: d.id, a: k, h: k, others: true });
   }
-  // Jedovatá spóra: token Modlivky – Jed (úder, ktorý zraní, zabije).
+  // Jedovatá spóra: token Modlivky – Jed (úder, ktorý zraní, zabije a umlčí).
   L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
   const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
     name: { sk: "Jedovatá spóra", cs: "Jedovatá spora", en: "Poison Spore" } };

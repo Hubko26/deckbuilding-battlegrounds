@@ -2343,10 +2343,15 @@ const Engine = (() => {
     return true;
   }
 
-  // Jed: zranený cieľ (hp kleslo, ešte žije) padne. Strážca arény nie.
+  // Jed: zranený cieľ (hp kleslo) padne a je umlčaný – Pri smrti sa
+  // nespustí, Znovuzrodenie / Fénixovo pierko prepadne. Aj cieľ, ktorý by
+  // padol zo samotného úderu, je umlčaný. Strážca arény nie.
   function poisonHit(target, hp0, from, pid, events) {
-    if (!from.poison || from.silenced || target.boss || target.hp <= 0 || target.hp >= hp0) return;
-    target.hp = 0;
+    if (!from.poison || from.silenced || target.boss || target.hp >= hp0) return;
+    target.silenced = true;
+    target.taunt = false;
+    target.revive = false;
+    target.hp = Math.min(target.hp, 0);
     events.push({ type: "poison", pid, uid: target.uid, from: from.uid });
   }
 

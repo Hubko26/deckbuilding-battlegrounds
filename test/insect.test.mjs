@@ -178,3 +178,15 @@ test("hmyz: vyložená Kukla na konci ťahu rastie o growPlayed (navždy, pred b
   E.endShopTurn(state, "p1");
   assert.deepEqual([k.atk, k.hp, k.pa, k.ph], [1 + g.a, 3 + g.h, g.a, g.h]);
 });
+
+test("hmyz: Jed umlčí – Pri smrti otráveného sa nespustí, Znovuzrodenie prepadne", () => {
+  const { state, E, put } = bare(14);
+  put("p1", "spora");
+  const b7 = put("p2", "B007"); // Pri smrti: Mláďa
+  Object.assign(b7, { atk: 0, hp: 30, maxHp: 30, revive: true });
+  const ev = E.doBattle(state);
+  assert.ok(ev.some(e => e.type === "poison" && e.uid === b7.uid));
+  assert.ok(ev.some(e => e.type === "die" && e.uid === b7.uid));
+  assert.ok(!ev.some(e => e.type === "summon" && e.pid === "p2"), "Mláďa sa nevyvolá");
+  assert.ok(!ev.some(e => e.type === "revive"), "Znovuzrodenie prepadne");
+});
