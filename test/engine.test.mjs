@@ -2815,6 +2815,44 @@ test("ban: bez opts sa nič nemení – rovnaký seed dá rovnaký štart ako do
   assert.equal(JSON.stringify(a.commons), JSON.stringify(b.commons));
 });
 
+test("raceCap: s banom 6 vylosovaných rás (= ponuky), po bane ich ostane 5; obchod a balíčky len z nich", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, C = ctx.Cards;
+  const state = E.newGame(seeded(11), null, { ban: true, raceCap: E.RACE_CAP });
+  // rovnaké ponuky ako bez capu (rng sa nemení)
+  const plain = loadEngine().Engine.newGame(seeded(11), null, { ban: true });
+  assert.equal(JSON.stringify(state.ban.offers), JSON.stringify(plain.ban.offers));
+  assert.deepEqual([...state.races].sort(), [...state.ban.offers.p1, ...state.ban.offers.p2].sort());
+  E.pickBan(state, "p1", state.ban.offers.p1[0]);
+  E.pickBan(state, "p2", state.ban.offers.p2[0]);
+  assert.equal(state.races.length, 5);
+  assert.ok(!state.races.includes(state.banned));
+  const p = state.p1;
+  p.tier = 6;
+  for (let i = 0; i < 200; i++) {
+    p.money = 10; E.refreshShop(state, "p1");
+    for (const id of state.commons) assert.ok(!C.byId[id].race || state.races.includes(C.byId[id].race), id);
+    for (const s of p.priv) assert.ok(!C.byId[s.defId].race || state.races.includes(C.byId[s.defId].race), s.defId);
+  }
+  for (const c of [...p.deck, ...p.hand]) assert.ok(state.races.includes(C.byId[c.defId].race));
+  // rasové trinkety len rás v hre
+  for (const t of E.trinketPool(state, "p1")) assert.ok(!t.race || state.races.includes(t.race), t.id);
+});
+
+test("raceCap bez banu: 5 vylosovaných rás, rôzne seedy dajú rôzne rasy; bez raceCap všetky (staré záznamy)", () => {
+  const E = loadEngine().Engine;
+  const seen = new Set();
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = E.newGame(seeded(seed), null, { raceCap: E.RACE_CAP });
+    assert.equal(s.races.length, 5);
+    assert.equal(new Set(s.races).size, 5);
+    seen.add([...s.races].sort().join());
+  }
+  assert.ok(seen.size > 1);
+  assert.equal(E.newGame(seeded(1), null).races, null);
+  assert.equal(E.raceOut(E.newGame(seeded(1), null), "beast"), false);
+});
+
 test("ban: nelegálne výbery – cudzia rasa, dvojitý výber, mimo fázy", () => {
   const { state, E } = freshBan();
   const foreign = state.ban.offers.p2[0];

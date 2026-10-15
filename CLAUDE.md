@@ -71,6 +71,10 @@ commity, UI) je slovenčina.
 - **Ban rasy** (default zapnutý, checkbox): pred prvým kolom každý hráč
   vyberie jednu z troch rás (`Engine.pickBan`), z dvoch výberov sa jedna
   vylosuje a jej karty v celej hre nie sú (`state.banned`, filter v `rollCard`).
+- **Max. 5 rás v hre** (`Engine.RACE_CAP`, `state.races`): s banom sa
+  vylosuje 6 (ponuky), po bane ostane 5; bez banu 5. `Engine.raceOut`
+  = rasa zabanovaná alebo nevylosovaná. Bez `opts.raceCap` (staré záznamy,
+  simulácie) hrajú všetky rasy.
 - Kolo: nákupná fáza A → nákupná fáza B → automatický boj. Hrdina má 50 HP.
   Damage hrdinovi za boj má strop podľa kola (`Engine.heroDmgCap`): 1–3 max 5,
   4–10 max 10, 11–15 max 15, od 16. kola bez stropu.

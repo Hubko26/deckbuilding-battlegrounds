@@ -13,6 +13,10 @@ const Engine = (() => {
   const BACKSTAB_BUFF = 1; // ogr „Backstab": Pečať +1/+1 všetkým ogrom za smolný roll
   const COMMON_COUNT = 3;
   const BAN_OFFER = 3; // fáza BAN: koľko rás dostane každý hráč na výber
+  // Max. rás v jednej hre (opts.raceCap). Hra si z celého zoznamu vylosuje
+  // RACE_CAP rás; s banom RACE_CAP + 1 (= 2 × BAN_OFFER) a jednu zabanuje.
+  // Rás tak môže byť v kartách viac, než sa zmestí do jednej hry.
+  const RACE_CAP = 5;
   // Pooly kariet (štýl Battlegrounds, ale per hráč): každý hráč má vlastný
   // pool POOL_PRIVATE kópií každej príšery (súkromná ponuka, štartovací
   // balíček, Kniha, Zrkadlo, Klobúk), spoločná ponuka losuje zo spoločného
@@ -355,6 +359,10 @@ const Engine = (() => {
   // Štartovacie balíčky a obchod vznikajú až po vylosovaní (setupStart),
   // inak by v nich mohla byť zabanovaná rasa. Bez ban je poradie losovania
   // z rng rovnaké ako doteraz (staré záznamy sa prehrajú rovnako).
+  // opts.raceCap: n = do hry ide len n vylosovaných rás (state.races); s banom
+  // sa vylosuje n + 1 (prvých 2 × BAN_OFFER zo zamiešania – rovnaké rng ako
+  // bez capu) a po bane ostane n. Bez raceCap (staré záznamy, simulácie)
+  // hrajú všetky rasy okrem zabanovanej.
   // opts.hpBonus: { p1?: n, p2?: n } – životy navyše k štartu (po mutácii),
   // napr. handicap hard/Claude bota (Bot.hpBonus). Dvíha aj strop liečenia.
   function newGame(rng, mutatorId, opts) {
@@ -364,6 +372,8 @@ const Engine = (() => {
       commons: [], winner: null, pendingDiscover: null, mutator,
       ban: null, // { offers: { p1: [rasy], p2: [rasy] }, picks: { p1, p2 }, by } počas/po fáze BAN
       banned: null, // id zabanovanej rasy (null = žiadna)
+      races: null, // rasy v tejto hre (raceCap); null = všetky
+      raceCap: (opts && opts.raceCap) || null,
       trinketsOn: !!(opts && opts.trinkets), // ponuka trinketov v kolách TRINKET_ROUNDS
       bossResult: null, // { round, dmg: { p1, p2 }, winner, claimed } posledného DMG Meter kola
       pools: makePools(),
@@ -377,6 +387,8 @@ const Engine = (() => {
     state.p1.maxHp = state.p1.hp; state.p2.maxHp = state.p2.hp; // strop liečenia
     if (opts && opts.ban) {
       const races = shuffle(Object.keys(Cards.RACES), rng);
+      // vylosované rasy = obe trojice v ponuke; po bane ich ostane raceCap
+      if (state.raceCap) state.races = races.slice(0, BAN_OFFER * 2);
       state.ban = {
         offers: { p1: races.slice(0, BAN_OFFER), p2: races.slice(BAN_OFFER, BAN_OFFER * 2) },
         picks: { p1: null, p2: null },
@@ -385,11 +397,15 @@ const Engine = (() => {
       state.phase = "ban";
       return state;
     }
+    if (state.raceCap) state.races = shuffle(Object.keys(Cards.RACES), rng).slice(0, state.raceCap);
     setupStart(state);
     return state;
   }
 
-  const isBanned = (state, def) => !!(state.banned && def.race === state.banned);
+  // Rasa nie je v hre: zabanovaná alebo nevylosovaná (raceCap).
+  const raceOut = (state, race) => !!race &&
+    (race === state.banned || (!!state.races && !state.races.includes(race)));
+  const isBanned = (state, def) => raceOut(state, def.race);
 
   // Výber rasy na ban. Legálne len vo fáze "ban", raz za hráča, z jeho
   // trojice. Keď vyberú obaja, z dvoch rás sa jedna vylosuje (state.rng),
@@ -403,6 +419,7 @@ const Engine = (() => {
     if (!b.picks.p1 || !b.picks.p2) return events;
     b.by = pick(["p1", "p2"], state.rng);
     state.banned = b.picks[b.by];
+    if (state.races) state.races = state.races.filter(r => r !== state.banned);
     events.push({ type: "ban", race: state.banned, by: b.by });
     state.phase = "shop";
     setupStart(state);
@@ -503,7 +520,7 @@ const Engine = (() => {
     const major = majorityRaces(p);
     return TRINKETS.filter(t => !p.trinkets.includes(t.id)
       && t.id !== state.mutator
-      && !(t.race && (state.banned === t.race
+      && !(t.race && (raceOut(state, t.race)
         || (!TRINKET_FREE_RACES.has(t.race) && !major.has(t.race)))));
   }
 
@@ -2787,9 +2804,9 @@ const Engine = (() => {
 
   return {
     HERO_HP, BOARD_MAX, HAND_DRAW, HAND_MAX, CARD_COST, SELL_GAIN, REFRESH_COST, POOL_PRIVATE, POOL_COMMON,
-    TIER_MAX, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_FREE_RACES, SUPPORT_RACES, majorityRaces, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
+    TIER_MAX, RACE_CAP, MUTATORS, TRINKETS, TRINKET_ROUNDS, TRINKET_FREE_RACES, SUPPORT_RACES, majorityRaces, BOSS_EVERY, BOSS_COUNT, BOSS_STAT, isBossRound, trinketPool, privateCount, income, seededRng, cardCost, refreshCost, spellCost,
     handDraw, heroDmgCap, deckMin, cardCount, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
-    newGame, pickBan, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
+    newGame, pickBan, raceOut, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
     sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,
     pileCard, drawCards, rollCard, returnToPool, // pre testy a nástroje (cyklus balíčka, pooly, rollBias)

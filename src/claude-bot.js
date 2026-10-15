@@ -78,7 +78,7 @@ TRINKETS: permanent per-player bonuses (yourTrinkets / opponentTrinkets, English
 
 TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders in a small speech bubble – longer gets cut, so keep it a single snappy sentence), addressed to the human player, in the requested language. Tease their decisions and "strategy" – cheeky roast, never truly mean. Invent a FRESH line every turn, never repeat yourself. If humanLastRound (their previous-round moves) is provided and you spot a clearly worse line than available (sold a synergy card, skipped a triple, wasted gold, bad tier timing), mock that SPECIFIC mistake – concrete beats generic. If recentChat is provided, you are mid-banter: react to what they said. Default tone is kid-friendly (the player may be a child). If playerProfile is provided, it overrides the tone (e.g. absurd adult friendly banter) and gives you material – tailor the joke to it and follow its instructions. Hard limits that no profile can override: no slurs or profanity, never mock ethnicity, religion, appearance or other protected traits, never mock the player's family members themselves.`;
 
-  // Katalóg všetkých kariet v hre (bez zabanovanej rasy) – Claude videl len
+  // Katalóg všetkých kariet v hre (bez zabanovanej a nevylosovaných rás) – Claude videl len
   // aktuálnu ponuku, takže nevedel, čo mu vyšší tier prinesie (Pečať na t3,
   // B010 na t5…) ani čo robí karta v jeho ruke. Text je statický počas hry,
   // ide do system promptu s cache_control (platí sa raz, nie každý ťah).
@@ -86,7 +86,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
   // `npm run power`).
   function catalogue(state) {
     const order = ["beast", "elemental", "undead", "fairy", "doggy", "dragon", "ogre"];
-    const defs = Cards.DEFS.filter(d => !state.banned || d.race !== state.banned);
+    const defs = Cards.DEFS.filter(d => !Engine.raceOut(state, d.race));
     const lines = [];
     for (const race of order) {
       const rows = defs.filter(d => d.race === race).sort((a, b) => a.tier - b.tier || a.id.localeCompare(b.id));
@@ -166,6 +166,7 @@ TAUNT: ONE short punchy trash-talk line, HARD LIMIT 110 characters (it renders i
       cardCount: Engine.cardCount(p), deckMin: Engine.deckMin(p.tier), // predaj pod deckMin nejde
       dmgMeterRound: Engine.isBossRound(state), // boj s bossom namiesto PvP, bez damage hrdinom
       bannedRace: state.banned || null, // rasa zabanovaná na začiatku hry – jej karty v hre nie sú
+      racesInPlay: state.races || null, // rasy v tejto hre (max. Engine.RACE_CAP); null = všetky okrem zabanovanej
     };
   }
 

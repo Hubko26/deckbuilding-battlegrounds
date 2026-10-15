@@ -189,7 +189,7 @@ const Net = (() => {
     if (!data) return false;
     clearRejoinWait();
     resetSync();
-    sendRaw({ type: "rejoin", seed: data.seed, mut: data.mut, ban: data.ban, trinkets: data.trinkets, actions: data.actions,
+    sendRaw({ type: "rejoin", seed: data.seed, mut: data.mut, ban: data.ban, trinkets: data.trinkets, raceCap: data.raceCap, actions: data.actions,
       you: myYou === "p1" ? "p2" : "p1", v: appV });
     if (handlers.onRejoined) handlers.onRejoined({ v: meta && meta.v });
     return true;

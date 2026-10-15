@@ -84,8 +84,9 @@ function renderRejoinBtn() {
 }
 
 // Hru prehrá z logu (rovnako ako tools/replay.mjs) – vráti stav po poslednej akcii.
-function rebuildFromLog(seed, mut, ban, trinkets, actions) {
-  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true, trinkets: trinkets === true });
+// raceCap: počet rás v hre zo záznamu (staré záznamy ho nemajú = všetky rasy).
+function rebuildFromLog(seed, mut, ban, trinkets, actions, raceCap) {
+  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true, trinkets: trinkets === true, raceCap: raceCap || null });
   if (s.phase !== "ban") Engine.startRound(s); // s banom štartuje prvé kolo až pickBan
   for (const [actor, name, ...args] of actions) {
     if (name === "doBattle") { Engine.doBattle(s); continue; }
@@ -330,8 +331,8 @@ function startGame() {
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
   // Hard/Claude bot štartuje so 70 HP (Bot.hpBonus) – replay to odvodí z difficulty v logu.
-  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn(), hpBonus: Bot.hpBonus(difficulty) });
-  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn() });
+  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn(), hpBonus: Bot.hpBonus(difficulty), raceCap: Engine.RACE_CAP });
+  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), raceCap: Engine.RACE_CAP });
   enterGameScreen();
   if (state.phase !== "ban") act(Engine.startRound(state));
   driveFlow();
@@ -351,6 +352,12 @@ function enterGameScreen() {
   logClear();
   renderMutator();
   renderBanBox();
+  if (state.races && state.phase !== "ban") log(racesMsg());
+}
+
+// Rasy vylosované do tejto hry (Engine.RACE_CAP) – log na štarte / po bane.
+function racesMsg() {
+  return `🎲 ${t(L.racesInPlay)} ${state.races.map(r => `${Cards.RACE_ICON[r]} ${Cards.RACES_NOM[r][I18N.lang]}`).join(", ")}`;
 }
 
 // „Bez rasy" – preškrtnutá ikonka rasy v hlavičke obchodu vedľa ↩️; ťuk = pripomenutie v logu.
@@ -362,7 +369,10 @@ function renderBanBox() {
   const name = Cards.RACES_NOM[r][I18N.lang];
   box.textContent = Cards.RACE_ICON[r];
   box.title = `${t(L.banBoxTitle)}: ${name}`;
-  box.onclick = () => log(banResultMsg({ race: r, by: state.ban && state.ban.by }));
+  box.onclick = () => {
+    log(banResultMsg({ race: r, by: state.ban && state.ban.by }));
+    if (state.races) log(racesMsg());
+  };
 }
 
 function banResultMsg(ev) {
@@ -425,8 +435,8 @@ function netHandlers() {
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
-      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true, trinkets: msg.trinkets === true });
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true });
+      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP });
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP });
       enterGameScreen();
       $("chatRow").classList.remove("hidden");
       $("chatInput").placeholder = t(L.chatPhNet);
@@ -491,7 +501,7 @@ function netHandlers() {
     canRejoin: () => !!(state && state.phase !== "over" && !fatalShown),
     getRejoin: () => {
       const g = GameLog.current();
-      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, actions: g.actions } : null;
+      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, raceCap: g.raceCap || null, actions: g.actions } : null;
     },
     // Preživší: kamarát sa vrátil, log odišiel, hráme ďalej.
     onRejoined: msg => {
@@ -505,13 +515,13 @@ function netHandlers() {
     // Vracajúci sa hráč: prehraj log a pokračuj.
     onRejoin: msg => {
       let s;
-      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions); }
+      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions, msg.raceCap); }
       catch (e) { fatalShown = false; showFatal(t(L.netDesync), e); return; }
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = s;
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, rejoined: true }, msg.actions);
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: msg.raceCap || null, rejoined: true }, msg.actions);
       playerRoundActions = [];
       lastPlayerRound = [];
       busy = false;
@@ -2260,7 +2270,10 @@ function act(events) {
       log(`${t(L.youEvolve)} ${Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang)}`);
       if (ev.hidden) hiddenEvolves.push(Cards.nameOf(Cards.byId[ev.defId], ev.rank, I18N.lang));
     }
-    if (ev.type === "ban") { log(banResultMsg(ev)); showTauntBubble(banResultMsg(ev), 4000); }
+    if (ev.type === "ban") {
+      log(banResultMsg(ev)); showTauntBubble(banResultMsg(ev), 4000);
+      if (state.races) log(racesMsg());
+    }
     if ((ev.type === "buy" || ev.type === "sell") && ev.pid === MY) Sfx.coin();
     if (ev.type === "buyBack" && ev.pid === MY) { Sfx.coin(); log(t(L.buyBackMsg)); }
     if (ev.type === "trinketPick" && ev.pid === MY) {

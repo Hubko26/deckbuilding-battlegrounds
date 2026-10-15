@@ -25,6 +25,10 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   zabanovanej rase – v obchode sa nikdy neobjaví; rasové aury a synergie na
   ňu sú mŕtve karty. Bot banuje hlavnú rasu zo svojej trojice
   (`Bot.pickBan`), žoldnierov (draci, ogri) až keď inú nemá.
+- **Max. 5 rás v hre** (`Engine.RACE_CAP`): hra vylosuje 6 rás (s banom –
+  obe trojice), po bane ostane 5; bez banu rovno 5. Rasy mimo
+  `state.races` (Claude: `racesInPlay`) v hre nie sú – rovnako ako
+  zabanovaná; katalóg kariet ich neobsahuje.
 - **DMG Meter** (vždy): každé 5. kolo (`Engine.isBossRound`, Claude:
   `dmgMeterRound: true`) je namiesto PvP boja DMG Meter – každý hráč bije
   Strážcu arény (5 Obrancov, ∞ staty, sám neútočí, každý úder do neho

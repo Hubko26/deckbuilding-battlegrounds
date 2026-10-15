@@ -547,7 +547,7 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   = 2 do ruky. Sčítajú sa: rukavica + kefa = 3 → Super pohladkanie každé
   kolo (max roll), rukavica + Vodítko = 2. Plná ruka = do balíčka. Art
   zatiaľ medailón Vodítka (`TRINKET_ART_ALIAS` v game.js).
-- Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo.
+- Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo (a s raceCap mimo celej hry).
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
   najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel ani balast;
   P004 útočí vľavo, P009 úplne vpravo. `cardPower` má odhady pre všetky nové
@@ -1035,6 +1035,24 @@ pravidla v logu); texty v `src/i18n.js` (`L.mutators`).
 
 Zemetrasenie (smrť najslabšej príšerky po boji) zamietnuté – plocha sa po
 boji aj tak vyprázdňuje.
+
+## Max. 5 rás v hre (raceCap, od 15. 10. 2026)
+
+Rás v kartách môže byť viac, než sa hrá naraz: každá hra si vylosuje
+**najviac 5 rás** (`Engine.RACE_CAP`, `state.races`). S banom sa vylosuje
+**6** (= obe trojice v ponukách) a po bane ich ostane 5; bez banu sa rovno
+vylosuje 5. Nevylosovaná rasa sa správa ako zabanovaná (`Engine.raceOut`):
+nie je v obchode, štartovacom balíčku, discovere, Klobúku ani v ponuke
+rasových trinketov. Otvára to miesto pre nové rasy bez riedenia obchodu.
+Log hry ukáže „🎲 Rasy v hre: …" na štarte (po bane), ťuk na ikonku banu
+ho zopakuje.
+
+- `newGame(rng, mut, { raceCap: n })`; s banom sa rng nemení (vylosované
+  rasy = prvých 6 zo zamiešania, ako ponuky doteraz), bez banu jedno
+  zamiešanie navyše. Bez `raceCap` hrajú všetky rasy – staré záznamy
+  (`raceCap` v GameLogu chýba), simulácie a testy. UI posiela
+  `raceCap: Engine.RACE_CAP` a zapisuje ho do záznamu; replay aj návrat do
+  hry (rejoin) ho čítajú zo záznamu.
 
 ## Ban rasy (fáza BAN na začiatku hry)
 

@@ -239,6 +239,7 @@ const L = {
   banResult: { sk: "Vylosované: dnes bez rasy", cs: "Vylosováno: dnes bez rasy", en: "Drawn: today without" },
   banByMe: { sk: "tvoj výber", cs: "tvůj výběr", en: "your pick" },
   banByOpp: { sk: "súperov výber", cs: "soupeřův výběr", en: "opponent's pick" },
+  racesInPlay: { sk: "Rasy v hre:", cs: "Rasy ve hře:", en: "Races in play:" },
   banBoxTitle: { sk: "Zabanovaná rasa", cs: "Zabanovaná rasa", en: "Banned race" },
   yourTurn: { sk: "Tvoj ťah – nakupuj!", cs: "Tvůj tah – nakupuj!", en: "Your turn – go shopping!" },
   enemyTurn: { sk: "Súper nakupuje…", cs: "Soupeř nakupuje…", en: "Opponent is shopping…" },
