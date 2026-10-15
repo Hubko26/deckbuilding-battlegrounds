@@ -22,6 +22,11 @@ commity, UI) je slovenčina.
   ako v hre, hard bot od 1. kola cieli zadanú rasu (lov rasy refreshom,
   skorší upgrade za silnou kartou, draci ako žoldnieri), matica sa odohrá
   4× s rôznymi seedmi – priemer a rozptyl (min–max). Default bez víl.
+- `npm run pve [-- n=100 rounds=20 races=beast,insect verbose=1]` – PvE
+  damage output rás: hard bot hrá sám jednu rasu (perfect roll) a každé
+  kolo bije Strážcu arény (DMG Meter, bez odmeny); tabuľka damage po
+  kolách 1–20, medián, sila plochy, tier, súhrn. Injekcie zdieľa
+  `tools/sim-lib.mjs` s ideal-sim.
 - `npm run scenario -- "B002:2 B001" "U009 U005" [n=500]` – odohrá N bojov
   zadaného mid-game scenára (boardy, aury, chargy).
 - `npm run power [-- race=beast md=1]` – tabuľka teoretickej sily kariet
