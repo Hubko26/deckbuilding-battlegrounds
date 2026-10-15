@@ -410,7 +410,7 @@ test("psíci: počítadlo prijatých Pohladkaní (inst.pets) cestuje s kartou ce
   assert.equal(silver.pets, 3); assert.equal(silver.pa, 4);
 });
 
-test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na začiatku ťahu, spolu 3 = Super, Vodítko +1, plná ruka do balíčka", () => {
+test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do balíčka na začiatku ťahu, spolu 3 = Super, Vodítko +1", () => {
   const { state, E, C } = fresh(62);
   E.startRound(state);
   const p = state.p1;
@@ -422,9 +422,10 @@ test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na za�
   };
   const pets = (zone, rank) => p[zone].filter(c => c.defId === "pet" && (c.rank || 1) === rank).length;
 
-  // rukavica: 1 Pohladkanie sa ráta do 5 kariet (nie navyše)
+  // rukavica: 1 Pohladkanie do balíčka, ruka ostáva 5 kariet
   let ev = setup(["doggyGlove"]);
-  assert.equal(pets("hand", 1), 1);
+  assert.equal(pets("hand", 1), 0);
+  assert.equal(pets("deck", 1), 1);
   assert.equal(p.hand.length, 5);
   assert.ok(ev.some(e => e.type === "petGift" && e.n === 1));
   assert.ok(ev.some(e => e.type === "trinketProc" && e.id === "doggyGlove"));
@@ -432,14 +433,15 @@ test("psíci: Hladkacia rukavica (+1) a kefa (+2) – Pohladkania do ruky na za�
   // rukavica + kefa: 3 Pohladkania sa hneď spoja na Super
   ev = setup(["doggyGlove", "doggyBrush"]);
   assert.ok(ev.some(e => e.type === "petGift" && e.n === 3));
-  assert.equal(pets("hand", 1), 0);
-  assert.equal(pets("hand", 2), 1, "Super pohladkanie v ruke");
+  assert.equal(pets("deck", 1), 0);
+  assert.equal(pets("deck", 2), 1, "Super pohladkanie v balíčku");
+  assert.equal(p.hand.length, 5);
 
   // rukavica + Vodítko = 2
   ev = setup(["doggyGlove", "doggyLeash"]);
   assert.ok(ev.some(e => e.type === "petGift" && e.n === 2));
-  assert.equal(pets("hand", 1), 2);
-  assert.equal(p.hand.length, 5, "2 Pohladkania + 3 karty z balíčka, nie 7");
+  assert.equal(pets("deck", 1), 2);
+  assert.equal(p.hand.length, 5, "Pohladkania idú do balíčka, ruka nie 7");
 
   // plná ruka (bigHand nie, HAND_MAX) – prebytok ide do balíčka
   p.trinkets = ["doggyBrush"];

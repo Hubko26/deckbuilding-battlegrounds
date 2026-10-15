@@ -86,7 +86,7 @@ test("ťah: spojenie pohladkaní z ruky dá Super do ruky a ruka sa dotiahne na 
   assert.equal(p.hand.filter(c => c.defId === "pet" && c.rank === 2).length, 1);
 });
 
-test("ťah: 6 kariet len s Veľkou rukou; pohladkania z rukavice/Vodítka sa rátajú do 5 kariet", () => {
+test("ťah: 6 kariet len s Veľkou rukou; pohladkania z rukavice/Vodítka idú do balíčka", () => {
   const a = setup(7, TEN);
   a.p.trinkets.push("bigHand");
   a.E.beginShopTurn(a.state, a.pid);
@@ -95,13 +95,13 @@ test("ťah: 6 kariet len s Veľkou rukou; pohladkania z rukavice/Vodítka sa rá
   b.p.trinkets.push("doggyGlove");
   b.E.beginShopTurn(b.state, b.pid);
   assert.equal(b.p.hand.length, 5);
-  assert.equal(b.p.hand.filter(c => c.defId === "pet").length, 1);
+  assert.equal(b.p.deck.filter(c => c.defId === "pet").length, 1);
   // hlásenie 15. 10. 2026: rukavica + Vodítko dávali ťah so 7 kartami
   const c = setup(9, TEN);
   c.p.trinkets.push("doggyGlove", "doggyLeash");
   c.E.beginShopTurn(c.state, c.pid);
   assert.equal(c.p.hand.length, 5);
-  assert.equal(c.p.hand.filter(c => c.defId === "pet").length, 2);
+  assert.equal(c.p.deck.filter(c => c.defId === "pet").length, 2);
 });
 
 test("ťah: celé kolá hry – na začiatku ťahu bez trinketov a odmien nikdy viac ako 5 kariet", () => {

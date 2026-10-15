@@ -629,11 +629,11 @@ const Engine = (() => {
   function beginShopTurn(state, pid) {
     const p = state[pid];
     const events = [];
-    // Pohladkania z psích trinketov PRED dotiahnutím – rátajú sa do 5 kariet
-    // (hlásenie hráča 15. 10. 2026: rukavica + Vodítko = začiatok ťahu so 7).
-    petTrinkets(state, p, events);
     drawCards(state, p, handDraw(state, pid) - p.hand.length, events);
     bossReward(state, p, events);
+    // Pohladkania z psích trinketov idú do BALÍČKA až po dotiahnutí (hlásenie
+    // hráča 15. 10. 2026: rukavica + Vodítko = začiatok ťahu so 7 kartami).
+    petTrinkets(state, p, events);
     giftTrinkets(state, p, events);
     // Mutácia „gift": raz za kolo náhodné kúzlo do ruky NAVYŠE (po dotiahnutí,
     // aby nebralo miesto normálnemu draw).
@@ -1785,8 +1785,9 @@ const Engine = (() => {
   }
 
   // Hladkacia rukavica (+1) a kefa (+2): na začiatku ťahu Pohladkania
-  // stupňa 1 do RUKY (plná ruka = do balíčka). Sčítajú sa; Vodítko pridá
-  // +1 ako pri každom generovaní. Spojenie troch rieši cyklus v beginShopTurn.
+  // stupňa 1 na náhodné miesta BALÍČKA (ruku nezväčšujú). Sčítajú sa;
+  // Vodítko pridá +1 ako pri každom generovaní. Spojenie troch (aj s kópiami
+  // v balíčku/kôpke) rieši cyklus v beginShopTurn – výsledok ostáva v balíčku.
   function petTrinkets(state, p, events) {
     let n = 0;
     for (const [id, k] of [["doggyGlove", 1], ["doggyBrush", 2]]) {
@@ -1799,13 +1800,7 @@ const Engine = (() => {
       n++;
       events.push({ type: "trinketProc", pid: p.id, id: "doggyLeash" });
     }
-    for (let i = 0; i < n; i++) {
-      if (p.hand.length < HAND_MAX) {
-        const inst = makeInst(state, "pet", 1);
-        inst.slot = freeSlot(p.hand, HAND_MAX);
-        p.hand.push(inst);
-      } else addToDeckRef(state, p, "pet", 1, 0, 0);
-    }
+    for (let i = 0; i < n; i++) addToDeckRef(state, p, "pet", 1, 0, 0);
     events.push({ type: "petGift", pid: p.id, n });
   }
 
