@@ -921,7 +921,7 @@ const Bot = (() => {
   const tierAvgCache = {};
   function tierAvgPower(tier) {
     if (tierAvgCache[tier] === undefined) {
-      const vals = Cards.DEFS.filter(d => !d.spell && !d.gen && d.tier === tier).map(d => cardPower(d).total);
+      const vals = Cards.DEFS.filter(d => !d.spell && !d.gen && !(Cards.EXP_RACES && Cards.EXP_RACES.has(d.race)) && d.tier === tier).map(d => cardPower(d).total);
       tierAvgCache[tier] = vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
     }
     return tierAvgCache[tier];

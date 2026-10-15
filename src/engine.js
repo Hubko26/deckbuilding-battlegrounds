@@ -447,6 +447,8 @@ const Engine = (() => {
   // sa vylosuje n + 1 (prvých 2 × BAN_OFFER zo zamiešania – rovnaké rng ako
   // bez capu) a po bane ostane n. Bez raceCap (staré záznamy, simulácie)
   // hrajú všetky rasy okrem zabanovanej.
+  // opts.exp: zapnuté experimentálne rasy (["insect"]) – bez nich ich karty
+  // v hre nie sú a zoznam rás (ban, raceCap) je rovnaký ako predtým.
   // opts.hpBonus: { p1?: n, p2?: n } – životy navyše k štartu (po mutácii),
   // napr. handicap hard/Claude bota (Bot.hpBonus). Dvíha aj strop liečenia.
   function newGame(rng, mutatorId, opts) {
@@ -459,6 +461,7 @@ const Engine = (() => {
       races: null, // rasy v tejto hre (raceCap); null = všetky
       raceCap: (opts && opts.raceCap) || null,
       trinketsOn: !!(opts && opts.trinkets), // ponuka trinketov v kolách TRINKET_ROUNDS
+      exp: (opts && opts.exp && opts.exp.length) ? [...opts.exp] : null, // experimentálne rasy (Hmyz)
       bossResult: null, // { round, dmg: { p1, p2 }, winner, claimed } posledného DMG Meter kola
       pools: makePools(),
       p1: makePlayer("p1"),
@@ -470,7 +473,7 @@ const Engine = (() => {
     state.p1.hp += hpBonus.p1 || 0; state.p2.hp += hpBonus.p2 || 0;
     state.p1.maxHp = state.p1.hp; state.p2.maxHp = state.p2.hp; // strop liečenia
     if (opts && opts.ban) {
-      const races = shuffle(Object.keys(Cards.RACES), rng);
+      const races = shuffle(gameRaceIds(state), rng);
       // vylosované rasy = obe trojice v ponuke; po bane ich ostane raceCap
       if (state.raceCap) state.races = races.slice(0, BAN_OFFER * 2);
       state.ban = {
@@ -481,14 +484,19 @@ const Engine = (() => {
       state.phase = "ban";
       return state;
     }
-    if (state.raceCap) state.races = shuffle(Object.keys(Cards.RACES), rng).slice(0, state.raceCap);
+    if (state.raceCap) state.races = shuffle(gameRaceIds(state), rng).slice(0, state.raceCap);
     setupStart(state);
     return state;
   }
 
-  // Rasa nie je v hre: zabanovaná alebo nevylosovaná (raceCap).
+  // Experimentálna rasa (Cards.EXP_RACES, napr. Hmyz) je v hre len so
+  // state.exp; inak jej karty ani rasa neexistujú.
+  const expOff = (state, race) => !!Cards.EXP_RACES && Cards.EXP_RACES.has(race) && !(state.exp && state.exp.includes(race));
+  // Rasy, ktoré táto hra pozná (pre ban / raceCap / Pečať všetkým).
+  const gameRaceIds = state => Object.keys(Cards.RACES).filter(r => !expOff(state, r));
+  // Rasa nie je v hre: zabanovaná, nevylosovaná (raceCap) alebo vypnutý experiment.
   const raceOut = (state, race) => !!race &&
-    (race === state.banned || (!!state.races && !state.races.includes(race)));
+    (race === state.banned || (!!state.races && !state.races.includes(race)) || expOff(state, race));
   const isBanned = (state, def) => raceOut(state, def.race);
 
   // Výber rasy na ban. Legálne len vo fáze "ban", raz za hráča, z jeho
@@ -1839,8 +1847,8 @@ const Engine = (() => {
     },
     // F008: permanentná aura pre KAŽDÚ rasu naraz; príšerky na ploche a v ruke
     // dostanú buff hneď (raz).
-    futureAll({ p, fx, m, events }) {
-      for (const race of Object.keys(Cards.RACES)) addRaceAura(p, race, fx.a * m, fx.h * m);
+    futureAll({ state, p, fx, m, events }) {
+      for (const race of gameRaceIds(state)) addRaceAura(p, race, fx.a * m, fx.h * m);
       buffZones(p, ["board", "hand"], d => !!d.race, fx.a * m, fx.h * m, events);
       events.push({ type: "futureAllBuff", pid: p.id, a: fx.a * m, h: fx.h * m });
     },

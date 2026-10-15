@@ -1,24 +1,25 @@
-// EXPERIMENT: rasa Hmyz (insect) – hra tento súbor NENAČÍTAVA (nie je
-// v index.html). Načíta ho simulácia (`npm run ideal -- exp=insect`) po
-// cards.js: pridá rasu, karty a texty do existujúcich objektov Cards / L.cards.
-// Engine má pre hmyz všeobecné háčiky (noEvolve, swarm, Kukla, fx typy),
-// ktoré bez týchto kariet nič nerobia.
+// EXPERIMENTÁLNA rasa Hmyz (insect). Načíta sa vždy po cards.js (index.html,
+// testy, nástroje) a pridá rasu, karty a texty do Cards / L.cards. V hre je
+// LEN keď ju zapne voľba „Hmyz" (Engine.newGame opts.exp = ["insect"]);
+// inak engine jej rasu aj karty vynechá (Cards.EXP_RACES → raceOut) a zoznam
+// rás pre ban / raceCap je rovnaký ako bez nej (staré záznamy sedia).
 //
 // Identita: ROJ. Hmyz nemá evolve – kópie sa nespájajú, ale každá ďalšia
 // kópia posilní všetky ostatné (swarm = +staty za každú kópiu v balíčku,
 // všetky zóny). Druhá os je rast v balíčku: Kukla (6. karta každý ťah,
 // nezahraná rastie), Včielka a Mravec zväčšujú karty, čo ležia v balíčku.
 //
-// Karty bez artu (noArt + emoji), mená zatiaľ len pracovné.
+// Art: assets/cards/<ID>_1.webp (sada gemini_insect; hmyz nemá stupne).
 (() => {
   const R = "insect";
+  Cards.EXP_RACES = new Set([...(Cards.EXP_RACES || []), R]);
   L.cards.races[R] = { sk: "Hmyz", cs: "Hmyz", en: "Insect" };
   L.cards.racesPl[R] = { sk: "Hmyzu", cs: "Hmyzu", en: "Insects" };
   L.cards.racesNom[R] = { sk: "Hmyz", cs: "Hmyz", en: "Insects" };
   Cards.RACE_ICON[R] = "🐛";
 
   const M = (id, tier, name, emoji, atk, hp, extra = {}) =>
-    ({ id, tier, race: R, stageNames: [name, name, name], atk, hp, noArt: true, emoji, noEvolve: true, ...extra });
+    ({ id, tier, race: R, stageNames: [name, name, name], atk, hp, emoji, noEvolve: true, ...extra });
 
   const DEFS = [
     // t1 Húsenica: +1/+1 za každú INÚ Húsenicu (5 kópií = 5/5 každá).
@@ -64,7 +65,7 @@
   // vyloženej. Sim (targeted, 50 HP): vyložená +0/+0 → hmyz 38 %, +0/+1 →
   // 50 %, +1/+1 → 67 %, +2/+2 → 83 % – citlivý gombík.
   const KUKLA = { id: "kukla", tier: 1, race: R, stageNames: ["Kukla", "Kukla", "Kukla"], atk: 1, hp: 3,
-    taunt: true, noArt: true, emoji: "🪺", noEvolve: true, gen: true, grow: { a: 2, h: 2 }, growPlayed: { a: 0, h: 1 } };
+    taunt: true, emoji: "🪺", noEvolve: true, gen: true, grow: { a: 2, h: 2 }, growPlayed: { a: 0, h: 1 } };
 
   // Roj (pravidlo rasy): KAŽDÝ Hmyz +1/+1 za každú inú svoju kópiu
   // v balíčku (všetky zóny). Húsenica to má priamo v definícii.
@@ -83,6 +84,7 @@
   // Jedovatá spóra: token Modlivky – Jed (úder, ktorý zraní, zabije a umlčí).
   L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
   const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
+    stageNames: ["Jedovatá spóra", "Jedovatá spóra", "Jedovatá spóra"], // stageNames = art (spora_1.webp)
     name: { sk: "Jedovatá spóra", cs: "Jedovatá spora", en: "Poison Spore" } };
   if (V.includes("hold4")) KUKLA.grow = { a: 4, h: 4 };
   if (V.includes("always")) KUKLA.growPlayed = { a: 2, h: 2 };
@@ -117,4 +119,38 @@
     imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`, `Imprint +${f.a}/+${f.h} to all Bees`),
     summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon`),
   });
+
+  // Pravidlá hmyzu na karte (pred schopnosťami): Roj, Žihadlo, Jed, Kukla.
+  // opts.swarm = aktuálny bonus roja majiteľa (game.js) – ukáže „teraz +X/+Y".
+  const X = {
+    swarm: { sk: "Roj", cs: "Roj", en: "Swarm" },
+    copy: { sk: "za každú inú svoju kópiu", cs: "za každou další svou kopii", en: "per other copy you own" },
+    race: { sk: "za každý iný Hmyz", cs: "za každý další Hmyz", en: "per other Insect you own" },
+    now: { sk: "teraz", cs: "teď", en: "now" },
+    sting: { sk: "Žihadlo", cs: "Žihadlo", en: "Sting" },
+    stingText: { sk: "po svojom útoku padne", cs: "po svém útoku padne", en: "dies after it attacks" },
+    poison: { sk: "Jed", cs: "Jed", en: "Poison" },
+    poisonText: { sk: "koho zraní, ten padne a je umlčaný", cs: "koho zraní, ten padne a je umlčen", en: "kills and silences whatever it damages" },
+    kukla: { sk: "Každý ťah ide do ruky navyše. Nezahraná +{g}, vyložená +{p} navždy",
+      cs: "Každé kolo jde do ruky navíc. Nezahraná +{g}, vyložená +{p} navždy",
+      en: "Drawn as an extra card every turn. Unplayed +{g}, played +{p} forever" },
+  };
+  const st = g => g ? `${g.a}/+${g.h}` : "0/+0";
+  const baseText = Cards.cardText;
+  Cards.cardText = (def, rank, lang, html, boost, opts) => {
+    const out = baseText(def, rank, lang, html, boost, opts);
+    if (def.race !== R) return out;
+    const b = x => (html ? `<strong>${x}</strong>` : x);
+    const parts = [];
+    for (const sw of [].concat(def.swarm || [])) {
+      parts.push(`${b(X.swarm[lang])}: +${sw.a}/+${sw.h} ${(sw.of ? X.copy : X.race)[lang]}`);
+    }
+    if (def.swarm && opts && opts.swarm && (opts.swarm.a || opts.swarm.h)) {
+      parts[parts.length - 1] += ` (${X.now[lang]} +${opts.swarm.a}/+${opts.swarm.h})`;
+    }
+    if (def.diesOnAttack) parts.push(`${b(X.sting[lang])}: ${X.stingText[lang]}`);
+    if (def.poison) parts.push(`${b(X.poison[lang])}: ${X.poisonText[lang]}`);
+    if (def.id === "kukla") parts.push(X.kukla[lang].replace("{g}", st(def.grow)).replace("{p}", st(def.growPlayed)));
+    return [...parts.map(x => x + "."), out].filter(Boolean).join(" ");
+  };
 })();

@@ -51,10 +51,9 @@
           <!-- Návrat do rozohranej sieťovej hry (kód je v localStorage) -->
           <button id="rejoinBtn" class="hidden"></button>
         </div>
-        <!-- Mutácie sa dajú vypnúť; v hre po sieti rozhoduje zakladateľ. -->
-        <label class="mut-toggle"><input type="checkbox" id="mutToggle"> <span id="mutToggleLbl"></span></label>
-        <!-- Ban rasy na začiatku hry (fáza BAN v engine); v hre po sieti rozhoduje zakladateľ. -->
-        <label class="mut-toggle"><input type="checkbox" id="banToggle"> <span id="banToggleLbl"></span></label>
+        <!-- Mutácie sú vždy vypnuté a ban rasy vždy zapnutý (bez checkboxu). -->
+        <!-- Hmyz: experimentálna rasa, default vypnutá; v hre po sieti rozhoduje zakladateľ. -->
+        <label class="mut-toggle"><input type="checkbox" id="insectToggle"> <span id="insectToggleLbl"></span></label>
         <!-- Trinkety: ponuka trvalého bonusu v kole 4 a 8; v hre po sieti rozhoduje zakladateľ. -->
         <label class="mut-toggle"><input type="checkbox" id="trinketToggle"> <span id="trinketToggleLbl"></span></label>
         <!-- Verzia: čas buildu (version.js) + posledný commit z GitHubu. -->
@@ -192,16 +191,17 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=0fad66e8"></script>
+  <script src="version.js?v=3e7a381a"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=de083f04"></script>
-  <script src="src/net.js?v=a89ba232"></script>
+  <script src="src/i18n.js?v=a27b678f"></script>
+  <script src="src/net.js?v=f8a1c39c"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=253c9890"></script>
-  <script src="src/engine.js?v=d3d424d8"></script>
-  <script src="src/bot.js?v=ea68a345"></script>
+  <script src="src/cards-insect.js?v=c9f73eb1"></script>
+  <script src="src/engine.js?v=9a300432"></script>
+  <script src="src/bot.js?v=a5a2358b"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=47e25034"></script>
+  <script src="src/game.js?v=d99d15c7"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=24b5cf89"></script>

@@ -25,10 +25,16 @@ function bare(seed) {
   return { ...f, put };
 }
 
-test("hmyz: bez experimentálneho súboru v hre nie je; s ním 10 kariet + Kukla mimo obchodu", () => {
+test("hmyz: bez voľby v hre nie je (obchod, štart, ban, raceCap); s ňou 10 kariet + Kukla mimo obchodu", () => {
   const plain = loadEngine();
-  assert.equal(plain.Cards.DEFS.filter(d => d.race === "insect").length, 0);
-  assert.equal(plain.Cards.RACES.insect, undefined);
+  for (let seed = 1; seed <= 20; seed++) {
+    const s = plain.Engine.newGame(seeded(seed), null, { ban: true, raceCap: plain.Engine.RACE_CAP });
+    assert.ok(![...s.ban.offers.p1, ...s.ban.offers.p2, ...s.races].includes("insect"));
+    const s2 = plain.Engine.newGame(seeded(seed), null);
+    s2.p1.tier = 6;
+    for (let i = 0; i < 50; i++) assert.notEqual(plain.Cards.byId[plain.Engine.rollCard(s2, 6, "p1")].race, "insect");
+    assert.ok(!s2.p1.deck.some(c => plain.Cards.byId[c.defId].race === "insect"));
+  }
   const { state, E, C } = fresh(2);
   assert.equal(C.DEFS.filter(d => d.race === "insect" && !d.gen).length, 10);
   assert.ok(C.byId.kukla.gen);

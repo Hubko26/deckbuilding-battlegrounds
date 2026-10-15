@@ -9,7 +9,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
 
 - 1v1 autobattler + deckbuilding. Hrdina má 50 HP; prehráva, kto klesne na 0.
   Hard bot a Claude súper (ty) štartujú so 70 HP (handicap) – hráč má 50.
-- **Mutácia („Pravidlo dnešnej arény")**: každá hra má jedno náhodné globálne
+- **Mutácie sú v nových hrách vždy vypnuté** (staré záznamy ich môžu mať).
+  **Mutácia („Pravidlo dnešnej arény")**: hra s mutáciou má jedno náhodné globálne
   pravidlo pre oboch hráčov (`state.mutator`, Claude ho dostáva v stave ako
   `mutator`). Prispôsob stratégiu: `echoDeath` deathrattly 2× (undead/summon
   raj), `bloodMoon` preživší +1/+1 navždy (stavaj na prežitie), `freeRefresh`
@@ -18,7 +19,7 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   predaj za 2 (lacnejšie pivotovanie), `smallArena` 35 HP (tempo > scaling),
   `marathon` 65 HP (greed/scaling vyhráva), `gift` kúzlo do ruky každé kolo
   (víly profitujú), `echoCry` battlecry 2× (draci/battlecry telá raj).
-- **Ban rasy** (voliteľné, default zapnuté): pred prvým kolom dostane každý
+- **Ban rasy** (v nových hrách vždy zapnutý): pred prvým kolom dostane každý
   hráč 3 rasy (`state.ban.offers[pid]`), jednu vyberie (`Engine.pickBan`);
   z oboch výberov sa jedna vylosuje a jej karty v celej hre NIE SÚ
   (`state.banned`, Claude ju dostáva v stave ako `bannedRace`). Nestavaj na
@@ -376,6 +377,15 @@ plochou. Rob VŠETKY kroky, každý ťah:
     a aury nie, tie už svoje spravili a telo je nad krivkou.
 
 ### Nákupné zoznamy podľa rasy (priorita zľava doprava)
+
+- **Hmyz** (experiment, len s voľbou „🐛 Hmyz"): BEZ evolve – kópie sa
+  nespájajú, každý Hmyz má +1/+1 za každú inú svoju kópiu (roj), takže
+  zbieraj KÓPIE tej istej karty, nepredávaj ich. Kukla (z I001 Húsenice) ide
+  každý ťah do ruky navyše; nezahraná +2/+2, vyložená +0/+1 navždy. Priorita:
+  I008 Osa (t5 Pečať, každé vyloženie znova), I001 Húsenice (Kukla + roj),
+  I002 Včielky (útočia celým rojom z balíčka), I010 Kráľovná (Pečať
+  Včielkam), I007 Mravec, I003 Lienka. I009 Modlivka dá Jedovatú spóru –
+  counter na veľké telá a Pri smrti.
 
 - **Undead**: U002 (t1, kostíky +1/+1 v boji – vykladaj každé kolo), U001,
   U003 (t2 Pečať), U004 (t2, kópia schopnosti – target U009/U006/U010), U005/U006 (t3), U008

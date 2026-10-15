@@ -217,16 +217,11 @@ const L = {
   },
   play: { sk: "Hraj!", cs: "Hraj!", en: "Play!" },
   newGame: { sk: "Nová hra", cs: "Nová hra", en: "New game" },
-  mutToggle: {
-    sk: "🎲 Pravidlo dnešnej arény (náhodná mutácia)",
-    cs: "🎲 Pravidlo dnešní arény (náhodná mutace)",
-    en: "🎲 Rule of the day (random mutation)",
-  },
-  // Fáza BAN na začiatku hry (engine pickBan).
-  banToggle: {
-    sk: "🚫 Ban rasy (každý vyberie jednu, jedna z dvoch sa vylosuje)",
-    cs: "🚫 Ban rasy (každý vybere jednu, jedna ze dvou se vylosuje)",
-    en: "🚫 Race ban (each picks one, one of the two is drawn)",
+  // Experimentálna rasa Hmyz (src/cards-insect.js, engine opts.exp).
+  insectToggle: {
+    sk: "🐛 Hmyz (nová rasa na skúšku: roj bez evolve, Kukla)",
+    cs: "🐛 Hmyz (nová rasa na zkoušku: roj bez evolve, Kukla)",
+    en: "🐛 Insects (new test race: swarm without evolve, Cocoon)",
   },
   banTitle: { sk: "🚫 Ktorá rasa dnes NEBUDE v aréne?", cs: "🚫 Která rasa dnes NEBUDE v aréně?", en: "🚫 Which race is OUT of the arena today?" },
   banIntro: {

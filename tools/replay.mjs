@@ -27,7 +27,7 @@ function toVar(src) {
 function loadCtx() {
   const ctx = { console, Math, JSON, Object, Array, module: undefined };
   vm.createContext(ctx);
-  for (const f of ["src/i18n.js", "src/cards.js", "src/engine.js", "src/bot.js"]) {
+  for (const f of ["src/i18n.js", "src/cards.js", "src/cards-insect.js", "src/engine.js", "src/bot.js"]) {
     vm.runInContext(toVar(fs.readFileSync(path.join(ROOT, f), "utf8")), ctx, { filename: f });
   }
   return ctx;
@@ -63,8 +63,9 @@ const E = ctx.Engine, B = ctx.Bot, C = ctx.Cards;
 // difficulty hard/claude = bot (p2) štartuje so 70 HP (Bot.hpBonus)
 // raceCap: n v zázname = do hry išlo len n vylosovaných rás; staré záznamy
 // flag nemajú (= všetky rasy okrem zabanovanej)
+// exp: ["insect"] v zázname = hra so zapnutou experimentálnou rasou Hmyz
 const s = E.newGame(E.seededRng(game.seed), game.mut === false ? null : undefined,
-  { ban: game.ban === true, trinkets: game.trinkets === true, hpBonus: B.hpBonus(game.difficulty), raceCap: game.raceCap || null });
+  { ban: game.ban === true, trinkets: game.trinkets === true, hpBonus: B.hpBonus(game.difficulty), raceCap: game.raceCap || null, exp: game.exp || null });
 if (s.phase !== "ban") E.startRound(s);
 
 const boardStr = p => p.board.map(x =>

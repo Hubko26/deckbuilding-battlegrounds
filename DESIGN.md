@@ -1020,7 +1020,9 @@ Kompletný zoznam kariet je v `src/cards.js` (dáta sú zdrojom pravdy).
 ## Mutácie – „Pravidlo dnešnej arény"
 
 Každá hra má **jednu náhodnú mutáciu** – globálne pravidlo, ktoré platí pre
-oboch hráčov a mení hru (novelita + adaptácia). **Default sú VYPNUTÉ** – zapínajú sa
+oboch hráčov a mení hru (novelita + adaptácia). **Od 15. 10. 2026 sú VŽDY
+VYPNUTÉ** – checkbox zrušený, nová hra posiela `mut: false`. Kód mutácií
+ostáva (staré záznamy, testy). Predtým: zapínali sa
 checkboxom na úvodnej obrazovke (voľba sa pamätá v localStorage); v hre po sieti
 rozhoduje zakladateľ – flag `mut` cestuje v `start` správe (PeerJS aj LAN
 server) a zapisuje sa do GameLog, takže replay hru zrekonštruuje správne
@@ -1084,8 +1086,8 @@ Kúzla rasu nemajú – ban sa ich netýka.
   spustí prvé kolo (`startRound` – events nesú aj draw). `state.banned` = id
   rasy, `state.ban.by` = čí výber vyhral. Bez `ban` je poradie losovania z rng
   rovnaké ako doteraz (staré záznamy sa prehrajú rovnako).
-- UI: checkbox na úvodnej obrazovke (**default ZAPNUTÝ**, pamätá sa
-  `arena.ban`); v hre po sieti rozhoduje zakladateľ – flag `ban` cestuje
+- UI: **ban je VŽDY zapnutý** (checkbox zrušený 15. 10. 2026; predtým
+  checkbox `arena.ban`); v hre po sieti rozhoduje zakladateľ – flag `ban` cestuje
   v `hello`/`start`/`rejoin` správach ako `mut` a zapisuje sa do GameLog
   (`rebuildFromLog` a `tools/replay.mjs` volajú `startRound` len keď hra
   nezačína fázou ban). Overlay s tromi veľkými tlačidlami; po výbere „čakám
@@ -1094,6 +1096,46 @@ Kúzla rasu nemajú – ban sa ich netýka.
 - Bot (aj Claude súper) banuje cez `Bot.pickBan`: prvú HLAVNÚ rasu zo svojej
   trojice (beast/elemental/undead/fairy), žoldnierov (draci, ogri) až keď iné
   nemá. Bez rng – akcia sa loguje ako `pickBan`, replay ju prehrá presne.
+
+## Hmyz – experimentálna rasa (voľba „🐛 Hmyz", od 15. 10. 2026)
+
+Karty v `src/cards-insect.js` (načíta sa vždy po cards.js), art
+`assets/cards/<ID>_1.webp` zo sady `gemini_insect`. V hre je LEN so zapnutou
+voľbou na úvodnej obrazovke (**default VYPNUTÁ**, `arena.insects`): engine
+`newGame(…, { exp: ["insect"] })` → `state.exp`. Bez nej ju `raceOut`
+vynechá (`Cards.EXP_RACES`) a zoznam rás pre ban / raceCap je rovnaký ako
+predtým, takže staré záznamy sa prehrajú rovnako. V hre po sieti rozhoduje
+zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
+(replay, rejoin).
+
+**Identita: roj bez evolve.** Hmyz sa nespája (`noEvolve`) – každý Hmyz má
+**Roj: +1/+1 za každú inú svoju kópiu** v celom balíčku (všetky zóny,
+`def.swarm`, pripočíta sa bojovej kópii v `copyBoard`; UI ho ukáže v texte
+„teraz +X/+Y" a v snímke boja). Každý Hmyz má navyše **Pri smrti 25 %
+šancu vyvolať bojovú kópiu tvojej Kukly**.
+
+- **Kukla** (gen, nie v obchode, jediná na hráča, 1/3 Obranca): vytvorí ju
+  Húsenica; na začiatku ťahu ide VŽDY do ruky navyše (6. karta). Nezahraná
+  na konci ťahu +2/+2 navždy, vyložená +0/+1 navždy (sim: +0/+0 → 38 %,
+  +0/+1 → 50 %, +1/+1 → 67 % – citlivý gombík).
+- I001 Húsenica (t1, 1/1): Pri vyložení Kukla do balíčka, alebo Kukla +1/+1 navždy.
+- I002 Včielka (t1, 2/1): Žihadlo – po svojom útoku padne; Pri smrti vyvolá
+  ďalšiu Včielku z balíčka (každú raz za boj) → zaútočí celý roj. UI animuje
+  Včielky zrýchlene (`fastAnim`).
+- I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
+- I004 Kobylka (t2, 3/2): Pred bojom +1/+1 za každý iný Hmyz na ploche.
+- I005 Svätojánska muška (t3, 3/3): Pred bojom náhodný iný Hmyz +X/+X (X = Húsenice).
+- I006 Roháč (t3, 2/5, Obranca): navyše +0/+1 za každý iný Hmyz v balíčku.
+- I007 Mravec (t4, 4/4): Po nákupe náhodný Hmyz v balíčku +X/+X navždy (X = Mravce).
+- I008 Osa (t5, 5/4): Pri vyložení Pečať +1/+1 Hmyzu.
+- I009 Modlivka (t5, 6/6): Pri smrti Jedovatá spóra (token 1/1, **Jed**:
+  koho zraní, ten padne a je umlčaný – Pri smrti ani Znovuzrodenie sa
+  nespustia; štít jed zastaví; Strážca arény nie).
+- I010 Kráľovná (t6, 7/7): Pri smrti Pečať +1/+1 všetkým Včielkam (aj
+  budúcim – `p.cardBuffs`).
+
+Simulácia: `npm run target -- exp=insect` (hmyz okolo 63 % pri poslednom
+behu – sleduje sa z hier). `variant=…` v ideal-sim skúša alternatívy.
 
 ## DMG Meter kolo (od 3. 10. 2026)
 

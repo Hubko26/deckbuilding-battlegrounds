@@ -85,8 +85,9 @@ function renderRejoinBtn() {
 
 // Hru prehrá z logu (rovnako ako tools/replay.mjs) – vráti stav po poslednej akcii.
 // raceCap: počet rás v hre zo záznamu (staré záznamy ho nemajú = všetky rasy).
-function rebuildFromLog(seed, mut, ban, trinkets, actions, raceCap) {
-  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true, trinkets: trinkets === true, raceCap: raceCap || null });
+// exp: zapnuté experimentálne rasy zo záznamu (["insect"]), staré = žiadne.
+function rebuildFromLog(seed, mut, ban, trinkets, actions, raceCap, exp) {
+  const s = Engine.newGame(Engine.seededRng(seed), mut === false ? null : undefined, { ban: ban === true, trinkets: trinkets === true, raceCap: raceCap || null, exp: exp || null });
   if (s.phase !== "ban") Engine.startRound(s); // s banom štartuje prvé kolo až pickBan
   for (const [actor, name, ...args] of actions) {
     if (name === "doBattle") { Engine.doBattle(s); continue; }
@@ -115,25 +116,23 @@ function startRejoin(code) {
 }
 window.arenaRejoin = code => startRejoin(code);
 
-// Voľba „hrať bez mutácií" – checkbox na úvodnej obrazovke, pamätá sa
-// v localStorage. V hre po sieti rozhoduje zakladateľ (flag ide v "start").
-function mutsOn() { return $("mutToggle").checked; }
-// Ban rasy: default ZAPNUTÝ, voľba sa pamätá; v hre po sieti rozhoduje zakladateľ.
-function bansOn() { return $("banToggle").checked; }
+// Mutácie sú VŽDY vypnuté a ban rasy VŽDY zapnutý (checkboxy zrušené
+// 15. 10. 2026). Staré záznamy si nesú vlastné mut/ban – replay ich rešpektuje.
+function mutsOn() { return false; }
+function bansOn() { return true; }
+// Hmyz (experimentálna rasa): default VYPNUTÝ, voľba sa pamätá; v hre po
+// sieti rozhoduje zakladateľ (flag „insects" ide v "start").
+function insectsOn() { return $("insectToggle").checked; }
+const expOpt = on => on ? ["insect"] : null;
+try { $("insectToggle").checked = localStorage.getItem("arena.insects") === "1"; } catch { $("insectToggle").checked = false; }
+$("insectToggle").addEventListener("change", () => {
+  try { localStorage.setItem("arena.insects", insectsOn() ? "1" : "0"); } catch {}
+});
 // Trinkety: default ZAPNUTÉ, voľba sa pamätá; v hre po sieti rozhoduje zakladateľ.
 function trinketsOn() { return $("trinketToggle").checked; }
 try { $("trinketToggle").checked = localStorage.getItem("arena.trinkets") !== "0"; } catch { $("trinketToggle").checked = true; }
 $("trinketToggle").addEventListener("change", () => {
   try { localStorage.setItem("arena.trinkets", trinketsOn() ? "1" : "0"); } catch {}
-});
-try { $("banToggle").checked = localStorage.getItem("arena.ban") !== "0"; } catch { $("banToggle").checked = true; }
-$("banToggle").addEventListener("change", () => {
-  try { localStorage.setItem("arena.ban", bansOn() ? "1" : "0"); } catch {}
-});
-// Default VYPNUTÉ – mutácia je opt-in („1" v localStorage = hráč si ju zapol).
-try { $("mutToggle").checked = localStorage.getItem("arena.muts") === "1"; } catch { $("mutToggle").checked = false; }
-$("mutToggle").addEventListener("change", () => {
-  try { localStorage.setItem("arena.muts", mutsOn() ? "1" : "0"); } catch {}
 });
 
 // Verzia klienta = ?v= hashe skriptov z index.html. Keď sa hráčom líšia
@@ -251,8 +250,7 @@ function applyI18n() {
   $("netCancel").textContent = t(L.cancel);
   renderRejoinBtn();
   $("peerHostBtn").textContent = t(L.peerHost);
-  $("mutToggleLbl").textContent = t(L.mutToggle);
-  $("banToggleLbl").textContent = t(L.banToggle);
+  $("insectToggleLbl").textContent = t(L.insectToggle);
   $("trinketToggleLbl").textContent = t(L.trinketToggle);
   renderVersion();
   $("peerJoinBtn").textContent = t(L.peerJoin);
@@ -334,8 +332,9 @@ function startGame() {
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
   const seed = Math.floor(Math.random() * 2 ** 31);
   // Hard/Claude bot štartuje so 70 HP (Bot.hpBonus) – replay to odvodí z difficulty v logu.
-  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn(), hpBonus: Bot.hpBonus(difficulty), raceCap: Engine.RACE_CAP });
-  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), raceCap: Engine.RACE_CAP });
+  const exp = expOpt(insectsOn());
+  state = Engine.newGame(Engine.seededRng(seed), mutsOn() ? undefined : null, { ban: bansOn(), trinkets: trinketsOn(), hpBonus: Bot.hpBonus(difficulty), raceCap: Engine.RACE_CAP, exp });
+  GameLog.start(seed, { mode: "bot", difficulty, mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), raceCap: Engine.RACE_CAP, exp });
   enterGameScreen();
   if (state.phase !== "ban") act(Engine.startRound(state));
   driveFlow();
@@ -438,8 +437,9 @@ function netHandlers() {
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
-      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP });
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP });
+      const exp = expOpt(msg.insects === true);
+      state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP, exp });
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP, exp });
       enterGameScreen();
       $("chatRow").classList.remove("hidden");
       $("chatInput").placeholder = t(L.chatPhNet);
@@ -504,7 +504,7 @@ function netHandlers() {
     canRejoin: () => !!(state && state.phase !== "over" && !fatalShown),
     getRejoin: () => {
       const g = GameLog.current();
-      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, raceCap: g.raceCap || null, actions: g.actions } : null;
+      return g ? { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, raceCap: g.raceCap || null, exp: g.exp || null, actions: g.actions } : null;
     },
     // Preživší: kamarát sa vrátil, log odišiel, hráme ďalej.
     onRejoined: msg => {
@@ -518,13 +518,13 @@ function netHandlers() {
     // Vracajúci sa hráč: prehraj log a pokračuj.
     onRejoin: msg => {
       let s;
-      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions, msg.raceCap); }
+      try { s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions, msg.raceCap, msg.exp); }
       catch (e) { fatalShown = false; showFatal(t(L.netDesync), e); return; }
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
       state = s;
-      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: msg.raceCap || null, rejoined: true }, msg.actions);
+      GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: msg.raceCap || null, exp: msg.exp || null, rejoined: true }, msg.actions);
       playerRoundActions = [];
       lastPlayerRound = [];
       busy = false;
@@ -570,7 +570,7 @@ function startNet() {
   $("netUrls").textContent = "";
   $("peerCode").textContent = "";
   $("netMsg").textContent = t(L.netConnecting);
-  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), v: APP_V });
+  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), insects: insectsOn(), v: APP_V });
 }
 
 // Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
@@ -586,7 +586,7 @@ function showPeerSetup() {
 function peerHost() {
   const code = String(1000 + Math.floor(Math.random() * 9000));
   $("peerCode").textContent = "…";
-  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), v: APP_V });
+  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), insects: insectsOn(), v: APP_V });
 }
 
 function peerJoin() {
@@ -823,9 +823,15 @@ async function runBattle() {
   // Snímka plôch a počítadiel pred bojom – doBattle stav zmení naraz
   // (kôpky, nové kolo, dotiahnutá ruka), animácia beží nad snímkou,
   // inak by čísla skákali dopredu už na začiatku boja.
+  // Roj (Hmyz) dostane až bojová kópia v engine – snímka ho pridá tiež, inak
+  // by životy z hp eventov skákali nad zobrazené.
+  const withSwarm = (pid, x) => {
+    const sw = Engine.swarmBonus(state[pid], Cards.byId[x.defId]);
+    return { ...x, atk: x.atk + sw.a, hp: x.hp + sw.h, maxHp: (x.maxHp ?? x.hp) + sw.h };
+  };
   const snap = {
-    p1: state.p1.board.map(x => ({ ...x })),
-    p2: state.p2.board.map(x => ({ ...x })),
+    p1: state.p1.board.map(x => withSwarm("p1", x)),
+    p2: state.p2.board.map(x => withSwarm("p2", x)),
   };
   const pre = {
     p1: { deck: state.p1.deck.length, discard: state.p1.discard.length, hp: state.p1.hp },
@@ -1843,7 +1849,9 @@ function cardEl(instOrId, opts) {
   const owner = state ? state[opts.owner || MY] : null;
   const boost = (owner && owner.dmgBoost) || 0;
   // Divoký úder (O009): rozsah podľa aktuálneho útoku inštancie (buffy ho posúvajú).
-  const txOpts = isInst ? { atk: instOrId.atk } : undefined;
+  const txOpts = isInst ? { atk: instOrId.atk } : {};
+  // Roj (Hmyz): aktuálny bonus majiteľa do textu karty („teraz +X/+Y").
+  if (def.swarm && owner) txOpts.swarm = Engine.swarmBonus(owner, def);
   const text = Cards.cardText(def, rank, I18N.lang, true, boost, txOpts);
   const plainText = Cards.cardText(def, rank, I18N.lang, false, boost, txOpts);
   const name = Cards.nameOf(def, rank, I18N.lang);
@@ -1854,7 +1862,10 @@ function cardEl(instOrId, opts) {
   if (opts.shop) inner += `<span class="cost">🪙${Engine.cardCost(defId)}</span>`;
   // Koľko kópií už vlastníš (vrátane balíčka a kôpky) – kúpa tretej evolvne.
   // Kúzla sa neevolvujú, počítadlo by na nich zavádzalo.
-  if (opts.owned && !def.spell) inner += `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
+  // Hmyz evolve nemá – ukáž počet kópií (roj), nie x/3.
+  if (opts.owned && !def.spell) inner += def.noEvolve
+    ? `<span class="owned hot">${opts.owned}×</span>`
+    : `<span class="owned${opts.owned >= 2 ? " hot" : ""}">${Math.min(opts.owned, 2)}/3</span>`;
   if (art) {
     el.classList.add("full-art");
     if (def.spell) el.classList.add("spell-art"); // cena v kruhu dole, bez pilulky „Kúzlo"

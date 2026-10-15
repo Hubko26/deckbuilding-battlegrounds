@@ -18,10 +18,14 @@ function toVar(src) {
 export function loadEngine(opts = {}) {
   const ctx = { console, Math, JSON, Object, Array, module: undefined };
   vm.createContext(ctx);
-  // opts.exp: experimentálne rasy (napr. ["insect"] → src/cards-insect.js po cards.js).
-  const exp = (opts.exp || []).map(r => `src/cards-${r}.js`);
-  for (const f of ["src/i18n.js", "src/cards.js", ...exp, "src/engine.js", "src/bot.js"]) {
+  // Experimentálne rasy (src/cards-insect.js) sa načítajú vždy ako v hre;
+  // opts.exp (napr. ["insect"]) ich zapne v každom newGame (ako checkbox).
+  for (const f of ["src/i18n.js", "src/cards.js", "src/cards-insect.js", "src/engine.js", "src/bot.js"]) {
     vm.runInContext(toVar(fs.readFileSync(path.join(ROOT, f), "utf8")), ctx, { filename: f });
+  }
+  if (opts.exp) {
+    const ng = ctx.Engine.newGame;
+    ctx.Engine.newGame = (rng, mut, o) => ng(rng, mut, { ...(o || {}), exp: opts.exp });
   }
   if (!opts.deckMin) {
     const newGame = ctx.Engine.newGame;

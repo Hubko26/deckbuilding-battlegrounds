@@ -16,7 +16,8 @@ commity, UI) je slovenčina.
   plochy po kolách, tier po kolách, top karty. `tierCost=5,8,10,13,16`,
   `tierDrop=0.5`, `tierMin=4` = experimenty s cenou upgradu. Bot hrá rasy
   rôzne dobre (víly a psíkov slabo) – výsledok porovnávaj s logmi hráčov.
-  `exp=insect [variant=copy]` pridá experimentálnu rasu Hmyz (aj v `target`).
+  `exp=insect` zapne experimentálnu rasu Hmyz (aj v `target`), `variant=…`
+  skúša alternatívy z `src/cards-insect.js`.
 - `npm run target [-- n=100 hp=50 races=...]` – cielenie rasy: obchod a štart
   ako v hre, hard bot od 1. kola cieli zadanú rasu (lov rasy refreshom,
   skorší upgrade za silnou kartou, draci ako žoldnieri), matica sa odohrá
@@ -45,8 +46,11 @@ commity, UI) je slovenčina.
 - `src/cards.js` – dáta kariet (rasy, schopnosti, ceny); texty ťahá z `L.cards`.
   7 rás: 6 s artom (10 kariet) + Psíci (`doggy`, 9 kariet P001–P009 podľa
   art sady). Karta bez artu dostane `noArt: true, emoji` (rám s emoji).
-- `src/cards-insect.js` – **experiment** rasa Hmyz (bez evolve, roj, Kukla);
-  hra ho nenačíta, len simulácie (`exp=insect`) a `test/insect.test.mjs`.
+- `src/cards-insect.js` – **experimentálna** rasa Hmyz (bez evolve, roj,
+  Kukla, Jed). Načíta sa vždy, v hre je len s voľbou „🐛 Hmyz" (default
+  vypnutá) → `newGame` `opts.exp`; bez nej ju engine vynechá
+  (`Cards.EXP_RACES`). Texty hmyzu sú zatiaľ v tomto súbore. Testy
+  `test/insect.test.mjs`.
 - `src/bot.js` – heuristický súper (easy/normal/hard); hrá len cez Engine API.
 - `src/game.js` – UI, animácie, prehrávanie eventov z engine.
 - `src/net.js` – multiplayer (replikácia akcií, chat, prítomnosť hráča,
@@ -71,7 +75,8 @@ commity, UI) je slovenčina.
 
 ## Kľúčové herné pravidlá (výber; detaily v DESIGN.md)
 
-- **Ban rasy** (default zapnutý, checkbox): pred prvým kolom každý hráč
+- **Mutácie sú vždy vypnuté** a **ban rasy vždy zapnutý** (checkboxy zrušené).
+- **Ban rasy**: pred prvým kolom každý hráč
   vyberie jednu z troch rás (`Engine.pickBan`), z dvoch výberov sa jedna
   vylosuje a jej karty v celej hre nie sú (`state.banned`, filter v `rollCard`).
 - **Max. 5 rás v hre** (`Engine.RACE_CAP`, `state.races`): s banom sa

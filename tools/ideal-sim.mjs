@@ -23,8 +23,8 @@
 //   rounds   strop kôl (potom remíza)
 //   mirror   1 = aj zrkadlové strety (rasa proti sebe)
 //   verbose  1 = vypíš priebeh prvej hry každého matchupu po kolách
-//   exp      experimentálne rasy (čiarkou), napr. exp=insect načíta
-//            src/cards-insect.js (Hmyz – hra ho nenačíta) a pridá rasu
+//   exp      zapnuté experimentálne rasy (čiarkou), napr. exp=insect = Hmyz
+//            v hre (ako checkbox „Hmyz") aj v matici rás
 //
 // Injekcie do zdrojov (engine aj bot ostávajú nedotknuté v repe):
 //   engine.rollCard  – state.raceLock[poolKey] obmedzí losovanie na rasu
@@ -71,7 +71,8 @@ function loadCtx() {
   vm.runInContext(toVar(read("src/i18n.js")), ctx, { filename: "src/i18n.js" });
   vm.runInContext(toVar(read("src/cards.js")), ctx, { filename: "src/cards.js" });
   ctx.EXP_VARIANT = opts.variant || ""; // varianty experimentálnej rasy (cards-<rasa>.js)
-  for (const r of EXP) vm.runInContext(read(`src/cards-${r}.js`), ctx, { filename: `src/cards-${r}.js` });
+  // Experimentálne rasy sa načítajú vždy (ako v hre); do hry idú len s exp=….
+  vm.runInContext(toVar(read("src/cards-insect.js")), ctx, { filename: "src/cards-insect.js" });
 
   let eng = read("src/engine.js");
   eng = patch(eng,
@@ -140,6 +141,7 @@ function playGame(ctx, seed, raceA, raceB, cfg) {
     trinkets: !!cfg.trinkets,
     // targeted: obchod a štart ako v hre, bot len cieli rasu
     raceLock: cfg.targeted ? null : { p1: [raceA], p2: [raceB], common: [raceA, raceB] },
+    exp: EXP.length ? EXP : null,
   });
   s.p1.forceRace = raceA; s.p2.forceRace = raceB;
   if (cfg.targeted) { s.p1.targeted = true; s.p2.targeted = true; }

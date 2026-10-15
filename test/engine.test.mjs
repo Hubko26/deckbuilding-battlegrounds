@@ -41,7 +41,7 @@ test("dáta kariet: príšery majú rasu, 3 mená a art; texty sa generujú", ()
   let minions = 0;
   for (const d of C.DEFS) {
     if (!d.spell) {
-      minions++;
+      if (!C.EXP_RACES.has(d.race)) minions++; // experimentálny Hmyz zvlášť (insect.test.mjs)
       assert.ok(C.RACES[d.race], `karta ${d.id} nemá platnú rasu`);
       assert.equal(d.stageNames.length, 3, `karta ${d.id} nemá 3 mená`);
       for (const r of [1, 2, 3]) {
@@ -225,9 +225,9 @@ test("art súbory existujú pre všetky príšery a stupne", async () => {
   const path = await import("node:path");
   const { ROOT } = await import("./harness.mjs");
   const { C } = fresh();
-  for (const d of C.DEFS) {
-    if (d.spell || d.noArt) continue;
-    for (const r of [1, 2, 3]) {
+  for (const d of [...C.DEFS, ...C.TOKENS]) {
+    if (d.spell || d.noArt || !d.stageNames) continue;
+    for (const r of d.noEvolve || d.token ? [1] : [1, 2, 3]) { // Hmyz a tokeny majú len stupeň 1
       const p = path.join(ROOT, C.artOf(d, r));
       assert.ok(fs.existsSync(p), `chýba ${C.artOf(d, r)}`);
     }
@@ -966,6 +966,7 @@ test("F009 (t5) Po kúzle +2/+2 všetkým kamarátom aj iných rás; F008 (t6) P
   assert.equal(hive.atk, 6 + 2);       // len z F008 (F009 seba nebuffuje)
   assert.equal(star.atk, 14 + 2 + 2);  // z F009 aj z vlastnej aury
   for (const r of Object.keys(C.RACES)) {
+    if (C.EXP_RACES.has(r)) { assert.equal(p.raceBuffs[r], undefined); continue; } // Hmyz bez voľby nie je v hre
     assert.equal(p.raceBuffs[r].a, 2); assert.equal(p.raceBuffs[r].h, 2);
   }
   // Budúce inštancie každej rasy aj tokeny auru nesú
@@ -1105,7 +1106,7 @@ test("E002 Bubbleskip: Pri smrti 2× Bublina; každá Bublina pri smrti dá výb
 
 test("pooly: vlastný 6 / spoločný 3 na kartu; obchod a štartovací balíček z nich uberajú, refresh vracia", () => {
   const { state, E, C } = fresh(60);
-  const minions = C.DEFS.filter(d => !d.spell);
+  const minions = C.DEFS.filter(d => !d.spell && !d.gen); // Kukla (gen) pool nemá
   for (const d of minions) {
     const inDeck = state.p1.deck.filter(c => c.defId === d.id).length;
     const inShop = state.p1.priv.filter(x => x.defId === d.id).length;
@@ -1831,6 +1832,7 @@ test("Hviezdna moc (t6): Pečať +1/+1 každej rase + Živelná sila +1, oboje t
   assert.ok(events.some(e => e.type === "dmgBoost" && e.n === 1));
   assert.equal(p.dmgBoost, 1);
   for (const race of Object.keys(C.RACES)) {
+    if (C.EXP_RACES.has(race)) continue; // Hmyz bez voľby nie je v hre
     assert.equal(p.raceBuffs[race].a, 1, race);
     assert.equal(p.raceBuffs[race].h, 1, race);
   }

@@ -173,6 +173,7 @@ server.on("upgrade", (req, socket) => {
         client.mut = m.mut !== false;
         client.ban = m.ban !== false;
         client.trinkets = m.trinkets !== false;
+        client.insects = m.insects === true;
         client.v = m.v;
         if (m.rejoin) tryRejoin(client); else tryPair(client);
       }
@@ -195,9 +196,10 @@ function tryPair(client) {
     const mut = host.mut !== false; // zakladateľ = prvý čakajúci hráč
     const ban = host.ban !== false; // fáza BAN – tiež podľa zakladateľa
     const trinkets = host.trinkets !== false; // trinkety – tiež podľa zakladateľa
+    const insects = host.insects === true; // experimentálna rasa Hmyz – podľa zakladateľa
     // v = verzia druhej strany (klient si ju porovná so svojou)
-    wsSend(host.socket, JSON.stringify({ type: "start", seed, you: "p1", mut, ban, trinkets, v: client.v }));
-    wsSend(client.socket, JSON.stringify({ type: "start", seed, you: "p2", mut, ban, trinkets, v: host.v }));
+    wsSend(host.socket, JSON.stringify({ type: "start", seed, you: "p1", mut, ban, trinkets, insects, v: client.v }));
+    wsSend(client.socket, JSON.stringify({ type: "start", seed, you: "p2", mut, ban, trinkets, insects, v: host.v }));
     console.log("Hráči spárovaní, seed", seed);
   } else {
     waiting = client;

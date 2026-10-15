@@ -441,7 +441,9 @@ test("Claude bot: katalóg kariet obsahuje všetky karty s tierom a silou, zaban
   vm.runInContext(src, ctx, { filename: "src/claude-bot.js" });
   const state = ctx.Engine.newGame(seeded(5), null);
   const all = ctx.ClaudeBot.catalogue(state);
-  for (const d of ctx.Cards.DEFS) assert.ok(all.includes(`${d.id} t${d.tier}`), d.id);
+  // experimentálne rasy (Hmyz) bez voľby v hre nie sú – ani v katalógu
+  for (const d of ctx.Cards.DEFS) if (!ctx.Cards.EXP_RACES.has(d.race)) assert.ok(all.includes(`${d.id} t${d.tier}`), d.id);
+  assert.ok(!all.includes("I001 t1"));
   assert.ok(/B002 t3 4\/5 power \d+/.test(all));
   state.banned = "ogre";
   const noOgre = ctx.ClaudeBot.catalogue(state);
