@@ -2065,7 +2065,9 @@ const Engine = (() => {
       if (!a) break;
       const swings = a.windfury ? 2 : 1;
       for (let s = 0; s < swings && a.hp > 0; s++) {
-        if (!performAttack(state, sides, pid, a, events)) break;
+        const ok = performAttack(state, sides, pid, a, events);
+        runRushAttacks(state, sides, events);
+        if (!ok) break;
       }
     }
   }
@@ -2292,15 +2294,35 @@ const Engine = (() => {
     const ptr = { p1: 0, p2: 0 };
     let attacker = first;
     let guard = BATTLE_CAP; // poistka proti nekonečnému boju (→ remíza)
+    runRushAttacks(state, sides, events); // Včielky vyvolané už pred útokmi (Pred bojom)
     while (aliveOn(sides, "p1").length && aliveOn(sides, "p2").length && guard-- > 0) {
       const a = nextAttacker(sides[attacker], ptr, attacker);
       if (!a) break;
       // Vichor (windfury): dva útoky za ťah – druhý len ak prežila prvý.
       const swings = a.windfury ? 2 : 1;
       for (let s = 0; s < swings && a.hp > 0; s++) {
-        if (!performAttack(state, sides, attacker, a, events)) break;
+        const ok = performAttack(state, sides, attacker, a, events);
+        runRushAttacks(state, sides, events);
+        if (!ok) break;
       }
       attacker = other(attacker);
+    }
+  }
+
+  // Roj (Hmyz – Včielka): vyvolaná Včielka zaútočí HNEĎ, mimo poradia.
+  // Jej smrť vyvolá ďalšiu, tá tiež hneď útočí – reťaz celého roja.
+  const rushQueue = new WeakMap(); // sides → [{ pid, inst }]
+  function queueRush(sides, pid, inst) {
+    if (!rushQueue.has(sides)) rushQueue.set(sides, []);
+    rushQueue.get(sides).push({ pid, inst });
+  }
+  function runRushAttacks(state, sides, events) {
+    const q = rushQueue.get(sides);
+    let guard = BATTLE_CAP;
+    while (q && q.length && guard-- > 0) {
+      const { pid, inst } = q.shift();
+      if (inst.hp <= 0 || !aliveOn(sides, other(pid)).length) continue;
+      performAttack(state, sides, pid, inst, events);
     }
   }
 
@@ -2873,8 +2895,9 @@ const Engine = (() => {
       events.push({ type: "summon", pid, uid: inst.uid, defId: KUKLA_ID, slot: inst.slot, rank: 1, atk: inst.atk, hp: inst.hp });
     },
     // Včielka (Pri smrti): bojová kópia ĎALŠEJ karty fx.of z balíčka/kôpky,
-    // ktorá v tomto boji ešte nebola (každá kópia raz) – reťaz, kým nezaútočí
-    // celý roj. Kópia nesie svoj rast (pa/ph), Pečate a roj.
+    // ktorá v tomto boji ešte nebola (každá kópia raz). Zaútočí HNEĎ
+    // (runRushAttacks) a po útoku padne → ďalšia – celý roj naraz.
+    // Kópia nesie svoj rast (pa/ph), Pečate a roj.
     summonDeckCopy({ state, sides, pid, self, fx, events }) {
       const p = state[pid];
       const alive = aliveOn(sides, pid);
@@ -2892,6 +2915,7 @@ const Engine = (() => {
       inst.slot = freeSlot(alive, BOARD_MAX);
       sides[pid].splice(sides[pid].indexOf(self) + 1, 0, inst);
       events.push({ type: "summon", pid, uid: inst.uid, defId: c.defId, slot: inst.slot, rank: inst.rank, atk: inst.atk, hp: inst.hp });
+      queueRush(sides, pid, inst); // zaútočí hneď (roj)
     },
     // Kráľovná (Pri smrti): Pečať +a/+h všetkým kartám fx.of (Včielkam) –
     // aj budúcim (p.cardBuffs v makeInst); živé v boji hneď.

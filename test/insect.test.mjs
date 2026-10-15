@@ -214,3 +214,18 @@ test("hmyz: Jed umlčí – Pri smrti otráveného sa nespustí, Znovuzrodenie p
   assert.ok(!ev.some(e => e.type === "summon" && e.pid === "p2"), "Mláďa sa nevyvolá");
   assert.ok(!ev.some(e => e.type === "revive"), "Znovuzrodenie prepadne");
 });
+
+test("hmyz: vyvolaná Včielka zaútočí hneď – súper medzi útokmi roja neútočí", () => {
+  const { state, E, put } = bare(16);
+  const p = state.p1;
+  put("p1", "I002");
+  p.deck.push({ defId: "I002", rank: 1 }, { defId: "I002", rank: 1 });
+  const wall = put("p2", "B003");
+  Object.assign(wall, { atk: 0, hp: 99, maxHp: 99 });
+  const r = state.rng; state.rng = () => Math.max(0.3, r()); // bez Kukly zo šance
+  state.first = "p1";
+  const ev = E.doBattle(state);
+  const attacks = ev.filter(e => e.type === "attack");
+  // 3 Včielky útočia za sebou, prvý útok súpera až po nich (roj vymrel)
+  assert.equal(attacks.slice(0, 3).map(e => e.aPid).join(","), "p1,p1,p1");
+});

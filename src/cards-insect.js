@@ -28,7 +28,8 @@
       { swarm: { of: "I001", a: 1, h: 1, others: true },
         power: { kw: "battlecry", fx: { type: "cocoon", a: 1, h: 1 } } }),
     // t1 Včielka: Žihadlo – po vlastnom útoku vždy padne. Pri smrti vyvolá
-    // ďalšiu Včielku z balíčka (každú raz za boj) → zaútočí celý roj.
+    // ďalšiu Včielku z balíčka (každú raz za boj), ktorá HNEĎ zaútočí →
+    // celý roj zaútočí naraz.
     // fastAnim: UI animuje útok, smrť a vyvolanie zrýchlene (roj 10 Včielok).
     M("I002", 1, "Včielka", "🐝", 2, 1,
       { diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002" } } }),
@@ -115,7 +116,7 @@
     deckGrow: (f, m) => t(`náhodný Hmyz v balíčku +${f.a * m}/+${f.h * m} navždy`, `random Insect in deck +${f.a * m}/+${f.h * m} forever`),
     growPerRace: (f, m) => t(`+${f.a * m}/+${f.h * m} za každý iný Hmyz na ploche`, `+${f.a * m}/+${f.h * m} per other Insect`),
     buffRandomSwarm: () => t("náhodný iný Hmyz +X/+X (X = Húsenice v balíčku)", "random other Insect +X/+X (X = Caterpillars)"),
-    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka", "summons the next Bee from your deck"),
+    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí", "summons the next Bee from your deck, it attacks at once"),
     imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`, `Imprint +${f.a}/+${f.h} to all Bees`),
     summonKukla: f => t(`${Math.round(f.chance * 100)} % šanca vyvolať tvoju Kuklu`, `${Math.round(f.chance * 100)}% chance to summon your Cocoon`),
   });

@@ -1120,7 +1120,8 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
   +0/+1 → 50 %, +1/+1 → 67 % – citlivý gombík).
 - I001 Húsenica (t1, 1/1): Pri vyložení Kukla do balíčka, alebo Kukla +1/+1 navždy.
 - I002 Včielka (t1, 2/1): Žihadlo – po svojom útoku padne; Pri smrti vyvolá
-  ďalšiu Včielku z balíčka (každú raz za boj) → zaútočí celý roj. UI animuje
+  ďalšiu Včielku z balíčka (každú raz za boj), ktorá **hneď zaútočí** mimo
+  poradia (`runRushAttacks`) → celý roj zaútočí naraz. UI animuje
   Včielky zrýchlene (`fastAnim`).
 - I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
 - I004 Kobylka (t2, 3/2): Pred bojom +1/+1 za každý iný Hmyz na ploche.
