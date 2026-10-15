@@ -236,7 +236,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     **Pred bojom hod mincou**: Pečať +2/+2 Ogrom, alebo Pečať +1/+1 rase
     náhodnej SÚPEROVEJ príšerky – chvost je backstab, Ogri +1/+1 aj tak;
     striebro ×2 – ogrí uber t6, každý boj na ploche = nová Pečať).
-    Vanilla telá nad krivkou: O004/O005/O008 – bezpečný nákup. O009 (t4,
+    Vanilla telá nad krivkou: O004/O005 – bezpečný nákup. O008 (t3, 5/7)
+    Vrtkavá koža: zranenie v boji 50 % ×0,5, inak ×1,5 = backstab (Pečať
+    +1/+1 Ogrom) – dobrý Obranca-magnet pre ogrí balíček. O009 (t4,
     7/7) má Divoký úder: každý zásah náhodne 1–14 (priemer 7,5), buffy a
     Pečať posúvajú rozsah (+1 → 2–15), striebro 2–28 – rozptyl, nie sila.
   - **Doggy = Pohladkanie + psie triky**: P001 (Pri vyložení) a P002 (Pri

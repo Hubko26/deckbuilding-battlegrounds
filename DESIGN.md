@@ -687,6 +687,13 @@ vyradené a rasa má 9 kariet (t3 len jednu).
     príšerky s rasou padá vždy hlava. Evolve ×2/×3 (striebro +4/+4 alebo
     +2/+2 súperovi). Nahradil „Zmäteného obrancu" (Obranca + Pri smrti 50 %
     vstane s 1 HP na náhodnej strane).
+  - **O008 Vrtkavá koža** (t3, 5/7, od 15. 10. 2026 – predtým vanilka):
+    každé zranenie v boji (útok, obrana, výboje, výbuchy) 50 % ×0,5 (dole,
+    min. 1), inak ×1,5 (hore). Smolných ×1,5 = **backstab** (Pečať +1/+1
+    Ogrom, bez stropu). Opatrný ogr (trinket): ×0,75 alebo ×1, Pečať nikdy.
+    Umlčaná berie damage normálne. `def.fickle`, `fickleDmg` v engine (cez
+    `state.rng`); event `fickle`, pri útoku nesie `attack` už skutočné
+    čísla (`aFickle`/`dFickle`, UI 🍀/💢).
   - **O009 Divoký úder** (t4, 7/7): „Každý zásah dá náhodne 1–14" – útok,
     obrana aj Rozmach losujú číslo z rozsahu **atk − 6·m … atk + 7·m**
     (m = ×1/×2/×4 podľa stupňa; bronz 1–14, striebro 2–28). **Pečať a buffy

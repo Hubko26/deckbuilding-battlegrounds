@@ -1050,7 +1050,7 @@ const Engine = (() => {
   // Ogria šťastena (trinket): Ogor bez schopnosti má Pri vyložení hod
   // mincou – hlava: potiahni kartu (×stupeň), chvost: Pečať +1/+0 Ogrom
   // (×stupeň). Mutácia „echoCry" ho spustí dvakrát ako každý battlecry.
-  const plainMinion = def => !Cards.powersOf(def).length && !def.wildAtk && !def.cleave && !def.reborn;
+  const plainMinion = def => !Cards.powersOf(def).length && !def.wildAtk && !def.fickle && !def.cleave && !def.reborn;
   function ogreLuck(state, p, inst, def, events) {
     if (def.race !== "ogre" || !plainMinion(def) || !hasTrinket(state, p.id, "ogreLuck")) return;
     const times = state.mutator === "echoCry" ? 2 : 1;
@@ -1971,8 +1971,8 @@ const Engine = (() => {
 
   // Zásah schopnosťou (výboj, Blesk, lovec tokenov): damage cez štít + eventy.
   // Smrť rieši volajúci (handleDeaths) – niektoré efekty ju odkladajú za sériu zásahov.
-  function powerHit(target, targetPid, dmg, from, events) {
-    dealDmg(target, dmg, targetPid, events);
+  function powerHit(state, sides, target, targetPid, dmg, from, events) {
+    dmg = dealDmg(state, sides, target, dmg, targetPid, events);
     events.push({ type: "powerDmg", pid: targetPid, uid: target.uid, n: dmg, from });
     pushHp(events, targetPid, target);
   }
@@ -2053,7 +2053,7 @@ const Engine = (() => {
     while (p.silences > 0) {
       p.silences--;
       const targets = sides[foe].filter(x =>
-        x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || x.cloneOf || Cards.byId[x.defId].wildAtk || x.taunt));
+        x.hp > 0 && !x.silenced && (Cards.byId[x.defId].power || x.cloneOf || Cards.byId[x.defId].wildAtk || Cards.byId[x.defId].fickle || x.taunt));
       if (!targets.length) {
         events.push({ type: "silenceFizzle", pid });
         continue;
@@ -2106,7 +2106,7 @@ const Engine = (() => {
       p.bolts--;
       const targets = aliveOn(sides, foe);
       if (!targets.length) continue;
-      powerHit(pick(targets, state.rng), foe, BOLT_DMG + p.dmgBoost + firstZapBonus(state, pid, events), undefined, events);
+      powerHit(state, sides, pick(targets, state.rng), foe, BOLT_DMG + p.dmgBoost + firstZapBonus(state, pid, events), undefined, events);
       handleDeaths(state, sides, events);
     }
   }
@@ -2191,9 +2191,18 @@ const Engine = (() => {
     const taunts = enemies.filter(x => x.taunt);
     const d = pick(taunts.length ? taunts : enemies, state.rng);
     const aDmg = hitDmg(state, a), dDmg = hitDmg(state, d);
-    events.push({ type: "attack", aPid: attacker, aUid: a.uid, dPid: defender, dUid: d.uid, aDmg, dDmg, aWild: aDmg !== a.atk, dWild: dDmg !== d.atk });
-    dealDmg(a, dDmg, attacker, events);
-    dealDmg(d, aDmg, defender, events);
+    const atkEv = { type: "attack", aPid: attacker, aUid: a.uid, dPid: defender, dUid: d.uid, aDmg, dDmg, aWild: aDmg !== a.atk, dWild: dDmg !== d.atk };
+    events.push(atkEv);
+    // Vrtkavá koža zmení číslo zásahu – UI ukáže skutočný damage (+ príznak).
+    const fk = (inst, dmg) => {
+      const n0 = events.length;
+      const out = dealDmg(state, sides, inst, dmg, inst === a ? attacker : defender, events);
+      const ev = events.slice(n0).find(e => e.type === "fickle");
+      return ev ? { n: out, lucky: ev.lucky } : null;
+    };
+    const fa = fk(a, dDmg), fd = fk(d, aDmg);
+    if (fa) { atkEv.dDmg = fa.n; atkEv.aFickle = fa.lucky ? "lucky" : "bad"; }
+    if (fd) { atkEv.aDmg = fd.n; atkEv.dFickle = fd.lucky ? "lucky" : "bad"; }
     pushHp(events, attacker, a);
     pushHp(events, defender, d);
     cleaveSplash(state, sides, attacker, a, d, aDmg, events);
@@ -2240,7 +2249,7 @@ const Engine = (() => {
     if (state.rng() >= chance) return;
     events.push({ type: "cleave", pid: attacker, uid: a.uid, targetPid: defender, uids: hit.map(x => x.uid), n: dmg });
     for (const x of hit) {
-      dealDmg(x, dmg, defender, events);
+      dealDmg(state, sides, x, dmg, defender, events);
       pushHp(events, defender, x);
     }
   }
@@ -2337,7 +2346,7 @@ const Engine = (() => {
 
   // Výbuch: jedna vlna zasiahne všetkých živých na strane NARAZ (jeden event
   // pre UI – žiadne projektily po jednom). Štít vlnu zruší.
-  function aoeWave(sides, side, dmg, from, events) {
+  function aoeWave(state, sides, side, dmg, from, events) {
     const hits = [];
     for (const t of aliveOn(sides, side)) {
       if (t.shield) {
@@ -2345,7 +2354,7 @@ const Engine = (() => {
         events.push({ type: "shieldPop", pid: side, uid: t.uid });
         continue;
       }
-      t.hp -= dmg;
+      t.hp -= fickleDmg(state, sides, t, dmg, side, events);
       hits.push({ uid: t.uid, hp: t.hp });
     }
     if (hits.length) events.push({ type: "aoeDmg", pid: side, n: dmg, from, hits });
@@ -2448,21 +2457,21 @@ const Engine = (() => {
       for (let i = 0; i < (fx.hits || m); i++) {
         const enemies = aliveOn(sides, foe);
         if (!enemies.length) break;
-        powerHit(pick(enemies, state.rng), foe, hitDmg + firstZapBonus(state, pid, events), self.uid, events);
+        powerHit(state, sides, pick(enemies, state.rng), foe, hitDmg + firstZapBonus(state, pid, events), self.uid, events);
         handleDeaths(state, sides, events);
       }
     },
     // Výbuch na všetkých nepriateľov. Damage škáluje so stupňom (×1/×2/×3) –
     // držať base nízko, nech nevypne swarm úplne.
     dmgAllEnemies({ state, sides, pid, self, fx, m, events }) {
-      aoeWave(sides, other(pid), scaledPowerDmg(state, pid, fx, m), self.uid, events);
+      aoeWave(state, sides, other(pid), scaledPowerDmg(state, pid, fx, m), self.uid, events);
       handleDeaths(state, sides, events);
     },
     // Ogr O003: chaos výbuch – VŠETKY živé príšerky na OBOCH stranách vrátane
     // seba (friendly fire je súčasť zábavy).
     dmgAllBoth({ state, sides, pid, self, fx, m, events }) {
       const dmg = scaledPowerDmg(state, pid, fx, m);
-      for (const side of ["p1", "p2"]) aoeWave(sides, side, dmg, self.uid, events);
+      for (const side of ["p1", "p2"]) aoeWave(state, sides, side, dmg, self.uid, events);
       handleDeaths(state, sides, events);
     },
     // O002 (Pred bojom): n× vyber náhodnú živú príšerku z OBOCH strán s bojovou
@@ -2497,7 +2506,7 @@ const Engine = (() => {
       if (isCareful(state, pid) || state.rng() >= 0.5) return; // Opatrný ogr sa netrafí
       const dmg = Math.floor(self.atk / 2 ** Math.min(m || 1, 3));
       if (dmg <= 0) return;
-      dealDmg(self, dmg, pid, events);
+      dealDmg(state, sides, self, dmg, pid, events);
       events.push({ type: "drunkHit", pid, uid: self.uid, n: dmg });
       pushHp(events, pid, self);
       handleDeaths(state, sides, events);
@@ -2515,7 +2524,7 @@ const Engine = (() => {
       const targets = aliveOn(sides, side);
       if (!targets.length) return;
       const t = pick(targets, state.rng);
-      powerHit(t, side, ogreBonus(state, pid, fx.n * m) + state[pid].dmgBoost, self.uid, events);
+      powerHit(state, sides, t, side, ogreBonus(state, pid, fx.n * m) + state[pid].dmgBoost, self.uid, events);
       handleDeaths(state, sides, events);
       if (side === pid) backstab(state, pid, events, sides); // trafil vlastnú = backstab
     },
@@ -2684,7 +2693,7 @@ const Engine = (() => {
       const fx = pw.fx, m = h.rank;
       h.hunted = true;
       events.push({ type: "proc", pid: hunterPid, uid: h.uid, kw: "onEnemySummon" });
-      powerHit(tok, tokPid, scaledPowerDmg(state, hunterPid, fx, m) + firstZapBonus(state, hunterPid, events), h.uid, events);
+      powerHit(state, sides, tok, tokPid, scaledPowerDmg(state, hunterPid, fx, m) + firstZapBonus(state, hunterPid, events), h.uid, events);
       hit = true;
       if (tok.hp <= 0) {
         buffWithEvent(h, hunterPid, fx.a * m, fx.h * m, events);
@@ -2711,15 +2720,34 @@ const Engine = (() => {
   }
 
   // Božský štít: prvé zranenie sa úplne zruší (štít praskne, staty ostávajú).
-  function dealDmg(target, dmg, pid, events) {
-    if (dmg <= 0) return;
+  // Vráti skutočne udelený damage (Vrtkavá koža ho mení, štít = 0).
+  function dealDmg(state, sides, target, dmg, pid, events) {
+    if (dmg <= 0) return 0;
     if (target.shield) {
       target.shield = false;
       events.push({ type: "shieldPop", pid, uid: target.uid });
-      return;
+      return 0;
     }
+    dmg = fickleDmg(state, sides, target, dmg, pid, events);
     target.hp -= dmg;
     if (target.boss) target.taken += dmg; // DMG Meter: všetok damage do Strážcu
+    return dmg;
+  }
+
+  // Vrtkavá koža (O008, def.fickle): každé zranenie v boji 50 % ×0,5 (dole,
+  // min. 1), inak ×1,5 (hore) – smolných ×1,5 = backstab (Pečať +1/+1
+  // Ogrom). Opatrný ogr (trinket) 1,5× nikdy, bonus polovičný: ×0,75 alebo
+  // ×1. Umlčaná príšerka berie damage normálne. Roll cez state.rng.
+  function fickleDmg(state, sides, target, dmg, pid, events) {
+    if (dmg <= 0 || target.silenced || !Cards.byId[target.defId].fickle) return dmg;
+    const lucky = state.rng() < 0.5;
+    const careful = isCareful(state, pid);
+    const out = lucky
+      ? (careful ? Math.ceil(dmg * 0.75) : Math.max(1, Math.floor(dmg / 2)))
+      : (careful ? dmg : Math.ceil(dmg * 1.5));
+    events.push({ type: "fickle", pid, uid: target.uid, from: dmg, dmg: out, lucky });
+    if (!lucky && !careful) backstab(state, pid, events, sides);
+    return out;
   }
 
   // ----- Smrť -----

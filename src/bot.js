@@ -888,6 +888,7 @@ const Bot = (() => {
     const body = (def.atk + def.hp) * mult + (def.taunt ? 1 : 0) + (def.cleave ? 5 : 0); // Divoký úder: priemer 1–14 ≈ útok, bez bonusu
     let ability = 0;
     for (const pw of Cards.powersOf(def)) ability += powerValue(pw, rank, p);
+    if (def.fickle) ability += 2; // Vrtkavá koža: priemerný damage rovnaký, smola = Pečať Ogrom
     return { body, ability: Math.round(ability * 10) / 10, total: Math.round((body + ability) * 10) / 10 };
   }
 

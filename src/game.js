@@ -890,8 +890,10 @@ async function runBattle() {
           impactRing(d, "#ff6b6b");
           spawnParticles(d, { n: 6, color: "#ff6b6b", spread: 40 });
           if (ev.aDmg >= 6) screenShake(0.5);
-          floatText(d, `${ev.aWild ? "🎲" : ""}-${ev.aDmg}`);
-          if (ev.dDmg > 0) floatText(a, `${ev.dWild ? "🎲" : ""}-${statNum(ev.dDmg)}`);
+          // Vrtkavá koža (O008): 🍀 = polovičný zásah, 💢 = 1,5×.
+          const fkIc = f => f === "lucky" ? "🍀" : f === "bad" ? "💢" : "";
+          floatText(d, `${ev.aWild ? "🎲" : ""}${fkIc(ev.dFickle)}-${ev.aDmg}`);
+          if (ev.dDmg > 0) floatText(a, `${ev.dWild ? "🎲" : ""}${fkIc(ev.aFickle)}-${statNum(ev.dDmg)}`);
           // Divoký úder (O009): hodené číslo aj do logu – deti vidia, čo padlo.
           if (ev.aWild) log(`${t(L.wildMsg)}: ${ev.aDmg}`);
           if (ev.dWild) log(`${t(L.wildMsg)}: ${ev.dDmg}`);
@@ -1130,6 +1132,11 @@ async function runBattle() {
         Sfx.hit();
         await sleep(450);
         for (const el of els) el.classList.remove("hit");
+        break;
+      }
+      case "fickle": {
+        // Vrtkavá koža (O008): log s hodom – deti vidia, prečo iné číslo.
+        log(`${ev.lucky ? "🍀" : "💢"} ${t(Cards.FICKLE_LABEL)}: ${ev.from} → ${ev.dmg}`);
         break;
       }
       case "backstab": {

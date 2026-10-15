@@ -243,7 +243,10 @@ const Cards = (() => {
     // Pri útoku…). Evolve = počet spustení (1/2/3). Telo 5/6 = ogria krivka.
     M("O002", 3, "ogre", ["Mudmunch", "Bogstomper", "Marsh Colossus"], 5, 6,
       { power: { kw: "startFight", fx: { type: "triggerRandom", n: 1 } } }),
-    M("O008", 3, "ogre", ["Bubbletusk", "Reefstomper", "Tidal Sovereign"], 5, 7),
+    // O008 Vrtkavá koža (od 15. 10. 2026, predtým vanilka): každé zranenie
+    // v boji (aj keď útočí) 50 % ×0,5, inak ×1,5 – smolných ×1,5 = backstab
+    // (Pečať +1/+1 Ogrom). Priemer damage ostáva, rozptyl je ogrí.
+    M("O008", 3, "ogre", ["Bubbletusk", "Reefstomper", "Tidal Sovereign"], 5, 7, { fickle: true }),
     M("O003", 4, "ogre", ["Emberknuckle", "Cindermaul", "Volcano Chieftain"], 7, 8,
       { power: { kw: "startFight", fx: { type: "dmgAllBoth", n: 2 } } }),
     // O009 Divoký úder: každý zásah (útok aj obrana, aj Rozmach) dá náhodne
@@ -445,6 +448,7 @@ const Cards = (() => {
   const TAUNT_LABEL = L.cards.taunt;
   const CLEAVE_LABEL = L.cards.cleave;
   const WILD_LABEL = L.cards.wild;
+  const FICKLE_LABEL = L.cards.fickle;
   const IMPRINT = L.cards.imprint;
   // Divoký úder (def.wildAtk): rozsah zásahu podľa AKTUÁLNEHO útoku (buffy
   // ho posúvajú) a stupňa: atk − 6·m … atk + 7·m (bronz 7 → 1–14).
@@ -475,6 +479,7 @@ const Cards = (() => {
     if (def.cleave) {
       parts.push(`${b(T.cleave[lang])}: ${T.cleaveText(Math.round(def.cleave * 100))[lang]}.`);
     }
+    if (def.fickle) parts.push(`${b(T.fickle[lang])}: ${T.fickleText[lang]}.`);
     if (def.wildAtk) {
       const atk = opts && opts.atk != null ? opts.atk : def.atk * STAT_MULT[rank];
       parts.push(`${b(T.wild[lang])}: ${T.wildText(wildRange(atk, rank))[lang]}.`);
@@ -508,7 +513,7 @@ const Cards = (() => {
   // engine (petBuff) aj text karty (L.cards.fx.petBuff).
   const petValue = L.cards.petValue;
 
-  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, powersOf, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, IMPRINT, wildRange, petValue };
+  return { RACES, RACES_PL, RACES_NOM, RACE_ICON, DEFS, TOKENS, byId, nameOf, artOf, cardText, powersOf, STAT_MULT, KW_LABEL, TAUNT_LABEL, CLEAVE_LABEL, WILD_LABEL, FICKLE_LABEL, IMPRINT, wildRange, petValue };
 })();
 
 if (typeof module !== "undefined") module.exports = Cards;

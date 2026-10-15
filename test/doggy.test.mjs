@@ -166,14 +166,14 @@ test("psíci: P005 Vyňuchaj – vytiahne Pohladkanie najvyššieho stupňa z ba
 test("psíci: P003 Ocikaj – náhodný súper má útok aj životy na polovicu (hore, 1 ostane 1), nie je to damage; striebro 2 rôznych", () => {
   const { state, E, put } = bareFight(16);
   put("p1", "P003", 2);            // 2 ciele
-  const big = put("p2", "O008");   // 5/7 → 3/4
+  const big = put("p2", "O005");   // 4/5 → 2/3
   const frail = put("p2", "U001"); // 1/1 → 1/1, žiadna smrť
   const ev = E.doBattle(state);
   const pees = ev.filter(e => e.type === "pee");
   assert.equal(pees.length, 2);
   const onBig = pees.find(e => e.uid === big.uid), onFrail = pees.find(e => e.uid === frail.uid);
   assert.ok(onBig && onFrail);
-  assert.equal(onBig.a, -2); assert.equal(onBig.h, -3);
+  assert.equal(onBig.a, -2); assert.equal(onBig.h, -2);
   assert.equal(onFrail.a, 0); assert.equal(onFrail.h, 0);
   // kostík z U001 (Pri smrti) príde až po útoku, nie z ocikania
   const firstAttack = ev.findIndex(e => e.type === "attack");
@@ -357,7 +357,7 @@ test("psíci: P009 Vodca svorky na ploche – každé Pohladkanie pohladká cie�
 test("psíci: P009 Vodca svorky je len nákupná pasívka – v boji nič nerobí, text má jedinú schopnosť", () => {
   const { state, E, C, put } = bareFight(52);
   put("p1", "P009"); const small = put("p1", "P001");
-  put("p2", "O008"); put("p2", "O004");
+  put("p2", "O005"); put("p2", "O004");
   const ev = E.doBattle(state);
   assert.ok(!ev.some(e => e.type === "buff" && e.uid === small.uid && e.pid === "p1"));
   assert.ok(!ev.some(e => e.type === "proc" && e.kw === "packLeader"));

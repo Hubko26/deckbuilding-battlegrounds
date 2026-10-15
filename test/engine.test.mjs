@@ -98,10 +98,10 @@ test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty 
   const { state, E, C } = fresh(82);
   E.startRound(state);
   E.endShopTurn(state, "p1");
-  const small = E.makeInst(state, "O008", 1); small.slot = 0; small.atk = 4; small.hp = small.maxHp = 6; // padne prvý
+  const small = E.makeInst(state, "O005", 1); small.slot = 0; small.atk = 4; small.hp = small.maxHp = 6; // padne prvý
   const drake = E.makeInst(state, "D009", 3); drake.slot = 1; // zlatý – celé staty
   state.p1.board = [small, drake];
-  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
+  state.p2.board = [Object.assign(E.makeInst(state, "O005", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
   for (const pid of ["p1", "p2"]) { state[pid].hand = []; state[pid].deck = []; state[pid].discard = []; }
   state.p1.trinkets = ["initiative"];
   const events = E.doBattle(state);
@@ -117,7 +117,7 @@ test("D009 absorbStats: keď zomrie vlastná príšerka, D009 dostane jej staty 
   const bone = Object.assign(E2.makeInst(s2, "kostik", 1), { slot: 0 });
   const d2 = Object.assign(E2.makeInst(s2, "D009", 3), { slot: 1 });
   s2.p1.board = [bone, d2];
-  s2.p2.board = [Object.assign(E2.makeInst(s2, "O008", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
+  s2.p2.board = [Object.assign(E2.makeInst(s2, "O005", 1), { slot: 0, atk: 7, hp: 200, maxHp: 200, taunt: true })];
   for (const pid of ["p1", "p2"]) { s2[pid].hand = []; s2[pid].deck = []; s2[pid].discard = []; }
   s2.p1.trinkets = ["initiative"];
   const ev2 = E2.doBattle(s2);
@@ -199,7 +199,7 @@ test("B001 Pri smrti: +1/+1 všetkým živým Zvieratám (nie iným rasám), str
   const bird2 = E2.makeInst(s2, "B001", 2); bird2.slot = 0;     // 4/4
   const big = E2.makeInst(s2, "B010", 1); big.slot = 1;          // 6/10 beast
   s2.p1.board = [bird2, big];
-  s2.p2.board = [Object.assign(E2.makeInst(s2, "O008", 1), { slot: 0, atk: 7 })]; // 7/7 zabije 4/4 (O009 bije náhodne)
+  s2.p2.board = [Object.assign(E2.makeInst(s2, "O005", 1), { slot: 0, atk: 7 })]; // 7/7 zabije 4/4 (O009 bije náhodne)
   s2.p1.hand = []; s2.p2.hand = [];
   const ev2 = E2.doBattle(s2);
   assert.ok(ev2.some(e => e.type === "buff" && e.uid === big.uid && e.a === 2 && e.h === 2));
@@ -1211,7 +1211,7 @@ test("U010: undead aura sa položí PRI SMRTI – Znovuzrodenie = dve smrti, dve
   const tank = E.makeInst(state, "U010", 1); tank.slot = 0;   // 8/10 taunt, Pri smrti aura
   const bone = E.makeInst(state, "kostik", 1); bone.slot = 1;  // 1/1 undead
   state.p1.board = [tank, bone];
-  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 10, hp: 10, maxHp: 10 })]; // 10/10 vanilla – zabije tank
+  state.p2.board = [Object.assign(E.makeInst(state, "O005", 1), { slot: 0, atk: 10, hp: 10, maxHp: 10 })]; // 10/10 vanilla – zabije tank
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = [];
   state.p2.deck = []; state.p2.discard = [];
@@ -2003,7 +2003,7 @@ test("U004 copyAbility: skopíruje schopnosť vlastného Nemŕtveho do konca boj
   // boj: U004 zomrie a vyvolá Kostíky ako strieborný U001 (2 + 1 za stupeň = 3)
   E.endShopTurn(state, "p1");
   state.p1.board = [Object.assign(u4, { slot: 0 })];
-  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })];
+  state.p2.board = [Object.assign(E.makeInst(state, "O005", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })];
   for (const pid of ["p1", "p2"]) { state[pid].hand = []; state[pid].deck = []; state[pid].discard = []; }
   const events = E.doBattle(state);
   const bones = events.filter(e => e.type === "summon" && e.pid === "p1" && e.defId === "kostik");
@@ -2739,7 +2739,7 @@ test("Bublina strieborného E002: 3 Bubliny stupňa 1, každá strieľa pri smrt
   E.endShopTurn(state, "p1");
   const bub = E.makeInst(state, "E002", 2); bub.slot = 0; // strieborná 2/6 – bubliny stupňa 2
   state.p1.board = [bub];
-  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "O008", 1), { slot: i, atk: 7 })); // 7/7 ×3 – zabijú všetko (O009 bije náhodne)
+  state.p2.board = [0, 1, 2].map(i => Object.assign(E.makeInst(state, "O005", 1), { slot: i, atk: 7 })); // 7/7 ×3 – zabijú všetko (O009 bije náhodne)
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = [];
   state.p2.deck = []; state.p2.discard = [];
@@ -3052,7 +3052,7 @@ test("B006 (t6): Pri smrti 1× SuperMláďa (striebro 2×, zlato 3×, stupeň 1)
   E.endShopTurn(state, "p1");
   const tank = E.makeInst(state, "B006", 2); tank.slot = 0; // strieborná 14/18
   state.p1.board = [tank];
-  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })]; // vanilla: zabije všetko, sám prežije
+  state.p2.board = [Object.assign(E.makeInst(state, "O005", 1), { slot: 0, atk: 50, hp: 1000, maxHp: 1000 })]; // vanilla: zabije všetko, sám prežije
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
@@ -3076,7 +3076,7 @@ test("B006: umlčanie vypne Pri smrti – žiadne SuperMláďatá ani Pečať", 
   state.p2.silences = 1; // Umlčanie na B006 pred bojom
   const tank = E.makeInst(state, "B006", 1); tank.slot = 0;
   state.p1.board = [tank];
-  state.p2.board = [Object.assign(E.makeInst(state, "O008", 1), { slot: 0, atk: 50 })];
+  state.p2.board = [Object.assign(E.makeInst(state, "O005", 1), { slot: 0, atk: 50 })];
   state.p1.hand = []; state.p2.hand = [];
   state.p1.deck = []; state.p1.discard = []; state.p2.deck = []; state.p2.discard = [];
   const events = E.doBattle(state);
@@ -3091,7 +3091,7 @@ test("Ozvena: bojová schopnosť vybranej príšerky sa na začiatku boja spust�
   const pid = state.active, p = state[pid], foe = pid === "p1" ? "p2" : "p1";
   assert.equal(C.byId.ozvena.tier, 3);
   assert.equal(C.byId.ozvena.cost, 2);
-  p.board = [Object.assign(E.makeInst(state, "U001", 1, p), { slot: 0 }), Object.assign(E.makeInst(state, "O008", 1, p), { slot: 1 })];
+  p.board = [Object.assign(E.makeInst(state, "U001", 1, p), { slot: 0 }), Object.assign(E.makeInst(state, "O005", 1, p), { slot: 1 })];
   const echo = () => { const s = E.makeInst(state, "ozvena"); s.slot = 0; p.hand = [s]; };
   echo();
   assert.equal(E.castSpell(state, pid, 0, p.board[1].uid), null, "vanilla O008 nemá bojovú schopnosť");
@@ -3224,12 +3224,47 @@ test("F009 Pri vyložení: spustí Po kúzle víl na ploche (strieborná 2×), p
   assert.equal(cap.pa, capPa + 2);           // F009 stupňa 2 → 2× F002
 });
 
+test("O008 Vrtkavá koža: zranenie v boji ×0,5 alebo ×1,5 (aj keď útočí), 1,5× = backstab Pečať Ogrom; Opatrný ogr ×0,75/×1 bez Pečate", () => {
+  let lucky = 0, bad = 0;
+  for (let seed = 1; seed <= 40; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    const ogre = Object.assign(E.makeInst(state, "O008", 1, state.p1), { slot: 0, hp: 100, maxHp: 100 });
+    state.p1.board = [ogre];
+    state.p2.board = [Object.assign(E.makeInst(state, "O005", 1, state.p2), { slot: 0, atk: 4, hp: 1, maxHp: 1 })];
+    const ev = E.doBattle(state);
+    const fk = ev.filter(e => e.type === "fickle");
+    assert.equal(fk.length, 1); // jeden zásah do ogra (útočí alebo bráni)
+    const f = fk[0];
+    assert.equal(f.from, 4);
+    assert.equal(f.dmg, f.lucky ? 2 : 6);
+    const atk = ev.find(e => e.type === "attack");
+    assert.equal(atk.aUid === ogre.uid ? atk.dDmg : atk.aDmg, f.dmg); // UI vidí skutočné číslo
+    const aura = state.p1.raceBuffs.ogre || { a: 0, h: 0 };
+    assert.equal(aura.a, f.lucky ? 0 : 1);
+    f.lucky ? lucky++ : bad++;
+  }
+  assert.ok(lucky > 5 && bad > 5);
+  // Opatrný ogr: ×0,75 (hore) alebo ×1, nikdy Pečať
+  for (let seed = 1; seed <= 20; seed++) {
+    const { state, E } = fresh(seed);
+    E.startRound(state);
+    state.p1.trinkets = ["ogreCareful"];
+    const ogre = Object.assign(E.makeInst(state, "O008", 1, state.p1), { slot: 0, hp: 100, maxHp: 100 });
+    state.p1.board = [ogre];
+    state.p2.board = [Object.assign(E.makeInst(state, "O005", 1, state.p2), { slot: 0, atk: 4, hp: 1, maxHp: 1 })];
+    const f = E.doBattle(state).find(e => e.type === "fickle");
+    assert.equal(f.dmg, f.lucky ? 3 : 4);
+    assert.ok(!(state.p1.raceBuffs.ogre && state.p1.raceBuffs.ogre.a));
+  }
+});
+
 test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupeň cieľa); cieľ bez battlecry náhodný, bez cieľa najsilnejší battlecry", () => {
   const { state, E, C } = fresh(205);
   E.startRound(state);
   const p = state.p1;
   const seal = E.makeInst(state, "B002", 1, p); seal.slot = 0; // Pečať +1/+1 Zvieratám
-  const vanilla = E.makeInst(state, "O008", 1, p); vanilla.slot = 1;
+  const vanilla = E.makeInst(state, "O005", 1, p); vanilla.slot = 1;
   p.board = [seal, vanilla];
   p.hand = [E.makeInst(state, "D010", 2)];
   // Vybraný cieľ bez battlecry = náhodná príšerka s battlecry (tu jediná B002).

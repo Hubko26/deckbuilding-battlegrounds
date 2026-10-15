@@ -867,6 +867,13 @@ L.cards = (() => {
   const taunt = { sk: "Obranca", cs: "Obránce", en: "Taunt" };
   const cleave = { sk: "Rozmach", cs: "Rozmach", en: "Cleave" };
   const wild = { sk: "Divoký úder", cs: "Divoký úder", en: "Wild Strike" };
+  // Vrtkavá koža (O008): zranenie v boji ×0,5 alebo ×1,5; ×1,5 = backstab.
+  const fickle = { sk: "Vrtkavá koža", cs: "Vrtkavá kůže", en: "Fickle Hide" };
+  const fickleText = {
+    sk: "každé zranenie v boji (aj keď útočí) 50 % polovičné, inak 1,5× – pri 1,5× Pečať +1/+1 Ogrom",
+    cs: "každé zranění v boji (i když útočí) 50 % poloviční, jinak 1,5× – při 1,5× Pečeť +1/+1 Zlobrům",
+    en: "every combat hit it takes (even when attacking) is 50% halved, otherwise 1.5× – on 1.5×, Imprint +1/+1 to Ogres",
+  };
   // Pečať: trvalá rasová aura (futureRace / futureRaceOf / futureAll) – všetky
   // tvoje príšerky danej rasy (plocha, ruka, balíček, kôpka, tokeny aj
   // budúce) dostanú staty NAVŽDY. Vysvetlenie je v pravidlách (L.rules).
@@ -1341,5 +1348,5 @@ L.cards = (() => {
   };
 
   return { races, racesPl, racesNom, names, namesPl, namesAcc, kwLabel, taunt, cleave, wild, imprint, reborn, rebornText,
-    wildText, cleaveText, raceDeathLabel, enemySummonLabel, oneShotNote, petMergeNote, petName, petValue, fx };
+    wildText, fickle, fickleText, cleaveText, raceDeathLabel, enemySummonLabel, oneShotNote, petMergeNote, petName, petValue, fx };
 })();
