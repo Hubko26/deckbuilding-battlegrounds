@@ -1134,7 +1134,8 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
   koho zraní, ten padne a je umlčaný – Pri smrti ani Znovuzrodenie sa
   nespustia; štít jed zastaví; Strážca arény nie).
 - I010 Kráľovná (t6, 7/7): Pri smrti Pečať +1/+1 všetkým Včielkam (aj
-  budúcim – `p.cardBuffs`). Roj navyše +1/+1 za každú Včielku.
+  budúcim – `p.cardBuffs`). Roj z celého hmyzu: +1/+1 za každý iný Hmyz
+  v balíčku (namiesto kópií).
 
 Simulácia: `npm run target -- exp=insect` (hmyz okolo 63 % pri poslednom
 behu – sleduje sa z hier). `variant=…` v ideal-sim skúša alternatívy.

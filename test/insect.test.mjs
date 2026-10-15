@@ -253,13 +253,14 @@ test("hmyz: mená a texty sú preložené (SK/CS/EN)", () => {
   assert.match(C.cardText(C.byId.I002, 1, "cs", false, 0), /Včelku z balíčku/);
 });
 
-test("hmyz: Kráľovná má roj aj z Včielok (+1/+1 za každú Včielku a inú Kráľovnú)", () => {
+test("hmyz: Kráľovná má roj z celého hmyzu (+1/+1 za každý iný Hmyz v balíčku)", () => {
   const { state, E, C } = bare(19);
   const p = state.p1;
   p.deck.push({ defId: "I010", rank: 1 }, { defId: "I010", rank: 1 }, { defId: "I002", rank: 1 }, { defId: "I002", rank: 1 }, { defId: "I002", rank: 1 });
-  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I010) }, { a: 4, h: 4 }); // 1 iná Kráľovná + 3 Včielky
+  p.deck.push({ defId: "I007", rank: 1 }, { defId: "B003", rank: 1 });
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I010) }, { a: 5, h: 5 }); // 1 iná Kráľovná + 3 Včielky + Mravec, Zviera nie
   assert.deepEqual({ ...E.swarmBonus(p, C.byId.I002) }, { a: 2, h: 2 }); // Včielky z Kráľovnej nič
-  assert.match(C.cardText(C.byId.I010, 1, "en", false, 0), /per other copy you own and per Bee/);
+  assert.match(C.cardText(C.byId.I010, 1, "en", false, 0), /Swarm: \+1\/\+1 per other Insect you own/);
 });
 
 test("hmyz: bot Kuklu nikdy nepovažuje za balast (ani v cudzej rase)", () => {

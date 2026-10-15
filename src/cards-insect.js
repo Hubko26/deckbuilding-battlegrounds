@@ -62,7 +62,7 @@
     M("I009", 5, N("Modlivka", "Kudlanka", "Mantis"), "🦟", 6, 6,
       { power: { kw: "deathrattle", fx: { type: "summon", token: "spora", n: 1 } } }),
     // t6 Kráľovná: Pri smrti Pečať +1/+1 všetkým Včielkam (aj budúcim).
-    // Roj aj z Včielok: +1/+1 za každú Včielku (nižšie).
+    // Roj z celého hmyzu: +1/+1 za každý iný Hmyz v balíčku (nižšie).
     M("I010", 6, N("Kráľovná", "Královna", "Queen"), "👑", 7, 7,
       { power: { kw: "deathrattle", fx: { type: "imprintCard", of: "I002", a: 1, h: 1 } } }),
   ];
@@ -87,10 +87,9 @@
     const k = V.includes("tier") ? d.tier : 1;
     d.swarm = [].concat(d.swarm || [], { of: d.id, a: k, h: k, others: true });
   }
-  // Kráľovná: roj aj s Včielkami – +1/+1 za každú Včielku (k vlastným kópiám).
-  // `also` = doplnok textu k predošlému riadku roja (rovnaké +a/+h).
-  DEFS.find(d => d.id === "I010").swarm.push({ of: "I002", a: 1, h: 1,
-    also: N("a každú Včielku", "a každou Včelku", "and per Bee") });
+  // Kráľovná: roj z CELÉHO hmyzu – +1/+1 za každý iný Hmyz v balíčku
+  // (aj Včielky, Kukla, ďalšie Kráľovné); v 24. kole bola za kópie + Včielky slabá.
+  DEFS.find(d => d.id === "I010").swarm = [{ race: R, a: 1, h: 1, others: true }];
   // Jedovatá spóra: token Modlivky – Jed (úder, ktorý zraní, zabije a umlčí).
   L.cards.names.spora = { sk: "Jedovatú spóru", cs: "Jedovatou sporu", en: "Poison Spore" };
   const SPORA = { id: "spora", tier: 1, race: R, emoji: "🍄", atk: 1, hp: 1, token: true, poison: true,
@@ -155,7 +154,7 @@
   const X = {
     swarm: { sk: "Roj", cs: "Roj", en: "Swarm" },
     copy: { sk: "za každú inú svoju kópiu", cs: "za každou další svou kopii", en: "per other copy you own" },
-    race: { sk: "za každý iný Hmyz", cs: "za každý další Hmyz", en: "per other Insect you own" },
+    race: { sk: "za každý iný Hmyz v balíčku", cs: "za každý další Hmyz v balíčku", en: "per other Insect you own" },
     now: { sk: "teraz", cs: "teď", en: "now" },
     sting: { sk: "Žihadlo", cs: "Žihadlo", en: "Sting" },
     stingText: { sk: "po svojom útoku padne", cs: "po svém útoku padne", en: "dies after it attacks" },
