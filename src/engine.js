@@ -2365,6 +2365,7 @@ const Engine = (() => {
     // Jed (Hmyz – Jedovatá spóra): úder, ktorý prešiel (nie štít), zabije.
     poisonHit(d, dHp0, a, defender, events);
     poisonHit(a, aHp0, d, attacker, events);
+    thornsHit(state, sides, d, dHp0, a, attacker, events);
     if (fa) { atkEv.dDmg = fa.n; atkEv.aFickle = fa.lucky ? "lucky" : "bad"; }
     if (fd) { atkEv.aDmg = fd.n; atkEv.dFickle = fd.lucky ? "lucky" : "bad"; }
     pushHp(events, attacker, a);
@@ -2394,6 +2395,19 @@ const Engine = (() => {
     target.revive = false;
     target.hp = Math.min(target.hp, 0);
     events.push({ type: "poison", pid, uid: target.uid, from: from.uid });
+  }
+
+  // Tŕne (Hmyz – Roháč, def.thorns = podiel): napadnutý vráti útočníkovi
+  // navyše def.thorns × zranenie, ktoré mu útok spôsobil (hore; štít = 0).
+  // Len pri obrane, nie keď Roháč útočí sám. Umlčaný nie.
+  function thornsHit(state, sides, d, hp0, a, aPid, events) {
+    const k = Cards.byId[d.defId].thorns;
+    if (!k || d.silenced || a.hp <= 0) return;
+    const taken = Math.max(0, hp0 - d.hp);
+    const n = Math.ceil(taken * k);
+    if (!n) return;
+    const dealt = dealDmg(state, sides, a, n, aPid, events);
+    events.push({ type: "thorns", pid: aPid, uid: a.uid, from: d.uid, n: dealt });
   }
 
   // „Po údere" schopnosti útočníka (kw afterAttack) – zatiaľ len Aport.

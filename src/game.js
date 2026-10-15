@@ -1179,6 +1179,11 @@ async function runBattle() {
         }
         break;
       }
+      case "thorns": { // Roháč (Hmyz): Tŕne vrátia útočníkovi časť zranenia
+        const el = cardById(ev.uid);
+        if (el) { floatText(el, `🌵-${ev.n}`); await sleep(300); }
+        break;
+      }
       case "die": {
         const el = cardById(ev.uid);
         Sfx.die();

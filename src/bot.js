@@ -914,6 +914,7 @@ const Bot = (() => {
     let ability = 0;
     for (const pw of Cards.powersOf(def)) ability += powerValue(pw, rank, p);
     if (def.fickle) ability += 2;
+    if (def.thorns) ability += def.thorns * 10; // Tŕne (Roháč): ~50 % z ~10 zranení za boj
     if (def.swarm) { // roj: skutočný bonus u majiteľa, inak odhad (3 kópie / 8 Hmyzu)
       if (p) { const sw = Engine.swarmBonus(p, def); ability += sw.a + sw.h; }
       else for (const sw of [].concat(def.swarm)) ability += (sw.a + sw.h) * (sw.of ? 2 : 8) / (sw.per || 1);

@@ -151,9 +151,9 @@ test("hmyz: roj je pravidlo rasy – každý Hmyz +1/+1 za každú inú svoju k�
   p.deck.push({ defId: "I007", rank: 1 }, { defId: "I007", rank: 1 }, { defId: "I002", rank: 1 });
   assert.deepEqual({ ...E.swarmBonus(p, C.byId.I007) }, { a: 2, h: 2 });
   assert.deepEqual({ ...E.swarmBonus(p, C.byId.I002) }, { a: 0, h: 0 });
-  // Roháč: +0/+1 za každý iný Hmyz + +1/+1 za každú inú svoju kópiu
+  // Roháč: už len +1/+1 za každú inú svoju kópiu (rast z celého hmyzu zrušený)
   p.deck.push({ defId: "I006", rank: 1 }, { defId: "I006", rank: 1 });
-  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I006) }, { a: 1, h: 6 });
+  assert.deepEqual({ ...E.swarmBonus(p, C.byId.I006) }, { a: 1, h: 1 });
 });
 
 test("hmyz: Modlivka Pri smrti vyvolá Jedovatú spóru; Jed zabije veľké telo, štít ho zastaví", () => {
@@ -272,4 +272,20 @@ test("hmyz: bot Kuklu nikdy nepovažuje za balast (ani v cudzej rase)", () => {
   const k = put("p1", "kukla", "hand");
   assert.equal(ctx.Bot.isJunk(state, p, k), false);
   assert.equal(ctx.Bot.isJunk(state, p, put("p1", "I002", "hand")), true); // obyčajný cudzí t1 balast je
+});
+
+test("hmyz: Roháč – Tŕne vrátia útočníkovi navyše 50 % spôsobeného zranenia (hore)", () => {
+  const { state, E, C, put } = bare(21);
+  assert.equal(C.byId.I006.swarm.length, 1); // už len roj za kópie
+  const r = put("p1", "I006"); // 2/6 Obranca
+  Object.assign(r, { atk: 2, hp: 50, maxHp: 50 });
+  const ogre = put("p2", "B003");
+  Object.assign(ogre, { atk: 5, hp: 40, maxHp: 40 });
+  state.first = "p2";
+  const ev = E.doBattle(state);
+  const th = ev.find(e => e.type === "thorns");
+  assert.ok(th);
+  assert.equal(th.n, 3); // 5 zranenia → 2,5 → 3
+  const firstHp = ev.find(e => e.type === "hp" && e.uid === ogre.uid);
+  assert.equal(firstHp.hp, 40 - 2 - 3); // vlastný úder Roháča 2 + Tŕne 3
 });

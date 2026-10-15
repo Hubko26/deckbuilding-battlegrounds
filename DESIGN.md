@@ -1127,7 +1127,9 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
 - I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
 - I004 Kobylka (t2, 3/2): Pred bojom +1/+1 za každý iný Hmyz na ploche.
 - I005 Svätojánska muška (t3, 3/3): Pred bojom náhodný iný Hmyz +X/+X (X = Húsenice).
-- I006 Roháč (t3, 2/5, Obranca): navyše +0/+1 za každý iný Hmyz v balíčku.
+- I006 Roháč (t3, 2/6, Obranca): **Tŕne** – kto ho napadne, dostane navyše
+  50 % zranenia, ktoré Roháčovi spôsobil (zaokrúhlené hore; štít = 0, len pri
+  obrane). Pôvodný rast +0/+1 za každý Hmyz v balíčku bol na t3 prisilný.
 - I007 Mravec (t4, 4/4): Po nákupe náhodný Hmyz v balíčku +X/+X navždy (X = Mravce).
 - I008 Osa (t5, 5/4): Pri vyložení Pečať +1/+1 Hmyzu.
 - I009 Modlivka (t5, 6/6): Pri smrti Jedovatá spóra (token 1/1, **Jed**:

@@ -46,9 +46,11 @@
     // t3 Svätojánska muška: Pred bojom náhodný iný Hmyz +X/+X, X = Húsenice.
     M("I005", 3, N("Svätojánska muška", "Světluška", "Firefly"), "✨", 3, 3,
       { power: { kw: "startFight", fx: { type: "buffRandomSwarm", of: "I001", a: 1, h: 1 } } }),
-    // t3 Roháč: Obranca, +0/+1 za každý Hmyz v balíčku.
-    M("I006", 3, N("Roháč", "Roháč", "Stag Beetle"), "🪲", 2, 5,
-      { taunt: true, swarm: { race: R, a: 0, h: 1, others: true } }),
+    // t3 Roháč: Obranca, Tŕne – útočník dostane navyše 50 % zranenia, ktoré
+    // Roháčovi spôsobil. (Pôvodne +0/+1 za každý Hmyz v balíčku – na t3
+    // prisilné: 4/22 Obranca v neskorej hre.)
+    M("I006", 3, N("Roháč", "Roháč", "Stag Beetle"), "🪲", 2, 6,
+      { taunt: true, thorns: 0.5 }),
     // t4 Mravec: Po nákupe náhodný Hmyz v balíčku +X/+X navždy, X = Mravce.
     M("I007", 4, N("Mravec", "Mravenec", "Ant"), "🐜", 4, 4,
       { power: { kw: "endTurn", fx: { type: "deckGrowSwarm", of: "I007", a: 1, h: 1 } } }),
@@ -158,6 +160,10 @@
     now: { sk: "teraz", cs: "teď", en: "now" },
     sting: { sk: "Žihadlo", cs: "Žihadlo", en: "Sting" },
     stingText: { sk: "po svojom útoku padne", cs: "po svém útoku padne", en: "dies after it attacks" },
+    thorns: { sk: "Tŕne", cs: "Trny", en: "Thorns" },
+    thornsText: { sk: "kto ho napadne, dostane navyše {p} % zranenia, ktoré spôsobil",
+      cs: "kdo ho napadne, dostane navíc {p} % zranění, které způsobil",
+      en: "attackers also take {p}% of the damage they dealt to it" },
     poison: { sk: "Jed", cs: "Jed", en: "Poison" },
     poisonText: { sk: "koho zraní, ten padne a je umlčaný", cs: "koho zraní, ten padne a je umlčen", en: "kills and silences whatever it damages" },
     kukla: { sk: "Každý ťah ide do ruky navyše. Nezahraná +{g}, vyložená +{p} navždy",
@@ -179,6 +185,7 @@
     if (def.swarm && opts && opts.swarm && (opts.swarm.a || opts.swarm.h)) {
       parts[parts.length - 1] += ` (${X.now[lang]} +${opts.swarm.a}/+${opts.swarm.h})`;
     }
+    if (def.thorns) parts.push(`${b(X.thorns[lang])}: ${X.thornsText[lang].replace("{p}", Math.round(def.thorns * 100))}`);
     if (def.diesOnAttack) parts.push(`${b(X.sting[lang])}: ${X.stingText[lang]}`);
     if (def.poison) parts.push(`${b(X.poison[lang])}: ${X.poisonText[lang]}`);
     if (def.id === "kukla") parts.push(X.kukla[lang].replace("{g}", st(def.grow)).replace("{p}", st(def.growPlayed)));
