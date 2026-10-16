@@ -439,7 +439,9 @@ const Cards = (() => {
   function artOf(def, rank) {
     if (def.spell) return SPELL_NO_ART.has(def.id) ? null : `assets/cards/${def.art || def.id}_1.webp`;
     if (!def.stageNames || def.noArt) return null;
-    return `assets/cards/${def.id}_${Math.min(rank, 3)}.webp`;
+    // Hmyz (noEvolve) má len art _1 – stupeň 2/3 môže prísť z Discoveru
+    // strieborného/zlatého draka (D004), obrázok je rovnaký.
+    return `assets/cards/${def.id}_${def.noEvolve ? 1 : Math.min(rank, 3)}.webp`;
   }
 
   // ---------- Texty schopností ----------
