@@ -239,7 +239,19 @@ test("hmyz: Kukla zo šance pri smrti sa vyvolá najviac raz za boj", () => {
   state.rng = () => 0; // šanca vždy padne
   const ev = E.doBattle(state);
   assert.equal(ev.filter(e => e.type === "summon" && e.defId === "kukla").length, 1);
-  assert.ok(!p.kuklaSummoned); // po boji sa limit nuluje – ďalší boj môže znova
+  assert.equal(p.kuklaSummons, 0); // po boji sa limit nuluje – ďalší boj môže znova
+});
+
+test("hmyz: trinket Dvojitý zámotok – Kukla zo šance až 2× za boj", () => {
+  const { state, E, put } = bare(17);
+  state.p1.trinkets.push("insectCocoon");
+  assert.ok(E.TRINKETS.some(t => t.id === "insectCocoon" && t.race === "insect" && t.lvl === 2));
+  for (let i = 0; i < 4; i++) { const b = put("p1", "I004"); Object.assign(b, { atk: 0, hp: 1, maxHp: 1 }); }
+  const big = put("p2", "B003");
+  Object.assign(big, { atk: 1, hp: 99, maxHp: 99 });
+  state.rng = () => 0; // šanca vždy padne
+  const ev = E.doBattle(state);
+  assert.equal(ev.filter(e => e.type === "summon" && e.defId === "kukla").length, 2);
 });
 
 test("hmyz: mená a texty sú preložené (SK/CS/EN)", () => {

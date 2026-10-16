@@ -386,7 +386,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
   I008 Osa (t5 Pečať, každé vyloženie znova), I001 Húsenice (Kukla + roj),
   I002 Včielky (útočia celým rojom z balíčka), I010 Kráľovná (Pečať
   Včielkam), I007 Mravec, I003 Lienka. I009 Modlivka dá Jedovatú spóru –
-  counter na veľké telá a Pri smrti.
+  counter na veľké telá a Pri smrti. Trinket Dvojitý zámotok (úroveň 2):
+  Kukla zo šance pri smrti až 2× za boj – ber ho, ak máš silnú Kuklu.
 
 - **Undead**: U002 (t1, kostíky +1/+1 v boji – vykladaj každé kolo), U001,
   U003 (t2 Pečať), U004 (t2, kópia schopnosti – target U009/U006/U010), U005/U006 (t3), U008

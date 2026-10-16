@@ -120,6 +120,7 @@ const Engine = (() => {
     { id: "undeadTauntBones", race: "undead", lvl: 1 },  // Kostíky majú Obrancu
     { id: "elemBubble", race: "elemental", lvl: 1 },     // pred bojom vyvolaj Bublinu
     { id: "elemZap", race: "elemental", lvl: 1 },        // prvý výboj v každom boji +2
+    { id: "insectCocoon", race: "insect", lvl: 2 },      // Kukla zo šance pri smrti až 2× za boj
     { id: "cheapUpgrade", lvl: 1 },  // upgrade o 2 lacnejší (min. 2)
     { id: "richSell", lvl: 1 },      // predaj dáva 2
     { id: "twinEvolve1", lvl: 1 },   // kartám t1 stačia 2 kópie
@@ -160,6 +161,8 @@ const Engine = (() => {
   // (cocoon) ju vytvorí alebo zväčší; Hmyz pri smrti môže vyvolať jej kópiu
   // (summonKukla).
   const KUKLA_ID = "kukla";
+  // Koľkokrát za boj môže Hmyz pri smrti vyvolať Kuklu (trinket Dvojitý zámotok: 2).
+  const kuklaLimit = (state, pid) => hasTrinket(state, pid, "insectCocoon") ? 2 : 1;
 
   function hasTrinket(state, pid, id) {
     const p = state[pid];
@@ -2531,7 +2534,7 @@ const Engine = (() => {
       p.fightTokenBuffs = {}; // bojové buffy tokenov (U002)
       p.graveUsed = false; // Hrobárova lopata platí raz za boj
       p.firstBoneUsed = false; p.zapUsed = false; // Kostená odplata, Prvý výboj – raz za boj
-      p.kuklaSummoned = false; // Hmyz: Kukla zo šance pri smrti – raz za boj
+      p.kuklaSummons = 0; // Hmyz: Kukla zo šance pri smrti – limit za boj (kuklaLimit)
       if (state.mutator === "bloodMoon" || hasTrinket(state, pid, "bloodMoon")) applyBloodMoon(p, sides[pid], events);
       for (const inst of p.board) {
         if (Cards.byId[inst.defId].token) continue;
@@ -2918,14 +2921,15 @@ const Engine = (() => {
     },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.
-    // Raz za boj (p.kuklaSummoned, nuluje clearBoards) – po vyvolaní už šanca nepadá.
+    // Raz za boj, s trinketom Dvojitý zámotok 2× (p.kuklaSummons, nuluje
+    // clearBoards) – po dosiahnutí limitu už šanca nepadá.
     summonKukla({ state, sides, pid, self, fx, events }) {
       const p = state[pid];
-      if (p.kuklaSummoned) return;
+      if ((p.kuklaSummons || 0) >= kuklaLimit(state, pid)) return;
       if (state.rng() >= fx.chance) return;
       const alive = aliveOn(sides, pid);
       if (alive.length >= BOARD_MAX) return;
-      p.kuklaSummoned = true;
+      p.kuklaSummons = (p.kuklaSummons || 0) + 1;
       const k = findKukla(p);
       const inst = makeInst(state, KUKLA_ID, 1, p);
       if (k) buff(inst, k.c.pa || 0, k.c.ph || 0);

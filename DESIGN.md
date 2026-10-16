@@ -1112,8 +1112,9 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
 **Roj: +1/+1 za každú inú svoju kópiu** v celom balíčku (všetky zóny,
 `def.swarm`, pripočíta sa bojovej kópii v `copyBoard`; UI ho ukáže v texte
 „teraz +X/+Y" a v snímke boja). Každý Hmyz má navyše **Pri smrti 25 %
-šancu vyvolať bojovú kópiu tvojej Kukly** – max. raz za boj
-(`p.kuklaSummoned`, nuluje sa po boji).
+šancu vyvolať bojovú kópiu tvojej Kukly** – max. raz za boj, s trinketom
+**Dvojitý zámotok** (`insectCocoon`, úroveň 2) max. 2× (`p.kuklaSummons`,
+nuluje sa po boji).
 
 - **Kukla** (gen, nie v obchode, jediná na hráča, 1/3 Obranca): vytvorí ju
   Húsenica; na začiatku ťahu ide VŽDY do ruky navyše (6. karta). Nezahraná
@@ -1287,6 +1288,7 @@ nezasekne. Vybrané trinkety sú v `p.trinkets`, platnosť overuje
 | `undeadTauntBones` | 💀 | 1 | Kostíky majú Obrancu |
 | `elemBubble` | ✨ | 1 | pred bojom Bublina na najpravejší voľný slot (PvP aj DMG Meter) |
 | `elemZap` | ✨ | 1 | prvý cielený výboj v boji (výboj karty, Blesk, lovec tokenov) +2 (`p.zapUsed`); AoE nie |
+| `insectCocoon` | 🐛 | 2 | Hmyz pri smrti môže vyvolať Kuklu až 2× za boj (namiesto raz; `p.kuklaSummons`) |
 | `cheapUpgrade` | – | 1 | upgrade o 2 lacnejší (min. 2) |
 | `richSell` | – | 1 | predaj dáva 2 |
 | `twinEvolve1` | – | 1 | kartám tieru 1 stačia 2 kópie |

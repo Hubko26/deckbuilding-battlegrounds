@@ -427,6 +427,8 @@ const L = {
       d: { sk: "Pred každým bojom vyvolaj Bublinu.", cs: "Před každým bojem vyvolej Bublinu.", en: "Before each fight, summon a Bubble." } },
     elemZap: { e: "⚡", sk: "Prvý výboj", cs: "První výboj", en: "Opening Zap",
       d: { sk: "Tvoj prvý výboj v každom boji dá o 2 viac.", cs: "Tvůj první výboj v každém boji dá o 2 víc.", en: "Your first zap in each fight deals 2 more." } },
+    insectCocoon: { e: "🪺", sk: "Dvojitý zámotok", cs: "Dvojitý zámotek", en: "Double Cocoon",
+      d: { sk: "Hmyz môže pri smrti vyvolať tvoju Kuklu až 2× za boj (namiesto raz).", cs: "Hmyz může při smrti vyvolat tvou Kuklu až 2× za boj (místo jednou).", en: "Your Insects' Deathrattle can summon your Cocoon up to twice per fight (instead of once)." } },
     bloodMoon: { e: "🌕", sk: "Krvavý mesiac", cs: "Krvavý měsíc", en: "Blood Moon",
       d: { sk: "Príšerky, ktoré prežijú boj, dostanú +1/+1 navždy.", cs: "Příšerky, které přežijí boj, dostanou +1/+1 navždy.", en: "Minions that survive a fight get +1/+1 forever." } },
   },
