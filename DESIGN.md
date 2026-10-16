@@ -1136,8 +1136,8 @@ nuluje sa po boji).
   Kráľovná tak nezávisí od ťahania. UI animuje Včielky zrýchlene (`fastAnim`).
 - I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
 - I004 Kobylka (t2, 3/2): Pri vyložení pridá do balíčka ďalšiu Kobylku
-  (raz za kolo na hráča, `p.breedRound`). Vyliahnuté kópie (`bred`) sa
-  predávajú za 0. Kobylky sa množia samé a roj ich posilňuje, ale balíček
+  (raz za kolo na hráča, `p.breedRound`). Vyliahnuté kópie sa od 16. 10.
+  2026 predávajú za plnú cenu (predtým za 0 – hráč predal 3 a nedostal nič). Kobylky sa množia samé a roj ich posilňuje, ale balíček
   rastie – hráč sa musí rozhodnúť, či do Kobyliek ide.
 - I005 Svätojánska muška (t3, 3/3): Pri vyložení (cielené ako draci)
   vybraný Hmyz na ploche +X/+X **navždy** (X = Húsenice, aspoň 1) –
