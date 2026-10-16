@@ -234,7 +234,14 @@ function doAction(name, ...args) {
 // Rýchlosť animácií. Pri prefers-reduced-motion sa všetky pauzy skrátia a
 // partikle / otrasy obrazu sa vypnú (citlivosť na pohyb, slabé mobily).
 const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
-const ANIM = REDUCED ? 0.5 : 1;
+// ANIM_BASE: všetky animácie trochu svižnejšie (16. 10. 2026: boj bol pomalý).
+// animSpeed: násobok rýchlosti z ladiaceho posuvníka (len „Hubko", localStorage).
+const ANIM_BASE = 0.75;
+let animSpeed = 1;
+try { animSpeed = Number(localStorage.getItem("arena.animSpeed")) || 1; } catch {}
+let ANIM = 1;
+const setAnimSpeed = v => { animSpeed = v; ANIM = (REDUCED ? 0.5 : 1) * ANIM_BASE / animSpeed; };
+setAnimSpeed(animSpeed);
 const sleep = ms => new Promise(r => setTimeout(r, ms * ANIM));
 // Zrýchlená animácia kariet s def.fastAnim (Včielky – reťaz celého roja).
 const FAST_ANIM = 0.3;
@@ -250,6 +257,10 @@ function applyI18n() {
   $("netCancel").textContent = t(L.cancel);
   renderRejoinBtn();
   $("peerHostBtn").textContent = t(L.peerHost);
+  $("playerNameLabel").textContent = t(L.claudeNameLabel);
+  $("playerName").placeholder = t(L.claudeNamePh);
+  $("speedLbl").textContent = t(L.speedLbl);
+  renderSpeedRow();
   $("insectToggleLbl").textContent = t(L.insectToggle);
   $("trinketToggleLbl").textContent = t(L.trinketToggle);
   renderVersion();
@@ -290,19 +301,40 @@ function renderPick() {
   if (difficulty === "claude" && !cs.dataset.ready) {
     cs.dataset.ready = "1";
     $("claudeKey").value = localStorage.getItem("arena.apiKey") || "";
-    $("claudeName").value = localStorage.getItem("arena.playerName") || "";
     $("claudeKey").addEventListener("input", e => localStorage.setItem("arena.apiKey", e.target.value.trim()));
-    $("claudeName").addEventListener("input", e => localStorage.setItem("arena.playerName", e.target.value));
   }
   if (difficulty === "claude") {
     $("claudeKeyLabel").textContent = t(L.claudeKeyLabel);
-    $("claudeNameLabel").textContent = t(L.claudeNameLabel);
-    $("claudeName").placeholder = t(L.claudeNamePh);
     $("claudeKeyNote").textContent = t(L.claudeKeyNote);
   }
 }
 
+// Meno hráča je povinné pred každou hrou (bot aj sieť) – pamätá sa.
+function needName() {
+  if (playerName()) return false;
+  alert(t(L.nameNeeded));
+  $("playerName").focus();
+  return true;
+}
+const playerName = () => (localStorage.getItem("arena.playerName") || "").trim();
+// Ladiaci posuvník rýchlosti animácií vidí len „Hubko".
+const isTuner = () => playerName().toLowerCase() === "hubko";
+function renderSpeedRow() {
+  $("speedRow").classList.toggle("hidden", !isTuner());
+  $("speedRange").value = String(animSpeed);
+  $("speedVal").textContent = `${animSpeed}×`;
+}
+$("playerName").value = playerName();
+$("playerName").addEventListener("input", e => { localStorage.setItem("arena.playerName", e.target.value); renderSpeedRow(); });
+$("speedRange").addEventListener("input", e => {
+  if (!isTuner()) return;
+  setAnimSpeed(Number(e.target.value));
+  try { localStorage.setItem("arena.animSpeed", String(animSpeed)); } catch {}
+  renderSpeedRow();
+});
+
 function startGame() {
+  if (needName()) return;
   if (difficulty === "claude" && !(localStorage.getItem("arena.apiKey") || "").trim()) {
     alert(t(L.claudeNeedKey));
     $("claudeKey").focus();
@@ -310,7 +342,7 @@ function startGame() {
   }
   if (difficulty === "claude" && !ClaudeBot.isAllowed(localStorage.getItem("arena.playerName"))) {
     alert(t(L.claudeNameGate));
-    $("claudeName").focus();
+    $("playerName").focus();
     return;
   }
   mode = "bot";
@@ -564,6 +596,7 @@ function netHandlers() {
 }
 
 function startNet() {
+  if (needName()) return;
   mode = "net";
   $("netOverlay").classList.remove("hidden");
   $("peerSetup").classList.add("hidden");
@@ -892,7 +925,7 @@ async function runBattle() {
           const dx = (rd.left + rd.width / 2) - (ra.left + ra.width / 2);
           const dy = (rd.top + rd.height / 2) - (ra.top + ra.height / 2);
           a.style.zIndex = "20";
-          a.style.transition = `transform ${0.35 * k}s ease-in`;
+          a.style.transition = `transform ${0.35 * k * ANIM}s ease-in`;
           a.style.transform = `translate(${dx * 0.88}px, ${dy * 0.88}px) scale(1.08)`;
           await sleep(370 * k);
           Sfx.hit();
@@ -908,7 +941,7 @@ async function runBattle() {
           if (ev.aWild) log(`${t(L.wildMsg)}: ${ev.aDmg}`);
           if (ev.dWild) log(`${t(L.wildMsg)}: ${ev.dDmg}`);
           await sleep(480 * k);
-          a.style.transition = `transform ${0.25 * k}s ease-out`;
+          a.style.transition = `transform ${0.25 * k * ANIM}s ease-out`;
           a.style.transform = "";
           await sleep(300 * k);
           d.classList.remove("hit");

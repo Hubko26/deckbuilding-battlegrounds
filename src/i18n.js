@@ -193,6 +193,8 @@ const L = {
     en: "The key stays in this browser only (localStorage) – it goes nowhere else; Anthropic API usage is billed.",
   },
   claudeNameLabel: { sk: "Tvoje meno:", cs: "Tvoje jméno:", en: "Your name:" },
+  nameNeeded: { sk: "Napíš svoje meno 🙂", cs: "Napiš své jméno 🙂", en: "Type your name 🙂" },
+  speedLbl: { sk: "Rýchlosť animácií:", cs: "Rychlost animací:", en: "Animation speed:" },
   claudeNamePh: { sk: "napr. Kubo", cs: "např. Kuba", en: "e.g. Jake" },
   claudeNeedKey: {
     sk: "Claude súper potrebuje API kľúč – vlož ho do políčka.",

@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=d212c8f8">
+  <link rel="stylesheet" href="style.css?v=c51929ae">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -41,9 +41,12 @@
         <div id="claudeSetup" class="claude-setup hidden">
           <label id="claudeKeyLabel" for="claudeKey"></label>
           <input id="claudeKey" type="password" autocomplete="off" placeholder="sk-ant-…">
-          <label id="claudeNameLabel" for="claudeName"></label>
-          <input id="claudeName" type="text" autocomplete="off">
           <div id="claudeKeyNote" class="claude-note"></div>
+        </div>
+        <!-- Meno hráča (vždy pred hrou; pamätá sa). „Hubko" vidí ladenie rýchlosti. -->
+        <div class="name-row">
+          <label id="playerNameLabel" for="playerName"></label>
+          <input id="playerName" type="text" autocomplete="off" maxlength="24">
         </div>
         <button id="startBtn" class="primary big-btn">Hraj!</button>
         <div class="net-row">
@@ -132,6 +135,12 @@
         <!-- Pravidlo rasy, ktorú hráč hrá (Hmyz: roj, Ogri: backstab) – pod tierom. -->
         <div class="race-note hidden" id="myRaceNote"></div>
       </div>
+      <!-- Rýchlosť animácií – len pre hráča „Hubko" (ladenie počas hry). -->
+      <div id="speedRow" class="speed-row hidden">
+        <label for="speedRange" id="speedLbl"></label>
+        <span>🐢</span><input id="speedRange" type="range" min="0.25" max="4" step="0.25" value="1"><span>🐇</span>
+        <b id="speedVal">1×</b>
+      </div>
       <!-- Chat s Claudom (len Claude mód) – odpoveď príde bublinou -->
       <div id="chatRow" class="chat-row hidden">
         <input id="chatInput" type="text" maxlength="200" autocomplete="off">
@@ -195,9 +204,9 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=7b491184"></script>
+  <script src="version.js?v=ccd15d9b"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=034373e7"></script>
+  <script src="src/i18n.js?v=de9c9ff8"></script>
   <script src="src/net.js?v=f8a1c39c"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=b09f4aa3"></script>
@@ -205,7 +214,7 @@
   <script src="src/engine.js?v=33932977"></script>
   <script src="src/bot.js?v=0c15b3b1"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=3ab34b26"></script>
+  <script src="src/game.js?v=514d1d05"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=24b5cf89"></script>
