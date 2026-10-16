@@ -1140,8 +1140,11 @@ nuluje sa po boji).
   2026 predávajú za plnú cenu (predtým za 0 – hráč predal 3 a nedostal nič). Kobylky sa množia samé a roj ich posilňuje, ale balíček
   rastie – hráč sa musí rozhodnúť, či do Kobyliek ide.
 - I005 Svätojánska muška (t3, 3/3): Pri vyložení (cielené ako draci)
-  vybraný Hmyz na ploche +X/+X **navždy** (X = Húsenice, aspoň 1) –
-  jednorazový ťah, potom odhodiť (bot recykluje).
+  **Zrkadlo na Hmyz** (`mirrorRace`, od 16. 10. 2026): kópia 1. stupňa
+  vybraného Hmyzu z plochy do balíčka (bez rastu, z vlastného poolu, kým
+  v ňom je; nie seba, nie Kukla) – každá kópia posilní roj. Cieľ mimo
+  Hmyzu = najsilnejší Hmyz. Jednorazový ťah, potom odhodiť (bot recykluje).
+  (Predtým vybraný Hmyz +X/+X navždy, X = Húsenice.)
 - I006 Roháč (t3, 2/6, Obranca): **Tŕne** – kto ho napadne, dostane navyše
   50 % zranenia, ktoré Roháčovi spôsobil (zaokrúhlené hore; štít = 0, len pri
   obrane). Pôvodný rast +0/+1 za každý Hmyz v balíčku bol na t3 prisilný.

@@ -50,11 +50,11 @@
     // Vyliahnuté kópie sa predávajú za 0.
     M("I004", 2, N("Kobylka", "Kobylka", "Grasshopper"), "🦗", 3, 2,
       { power: { kw: "battlecry", fx: { type: "breed" } } }),
-    // t3 Svätojánska muška: Pri vyložení (cielené ako draci) vybraný Hmyz na
-    // ploche +X/+X NAVŽDY, X = Húsenice v balíčku (min. 1). Jednorazový ťah –
-    // vylož, potom odhoď (príde znova cyklom balíčka).
+    // t3 Svätojánska muška: Pri vyložení (cielené ako draci) ZRKADLO na Hmyz –
+    // kópia 1. stupňa vybraného Hmyzu z plochy do balíčka (ďalšia kópia = roj
+    // silnejší). Od 16. 10. 2026, predtým rast +X/+X za Húsenice.
     M("I005", 3, N("Svätojánska muška", "Světluška", "Firefly"), "✨", 3, 3,
-      { power: { kw: "battlecry", fx: { type: "growTargetSwarm", of: "I001", a: 1, h: 1 } } }),
+      { power: { kw: "battlecry", fx: { type: "mirrorRace", race: R } } }),
     // t3 Roháč: Obranca, Tŕne – útočník dostane navyše 50 % zranenia, ktoré
     // Roháčovi spôsobil. (Pôvodne +0/+1 za každý Hmyz v balíčku – na t3
     // prisilné: 4/22 Obranca v neskorej hre.)
@@ -146,9 +146,9 @@
     breed: () => t("pridaj do balíčka ďalšiu Kobylku (raz za kolo)",
       "přidej do balíčku další Kobylku (jednou za kolo)",
       "add another Grasshopper to your deck (once per round)"),
-    growTargetSwarm: f => t(`vybraný Hmyz +X/+X navždy (X = Húsenice v balíčku${xNow(f)}, aspoň 1)`,
-      `vybraný Hmyz +X/+X navždy (X = Housenky v balíčku${xNow(f)}, aspoň 1)`,
-      `chosen Insect +X/+X forever (X = Caterpillars in deck${xNow(f)}, at least 1)`),
+    mirrorRace: () => t("Zrkadlo na Hmyz – kópia vybraného Hmyzu z plochy do balíčka",
+      "Zrcadlo na Hmyz – kopie vybraného Hmyzu z plochy do balíčku",
+      "Mirror an Insect – a copy of the chosen Insect on your board goes into your deck"),
     summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí; po poslednej Včielke príde Kráľovná (raz za boj)",
       "vyvolá další Včelku z balíčku, která hned zaútočí; po poslední Včelce přijde Královna (jednou za boj)",
       "summons the next Bee from your deck, it attacks at once; after the last Bee the Queen arrives (once per fight)"),

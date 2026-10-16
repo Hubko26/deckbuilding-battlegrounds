@@ -1905,17 +1905,21 @@ const Engine = (() => {
         events.push({ type: "buff", pid: p.id, uid: inst.uid, a: fx.a * x, h: fx.h * x });
       }
     },
-    // Svätojánska muška (Pri vyložení, cielené): vybraný Hmyz na ploche
-    // +X·a/+X·h NAVŽDY, X = kópie karty fx.of (Húsenice), min. 1. Cieľ mimo
-    // Hmyzu / bez cieľa = najsilnejší iný Hmyz na ploche.
-    growTargetSwarm({ p, fx, self, target, events }) {
-      const ins = x => x !== self && Cards.byId[x.defId].race === "insect" && !Cards.byId[x.defId].token;
-      let t = target && p.board.includes(target) && ins(target) ? target : null;
-      if (!t) t = p.board.filter(ins).sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0];
+    // Svätojánska muška (Pri vyložení, cielené): Zrkadlo na rasu fx.race –
+    // kópia 1. stupňa (bez rastu, ako kúzlo Zrkadlo) vybranej príšerky tej
+    // rasy z plochy do balíčka, z vlastného poolu, kým v ňom je. Nie seba,
+    // tokeny ani generované (Kukla je jediná). Cieľ mimo rasy / bez cieľa =
+    // najsilnejšia vhodná príšerka na ploche.
+    mirrorRace({ state, p, fx, self, target, events }) {
+      const ok = x => x !== self && Cards.byId[x.defId].race === fx.race && !Cards.byId[x.defId].token && !Cards.byId[x.defId].gen;
+      let t = target && p.board.includes(target) && ok(target) ? target : null;
+      if (!t) t = p.board.filter(ok).sort((a, b) => (b.atk + b.hp) - (a.atk + a.hp))[0];
       if (!t) return;
-      const x = Math.max(1, copiesOwned(p, fx.of));
-      growCard(t, fx.a * x, fx.h * x, true);
-      events.push({ type: "buff", pid: p.id, uid: t.uid, a: fx.a * x, h: fx.h * x });
+      let src;
+      if (state.pools[p.id][t.defId] > 0) { state.pools[p.id][t.defId]--; src = { [p.id]: 1 }; }
+      addToDeck(state, p, t.defId, src);
+      events.push({ type: "mirror", pid: p.id, uid: t.uid, defId: t.defId });
+      checkEvolve(state, p, events);
     },
     // Kobylka (Pri vyložení): do balíčka ďalšia kópia karty (predáva sa za
     // plnú cenu ako každá karta). Raz za kolo na hráča (p.breedRound) –

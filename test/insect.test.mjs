@@ -302,21 +302,31 @@ test("hmyz: Roháč – Tŕne vrátia útočníkovi navyše 50 % spôsobeného z
   assert.equal(firstHp.hp, 40 - 2 - 3); // vlastný úder Roháča 2 + Tŕne 3
 });
 
-test("hmyz: Svätojánska muška – Pri vyložení vybraný Hmyz +X/+X navždy (X = Húsenice, min. 1)", () => {
+test("hmyz: Svätojánska muška – Pri vyložení Zrkadlo na Hmyz (kópia 1. stupňa do balíčka)", () => {
   const { state, E, put } = bare(22);
   const p = state.p1;
   state.active = "p1";
   const bee = put("p1", "I002");
+  Object.assign(bee, { pa: 3, ph: 3 });
+  const big = put("p1", "I006");
   const dog = put("p1", "P001");
-  p.deck.push({ defId: "I001", rank: 1 }, { defId: "I001", rank: 1 }, { defId: "I001", rank: 1 });
   put("p1", "I005", "hand");
-  E.playMinion(state, "p1", 0, dog.uid); // cieľ mimo Hmyzu → najsilnejší Hmyz
-  assert.deepEqual([bee.atk, bee.hp, bee.pa, bee.ph], [5, 4, 3, 3]);
-  assert.equal(dog.atk, 2);
+  const pool = state.pools.p1.I002;
+  E.playMinion(state, "p1", 0, bee.uid);
+  assert.deepEqual(p.deck.map(c => [c.defId, c.rank, c.pa || 0]), [["I002", 1, 0]]); // bez rastu
+  assert.equal(state.pools.p1.I002, pool - 1); // z vlastného poolu
+  // cieľ mimo Hmyzu → najsilnejší Hmyz na ploche (nie muška sama, nie psík)
   p.deck.length = 0;
   put("p1", "I005", "hand");
-  E.playMinion(state, "p1", 0, bee.uid);
-  assert.equal(bee.pa, 4); // bez Húseníc aspoň +1
+  E.playMinion(state, "p1", 0, dog.uid);
+  assert.deepEqual(p.deck.map(c => c.defId), ["I006"]);
+  // Kukla (jediná) sa kopírovať nedá
+  p.board = [];
+  p.deck.length = 0;
+  const k = put("p1", "kukla");
+  put("p1", "I005", "hand");
+  E.playMinion(state, "p1", 0, k.uid);
+  assert.equal(p.deck.length, 0);
 });
 
 test("hmyz: Kobylka sa množí – Pri vyložení kópia do balíčka raz za kolo; vyliahnutá sa predáva za plnú cenu", () => {
@@ -366,12 +376,12 @@ test("hmyz: Húsenice/Včielky v obehu podľa krčmy – T1 2 + 1, T2 4 + 2, od 
   assert.equal(C.byId.kukla.grow.a, 1);
 });
 
-test("hmyz: text karty ukáže aktuálne X majiteľa (Húsenice v balíčku: n)", () => {
+test("hmyz: text karty ukáže aktuálne X majiteľa (Lienky v balíčku: n)", () => {
   const { state, C } = bare(25);
   const p = state.p1;
-  p.deck.push({ defId: "I001", rank: 1 }, { defId: "I001", rank: 1 }, { defId: "I001", rank: 1 });
-  assert.match(C.cardText(C.byId.I005, 1, "en", false, 0, { owner: p }), /Caterpillars in deck: 3, at least 1/);
-  assert.match(C.cardText(C.byId.I005, 1, "sk", false, 0), /Húsenice v balíčku, aspoň 1/); // bez majiteľa bez čísla
+  p.deck.push({ defId: "I003", rank: 1 }, { defId: "I003", rank: 1 });
+  assert.match(C.cardText(C.byId.I003, 1, "en", false, 0, { owner: p }), /Ladybugs in deck: 2\)/);
+  assert.match(C.cardText(C.byId.I003, 1, "sk", false, 0), /Lienky v balíčku\)/); // bez majiteľa bez čísla
 });
 
 test("hmyz: po poslednej Včielke príde Kráľovná z balíčka (raz za boj) a hneď zaútočí", () => {

@@ -2208,7 +2208,7 @@ function markZones(src, on) {
 }
 
 // Battlecry efekty, ktoré berú cieľ (draci) – drop na vlastnú príšerku.
-const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyAbility", "replayBattlecry", "buffOne", "growTargetSwarm"]);
+const TARGETED_BATTLECRY = new Set(["buffRaceOf", "futureRaceOf", "discoverRace", "copyAbility", "replayBattlecry", "buffOne", "mirrorRace"]);
 // Kúzla, ktoré sa hádžu na konkrétnu vlastnú príšerku.
 const TARGETED_SPELL = new Set(["buffTarget", "petBuff", "copyToDeck", "transform", "swapDeck"]);
 
@@ -2372,6 +2372,11 @@ function act(events) {
     }
     if (ev.type === "breed" && ev.pid === MY) { // Kobylka (Hmyz) sa vyliahla do balíčka
       log(`🦗 ${t(L.addPetMsg).replace(/^🐶 /, "")} ${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}`);
+    }
+    if (ev.type === "mirror" && ev.pid === MY) { // Svätojánska muška (Hmyz): kópia do balíčka
+      log(`🪞 ${t(L.addPetMsg).replace(/^🐶 /, "")} ${Cards.nameOf(Cards.byId[ev.defId], 1, I18N.lang)}`);
+      const el = cardById(ev.uid);
+      if (el) floatText(el, "🪞", true);
     }
     if (ev.type === "petMerge" && ev.pid === MY) {
       Sfx.evolve();
