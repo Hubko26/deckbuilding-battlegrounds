@@ -359,6 +359,7 @@ test("hmyz: Húsenice/Včielky v obehu podľa krčmy – T1 2 + 1, T2 4 + 2, od 
     return before - state.pools[key][id];
   };
   state.pools.p1.I002 = E.POOL_PRIVATE; state.pools.common.I002 = E.POOL_COMMON;
+  state.startTaken = null; // pool je plný – štartovací balíček sa tu nemeria
   assert.equal(count(1, "p1", "I002"), 2);
   assert.equal(count(2, "p1", "I002"), 2); // na T2 pribudnú 2 (spolu 4)
   assert.equal(count(3, "p1", "I002"), E.POOL_PRIVATE - 4); // od T3 zvyšok

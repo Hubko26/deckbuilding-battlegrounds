@@ -3281,3 +3281,29 @@ test("D010 replayBattlecry: Pri vyložení cieľa znova (strieborný 2×, stupe�
   assert.deepEqual({ ...p.raceBuffs.beast }, { a: 2, h: 2 }, "Pečať B002 dvakrát");
   assert.match(C.cardText(C.byId.D010, 2, "sk"), /spustí znova 2×/);
 });
+
+test("hmyz: štartovací balíček sa do limitu Včielok/Húseníc na nízkej krčme neráta", () => {
+  const ctx = loadEngine({ exp: ["insect"] });
+  const E = ctx.Engine;
+  for (let seed = 1; seed <= 300; seed++) {
+    const state = E.newGame(seeded(seed), null, {});
+    const p = state.p1;
+    const start = p.deck.filter(c => c.defId === "I002").length;
+    if (start < 2) continue;
+    // obchod vrátiť do poolu – meria sa len štart
+    for (const s of p.priv) E.returnToPool(state, "p1", s.defId);
+    p.priv = [];
+    let seen = 0;
+    for (let i = 0; i < 2; i++) {
+      const id = E.rollCard(state, 1, "p1", d => d.id === "I002");
+      if (id === "I002" && state.pools.p1.I002 >= 0) seen++;
+    }
+    assert.equal(seen, 2, `seed ${seed}: na T1 sú vo vlastnom poole 2 Včielky aj so štartom ${start}`);
+    // tretia už nie (limit T1 = 2): rollCard s filtrom spadne do záložného losovania – pool sa nezmení
+    const before = state.pools.p1.I002;
+    E.rollCard(state, 1, "p1", d => d.id === "I002");
+    assert.equal(state.pools.p1.I002, before, "limit 2 platí");
+    return;
+  }
+  assert.fail("žiadny seed so štartom 2 Včielok");
+});

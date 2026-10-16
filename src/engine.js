@@ -358,7 +358,7 @@ const Engine = (() => {
     const bias = poolKey !== "common" && state[poolKey] && state[poolKey].rollBias;
     const weighted = [];
     for (const d of defs) {
-      const w = lowTierAvail(d, pool, poolKey, tierLimit) * (bias && d.race === bias.race ? bias.weight : 1);
+      const w = lowTierAvail(state, d, poolKey, tierLimit) * (bias && d.race === bias.race ? bias.weight : 1);
       for (let i = 0; i < w; i++) weighted.push(d.id);
     }
     if (weighted.length) {
@@ -372,13 +372,17 @@ const Engine = (() => {
   // Obmedzenie na nízkej krčme (Hmyz – Včielka, Húsenica: def.lowTierCap =
   // { <tier>: { priv, common } }): na tieri ponuky, ktorý má záznam, je
   // z poolu v obehu len `cap` kópií (zvyšok poolu čaká); tier bez záznamu =
-  // celý pool. Kópie v štartovacom balíčku sa rátajú (uberajú z vlastného poolu).
-  function lowTierAvail(d, pool, poolKey, tierLimit) {
-    const n = pool[d.id] || 0;
+  // celý pool. Kópie zo ŠTARTOVACIEHO balíčka sa do limitu NERÁTAJÚ
+  // (state.startTaken) – hlásenie 16. 10. 2026: štart s 2 Včielkami = na T1
+  // ani jedna Včielka vo vlastnom obchode, Hmyz bol 3,5× vzácnejší než iné rasy.
+  function lowTierAvail(state, d, poolKey, tierLimit) {
+    const n = state.pools[poolKey][d.id] || 0;
     const caps = d.lowTierCap && d.lowTierCap[tierLimit];
     if (!caps) return n;
     const cap = poolKey === "common" ? caps.common : caps.priv;
-    return Math.max(0, n - (poolCap(poolKey, d.id) - cap));
+    const start = (state.startTaken && state.startTaken[poolKey] && state.startTaken[poolKey][d.id]) || 0;
+    const out = Math.max(0, poolCap(poolKey, d.id) - n - start); // v obehu mimo štartu
+    return Math.max(0, Math.min(n, cap - out));
   }
 
   // Vrátenie kópií do poolu (strop = základný počet – záložne vylosované
@@ -547,6 +551,11 @@ const Engine = (() => {
         while (p.deck.filter(c => c.defId === id).length >= 2);
         state.pools[pid][id]--; // štartovací balíček ide z vlastného poolu
         p.deck.push({ defId: id, rank: 1, src: { [pid]: 1 } });
+        // kópie s limitom na nízkej krčme (Hmyz) – do limitu sa nerátajú
+        if (Cards.byId[id].lowTierCap) {
+          const st = (state.startTaken = state.startTaken || {})[pid] || (state.startTaken[pid] = {});
+          st[id] = (st[id] || 0) + 1;
+        }
       }
     }
     const commonCount = COMMON_COUNT + (mutator === "plenty" ? 1 : 0);

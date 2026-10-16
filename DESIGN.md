@@ -1123,7 +1123,9 @@ nuluje sa po boji).
 - **Obmedzenie na krčme 1–2** (`def.lowTierCap`, engine `lowTierAvail`):
   Húsenic aj Včielok je v obehu na T1 2 z vlastného poolu + 1 zo spoločného
   (spolu 3), na T2 4 + 2 (6), od T3 celý pool 6 + 3 (9). Štartovací balíček
-  sa ráta; spoločná ponuka ide podľa nižšieho tieru oboch hráčov. Nerf: bez
+  sa **neráta** (`state.startTaken`, od 16. 10. 2026 – so štartom 2 Včielok
+  vlastný obchod na T1 neponúkol žiadnu a Hmyz bol na T1 3,5× vzácnejší než
+  iná rasa); spoločná ponuka ide podľa nižšieho tieru oboch hráčov. Nerf: bez
   upgradu sa dal vykúpiť celý lacný roj a Kukla z Húseníc rástla prirýchlo.
 - I001 Húsenica (t1, 1/1): Pri vyložení Kukla do balíčka, alebo Kukla +1/+1 navždy.
 - I002 Včielka (t1, 2/1): Žihadlo – po svojom útoku padne; Pri smrti vyvolá

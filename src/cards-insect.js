@@ -24,9 +24,9 @@
   const M = (id, tier, names, emoji, atk, hp, extra = {}) =>
     ({ id, tier, race: R, stageNames: [names.sk, names.sk, names.sk], names, atk, hp, emoji, noEvolve: true, ...extra });
   const N = (sk, cs, en) => ({ sk, cs, en });
-  // Húsenice a Včielky v obehu podľa krčmy (vlastný + spoločný pool, aj
-  // štartovací balíček sa ráta): T1 2 + 1 = 3, T2 4 + 2 = 6, od T3 celý pool
-  // 6 + 3 = 9. Nerf: lacný t1 roj bez upgradu rástol prirýchlo (aj Kukla).
+  // Húsenice a Včielky v obehu podľa krčmy (vlastný + spoločný pool;
+  // štartovací balíček sa NEráta – od 16. 10. 2026): T1 2 + 1 = 3, T2 4 + 2
+  // = 6, od T3 celý pool 6 + 3 = 9. Nerf: lacný t1 roj bez upgradu rástol prirýchlo (aj Kukla).
   const LOW_CAP = { 1: { priv: 2, common: 1 }, 2: { priv: 4, common: 2 } };
 
   const DEFS = [
