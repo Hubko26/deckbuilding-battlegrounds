@@ -40,7 +40,7 @@
     // celý roj zaútočí naraz.
     // fastAnim: UI animuje útok, smrť a vyvolanie zrýchlene (roj 10 Včielok).
     M("I002", 1, N("Včielka", "Včelka", "Bee"), "🐝", 2, 1,
-      { lowTierCap: LOW_CAP, diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002" } } }),
+      { lowTierCap: LOW_CAP, diesOnAttack: true, fastAnim: true, power: { kw: "deathrattle", fx: { type: "summonDeckCopy", of: "I002", last: "I010" } } }),
     // t2 Lienka: Pri vyložení Hmyz v ruke +X/+X navždy, X = Lienky v balíčku.
     M("I003", 2, N("Lienka", "Beruška", "Ladybug"), "🐞", 2, 3,
       { power: { kw: "battlecry", fx: { type: "handGrowSwarm", of: "I003", a: 1, h: 1 } } }),
@@ -149,9 +149,9 @@
     growTargetSwarm: f => t(`vybraný Hmyz +X/+X navždy (X = Húsenice v balíčku${xNow(f)}, aspoň 1)`,
       `vybraný Hmyz +X/+X navždy (X = Housenky v balíčku${xNow(f)}, aspoň 1)`,
       `chosen Insect +X/+X forever (X = Caterpillars in deck${xNow(f)}, at least 1)`),
-    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí",
-      "vyvolá další Včelku z balíčku, která hned zaútočí",
-      "summons the next Bee from your deck, it attacks at once"),
+    summonDeckCopy: () => t("vyvolá ďalšiu Včielku z balíčka, ktorá hneď zaútočí; po poslednej Včielke príde Kráľovná (raz za boj)",
+      "vyvolá další Včelku z balíčku, která hned zaútočí; po poslední Včelce přijde Královna (jednou za boj)",
+      "summons the next Bee from your deck, it attacks at once; after the last Bee the Queen arrives (once per fight)"),
     imprintCard: f => t(`Pečať +${f.a}/+${f.h} všetkým Včielkam`,
       `Pečeť +${f.a}/+${f.h} všem Včelkám`,
       `Imprint +${f.a}/+${f.h} to all Bees`),

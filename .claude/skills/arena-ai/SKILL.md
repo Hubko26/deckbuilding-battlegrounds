@@ -384,7 +384,8 @@ plochou. Rob VŠETKY kroky, každý ťah:
   každý ťah do ruky navyše; nezahraná +1/+1, vyložená +0/+1 navždy. Húsenic
   a Včielok je v obehu podľa krčmy: T1 3 kópie, T2 6, od T3 všetkých 9. Priorita:
   I008 Osa (t5 Pečať, každé vyloženie znova), I001 Húsenice (Kukla + roj),
-  I002 Včielky (útočia celým rojom z balíčka), I010 Kráľovná (Pečať
+  I002 Včielky (útočia celým rojom z balíčka; po poslednej príde Kráľovná
+  z balíčka – stačia 1–2 Kráľovné), I010 Kráľovná (Pečať
   Včielkam), I007 Mravec, I003 Lienka. I009 Modlivka dá Jedovatú spóru –
   counter na veľké telá a Pri smrti. Trinket Dvojitý zámotok (úroveň 2):
   Kukla zo šance pri smrti až 2× za boj – ber ho, ak máš silnú Kuklu.

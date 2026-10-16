@@ -2949,7 +2949,15 @@ const Engine = (() => {
       if (alive.length >= BOARD_MAX) return;
       let used = summonedRefs.get(sides);
       if (!used) summonedRefs.set(sides, used = new Set());
-      const c = [...p.deck, ...p.discard].find(x => x.defId === fx.of && !used.has(x));
+      const refs = [...p.deck, ...p.discard];
+      let c = refs.find(x => x.defId === fx.of && !used.has(x));
+      // Posledná Včielka (v balíčku už ďalšia nie je): príde Kráľovná (fx.last)
+      // – najsilnejšia kópia z balíčka/kôpky, raz za boj, tiež hneď útočí.
+      if (!c && fx.last && !used.has(fx.last)) {
+        c = refs.filter(x => x.defId === fx.last)
+          .sort((a, b) => (b.rank - a.rank) || (((b.pa || 0) + (b.ph || 0)) - ((a.pa || 0) + (a.ph || 0))))[0];
+        if (c) used.add(fx.last);
+      }
       if (!c) return;
       used.add(c);
       const inst = makeInst(state, c.defId, c.rank, p);

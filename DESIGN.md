@@ -1128,8 +1128,10 @@ nuluje sa po boji).
 - I001 Húsenica (t1, 1/1): Pri vyložení Kukla do balíčka, alebo Kukla +1/+1 navždy.
 - I002 Včielka (t1, 2/1): Žihadlo – po svojom útoku padne; Pri smrti vyvolá
   ďalšiu Včielku z balíčka (každú raz za boj), ktorá **hneď zaútočí** mimo
-  poradia (`runRushAttacks`) → celý roj zaútočí naraz. UI animuje
-  Včielky zrýchlene (`fastAnim`).
+  poradia (`runRushAttacks`) → celý roj zaútočí naraz. Keď v balíčku už
+  ďalšia Včielka nie je (posledná padla), príde **Kráľovná** – bojová kópia
+  najsilnejšej z balíčka/kôpky, raz za boj, tiež hneď útočí (`fx.last`).
+  Kráľovná tak nezávisí od ťahania. UI animuje Včielky zrýchlene (`fastAnim`).
 - I003 Lienka (t2, 2/3): Pri vyložení Hmyz v ruke +X/+X navždy (X = Lienky).
 - I004 Kobylka (t2, 3/2): Pri vyložení pridá do balíčka ďalšiu Kobylku
   (raz za kolo na hráča, `p.breedRound`). Vyliahnuté kópie (`bred`) sa
@@ -1148,7 +1150,7 @@ nuluje sa po boji).
   nespustia; štít jed zastaví; Strážca arény nie).
 - I010 Kráľovná (t6, 7/7): Pri smrti Pečať +1/+1 všetkým Včielkam (aj
   budúcim – `p.cardBuffs`). Roj z celého hmyzu: +1/+1 za každý iný Hmyz
-  v balíčku (namiesto kópií).
+  v balíčku (namiesto kópií). Príde aj sama po poslednej Včielke (vyššie).
 
 Simulácia: `npm run target -- exp=insect` (hmyz okolo 63 % pri poslednom
 behu – sleduje sa z hier). `variant=…` v ideal-sim skúša alternatívy.

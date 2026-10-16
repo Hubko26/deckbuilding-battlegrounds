@@ -375,3 +375,23 @@ test("hmyz: text karty ukáže aktuálne X majiteľa (Húsenice v balíčku: n)"
   assert.match(C.cardText(C.byId.I005, 1, "en", false, 0, { owner: p }), /Caterpillars in deck: 3, at least 1/);
   assert.match(C.cardText(C.byId.I005, 1, "sk", false, 0), /Húsenice v balíčku, aspoň 1/); // bez majiteľa bez čísla
 });
+
+test("hmyz: po poslednej Včielke príde Kráľovná z balíčka (raz za boj) a hneď zaútočí", () => {
+  const { state, E, put } = bare(26);
+  const p = state.p1;
+  put("p1", "I002");
+  p.deck.push({ defId: "I002", rank: 1 }, { defId: "I010", rank: 1 }, { defId: "I010", rank: 1, pa: 5, ph: 5 });
+  const wall = put("p2", "B003");
+  Object.assign(wall, { atk: 0, hp: 999, maxHp: 999 });
+  const r = state.rng; state.rng = () => Math.max(0.3, r()); // bez Kukly zo šance
+  state.first = "p1";
+  const ev = E.doBattle(state);
+  const sums = ev.filter(e => e.type === "summon" && e.pid === "p1");
+  assert.equal(sums.map(e => e.defId).join(","), "I002,I010"); // Včielka, potom jediná Kráľovná
+  const q = sums[1];
+  assert.equal(q.atk, 7 + 5 + 3); // najsilnejšia kópia (+5) + roj 3 iných hmyzov
+  const attacks = ev.filter(e => e.type === "attack");
+  assert.equal(attacks.slice(0, 3).map(e => e.aPid).join(","), "p1,p1,p1"); // Včielka, Včielka, Kráľovná hneď
+  assert.equal(attacks[2].aUid, q.uid);
+  assert.equal(p.deck.length, 3); // balíček sa nemení
+});
