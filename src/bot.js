@@ -111,11 +111,14 @@ const Bot = (() => {
   // Počet vlastnených príšer podľa rasy – vo VŠETKÝCH zónach (plocha je po
   // boji vždy prázdna, takže rátať len ju nedáva zmysel). Draci sa nerátajú –
   // sú žoldnieri pre každý build, nemajú tvoriť „dominantnú rasu".
+  // Generované karty (Kukla) sa nerátajú: Kukla prišla zadarmo s Húsenicou,
+  // takže 2 Húsenice + Kukla zamkli Hmyz ako dominantnú rasu (bot išiel
+  // Hmyz v ~90 % hier).
   function ownedRaceCounts(p) {
     const counts = {};
     const add = defId => {
       const d = Cards.byId[defId];
-      if (d.race && !d.token) counts[d.race] = (counts[d.race] || 0) + 1;
+      if (d.race && !d.token && !d.gen) counts[d.race] = (counts[d.race] || 0) + 1;
     };
     for (const c of p.deck) add(c.defId);
     for (const c of p.discard) add(c.defId);
@@ -178,11 +181,13 @@ const Bot = (() => {
     let score = (foreignMain || plainDragon ? pw.body : pw.total) / 8;
     const owned = ownedCount(p, defId);
     if (def.noEvolve) {
-      // Hmyz (experiment): trojica nie je, každá kópia posilní roj –
-      // karta, ktorá rastie s vlastnými kópiami, o to viac.
+      // Hmyz (experiment): trojica nie je, každá kópia posilní roj. Roj už
+      // je v cardPower (skutočný swarmBonus u majiteľa), tu len malý bonus
+      // so stropom – predtým owned × 1,5 bez stropu rátal roj druhýkrát
+      // a bot ťahal Hmyz takmer vždy (evolve rasy majú max. +6 za trojicu).
       const selfSwarm = [].concat(def.swarm || []).some(sw => sw.of === defId) ||
         Cards.powersOf(def).some(x => x.fx.of === defId);
-      score += owned * (selfSwarm ? 1.5 : 0.5);
+      score += Math.min(owned, 3) * (selfSwarm ? 0.8 : 0.3);
     } else if (!def.spell) {
       if (owned === 2) score += 6;      // dokončí trojicu
       else if (owned === 1) score += 2; // rozbieha trojicu
