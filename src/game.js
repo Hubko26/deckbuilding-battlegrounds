@@ -1519,6 +1519,40 @@ function floatText(el, text, heal, delay = 0) {
 }
 
 // ---------- Vykresľovanie ----------
+// Aktívne permanentné aury hráča (Pečate „všetky budúce X…“) ako text.
+// Spoločný základ všetkých rás v hre (F008 futureAll) sa ukáže raz ako ⭐,
+// rasy len zvyšok nad ním; Pečať jednej karty (Kráľovná → Včielky) s jej
+// emoji; ⚡ Živelná sila, 🧟 nabité vyvolanie.
+function auraText(p) {
+  const rb = p.raceBuffs || {};
+  const exp = state.exp || [];
+  const allRaces = Object.keys(Cards.RACES).filter(r => !(Cards.EXP_RACES && Cards.EXP_RACES.has(r) && !exp.includes(r)));
+  const common = allRaces.every(r => rb[r])
+    ? { a: Math.min(...allRaces.map(r => rb[r].a)), h: Math.min(...allRaces.map(r => rb[r].h)) }
+    : { a: 0, h: 0 };
+  const parts = [];
+  if (common.a || common.h) parts.push(`⭐+${common.a}/+${common.h}`);
+  for (const [race, b] of Object.entries(rb)) {
+    const a = b.a - common.a, h = b.h - common.h;
+    if (a || h) parts.push(`${Cards.RACE_ICON[race]}+${a}/+${h}`);
+  }
+  for (const [id, b] of Object.entries(p.cardBuffs || {})) {
+    if (b.a || b.h) parts.push(`${Cards.byId[id].emoji || "🃏"}+${b.a}/+${b.h}`);
+  }
+  if (p.dmgBoost) parts.push(`⚡+${p.dmgBoost}`);
+  if (p.summonCharge) parts.push(`🧟+${p.summonCharge}`);
+  return parts.join(" ");
+}
+
+// Pečate súpera vpravo hore (nad kôpkou) – vidno, ako mu rastie rasa.
+function renderOppAura() {
+  const el = $("oppAura");
+  if (!el || !state) return;
+  const txt = auraText(state[OPP]);
+  el.classList.toggle("hidden", !txt);
+  el.innerHTML = txt ? `<span class="lb">${t(L.oppImprints)}</span><span class="tx">${txt}</span>` : "";
+}
+
 function renderAll() {
   if (!state) return;
   hidePreview();
@@ -1659,6 +1693,7 @@ function renderHero(el, p) {
     b.addEventListener("click", e => { e.stopPropagation(); showTrinketInfo(b.dataset.id, off); });
   }
   if (p.id === MY) renderRaceNote(p);
+  else renderOppAura();
 }
 
 // Pravidlo rasy pod doskou hráča: rasa, ktorej má najviac kariet (aspoň
@@ -1768,21 +1803,7 @@ function renderShop() {
   const p = state[MY];
   const myTurn = state.active === MY && !busy;
   $("moneyEl").textContent = `🪙 ${p.money}`;
-  // Aktívne permanentné aury („všetky budúce X…“). Spoločný základ všetkých
-  // rás (F008 futureAll) sa ukáže raz ako ⭐, rasy len zvyšok nad ním.
-  const rb = p.raceBuffs || {};
-  const allRaces = Object.keys(Cards.RACES);
-  const common = allRaces.every(r => rb[r])
-    ? { a: Math.min(...allRaces.map(r => rb[r].a)), h: Math.min(...allRaces.map(r => rb[r].h)) }
-    : { a: 0, h: 0 };
-  const auraParts = [];
-  if (common.a || common.h) auraParts.push(`⭐+${common.a}/+${common.h}`);
-  for (const [race, b] of Object.entries(rb)) {
-    const a = b.a - common.a, h = b.h - common.h;
-    if (a || h) auraParts.push(`${Cards.RACE_ICON[race]}+${a}/+${h}`);
-  }
-  $("auraEl").textContent = auraParts.join(" ") + (p.dmgBoost ? ` ⚡+${p.dmgBoost}` : "") +
-    (p.summonCharge ? ` 🧟+${p.summonCharge}` : "");
+  $("auraEl").textContent = auraText(p);
   const banner = $("turnBanner");
   const bossTag = Engine.isBossRound(state) ? ` · ${t(L.bossRoundTag)}` : "";
   if (state.active === MY) {

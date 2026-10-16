@@ -217,6 +217,7 @@ const L = {
   },
   play: { sk: "Hraj!", cs: "Hraj!", en: "Play!" },
   newGame: { sk: "Nová hra", cs: "Nová hra", en: "New game" },
+  oppImprints: { sk: "Pečate súpera", cs: "Pečetě soupeře", en: "Opponent's imprints" },
   // Pravidlo rasy pod doskou hráča (game.js renderRaceNote) – len rasy,
   // ktoré majú pravidlo platné pre celú rasu, nie na jednej karte.
   raceNote: {
