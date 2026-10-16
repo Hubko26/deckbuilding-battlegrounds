@@ -50,18 +50,18 @@
     // Vyliahnuté kópie sa predávajú za 0.
     M("I004", 2, N("Kobylka", "Kobylka", "Grasshopper"), "🦗", 3, 2,
       { power: { kw: "battlecry", fx: { type: "breed" } } }),
-    // t3 Svätojánska muška: Pri vyložení (cielené ako draci) ZRKADLO na Hmyz –
+    // t4 Svätojánska muška (do 16. 10. 2026 t3, vymenená s Mravcom): Pri vyložení (cielené ako draci) ZRKADLO na Hmyz –
     // kópia 1. stupňa vybraného Hmyzu z plochy do balíčka (ďalšia kópia = roj
     // silnejší). Od 16. 10. 2026, predtým rast +X/+X za Húsenice.
-    M("I005", 3, N("Svätojánska muška", "Světluška", "Firefly"), "✨", 3, 3,
+    M("I005", 4, N("Svätojánska muška", "Světluška", "Firefly"), "✨", 3, 3,
       { power: { kw: "battlecry", fx: { type: "mirrorRace", race: R } } }),
     // t3 Roháč: Obranca, Tŕne – útočník dostane navyše 50 % zranenia, ktoré
     // Roháčovi spôsobil. (Pôvodne +0/+1 za každý Hmyz v balíčku – na t3
     // prisilné: 4/22 Obranca v neskorej hre.)
     M("I006", 3, N("Roháč", "Roháč", "Stag Beetle"), "🪲", 2, 6,
       { taunt: true, thorns: 0.5 }),
-    // t4 Mravec: Po nákupe náhodný Hmyz v balíčku +X/+X navždy, X = Mravce.
-    M("I007", 4, N("Mravec", "Mravenec", "Ant"), "🐜", 4, 4,
+    // t3 Mravec (do 16. 10. 2026 t4, vymenený so Svätojánskou muškou): Po nákupe náhodný Hmyz v balíčku +X/+X navždy, X = Mravce.
+    M("I007", 3, N("Mravec", "Mravenec", "Ant"), "🐜", 4, 4,
       { power: { kw: "endTurn", fx: { type: "deckGrowSwarm", of: "I007", a: 1, h: 1 } } }),
     // t5 Osa: Pri vyložení Pečať +1/+1 Hmyzu (fixný damage v neskorej hre
     // nemal význam). Bez evolve – každé vyloženie Pečať zopakuje.
