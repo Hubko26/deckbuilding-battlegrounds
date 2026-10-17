@@ -1939,7 +1939,7 @@ const Engine = (() => {
       const x = copiesOwned(p, fx.of);
       const c = pick(refs, state.rng);
       growCard(c, fx.a * x, fx.h * x, false);
-      events.push({ type: "deckGrow", pid: p.id, defId: c.defId, a: fx.a * x, h: fx.h * x });
+      events.push({ type: "deckGrow", pid: p.id, defId: c.defId, rank: c.rank, pa: c.pa, ph: c.ph, zone: p.deck.includes(c) ? "deck" : "discard", a: fx.a * x, h: fx.h * x });
     },
   };
 
@@ -2929,7 +2929,7 @@ const Engine = (() => {
       if (!refs.length) return;
       const c = pick(refs, state.rng);
       growCard(c, fx.a * m, fx.h * m, false);
-      events.push({ type: "deckGrow", pid, defId: c.defId, a: fx.a * m, h: fx.h * m });
+      events.push({ type: "deckGrow", pid, defId: c.defId, rank: c.rank, pa: c.pa, ph: c.ph, zone: p.deck.includes(c) ? "deck" : "discard", a: fx.a * m, h: fx.h * m });
     },
     // Hmyz (Pri smrti, pravidlo rasy): so šancou fx.chance vyvolá bojovú
     // kópiu hráčovej Kukly (aktuálne staty s rastom); bez Kukly základnú.

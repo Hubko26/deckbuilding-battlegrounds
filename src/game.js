@@ -1534,6 +1534,53 @@ async function playSpellCast(ev, fromRect) {
   }
 }
 
+// Rast v balíčku (Mravec, Hmyz): príšerka vyjde z balíčka, zelene
+// sa buffne a vráti sa späť. Viac rastov ide za sebou (fronta).
+let deckGrowQ = Promise.resolve();
+function playDeckGrow(ev) {
+  deckGrowQ = deckGrowQ.then(() => deckGrowFx(ev)).catch(e => console.warn("deckGrow animácia:", e));
+}
+async function deckGrowFx(ev) {
+  // Odkiaľ karta vyjde: kôpka balíčka alebo odhodených (rast cieli obe).
+  const stage = $("stage"), deck = $(ev.zone === "discard" ? "myDiscardBox" : "myDeckBox");
+  const def = Cards.byId[ev.defId];
+  if (!stage || !deck || !def) return;
+  const rank = ev.rank || 1, m = Cards.STAT_MULT[rank];
+  const atk = def.atk * m + (ev.pa ?? ev.a), hp = def.hp * m + (ev.ph ?? ev.h);
+  // Pred buffom staré staty; swarmIn = roj sa nepripočíta (karta je v balíčku).
+  const el = cardEl({ uid: "dg", defId: ev.defId, rank, atk: atk - ev.a, hp: hp - ev.h, maxHp: hp - ev.h, taunt: !!def.taunt, swarmIn: true }, { noPreview: true });
+  el.classList.add("deck-grow-fx");
+  const sr = stage.getBoundingClientRect();
+  const d = center(deck.getBoundingClientRect());
+  const dx = d.x - sr.left - sr.width / 2, dy = d.y - sr.top - sr.height / 2;
+  stage.appendChild(el);
+  const hidden = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px)) scale(.15)`;
+  const shown = "translate(-50%,-50%) scale(1)";
+  const fly = (from, to, o1, o2, ms) => el.animate
+    ? el.animate([{ transform: from, opacity: o1 }, { transform: to, opacity: o2 }],
+      { duration: ms * ANIM, easing: "cubic-bezier(.3,.1,.3,1)", fill: "forwards" }).finished
+    : Promise.resolve();
+  await fly(hidden, shown, 0, 1, 380);
+  await sleep(120);
+  // Buff: staty zozelenejú, iskry, +a/+h nad kartou.
+  const a = el.querySelector(".atk"), h = el.querySelector(".hp");
+  if (a) { a.textContent = statNum(atk); a.classList.add("buffed"); }
+  if (h) { h.textContent = statNum(hp); h.classList.add("buffed"); }
+  if (el.animate) el.animate([
+    { transform: shown, filter: "brightness(1)" },
+    { transform: "translate(-50%,-50%) scale(1.18)", filter: "brightness(1.5)" },
+    { transform: shown, filter: "brightness(1)" },
+  ], { duration: 500 * ANIM, easing: "ease-out" });
+  Sfx.buff();
+  impactRing(el, "#40c057");
+  spawnParticles(el, { n: 10, color: "#40c057", spread: 70 });
+  floatText(el, fmtBuff(ev.a, ev.h), true);
+  await sleep(750);
+  await fly(shown, hidden, 1, 0, 380);
+  el.remove();
+  impactRing(deck, "#40c057");
+}
+
 // Formát buff čísel so znamienkom – ogrí hod mincou môže byť aj záporný.
 function fmtBuff(a, h) {
   const s = n => (n >= 0 ? `+${n}` : String(n));
@@ -2487,6 +2534,7 @@ function act(events) {
       const el = cardById(ev.uid);
       if (el) floatText(el, "🪙", true);
     }
+    if (ev.type === "deckGrow") playDeckGrow(ev);
     if (ev.type === "gold") floatText($("moneyEl"), `+${ev.n} 🪙`, true);
     if (ev.type === "heal") floatText($("myHero"), `+${ev.n} ❤️`, true);
     if (ev.type === "dmgBoost") log(t(L.chargeDmgMsg).replaceAll("{n}", ev.n).replace("{t}", ev.total));
@@ -2531,6 +2579,7 @@ function renderDiscover() {
 async function onEndTurn() {
   if (busy || state.active !== MY || state.pendingDiscover) return;
   act(doAction("endShopTurn"));
+  await deckGrowQ; // Mravce (Hmyz): rast v balíčku dohrá pred bojom
   await driveFlow();
 }
 

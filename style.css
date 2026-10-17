@@ -1003,3 +1003,12 @@ body.fs footer { display: none; }
   .deck-dd { display: none !important; }
   body.playing .deck-btn { display: inline-block; }
 }
+
+/* Rast v balíčku (Mravec/Včielka): karta vyjde z balíčka do stredu dosky,
+   zelene sa buffne a vráti sa (riadi JS – deckGrowFx). */
+#stage .card.deck-grow-fx {
+  position: absolute; left: 50%; top: 50%; z-index: 60;
+  height: 34cqh; font-size: 2.9cqh;
+  pointer-events: none; opacity: 0;
+  filter: drop-shadow(0 0 1.5cqh #40c057) drop-shadow(0 0 3cqh rgba(64,192,87,.6));
+}
