@@ -2496,6 +2496,13 @@ function endDrag(e) {
 // ťuk na položenú kartu = karta sa vráti do ruky, efekt sa zruší.
 let targeting = null; // { idx, action, placed, cursor }
 let suppressCtx = false;
+// Ťuk, ktorým sa cieľ vyberie, vyrobí po pointerup ešte „click" na tom istom
+// mieste – tam sa medzitým otvorí discover (Shardnip) a klik by hneď vybral
+// kartu, ktorú hráč ani nevidel (hlásenie z mobilu). Ten klik zahodíme.
+let swallowClickUntil = 0;
+window.addEventListener("click", e => {
+  if (Date.now() < swallowClickUntil) { e.preventDefault(); e.stopPropagation(); swallowClickUntil = 0; }
+}, true);
 
 function startTargeting(d, idx, action) {
   const r = d.card.getBoundingClientRect();
@@ -2558,6 +2565,7 @@ window.addEventListener("pointerdown", e => {
   targeting.cursor.style.top = e.clientY + "px";
   if (e.button === 2) { suppressCtx = true; cancelTargeting(); return; }
   if (e.button !== 0) return;
+  swallowClickUntil = Date.now() + 700;
   const el = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
   if (el) {
     const tg = endTargeting();
