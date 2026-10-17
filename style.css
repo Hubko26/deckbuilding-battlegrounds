@@ -1036,3 +1036,18 @@ body.targeting, body.targeting * { cursor: none !important; }
   animation: targetSpin 3s linear infinite;
 }
 @keyframes targetSpin { to { transform: rotate(360deg); } }
+
+/* Ladenie (len „Hubko"): panel vľavo vedľa dosky – ľubovoľná karta do ruky. */
+.dev-panel {
+  position: fixed; left: 8px; top: 70px; z-index: 6; width: 230px;
+  display: flex; flex-direction: column; gap: 5px;
+  background: rgba(255,255,255,.94); border-radius: 12px; padding: 8px;
+  box-shadow: 0 6px 18px rgba(0,20,40,.3); font-size: .85rem;
+}
+.dev-panel select, .dev-panel input { font-family: inherit; font-size: .85rem; padding: 4px 6px; border: 2px solid #9bc; border-radius: 8px; }
+.dev-panel #devCard { min-height: 14em; }
+.dev-give { display: flex; gap: 5px; }
+.dev-give button { flex: 1; padding: 5px 8px; }
+@media (max-width: 1350px) {
+  .dev-panel { position: static; width: min(98vw, 480px); margin-top: 4px; }
+}

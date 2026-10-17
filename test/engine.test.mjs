@@ -3307,3 +3307,20 @@ test("hmyz: štartovací balíček sa do limitu Včielok/Húseníc na nízkej kr
   }
   assert.fail("žiadny seed so štartom 2 Včielok");
 });
+
+test("devGive (ladenie): karta do ruky len na vlastnom ťahu, plná ruka a neznáma karta = null", () => {
+  const { state, E } = fresh();
+  E.startRound(state);
+  const pid = state.active, other = pid === "p1" ? "p2" : "p1";
+  const before = state[pid].hand.length;
+  const ev = E.devGive(state, pid, "D004", 2);
+  assert.ok(ev);
+  const inst = state[pid].hand.at(-1);
+  assert.equal(state[pid].hand.length, before + 1);
+  assert.equal(inst.defId, "D004");
+  assert.equal(inst.rank, 2);
+  assert.equal(E.devGive(state, other, "D004"), null);
+  assert.equal(E.devGive(state, pid, "nic"), null);
+  while (state[pid].hand.length < E.HAND_MAX) E.devGive(state, pid, "B001");
+  assert.equal(E.devGive(state, pid, "B001"), null);
+});

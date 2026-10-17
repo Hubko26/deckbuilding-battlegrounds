@@ -1041,6 +1041,21 @@ const Engine = (() => {
     return events;
   }
 
+  // Ladenie (len hráč „Hubko" v UI): ľubovoľná karta zadarmo priamo do ruky.
+  // Ide cez engine ako bežná akcia – zaloguje sa, replay aj multiplayer sedia.
+  function devGive(state, pid, defId, rank = 1) {
+    const p = state[pid];
+    const def = Cards.byId[defId];
+    if (!def || def.boss || state.phase !== "shop" || state.active !== pid) return null;
+    if (p.hand.length >= HAND_MAX) return null;
+    const inst = makeInst(state, defId, Math.min(Math.max(rank | 0, 1), 3), p);
+    inst.slot = freeSlot(p.hand, HAND_MAX);
+    p.hand.push(inst);
+    const events = [{ type: "devGive", pid, defId, uid: inst.uid }];
+    checkEvolve(state, p, events);
+    return events;
+  }
+
   // Kúpená karta ide do balíčka; globálny checkEvolve hneď spojí trojicu,
   // ak kúpou vznikla (aj z kópií schovaných v balíčku/kôpke).
   function acquireCard(state, p, defId, events, src) {
@@ -3155,7 +3170,7 @@ const Engine = (() => {
     handDraw, heroDmgCap, deckMin, cardCount, swarmBonus, copiesOwned, KUKLA_ID, sellBlocked, hasTrinket, pickTrinket, useHeroShield,
     newGame, pickBan, raceOut, startRound, beginShopTurn, buyCommon, buyPrivate, buySpell, refreshShop,
     toggleFreeze, toggleFreezeAll, upgradeCost, upgradeTier, playMinion, castSpell, pickDiscover,
-    sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,
+    sellCard, buyBack, discardCard, moveOnBoard, endShopTurn, devGive, doBattle, checkEvolve, checkPetMerge, makeInst, commonTierLimit,
     pileCard, drawCards, rollCard, returnToPool, // pre testy a nástroje (cyklus balíčka, pooly, rollBias)
   };
 })();

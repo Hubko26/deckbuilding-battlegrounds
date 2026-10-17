@@ -194,6 +194,13 @@ const L = {
   },
   claudeNameLabel: { sk: "Tvoje meno:", cs: "Tvoje jméno:", en: "Your name:" },
   nameNeeded: { sk: "Napíš svoje meno 🙂", cs: "Napiš své jméno 🙂", en: "Type your name 🙂" },
+  devTitle: { sk: "🛠️ Ladenie: karta do ruky", cs: "🛠️ Ladění: karta do ruky", en: "🛠️ Debug: card to hand" },
+  devAll: { sk: "Všetky karty", cs: "Všechny karty", en: "All cards" },
+  devSpells: { sk: "✨ Kúzla", cs: "✨ Kouzla", en: "✨ Spells" },
+  devOther: { sk: "Ostatné (tokeny)", cs: "Ostatní (tokeny)", en: "Other (tokens)" },
+  devSearch: { sk: "hľadaj meno…", cs: "hledej jméno…", en: "search name…" },
+  devGive: { sk: "Daj do ruky", cs: "Dej do ruky", en: "Put in hand" },
+  devGiveFail: { sk: "🛠️ Nejde: len na tvojom ťahu v obchode a ruka max. 8 kariet.", cs: "🛠️ Nejde: jen na tvém tahu v obchodě a ruka max. 8 karet.", en: "🛠️ Can't: only on your shop turn and hand max 8 cards." },
   speedLbl: { sk: "Rýchlosť animácií:", cs: "Rychlost animací:", en: "Animation speed:" },
   claudeNamePh: { sk: "napr. Kubo", cs: "např. Kuba", en: "e.g. Jake" },
   claudeNeedKey: {

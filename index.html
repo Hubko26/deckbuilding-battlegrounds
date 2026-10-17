@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=d0a77412">
+  <link rel="stylesheet" href="style.css?v=78496775">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -141,6 +141,17 @@
         <span>🐢</span><input id="speedRange" type="range" min="0.25" max="4" step="0.25" value="1"><span>🐇</span>
         <b id="speedVal">1×</b>
       </div>
+      <!-- Ladenie (len hráč „Hubko"): ľubovoľná karta zadarmo do ruky. -->
+      <div id="devPanel" class="dev-panel hidden">
+        <b id="devTitle"></b>
+        <select id="devFilter"></select>
+        <input id="devSearch" type="search" autocomplete="off">
+        <select id="devCard" size="10"></select>
+        <div class="dev-give">
+          <select id="devRank"><option value="1">1×</option><option value="2">2× 🥈</option><option value="3">4× 🥇</option></select>
+          <button id="devGiveBtn" class="primary"></button>
+        </div>
+      </div>
       <!-- Chat s Claudom (len Claude mód) – odpoveď príde bublinou -->
       <div id="chatRow" class="chat-row hidden">
         <input id="chatInput" type="text" maxlength="200" autocomplete="off">
@@ -204,17 +215,17 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=69a7a742"></script>
+  <script src="version.js?v=c43221c5"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=de9c9ff8"></script>
+  <script src="src/i18n.js?v=bb554ff5"></script>
   <script src="src/net.js?v=f8a1c39c"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=b09f4aa3"></script>
   <script src="src/cards-insect.js?v=292727b1"></script>
-  <script src="src/engine.js?v=6ae8876a"></script>
+  <script src="src/engine.js?v=76ede0bf"></script>
   <script src="src/bot.js?v=0c15b3b1"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=f4389f62"></script>
+  <script src="src/game.js?v=91324a1f"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=24b5cf89"></script>

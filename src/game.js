@@ -323,7 +323,50 @@ function renderSpeedRow() {
   $("speedRow").classList.toggle("hidden", !isTuner());
   $("speedRange").value = String(animSpeed);
   $("speedVal").textContent = `${animSpeed}×`;
+  renderDevPanel();
 }
+
+// Ladiaci panel (len „Hubko"): filter rasy + hľadanie, zoznam kariet,
+// stupeň a „Daj do ruky" (Engine.devGive – logovaná akcia ako každá iná).
+function renderDevPanel() {
+  $("devPanel").classList.toggle("hidden", !isTuner());
+  if (!isTuner()) return;
+  $("devTitle").textContent = t(L.devTitle);
+  $("devSearch").placeholder = t(L.devSearch);
+  $("devGiveBtn").textContent = t(L.devGive);
+  const f = $("devFilter"), cur = f.value || "all";
+  const opts = [["all", t(L.devAll)],
+    ...Object.keys(Cards.RACES).map(r => [r, `${Cards.RACE_ICON[r] || ""} ${Cards.RACES_NOM[r][I18N.lang]}`]),
+    ["spell", t(L.devSpells)], ["other", t(L.devOther)]];
+  f.innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join("");
+  f.value = cur;
+  renderDevCards();
+}
+function renderDevCards() {
+  const filter = $("devFilter").value || "all";
+  const q = $("devSearch").value.trim().toLowerCase();
+  const sel = $("devCard"), cur = sel.value;
+  const defs = Object.values(Cards.byId).filter(d => !d.boss
+    && (filter === "all" || (filter === "spell" ? d.spell : filter === "other" ? !d.spell && !d.race : d.race === filter && !d.spell)))
+    .map(d => ({ d, name: Cards.nameOf(d, 1, I18N.lang) }))
+    .filter(x => !q || x.name.toLowerCase().includes(q) || x.d.id.toLowerCase().includes(q))
+    .sort((a, b) => (a.d.tier || 0) - (b.d.tier || 0) || a.name.localeCompare(b.name));
+  sel.innerHTML = defs.map(({ d, name }) =>
+    `<option value="${d.id}">⭐${d.tier ?? "–"} ${d.emoji || ""} ${name} (${d.id})</option>`).join("");
+  if (defs.some(x => x.d.id === cur)) sel.value = cur;
+  else if (defs.length) sel.selectedIndex = 0;
+}
+function devGiveCard() {
+  const defId = $("devCard").value;
+  if (!defId || !state) return;
+  const ev = doAction("devGive", defId, Number($("devRank").value));
+  if (!ev) log(t(L.devGiveFail));
+  act(ev);
+}
+$("devFilter").addEventListener("change", renderDevCards);
+$("devSearch").addEventListener("input", renderDevCards);
+$("devGiveBtn").addEventListener("click", devGiveCard);
+$("devCard").addEventListener("dblclick", devGiveCard);
 $("playerName").value = playerName();
 $("playerName").addEventListener("input", e => { localStorage.setItem("arena.playerName", e.target.value); renderSpeedRow(); });
 $("speedRange").addEventListener("input", e => {
