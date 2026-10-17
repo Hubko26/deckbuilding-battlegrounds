@@ -1054,7 +1054,9 @@ body.targeting, body.targeting * { cursor: none !important; }
 
 /* ---------- Ruka ako vejár (desktop / na šírku, Hearthstone štýl) ----------
    Karty sa prekrývajú (z každej vidno aspoň ~70 %, pri plnej ruke menej),
-   prázdne sloty sa nekreslia. Hover kartu vysunie nahor a zväčší (s textom).
+   prázdne sloty sa nekreslia. Hover kartu vysunie nahor a zväčší (s textom) –
+   triedu .hov dáva JS podľa viditeľného pásika karty, nie :hover (zväčšená
+   karta by prekryla susedov a prechod kurzorom by každú druhú preskočil).
    --n = počet kariet v ruke, --i = poradie karty (nastavuje renderHand). */
 @media (orientation: landscape) {
   #stage .hand {
@@ -1073,10 +1075,10 @@ body.targeting, body.targeting * { cursor: none !important; }
   }
 }
 @media (orientation: landscape) and (hover: hover) {
-  #stage .hand .card:not(.drag-src):hover {
+  #stage .hand .card.hov:not(.drag-src) {
     z-index: 30;
     transform: translateY(-38%) scale(1.75);
     transform-origin: 50% 100%;
   }
-  #stage .hand .card:hover .tx { display: block; }
+  #stage .hand .card.hov .tx { display: block; }
 }

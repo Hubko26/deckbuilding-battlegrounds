@@ -2104,6 +2104,22 @@ function raceLine(def, rank) {
 let previewEl = null;
 
 const HAND_FAN = window.matchMedia("(orientation: landscape) and (hover: hover)");
+// Hover vo vejári ruky: zväčšená karta zakrýva susedov, preto sa vybraná karta
+// určuje podľa x kurzora voči NEtransformovaným pozíciám (offsetLeft) – pásik
+// karty siaha od jej ľavého okraja po ľavý okraj ďalšej karty.
+function handHover(e) {
+  const hand = $("handEl");
+  const cards = [...hand.querySelectorAll(".card:not(.gap)")];
+  let hit = null;
+  if (HAND_FAN.matches && !drag && !targeting) {
+    const x = e.clientX - hand.getBoundingClientRect().left;
+    hit = cards.find((c, i) => x >= c.offsetLeft
+      && x < (i + 1 < cards.length ? cards[i + 1].offsetLeft : c.offsetLeft + c.offsetWidth)) || null;
+  }
+  for (const c of cards) c.classList.toggle("hov", c === hit);
+}
+$("handEl").addEventListener("pointermove", handHover);
+$("handEl").addEventListener("pointerleave", () => $("handEl").querySelectorAll(".hov").forEach(c => c.classList.remove("hov")));
 function attachPreview(card, instOrId, opts) {
   card._previewData = { instOrId, opts }; // pre long-press (mobil)
   card.addEventListener("mouseenter", () => {
@@ -2210,6 +2226,12 @@ let press = null; // { card, src, x0, y0, canDrag, longTimer }
 
 function startDrag(e, card, src) {
   if (drag || press) return;
+  // Vejár ruky: klik patrí zväčšenej (.hov) karte, aj keď pod kurzorom
+  // fyzicky leží susedná (vysunutá karta uvoľnila spodok svojho pásika).
+  if (src.type === "hand") {
+    const hov = $("handEl").querySelector(".card.hov");
+    if (hov && hov !== card) { card = hov; src = { type: "hand", idx: Number(hov.dataset.hidx) }; }
+  }
   hidePreview();
   e.preventDefault();
   const canDrag = !busy && state && state.active === MY && !state.pendingDiscover;
@@ -2307,14 +2329,19 @@ window.addEventListener("pointerup", zoomPtUp);
 window.addEventListener("pointercancel", zoomPtUp);
 
 function beginDrag(e, card, src) {
+  card.classList.remove("hov"); // ghost v bežnej veľkosti, nie zväčšený
   const r = card.getBoundingClientRect();
   const ghost = card.cloneNode(true);
   ghost.classList.add("ghost");
   ghost.classList.remove("selected", "buyable");
-  ghost.style.width = r.width + "px";
-  ghost.style.height = r.height + "px";
+  // Rozmer z layoutu (offset*), nie z rectu – karta v ruke je natočená a
+  // môže byť ešte uprostred prechodu zo zväčšenia.
+  const w = card.offsetWidth || r.width, h = card.offsetHeight || r.height;
+  ghost.style.width = w + "px";
+  ghost.style.height = h + "px";
   document.body.appendChild(ghost);
-  drag = { src, ghost, card, ox: e.clientX - r.left, oy: e.clientY - r.top };
+  const clamp = (v, max) => Math.min(Math.max(v, 0), max);
+  drag = { src, ghost, card, ox: clamp(e.clientX - r.left, w), oy: clamp(e.clientY - r.top, h) };
   card.classList.add("drag-src");
   markZones(src, true);
   moveGhost(e);
