@@ -1917,11 +1917,15 @@ function renderHand() {
       continue;
     }
     const { inst, i } = bySlot[s];
-    const card = cardEl(inst, {});
+    const card = cardEl(inst, { hand: true });
     card.dataset.hidx = i;
+    card.style.setProperty("--i", el.querySelectorAll(".card:not(.gap)").length);
     attachDrag(card, { type: "hand", idx: i });
     el.appendChild(card);
   }
+  // Desktop: ruka ako vejár (Hearthstone) – karty sa prekrývajú, CSS z --n
+  // vypočíta prekryv a natočenie, hover kartu vysunie a zväčší.
+  el.style.setProperty("--n", p.hand.length);
 }
 
 function renderShop() {
@@ -2099,9 +2103,14 @@ function raceLine(def, rank) {
 // ---------- Hover preview – zväčšená čitateľná karta ----------
 let previewEl = null;
 
+const HAND_FAN = window.matchMedia("(orientation: landscape) and (hover: hover)");
 function attachPreview(card, instOrId, opts) {
   card._previewData = { instOrId, opts }; // pre long-press (mobil)
-  card.addEventListener("mouseenter", () => { if (!press) showPreview(card, instOrId, opts); });
+  card.addEventListener("mouseenter", () => {
+    // Vejár ruky na desktope: karta sa zväčší sama (CSS hover), preview netreba.
+    if (opts.hand && HAND_FAN.matches) return;
+    if (!press) showPreview(card, instOrId, opts);
+  });
   card.addEventListener("mouseleave", () => { if (!press) hidePreview(); });
   // Karty bez drag & dropu (súperov board, vypnutý obchod): podržanie = preview.
   card.addEventListener("pointerdown", e => {
