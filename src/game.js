@@ -2103,22 +2103,23 @@ function raceLine(def, rank) {
 // ---------- Hover preview – zväčšená čitateľná karta ----------
 let previewEl = null;
 
-const HAND_FAN = window.matchMedia("(orientation: landscape) and (hover: hover)");
+const HAND_FAN = window.matchMedia("(hover: hover)");
 // Hover vo vejári ruky: zväčšená karta zakrýva susedov, preto sa vybraná karta
 // určuje podľa x kurzora voči NEtransformovaným pozíciám (offsetLeft) – pásik
 // karty siaha od jej ľavého okraja po ľavý okraj ďalšej karty.
-function handHover(e) {
+// force = dotyk (mobil): prst položený na ruke listuje kartami ako hover.
+function handHover(e, force = false) {
   const hand = $("handEl");
   const cards = [...hand.querySelectorAll(".card:not(.gap)")];
   let hit = null;
-  if (HAND_FAN.matches && !drag && !targeting) {
+  if ((HAND_FAN.matches || force) && !drag && !targeting) {
     const x = e.clientX - hand.getBoundingClientRect().left;
     hit = cards.find((c, i) => x >= c.offsetLeft
       && x < (i + 1 < cards.length ? cards[i + 1].offsetLeft : c.offsetLeft + c.offsetWidth)) || null;
   }
   for (const c of cards) c.classList.toggle("hov", c === hit);
 }
-$("handEl").addEventListener("pointermove", handHover);
+$("handEl").addEventListener("pointermove", e => handHover(e, !!(press && press.fan)));
 $("handEl").addEventListener("pointerleave", () => $("handEl").querySelectorAll(".hov").forEach(c => c.classList.remove("hov")));
 function attachPreview(card, instOrId, opts) {
   card._previewData = { instOrId, opts }; // pre long-press (mobil)
@@ -2228,6 +2229,10 @@ function startDrag(e, card, src) {
   if (drag || press) return;
   // Vejár ruky: klik patrí zväčšenej (.hov) karte, aj keď pod kurzorom
   // fyzicky leží susedná (vysunutá karta uvoľnila spodok svojho pásika).
+  // Dotyk na ruke (mobil): prst kartu zväčší, posun do strán listuje,
+  // ťah nahor ju chytí – ako Hearthstone na mobile (onPressMove).
+  const fan = src.type === "hand" && e.pointerType !== "mouse";
+  if (fan) handHover(e, true);
   if (src.type === "hand") {
     const hov = $("handEl").querySelector(".card.hov");
     if (hov && hov !== card) { card = hov; src = { type: "hand", idx: Number(hov.dataset.hidx) }; }
@@ -2235,8 +2240,8 @@ function startDrag(e, card, src) {
   hidePreview();
   e.preventDefault();
   const canDrag = !busy && state && state.active === MY && !state.pendingDiscover;
-  press = { card, src, x0: e.clientX, y0: e.clientY, canDrag };
-  press.longTimer = setTimeout(() => {
+  press = { card, src, x0: e.clientX, y0: e.clientY, canDrag, fan };
+  if (!fan) press.longTimer = setTimeout(() => {
     if (press && !drag && card._previewData) {
       showPreview(card, card._previewData.instOrId, card._previewData.opts);
     }
@@ -2248,6 +2253,16 @@ function startDrag(e, card, src) {
 function onPressMove(e) {
   if (drag) { moveGhost(e); return; }
   if (!press) return;
+  if (press.fan) {
+    // Listovanie rieši handHover (pointermove na ruke); ťah nahor = chyť
+    // práve zväčšenú kartu.
+    if (press.y0 - e.clientY > 24) {
+      const hov = $("handEl").querySelector(".card.hov") || press.card;
+      if (press.canDrag) beginDrag(e, hov, { type: "hand", idx: Number(hov.dataset.hidx) });
+      press = null;
+    }
+    return;
+  }
   if (Math.hypot(e.clientX - press.x0, e.clientY - press.y0) > 8) {
     clearTimeout(press.longTimer);
     hidePreview();
@@ -2258,7 +2273,10 @@ function onPressMove(e) {
 
 function onPressUp(e) {
   window.removeEventListener("pointermove", onPressMove);
-  if (press) { clearTimeout(press.longTimer); hidePreview(); press = null; }
+  if (press) {
+    if (press.fan) $("handEl").querySelectorAll(".hov").forEach(c => c.classList.remove("hov"));
+    clearTimeout(press.longTimer); hidePreview(); press = null;
+  }
   if (drag) endDrag(e);
 }
 

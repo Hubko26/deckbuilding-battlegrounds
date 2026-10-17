@@ -1074,11 +1074,28 @@ body.targeting, body.targeting * { cursor: none !important; }
     margin-left: min(calc(var(--cw) * -0.3), calc((100% - var(--n) * var(--cw)) / (var(--n) - 1)));
   }
 }
-@media (orientation: landscape) and (hover: hover) {
-  #stage .hand .card.hov:not(.drag-src) {
-    z-index: 30;
-    transform: translateY(-38%) scale(1.75);
-    transform-origin: 50% 100%;
+/* Mobil na výšku: rovnaký vejár, karty široké podľa ruky (22 % šírky),
+   prekryv v percentách šírky ruky. Na dotyk: prst na ruke kartu zväčší,
+   posun do strán listuje, ťah nahor kartu chytí (JS – startDrag/onPressMove). */
+@media (orientation: portrait) {
+  #stage .hand { gap: 0; }
+  #stage .hand .card.gap { display: none; }
+  #stage .hand .card {
+    width: 22%; flex: none;
+    transform: rotate(calc((var(--i) - (var(--n) - 1) / 2) * 2deg));
+    transform-origin: 50% 120%;
+    transition: transform .15s ease-out, margin .15s ease-out;
   }
-  #stage .hand .card.hov .tx { display: block; }
+  #stage .hand .card:not(.gap) ~ .card:not(.gap) {
+    margin-left: min(-6.6%, calc((92% - var(--n) * 22%) / (var(--n) - 1)));
+  }
+}
+#stage .hand .card.hov:not(.drag-src) {
+  z-index: 30;
+  transform: translateY(-38%) scale(1.75);
+  transform-origin: 50% 100%;
+}
+#stage .hand .card.hov .tx { display: block; }
+@media (orientation: portrait) {
+  #stage .hand .card.hov:not(.drag-src) { transform: translateY(-55%) scale(2); }
 }
