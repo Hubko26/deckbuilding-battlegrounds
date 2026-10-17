@@ -1653,6 +1653,7 @@ function renderAll() {
   renderShop();
   renderDiscover();
   renderDeckList();
+  markTargeting();
 }
 
 // ---------- Môj balíček – zoznam vlastných kariet ----------
@@ -1874,6 +1875,7 @@ function renderHand() {
     }
     const { inst, i } = bySlot[s];
     const card = cardEl(inst, {});
+    card.dataset.hidx = i;
     attachDrag(card, { type: "hand", idx: i });
     el.appendChild(card);
   }
@@ -2367,26 +2369,113 @@ function endDrag(e) {
   if (!inst) { renderAll(); return; }
   if (inRect(e, $("myDiscardBox"))) { act(doAction("discardCard", "hand", src.idx)); return; }
   if (inRect(e, $("shopPanel"))) { trySell("hand", src.idx); return; }
+  const hasTargets = p.board.some(Boolean);
   if (inst.spell) {
     const fx = Cards.byId[inst.defId].fx;
+    if (!inRect(e, $("myBoard"))) return;
     if (TARGETED_SPELL.has(fx.type)) {
-      const targetEl = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
-      if (targetEl) act(doAction("castSpell", src.idx, Number(targetEl.dataset.uid)));
+      // Cielené kúzlo: karta sa položí, kurzor = terč, klik na príšerku = cieľ.
+      if (hasTargets) startTargeting(d, src.idx, "castSpell");
       return;
     }
-    if (inRect(e, $("myBoard"))) act(doAction("castSpell", src.idx));
+    act(doAction("castSpell", src.idx));
     return;
   }
   if (inRect(e, $("myBoard"))) {
-    // Cielený battlecry (draci): drop priamo na vlastnú príšerku = cieľ.
+    // Cielený battlecry (draci): karta sa položí a cieľ sa vyberá terčom;
+    // bez príšeriek na ploche (alebo na plnej ploche) sa zahrá bez cieľa.
     const def = Cards.byId[inst.defId];
-    if (TARGETED_BATTLECRY.has(def.power?.fx?.type)) {
-      const targetEl = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
-      if (targetEl) { act(doAction("playMinion", src.idx, Number(targetEl.dataset.uid))); return; }
+    if (TARGETED_BATTLECRY.has(def.power?.fx?.type) && hasTargets && p.board.filter(Boolean).length < Engine.BOARD_MAX) {
+      startTargeting(d, src.idx, "playMinion");
+      return;
     }
     act(doAction("playMinion", src.idx));
   }
 }
+
+// ---------- Cielenie terčom (cielené kúzla, draci) ----------
+// Karta položená na plochu čaká vedľa príšeriek, kurzor je terč (~2×2 cm).
+// Ľavý klik na vlastnú príšerku = cieľ (efekt sa vykoná), pravý klik / Esc /
+// ťuk na položenú kartu = karta sa vráti do ruky, efekt sa zruší.
+let targeting = null; // { idx, action, placed, cursor }
+let suppressCtx = false;
+
+function startTargeting(d, idx, action) {
+  const r = d.card.getBoundingClientRect();
+  const br = $("myBoard").getBoundingClientRect();
+  const placed = d.card.cloneNode(true);
+  placed.classList.remove("drag-src", "selected", "buyable");
+  placed.classList.add("ghost", "placed");
+  const h = br.height * 0.9, w = h * r.width / r.height;
+  placed.style.width = w + "px";
+  placed.style.height = h + "px";
+  placed.style.fontSize = parseFloat(getComputedStyle(d.card).fontSize) * h / r.height + "px";
+  placed.style.left = (br.left - w * 0.55) + "px";
+  placed.style.top = (br.top + (br.height - h) / 2) + "px";
+  document.body.appendChild(placed);
+  const cursor = document.createElement("div");
+  cursor.className = "target-cursor";
+  const g = d.ghost.getBoundingClientRect();
+  cursor.style.left = (g.left + g.width / 2) + "px";
+  cursor.style.top = (g.top + g.height / 2) + "px";
+  document.body.appendChild(cursor);
+  document.body.classList.add("targeting");
+  targeting = { idx, action, placed, cursor };
+  markTargeting();
+}
+
+// Po prerenderi znova: karta v ruke stlmená, príšerky svietia ako ciele.
+function markTargeting() {
+  if (!targeting) return;
+  const hc = $("handEl").querySelector(`.card[data-hidx="${targeting.idx}"]`);
+  if (hc) hc.classList.add("drag-src");
+  $("myBoard").querySelectorAll(".card").forEach(c => c.classList.add("target-ok"));
+}
+
+function endTargeting() {
+  const tg = targeting;
+  if (!tg) return null;
+  targeting = null;
+  tg.placed.remove();
+  tg.cursor.remove();
+  document.body.classList.remove("targeting");
+  $("myBoard").querySelectorAll(".card").forEach(c => c.classList.remove("target-ok"));
+  return tg;
+}
+
+function cancelTargeting() {
+  if (endTargeting()) renderAll();
+}
+
+window.addEventListener("pointermove", e => {
+  if (!targeting) return;
+  targeting.cursor.style.left = e.clientX + "px";
+  targeting.cursor.style.top = e.clientY + "px";
+});
+// Capture: počas cielenia klik nezačne ťahanie ani iné akcie.
+window.addEventListener("pointerdown", e => {
+  if (!targeting) return;
+  e.preventDefault();
+  e.stopPropagation();
+  targeting.cursor.style.left = e.clientX + "px";
+  targeting.cursor.style.top = e.clientY + "px";
+  if (e.button === 2) { suppressCtx = true; cancelTargeting(); return; }
+  if (e.button !== 0) return;
+  const el = [...$("myBoard").querySelectorAll(".card")].find(c => inRect(e, c));
+  if (el) {
+    const tg = endTargeting();
+    act(doAction(tg.action, tg.idx, Number(el.dataset.uid)));
+    return;
+  }
+  if (inRect(e, targeting.placed)) cancelTargeting();
+}, true);
+window.addEventListener("keydown", e => {
+  if (targeting && e.key === "Escape") cancelTargeting();
+});
+// Pravý klik na zrušenie nesmie otvoriť kontextové menu.
+window.addEventListener("contextmenu", e => {
+  if (targeting || suppressCtx) { e.preventDefault(); suppressCtx = false; }
+}, true);
 
 // Predaj s vysvetlením, keď ho blokuje minimálny počet kariet tieru.
 function trySell(zone, idx) {
@@ -2402,6 +2491,7 @@ function trySell(zone, idx) {
 // ---------- Interakcie hráča ----------
 let evolveWaitRound = 0;
 function act(events) {
+  endTargeting(); // iná akcia (napr. súper, časovač) ruší rozbehnuté cielenie
   if (!events) { renderAll(); return; }
   const hiddenEvolves = [];
   // Zoslané kúzlo: zapamätaj si, kde v ruke karta bola – renderAll ju

@@ -608,10 +608,12 @@ vyradené a rasa má 9 kariet (t3 len jednu).
 **🐲 Dragon (Drak) – žoldnieri: zosilňujú rasu cieľa (implementované)**
 
 - Draci nemajú vlastnú kmeňovú synergiu – zosilňujú akúkoľvek rasu,
-  ktorú práve hráš. **Cielený battlecry** (prvý v hre): hráč pustí draka
-  z ruky priamo na vlastnú príšerku a efekt sa aplikuje na JEJ rasu;
-  drop mimo príšerky = fallback (najsilnejšia vlastná príšerka), takže
-  efekt nikdy nevyhorí naprázdno. Bot/Claude hrá cez rovnaký fallback,
+  ktorú práve hráš. **Cielený battlecry** (prvý v hre): hráč položí draka
+  na plochu, kurzor sa zmení na terč (~2×2 cm) a klik terčom na vlastnú
+  príšerku vyberie cieľ – efekt sa aplikuje na JEJ rasu. Pravý klik / Esc /
+  ťuk na položenú kartu vráti draka do ruky (rovnako cielené kúzlá). Bez
+  príšeriek na ploche sa drak zahrá bez cieľa = fallback (najsilnejšia
+  vlastná príšerka), takže efekt nikdy nevyhorí naprázdno. Bot/Claude hrá cez fallback,
   Claude vie posielať `target` v akcii `play`.
 - **Všetky ne-aurové dračie staty platia celé aktuálne kolo**: dočasné rasové
   buffy (`buffRaceOf`, `buffRandomRace`, `buffTopRace`) sú **aura do konca

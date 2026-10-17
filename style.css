@@ -1012,3 +1012,27 @@ body.fs footer { display: none; }
   pointer-events: none; opacity: 0;
   filter: drop-shadow(0 0 1.5cqh #40c057) drop-shadow(0 0 3cqh rgba(64,192,87,.6));
 }
+
+/* Cielenie terčom: položená karta vedľa plochy + kurzor terč ~2×2 cm. */
+body.targeting, body.targeting * { cursor: none !important; }
+.card.ghost.placed {
+  transform: none; opacity: 1;
+  filter: drop-shadow(0 0 10px #ffd147) drop-shadow(0 8px 14px rgba(0,0,0,.4));
+  animation: placedPulse 1.1s ease-in-out infinite alternate;
+}
+@keyframes placedPulse { to { filter: drop-shadow(0 0 18px #ffd147) drop-shadow(0 8px 14px rgba(0,0,0,.4)); } }
+.target-cursor {
+  position: fixed; z-index: 90; pointer-events: none;
+  width: 2cm; height: 2cm; margin: -1cm 0 0 -1cm;
+  border-radius: 50%;
+  border: 4px solid #e03131;
+  background:
+    radial-gradient(circle, #e03131 0 9%, transparent 10%),
+    linear-gradient(#e03131, #e03131) center / 3px 100% no-repeat,
+    linear-gradient(90deg, #e03131, #e03131) center / 100% 3px no-repeat,
+    radial-gradient(circle, rgba(255,255,255,.25) 0 45%, transparent 46%),
+    radial-gradient(circle, transparent 0 44%, #e03131 45% 48%, transparent 49%);
+  box-shadow: 0 0 10px rgba(224,49,49,.7), inset 0 0 8px rgba(224,49,49,.5);
+  animation: targetSpin 3s linear infinite;
+}
+@keyframes targetSpin { to { transform: rotate(360deg); } }
