@@ -526,8 +526,9 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   Pohladkanie zahrané v hre (`p.petsCast` – **počet zoslaní**, Super = 1;
   body pohladkaní by dali 60+). Dočasné, bez stupňa (ako F010).
 - **P009 (t6 8/8) – Vodca svorky** (`kw packLeader`, pasívna v nákupnej
-  fáze): kým je P009 na ploche, každé zoslané Pohladkanie pohladká cieľ
-  A všetkých ostatných Psíkov na ploche (Psíkom navždy; `SPELL_CAST.petBuff`
+  fáze): kým je P009 na ploche, každé zoslané Pohladkanie sa zopakuje na
+  VŠETKÝCH Psíkoch na ploche vrátane cieľa – cieľ-Psík ho tak dostane 2×
+  (do 18. 10. 2026 bol cieľ vynechaný – bug) (Psíkom navždy; `SPELL_CAST.petBuff`
   hľadá na ploche kartu s kw `packLeader`) – Super +2/+2 na 5 psov = +20
   statov jedným zoslaním. Vylož Misa pred hladkaním. Nič iné: bývalé
   bojové časti (Pred bojom kopírovanie statov najsilnejšieho Psíka, Verný až

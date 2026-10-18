@@ -1276,8 +1276,10 @@ const Engine = (() => {
       const perm = isDog(target);
       const events = [{ type: "spell", pid: p.id, defId: inst.defId, rank: inst.rank || 1, targetUid, a: a * reps, h: h * reps, perm }];
       if (reps > 1) events.push({ type: "trinketProc", pid: p.id, id: "doggyDouble", uid: targetUid });
-      // Vodca svorky (P009 na ploche): každé pohladkanie objíme celú svorku –
-      // každý ďalší Psík na ploche dostane to isté (navždy). Endgame psíkov:
+      // Vodca svorky (P009 na ploche): každé pohladkanie sa ZOPAKUJE na celej
+      // svorke – každý Psík na ploche VRÁTANE cieľa dostane to isté (navždy).
+      // Cieľ bol do 18. 10. 2026 vynechaný (hráč: „zopakuje to na všetkých
+      // okrem toho, ktorého targetujem" – bug). Endgame psíkov:
       // rast už nejde len na jedno telo. Je to schopnosť t6 psíka, nie
       // kúzla (hráčovo rozhodnutie 16. 9. 2026).
       // Vodcovia sa sčítajú podľa stupňa: bronz 1×, striebro 2×, zlato 3×
@@ -1285,7 +1287,7 @@ const Engine = (() => {
       const leaders = p.board.filter(x => Cards.powersOf(Cards.byId[x.defId]).some(pw => pw.kw === "packLeader"));
       const times = leaders.reduce((sum, x) => sum + x.rank, 0) * reps;
       for (let k = 0; k < times; k++) {
-        for (const x of p.board) if (x !== target && isDog(x)) pat(x, events);
+        for (const x of p.board) if (isDog(x)) pat(x, events);
       }
       p.petsCast = (p.petsCast || 0) + 1;
       // Pohladkanie dotiahne kartu – len PRVÉ v kole (od 14. 10. 2026).
