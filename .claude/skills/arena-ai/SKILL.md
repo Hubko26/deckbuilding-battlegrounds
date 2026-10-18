@@ -123,8 +123,8 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
   vyložení (battlecry), Pri smrti (deathrattle), Obranca (taunt), Pred
   bojom, Po nákupe, Pri útoku, Po údere (afterAttack – po vlastnom útoku,
   ak obranca prežil; psík P004: Pohladkanie do balíčka), Vodca svorky
-  (packLeader – psík P009: kým je na ploche, každé Pohladkanie pohladká
-  všetkých Psíkov; strieborný 2×, zlatý 3×), Po kúzle (afterSpell – spustí sa každým
+  (packLeader – psík P009: kým je na ploche, každé Pohladkanie sa zopakuje
+  na všetkých Psíkoch vrátane cieľa; strieborný 2×, zlatý 3×), Po kúzle (afterSpell – spustí sa každým
   zoslaným kúzlom, kým je víla na ploche), Božský štít (prvé zranenie
   sa zruší; z kúzla Svätožiara), Pečať (Imprint = trvalá rasová aura,
   na karte „Pečať +1/+1 Zvieratám"). Buffy z boja sú dočasné; trvalé sú buffy
@@ -409,9 +409,13 @@ plochou. Rob VŠETKY kroky, každý ťah:
   (t3 rast navždy), B009 (t4 mrchožrút, vpravo), B010 (t5 Pečať), B006 (t6
   7/9 bez Obrancu: Pri smrti 1× SuperMláďa 1/1 Obranca (striebro 2×, zlato 3×), každé Pri smrti Pečať
   +1/+1 Zvieratám – t6 cieľ beast buildu, tri smrti kŕmia mrchožrútov;
-  vykladaj vľavo, nech padne skoro a Pečate stihnú zvyšok boja). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám do konca boja – aj
-  Mláďatám, čo prídu neskôr) – vykladaj vľavo, nech padne skoro a buffne
-  zvyšok; kŕmi aj B004/B009.
+  bronzový vľavo, nech padne skoro a Pečate stihnú zvyšok boja; STRIEBORNÝ
+  a ZLATÝ VPRAVO – keď padne pri útoku na plnej ploche, uvoľní jedno miesto
+  a druhé SuperMláďa sa nezmestí; to isté B005). B001 (t1, Pri smrti +1/+1 všetkým Zvieratám do konca boja – aj
+  Mláďatám, čo prídu neskôr) – SLABÉ telo: v ranej hre vľavo, od t3 ho
+  predaj. Jadro buildu (hráč, 18. 10. 2026): Žaba B003, Sova B004, B006,
+  vyvolávače Mláďat B007/B005 (kŕmia Sovu), Pečate B002/B010 + drak D004.
+  Cudziu hlavnú rasu (aj t6 Kráľovnú z discoveru) nehraj.
 - **Fairy**: F002/F004 (rast navždy z každého kúzla), F003, F005 (zlato),
   F001 (draw), F006 (Iskrička), F007 (t4), F010 (t4), F009 (t5), F008 (t6
   Pečať všetkým za každé kúzlo). Kúzla len silné (Minca, Poklad, Živelná

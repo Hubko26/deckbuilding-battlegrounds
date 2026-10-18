@@ -688,9 +688,11 @@ test("bot balast: v neskorej hre je cudzia karta 3+ tiery pod mojím tierom bala
   const junk = (id, rank, tier) => { p.tier = tier; return B.isJunk(state, p, E.makeInst(state, id, rank)); };
   assert.equal(junk("E001", 2, 6), true, "strieborný cudzí t1 na t6");
   assert.equal(junk("D001", 2, 6), true, "strieborný drak t1 na t6");
-  assert.equal(junk("D004", 1, 6), true, "drak t3 na t6");
-  assert.equal(junk("D004", 1, 5), false, "drak t3 na t5 ešte nie");
-  assert.equal(junk("U008", 1, 6), false, "cudzí t4 na t6 nie");
+  assert.equal(junk("D005", 1, 6), true, "drak t3 na t6");
+  assert.equal(junk("D005", 1, 5), false, "drak t3 na t5 ešte nie");
+  assert.equal(junk("D004", 1, 6), false, "D004 (discover mojej rasy) nikdy – 18. 10. 2026");
+  assert.equal(junk("U008", 1, 6), true, "cudzia hlavná rasa t3+ je balast – 18. 10. 2026");
+  assert.equal(junk("D008", 1, 6), false, "drak t5 na t6 nie");
   assert.equal(junk("E001", 3, 6), false, "zlatá ostáva");
   assert.equal(junk("D001", 2, 3), false, "strieborný drak t1 na t3 ešte drží");
   assert.equal(junk("P001", 1, 6), false, "vlastná rasa nikdy");
@@ -731,4 +733,48 @@ test("bot recyklácia: pri plnej ploche odhodí vybitý battlecry (F001) a vylo�
   assert.ok(ev.some(e => e.type === "play" && e.defId === "F006"));
   assert.ok(ev.some(e => e.type === "spell" && e.defId === "iskricka"), "Iskrička zoslaná");
   assert.ok([...p.deck, ...p.discard].some(c => c.defId === "F001"));
+});
+
+test("bot sprievodca rás (beast, 18. 10. 2026): B001 od t3 balast, core karty nad B001, cudzia Kráľovná balast a na plochu posledná", () => {
+  const ctx = loadEngine({ exp: ["insect"] });
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(41), null);
+  state.round = 11;
+  const p = state.p2;
+  p.deck = ["B003", "B004", "B007", "B005", "B002"].map(id => ({ defId: id, rank: 1 }));
+  p.discard = []; p.hand = []; p.board = []; p.tier = 3;
+  assert.equal(B.dominantRace(state, p), "beast");
+  assert.equal(B.isJunk(state, p, E.makeInst(state, "B001", 1)), true, "slabé t1 Zviera od t3");
+  assert.equal(B.isJunk(state, p, E.makeInst(state, "B001", 3)), false, "zlaté ostáva");
+  assert.ok(B.cardScore(state, p, "B007", B.HYGIENE) > B.cardScore(state, p, "B001", B.HYGIENE) + 4);
+  p.tier = 6;
+  const queen = E.makeInst(state, "I010", 1);
+  assert.equal(B.isJunk(state, p, queen), true);
+  // plná ruka zvierat + Kráľovná: Kráľovná sa nevyloží
+  p.hand = [queen, ...["B010", "B006", "B004", "B003", "B002"].map(id => E.makeInst(state, id, 1))];
+  p.money = 0;
+  B.completeTurn(state, "p2", B.HYGIENE, () => {});
+  assert.ok(!p.board.includes(queen));
+  assert.equal(p.board.length, 5);
+});
+
+test("bot poradie: vyvolávač 2+ tokenov (strieborný B006) útočí vpravo, nie na 1. mieste", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine, B = ctx.Bot;
+  const state = E.newGame(seeded(42), null);
+  E.startRound(state);
+  const p = state.p2;
+  const big = E.makeInst(state, "B006", 2);
+  big.atk = 30; big.hp = 30;
+  p.board = [big, ...["B003", "B002", "B010"].map(id => E.makeInst(state, id, 1))];
+  p.board.forEach((x, i) => { x.slot = i; });
+  B.orderBoard(state, p, () => {});
+  const order = [...p.board].sort((a, b) => a.slot - b.slot).map(x => x.defId);
+  assert.notEqual(order[0], "B006");
+  const bronze = E.makeInst(state, "B006", 1); // 1 token – uvoľní si vlastné miesto, poradie podľa útoku
+  bronze.atk = 30;
+  p.board = [E.makeInst(state, "B003", 1), bronze];
+  p.board.forEach((x, i) => { x.slot = i; });
+  B.orderBoard(state, p, () => {});
+  assert.equal([...p.board].sort((a, b) => a.slot - b.slot)[0].defId, "B006");
 });

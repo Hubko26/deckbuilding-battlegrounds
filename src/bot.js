@@ -57,6 +57,17 @@ const Bot = (() => {
 
   // Od tohto kola sa bot zafixuje na dominantnú rasu (predtým skladá, čo príde).
   const RACE_LOCK_ROUND = 3;
+  // Sprievodca rasami (hráčove skúsenosti): core = karty, okolo ktorých sa
+  // build skladá (+3 v nákupe), weak = slabé karty vlastnej rasy (−3, od
+  // tieru 3 balast). Rasa bez záznamu ide len podľa cardPower a synergií.
+  // Zvieratá (hráč, 18. 10. 2026): silné ostávajú Žaba B003, Sova B004,
+  // t6 B006, vyvolávače Mláďat (B007, B005) a Pečate (B002, B010);
+  // B001 je slabé t1 telo, neskôr ho predaj. Drak D004 (Shardnip) je
+  // žoldnier každej rasy (cardScore +8, nikdy balast).
+  const RACE_GUIDE = {
+    beast: { core: ["B003", "B004", "B006", "B007", "B005", "B002", "B010"], weak: ["B001"] },
+  };
+  const guideOf = race => RACE_GUIDE[race] || { core: [], weak: [] };
   // Predaj balastu pred vyložením: do JUNK_GUARD_ROUND − 1 bez ohľadu na
   // plochu, potom nechá aspoň JUNK_MIN_BODIES tiel (ruka + plocha).
   const JUNK_GUARD_ROUND = 9, JUNK_MIN_BODIES = 2;
@@ -209,6 +220,10 @@ const Bot = (() => {
       }
       if (dragonFx.includes("discoverRace")) score += 8; // D004: vždy top nákup
       if (dom && dragonFx.includes("replayBattlecry")) score += 3; // D010 (t6)
+      if (dom && def.race === dom) {
+        if (guideOf(dom).core.includes(defId)) score += 3;
+        if (guideOf(dom).weak.includes(defId)) score -= 3;
+      }
     }
     // Synergické bonusy za schopnosť – nie pre cudziu hlavnú rasu (jej Pečať
     // ani motor v tomto balíčku nič nekŕmi).
@@ -232,6 +247,8 @@ const Bot = (() => {
       if (fx.type === "fightToken") score += ["U001", "U005", "U006", "U009"].reduce((n, id) => n + ownedCount(p, id), 0) * 0.6;
       // Mrchožrúti (B004 navždy, B009 dočasne) – cennejší s vyvolávačmi Mláďat
       if (pw.kw === "raceDeath") score += (ownedCount(p, "B007") + ownedCount(p, "B005") + ownedCount(p, "B001") + ownedCount(p, "B006")) * 0.8;
+      // ...a naopak: vyvolávač Mláďat je cennejší s mrchožrútmi (Sova B004)
+      if (def.race === "beast" && pw.kw === "deathrattle" && fx.type === "summon") score += (ownedCount(p, "B004") + ownedCount(p, "B009")) * 0.8;
       // Psíci: generátory Pohladkaní rastú s počtom psov (pohladkanie na
       // psíkovi je navždy), tutor P005 s počtom pohladkaní, P008 s počtom
       // zoslaní, Zavýjanie s počtom psov na ploche.
@@ -366,13 +383,21 @@ const Bot = (() => {
     // pár a striebro balast neboli. Strieborná cudzia t1–2 je balast od
     // tieru 4. Draci t1–2 sú žoldnieri, kým je telo relevantné – od tieru 3
     // balast (záznam z 11. 9. 2026: D001, D006×2, D007×2 v balíčku do konca).
-    if (!dom || def.race === dom) return false;
+    if (!dom) return false;
+    // Slabá karta vlastnej rasy (RACE_GUIDE.weak) je od tieru 3 balast – zlatú nechaj.
+    if (def.race === dom) return guideOf(dom).weak.includes(def.id) && inst.rank < 3 && p.tier >= 3;
+    // D004 (discover karty mojej rasy) nie je balast nikdy – predtým ho
+    // isJunk na t6 predal a cardScore (+8) ho hneď kúpil späť.
+    if (Cards.powersOf(def).some(x => x.fx.type === "discoverRace")) return false;
     // Neskorá hra (záznam zo 14. 10. 2026: psí bot na t6 hral E001:2,
     // E002:2, D001:2, D007 do 16. kola): cudzia karta 3+ tiery pod mojím
     // tierom je balast aj ako striebro a aj drak – telo už nestačí.
     // Zlatú nechaj (×4 staty).
     if (inst.rank < 3 && def.tier <= p.tier - 3) return true;
-    if (def.tier > 2) return false;
+    // Cudzia HLAVNÁ rasa t3+ je po zafixovaní tiež balast (záznam z 18. 10.
+    // 2026: beast bot z DMG Meter discoveru zobral Kráľovnú I010 a hral ju
+    // na ploche namiesto B010). Draci a ogri t3+ ostávajú (žoldnieri/telá).
+    if (def.tier > 2) return !SUPPORT_RACES.has(def.race) && inst.rank < 3;
     if (def.race === "dragon") return inst.rank === 1 ? p.tier >= 3 : inst.rank === 2 && p.tier >= 4;
     return inst.rank === 1 || (inst.rank === 2 && p.tier >= 4);
   }
@@ -723,6 +748,8 @@ const Bot = (() => {
         choice = minions[Math.floor(state.rng() * minions.length)];
       } else {
         minions.sort((a, b) => {
+          const ja = isJunk(state, p, a.inst) ? 1 : 0, jb = isJunk(state, p, b.inst) ? 1 : 0;
+          if (ja !== jb) return ja - jb; // balast až na voľné miesta
           const oa = deployOrder(a.inst.defId), ob = deployOrder(b.inst.defId);
           if (oa !== ob) return oa - ob; // Lienka prvá, buffery neskôr
           return (b.inst.atk + b.inst.hp) - (a.inst.atk + a.inst.hp);
@@ -816,6 +843,11 @@ const Bot = (() => {
     if (!pw) return 1;
     if (pw.kw === "onAttack" || pw.kw === "afterAttack") return 0; // Aport chce útočiť, kým súper žije
     if (["raceDeath", "onEnemySummon", "endTurn", "afterSpell"].includes(pw.kw)) return 2; // P009 má ostať posledný
+    // Vyvolávač 2+ tokenov (B005, strieborný/zlatý B006) vpravo: keď padne
+    // pri útoku na plnej ploche, uvoľní jedno miesto a druhý token sa nezmestí
+    // (hráč, 18. 10. 2026: zlatý B006 na 1. mieste). Kostíky pretečú, tie nie.
+    if (pw.kw === "deathrattle" && pw.fx.type === "summon" && (pw.fx.n || 1) + (inst.rank || 1) - 1 > 1 &&
+        Cards.byId[pw.fx.token]?.race !== "undead") return 2;
     return 1;
   }
 
