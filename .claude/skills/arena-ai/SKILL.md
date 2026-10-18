@@ -381,7 +381,10 @@ plochou. Rob VŠETKY kroky, každý ťah:
 - **Hmyz** (experiment, len s voľbou „🐛 Hmyz"): BEZ evolve – kópie sa
   nespájajú, každý Hmyz má +1/+1 za každú inú svoju kópiu (roj), takže
   zbieraj KÓPIE tej istej karty, nepredávaj ich. Kukla (z I001 Húsenice) ide
-  každý ťah do ruky navyše; nezahraná +1/+1, vyložená +0/+1 navždy. Húsenic
+  každý ťah do ruky navyše; nezahraná +1/+1, vyložená +0/+1 navždy. Kuklu DRŽ v ruke
+  (rastie, bojová kópia sa vyvolá aj z ruky); vylož ju len pri slabej ploche
+  (diera, žiadna Včielka, slabé staty) alebo pred DMG Meter kolom. I003 Lienku
+  vykladaj PRVÚ – buffuje hmyz v ruke (aj Kuklu). Húsenic
   a Včielok je v obehu podľa krčmy: T1 3 kópie, T2 6, od T3 všetkých 9. Priorita:
   I008 Osa (t5 Pečať, každé vyloženie znova), I001 Húsenice (Kukla + roj),
   I002 Včielky (útočia celým rojom z balíčka; po poslednej príde Kráľovná

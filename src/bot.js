@@ -20,6 +20,7 @@ const Bot = (() => {
       sellJunk: true, swapBoard: true, orderBoard: true, freeze: true, raceHunt: true,
       recycle: true, // plná plocha: odhoď vybitý battlecry a vylož ďalší (recycleBattlecries)
       tierLure: true, // upgrade skôr, keď ďalší tier má silnú kartu mojej rasy (cardPower)
+      holdKukla: true, // Kukla (Hmyz) ostáva v ruke, von len pri slabej ploche / pred DMG Meter (kuklaWanted)
       rollBias: 3, // súkromná ponuka losuje karty dominantnej rasy 3× častejšie (handicap)
       goldBonus: 1, // +1 zlato každé kolo od prvého (handicap)
     },
@@ -383,7 +384,7 @@ const Bot = (() => {
     let guard = 5;
     while (guard-- > 0) {
       const junk = p.board.find(x => isJunk(state, p, x));
-      const repl = p.hand.find(x => x && !x.spell && !isJunk(state, p, x));
+      const repl = p.hand.find(x => deployable(state, p, x) && !isJunk(state, p, x));
       if (!junk || !repl) return;
       const sold = act("sellCard", state, p.id, "board", p.board.indexOf(junk));
       if (!sold) return; // minimum kariet tieru
@@ -651,7 +652,7 @@ const Bot = (() => {
   function recycleBattlecries(state, p, push) {
     let guard = 10;
     while (p.board.length >= Engine.BOARD_MAX && guard-- > 0) {
-      const bodies = p.hand.filter(x => x && !x.spell && !isJunk(state, p, x));
+      const bodies = p.hand.filter(x => deployable(state, p, x) && !isJunk(state, p, x));
       if (!bodies.length) return;
       const byValue = list => [...list].sort((a, b) => bodyValue(a, p) - bodyValue(b, p));
       const cry = byValue(bodies.filter(recyclable)).at(-1);
@@ -677,23 +678,53 @@ const Bot = (() => {
     }
   }
 
-  // Vyloženie príšer: obyčajné prvé (najsilnejšie), battlecry buffery na
-  // koniec, aby zasiahli plnú plochu. Easy hrá náhodne.
+  // Kukla (Hmyz) v ruke rastie +1/+1 za ťah (vyložená len +0/+1) a bojová
+  // kópia pri smrti hmyzu sa vyvolá aj z Kukly v ruke – hard ju preto drží
+  // (hráč, 18. 10. 2026: držaná Kukla 66/76, botova vždy vyložená 19/35).
+  // Von ide len pri slabej ploche alebo pred DMG Meter kolom. Slabá plocha:
+  // diera (ostatné telá sú už vyložené), žiadna Včielka, alebo slabé staty –
+  // priemer tiel (s rojom, bez Včielok – tie sú malé zámerne, sila je v roji
+  // z balíčka) pod polovicou statov Kukly.
+  const isKukla = inst => !!inst && !inst.spell && !!Cards.byId[inst.defId].gen;
+  function kuklaWanted(state, p, kukla) {
+    if (Engine.isBossRound(state)) return true;
+    if (p.board.length < Engine.BOARD_MAX) return true;
+    const bodies = p.board.filter(x => !isKukla(x));
+    if (!bodies.some(x => x.defId === "I002")) return true;
+    const big = bodies.filter(x => x.defId !== "I002");
+    if (!big.length) return false;
+    const stats = x => { const sw = Engine.swarmBonus(p, Cards.byId[x.defId]); return x.atk + x.hp + sw.a + sw.h; };
+    return big.reduce((n, x) => n + stats(x), 0) / big.length * 2 < kukla.atk + kukla.hp;
+  }
+  // Telo z ruky, ktoré smie ísť na plochu (držaná Kukla nie).
+  const deployable = (state, p, inst) => inst && !inst.spell && (!isKukla(inst) || kuklaWanted(state, p, inst));
+
+  // Lienka (I003): Hmyz v RUKE +X/+X navždy – ide von PRVÁ, kým je ruka plná
+  // (aj s držanou Kuklou). Ostatné battlecry buffery naopak na koniec.
+  const handGrower = defId => Cards.powersOf(Cards.byId[defId]).some(pw => pw.kw === "battlecry" && pw.fx.type === "handGrowSwarm");
+  const deployOrder = defId => handGrower(defId) ? -1 : isBattlecryBuffer(defId) ? 1 : 0;
+
+  // Vyloženie príšer: Lienka prvá, potom obyčajné (najsilnejšie), battlecry
+  // buffery na koniec, aby zasiahli plnú plochu. Kukla (holdKukla) až keď
+  // nič iné v ruke nie je a plocha je slabá. Easy hrá náhodne.
   function deployMinions(state, p, cfg, push) {
     let guard = 20;
     while (p.board.length < Engine.BOARD_MAX && guard-- > 0) {
-      const minions = p.hand
+      let minions = p.hand
         .map((inst, i) => ({ inst, i }))
         .filter(x => x.inst && !x.inst.spell);
+      if (cfg.holdKukla) {
+        const others = minions.filter(x => !isKukla(x.inst));
+        minions = others.length ? others : minions.filter(x => kuklaWanted(state, p, x.inst));
+      }
       if (!minions.length) break;
       let choice;
       if (cfg.randomBuy) {
         choice = minions[Math.floor(state.rng() * minions.length)];
       } else {
         minions.sort((a, b) => {
-          const ba = isBattlecryBuffer(a.inst.defId) ? 1 : 0;
-          const bb = isBattlecryBuffer(b.inst.defId) ? 1 : 0;
-          if (ba !== bb) return ba - bb; // buffery neskôr
+          const oa = deployOrder(a.inst.defId), ob = deployOrder(b.inst.defId);
+          if (oa !== ob) return oa - ob; // Lienka prvá, buffery neskôr
           return (b.inst.atk + b.inst.hp) - (a.inst.atk + a.inst.hp);
         });
         choice = minions[0];
@@ -718,7 +749,7 @@ const Bot = (() => {
     while (p.board.length >= Engine.BOARD_MAX && guard-- > 0) {
       const handBest = p.hand
         .map((inst, i) => ({ inst, i }))
-        .filter(x => x.inst && !x.inst.spell)
+        .filter(x => deployable(state, p, x.inst))
         .sort((a, b) => bodyValue(b.inst, p) - bodyValue(a.inst, p))[0];
       if (!handBest) break;
       const weakIdx = p.board

@@ -286,6 +286,44 @@ test("hmyz: bot Kuklu nikdy nepovažuje za balast (ani v cudzej rase)", () => {
   assert.equal(ctx.Bot.isJunk(state, p, put("p1", "I002", "hand")), true); // obyčajný cudzí t1 balast je
 });
 
+// Ruka: Kukla + 5 tiel hmyzu (2 Včielky), bez zlata – ťah bota len vykladá.
+function kuklaHand(seed, round) {
+  const f = bare(seed);
+  const p = f.state.p1;
+  f.state.round = round; p.tier = 4; p.money = 0;
+  const k = f.put("p1", "kukla", "hand");
+  Object.assign(k, { atk: 6, hp: 10, maxHp: 10 });
+  for (const id of ["I007", "I002", "I002", "I001", "I003"]) {
+    const x = f.put("p1", id, "hand");
+    if (id !== "I002") Object.assign(x, { atk: 6, hp: 6, maxHp: 6 }); // silné telá, Včielky malé
+  }
+  const events = [];
+  f.ctx.Bot.completeTurn(f.state, "p1", f.ctx.Bot.HYGIENE, ev => { if (ev) events.push(...ev); });
+  return { ...f, p, k, events };
+}
+
+test("hmyz: hard bot Kuklu drží v ruke, keď je plocha plná a silná (so Včielkou)", () => {
+  const { p, k, events } = kuklaHand(22, 7);
+  assert.ok(p.hand.includes(k));
+  assert.ok(!p.board.includes(k));
+  assert.equal(p.board.length, 5);
+  // Lienka išla von PRVÁ – Kukla v ruke dostala jej +X/+X
+  assert.equal(events.find(e => e.type === "play").defId, "I003");
+  assert.ok(k.atk > 6);
+});
+
+test("hmyz: hard bot Kuklu vyloží pred DMG Meter kolom a pri slabej ploche", () => {
+  const boss = kuklaHand(23, 10); // DMG Meter kolo
+  assert.ok(boss.p.board.includes(boss.k));
+  const { state, put, ctx } = bare(24);
+  const p = state.p1;
+  state.round = 7; p.tier = 4; p.money = 0;
+  const k = put("p1", "kukla", "hand");
+  for (const id of ["I007", "I001"]) put("p1", id, "hand"); // diera na ploche
+  ctx.Bot.completeTurn(state, "p1", ctx.Bot.HYGIENE, () => {});
+  assert.ok(p.board.includes(k));
+});
+
 test("hmyz: Roháč – Tŕne vrátia útočníkovi navyše 50 % spôsobeného zranenia (hore)", () => {
   const { state, E, C, put } = bare(21);
   assert.equal(C.byId.I006.swarm.length, 1); // už len roj za kópie
