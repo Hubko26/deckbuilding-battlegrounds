@@ -247,7 +247,9 @@ description: Pravidlá hry Zvieracia aréna a odporúčaná stratégia pre AI s�
     (id `pet`, cena 0): +1/+1 vybranej príšerke, **Psíkovi NAVŽDY** – hádž
     ho VŽDY na Psíka, ideálne na toho, koho vykladáš každé kolo. 3 rovnaké
     stupne sa samy spoja na vyšší (Super +2, Mega +4, Giga +8… bez stropu,
-    ×2 ako evolve). Predaj pohladkania dá 0 – nepredávaj, hraj.
+    ×2 ako evolve). Predaj pohladkania dá 0 – v psej (aj vílej) stratégii
+    nepredávaj, hraj. S inou rasou je to balast: navždy buffuje len Psíka
+    a kartu ťahá len prvé v kole – predaj ho a stenči balíček.
     PRVÉ zoslané Pohladkanie v kole dotiahne kartu (ďalšie už nie) – hraj
     ho skoro v ťahu (nová karta môže byť príšerka na plochu).
     P005 (4/5) Vyňuchaj = tutor pohladkania (najvyšší stupeň z balíčka) a za

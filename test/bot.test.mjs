@@ -216,6 +216,40 @@ test("bot: kúzlo nad strop je balast a predá sa; Minca a discover nie", () => 
   assert.equal(ctx.Bot.isJunk(state, p, jablko), false);
 });
 
+test("bot: Pohladkanie je balast mimo Psíkov a Víl – predá ho; psí a vílí bot ho drží", () => {
+  const ctx = loadEngine();
+  const E = ctx.Engine;
+  const state = E.newGame(seeded(53), null);
+  state.round = 4;
+  const p = state.p2;
+  const pet = E.makeInst(state, "pet", 1);
+  const setDeck = ids => { p.deck = ids.map(id => ({ defId: id, rank: 1 })); p.discard = []; p.hand = []; p.board = []; };
+  setDeck(["U001", "U002", "U003"]);
+  assert.equal(ctx.Bot.dominantRace(state, p), "undead");
+  assert.equal(ctx.Bot.isJunk(state, p, pet), true);
+  setDeck(["P001", "P002", "P003"]);
+  assert.equal(ctx.Bot.dominantRace(state, p), "doggy");
+  assert.equal(ctx.Bot.isJunk(state, p, pet), false);
+  setDeck(["F002", "F003", "F004"]);
+  assert.equal(ctx.Bot.isJunk(state, p, pet), false);
+  setDeck(["U001", "B001", "E001"]); // rasa ešte nezafixovaná – môže sa stať psím
+  assert.equal(ctx.Bot.dominantRace(state, p), null);
+  assert.equal(ctx.Bot.isJunk(state, p, pet), false);
+
+  // celý ťah: nemŕtvy bot s 2 Pohladkaniami v ruke ich predá (nezahrá)
+  const g = E.newGame(seeded(55), null);
+  E.startRound(g);
+  for (let r = 0; r < 3; r++) { g.round++; }
+  const q = g.p1;
+  q.deck = ["U001", "U002", "U003", "U004", "U001", "U002"].map(id => ({ defId: id, rank: 1 }));
+  q.discard = [];
+  q.hand.push(E.makeInst(g, "pet", 1), E.makeInst(g, "pet", 1));
+  assert.equal(ctx.Bot.dominantRace(g, q), "undead");
+  ctx.Bot.completeTurn(g, "p1", ctx.Bot.HYGIENE, () => {});
+  const pets = [...q.hand, ...q.deck, ...q.discard, ...q.board].filter(x => x.defId === "pet").length;
+  assert.equal(pets, 0);
+});
+
 test("bot: Štít je výplňové kúzlo – nekupuje ho nikto, ani vílí build, a vždy sa predá", () => {
   const ctx = loadEngine();
   const E = ctx.Engine;

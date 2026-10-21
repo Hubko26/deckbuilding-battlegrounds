@@ -554,7 +554,10 @@ vyradené a rasa má 9 kariet (t3 len jednu).
   zatiaľ medailón Vodítka (`TRINKET_ART_ALIAS` v game.js).
 - Ban: rás je 7, do ponúk idú 2 trojice, jedna rasa je náhodne mimo (a s raceCap mimo celej hry).
 - Bot: pohladkanie hádže na najsilnejšieho vlastného Psíka (bez Psíka na
-  najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel ani balast;
+  najsilnejšie telo); pohladkania nie sú kúzlo pre strop kúziel. Balast sú
+  len mimo Psíkov a Víl (od 21. 10. 2026): s inou zafixovanou rasou ich bot
+  predá (0 zlata, tenší balíček) – inde sú len +1/+1 na boj a kartu ťahá
+  len prvé v kole; bez zafixovanej rasy ich drží;
   P004 útočí vľavo, P009 úplne vpravo. `cardPower` má odhady pre všetky nové
   fx (`npm run power -- race=doggy`).
 

@@ -365,14 +365,20 @@ const Bot = (() => {
     // Kukla (Hmyz, gen) nie je nikdy balast: karta navyše každý ťah, rastie
     // navždy a je jediná – predaná by sa vrátila malá (hlásenie 15. 10. 2026).
     if (def.gen && !def.spell) return false;
-    if (inst.atk === 0) return true;
     const dom = dominantRace(state, p);
+    // Pohladkanie (psíci) mimo Psíkov a Víl je balast: navždy buffuje len
+    // Psíka, inak +1/+1 na jeden boj, a kartu dotiahne len PRVÉ v kole –
+    // ďalšie sú mŕtve ťahy a zahrané sa cyklom vracajú. Predaj (0 zlata)
+    // stenčí balíček. Psíci ho chcú (rast navždy), víly tiež (Po kúzle).
+    // Bez zafixovanej rasy ostáva – bot sa ešte môže stať psím.
+    // (Hráč, 21. 10. 2026: boti Pohladkania nikdy nepredávali.)
+    if (def.pet) return !!dom && dom !== "doggy" && dom !== "fairy";
+    if (inst.atk === 0) return true;
     // Kúzlo nad strop je balast: zahrané ide do kôpky a vráti sa cyklom
     // balíčka, takže z neho niet cesty von – jediný spôsob, ako ho z balíčka
     // dostať, je predaj. Mince (zlato) a discover (karta) sa nepredávajú, tie
     // hodnotu majú vždy; Štít naopak vždy (slot v ruke > Obranca), aj vílam.
     if (def.spell) {
-      if (def.pet) return false; // Pohladkanie: motor psíkov, predaj dá 0 – nikdy balast
       if (fillerSpell(def)) return true;
       if (def.fx.type === "gold" || def.fx.type === "discover") return false;
       return ownedSpellCount(p) > (dom === "fairy" ? SPELL_CAP_FAIRY : SPELL_CAP);
