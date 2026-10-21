@@ -18,6 +18,8 @@ let mode = "bot";         // "bot" | "net"
 let difficulty = localStorage.getItem("arena.diff") || "normal";
 let busy = false;         // beží animácia / ťah bota
 let drag = null;          // aktívne ťahanie karty
+let spectating = false;   // divák sieťovej hry (mode "net", nič nehrá – len pozerá a píše)
+let names = {};           // { p1, p2 } mená hráčov v sieťovej hre
 
 // ---------- Záznam hry (replay log) ----------
 // Engine je deterministický: seed + sekvencia akcií = presný replay celej hry
@@ -33,10 +35,15 @@ const GameLog = (() => {
     persist();
   }
   function current() { return cur; }
+  // Divák nič nezapisuje (jeho hra nie je jeho záznam).
+  function stop() { cur = null; }
   function push(actor, name, args) {
     if (!cur) return;
-    cur.actions.push([actor, name, ...(args || [])]);
+    const entry = [actor, name, ...(args || [])];
+    cur.actions.push(entry);
     persist();
+    // hostiteľ sieťovej hry: rovnaké poradie akcií dostanú aj diváci
+    if (mode === "net" && !spectating) Net.feedSpectators(entry);
   }
   function persist() {
     if (!cur) return;
@@ -48,7 +55,7 @@ const GameLog = (() => {
     } catch { /* plné/vypnuté úložisko – hra beží ďalej bez záznamu */ }
   }
   function dump() { try { return localStorage.getItem(KEY) || "[]"; } catch { return "[]"; } }
-  return { start, push, dump, current };
+  return { start, push, dump, current, stop };
 })();
 window.arenaLog = () => GameLog.dump();
 
@@ -175,7 +182,7 @@ function showFatal(text, detail) {
   if (fatalShown) return;
   fatalShown = true;
   Net.disconnect();
-  clearRejoin();
+  if (!spectating) clearRejoin();
   $("overOverlay").classList.remove("hidden");
   $("overTitle").textContent = "⚠️";
   $("overMsg").textContent = text;
@@ -216,6 +223,7 @@ let playerRoundActions = [];
 let lastPlayerRound = [];
 
 function doAction(name, ...args) {
+  if (spectating) return null; // divák nehrá
   const desc = actionDesc(name, args);
   const round = state.round; // kolo PRED akciou – súper ju aplikuje v rovnakom
   const ev = Engine[name](state, MY, ...args);
@@ -269,6 +277,8 @@ function applyI18n() {
   $("discoverTitle").textContent = t(L.discoverTitle);
   $("overAgain").textContent = t(L.again);
   $("deckBtn").textContent = t(L.deckView);
+  $("chatBtn").title = t(L.chatBtn);
+  $("specSwapBtn").title = t(L.specSwap);
   $("deckDdBtn").textContent = t(L.deckView);
   $("deckTitle").textContent = t(L.deckView);
   $("deckHint").textContent = t(L.deckHint);
@@ -394,14 +404,14 @@ function startGame() {
   chatHistory = [];
   playerRoundActions = [];
   lastPlayerRound = [];
-  // Chat políčko + uvítacia bublina („zase meškáš“) len v Claude móde.
-  $("chatRow").classList.toggle("hidden", difficulty !== "claude");
+  // Chat okno + uvítanie („zase meškáš“) len v Claude móde.
+  chatClear();
+  setChat(difficulty === "claude", t(L.chatPh));
   if (difficulty === "claude") {
-    $("chatInput").placeholder = t(L.chatPh);
     const nm = (localStorage.getItem("arena.playerName") || "").trim();
     // Jazyk pozdravu per hráč (Adam vždy po slovensky), inak podľa UI.
     const gl = ClaudeBot.langFor(nm, I18N.lang);
-    if (!botMuted) setTimeout(() => showTauntBubble((L.claudeGreeting[gl] || L.claudeGreeting.sk).replace("{n}", nm), 6000), 900);
+    if (!botMuted) setTimeout(() => say("bot", CLAUDE_LABEL, (L.claudeGreeting[gl] || L.claudeGreeting.sk).replace("{n}", nm), 6000), 900);
   }
   // Seedovaný rng aj proti botovi – hra je plne deterministická a dá sa
   // replaynúť zo záznamu (GameLog + tools/replay.mjs).
@@ -426,6 +436,7 @@ function enterGameScreen() {
   $("overOverlay").classList.add("hidden");
   $("deckOverlay").classList.add("hidden");
   $("deckDdList").classList.add("hidden");
+  Lobby.watch(null); // zoznam hier treba len na úvodnej obrazovke
   logClear();
   renderMutator();
   renderBanBox();
@@ -453,14 +464,14 @@ function renderBanBox() {
 }
 
 function banResultMsg(ev) {
-  const by = ev.by ? ` (${t(ev.by === MY ? L.banByMe : L.banByOpp)})` : "";
+  const by = !ev.by ? "" : spectating ? ` (${names[ev.by] || ev.by})` : ` (${t(ev.by === MY ? L.banByMe : L.banByOpp)})`;
   return `🚫 ${t(L.banResult)} ${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]}${by}`;
 }
 
 // Fáza BAN: overlay s trojicou rás pre mňa; po výbere čakáme na súpera.
 function renderBan() {
   const ov = $("banOverlay");
-  if (!state || state.phase !== "ban") { ov.classList.add("hidden"); return; }
+  if (!state || state.phase !== "ban" || spectating) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   const b = state.ban, mine = b.picks[MY];
   $("banTitle").textContent = t(L.banTitle);
@@ -512,14 +523,16 @@ function netHandlers() {
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
+      names = Net.info().names;
       const exp = expOpt(msg.insects === true);
       state = Engine.newGame(Engine.seededRng(msg.seed), msg.mut === false ? null : undefined, { ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP, exp });
       GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: Engine.RACE_CAP, exp });
       enterGameScreen();
-      $("chatRow").classList.remove("hidden");
-      $("chatInput").placeholder = t(L.chatPhNet);
+      chatClear();
+      setChat(true, t(L.chatPhNet));
       $("chatInput").value = "";
       saveRejoin();
+      Lobby.update();
       if (state.phase !== "ban") act(Engine.startRound(state));
       driveFlow();
       // msg.v = verzia druhej strany (od hostiteľa/servera); rozdiel = istý desync
@@ -557,23 +570,32 @@ function netHandlers() {
     // Výpadok spojenia: hra beží ďalej (akcie sa bufferujú), len o tom vieš.
     onReconnecting: () => { if (mode === "net") log(t(L.netReconnecting)); },
     onResumed: () => { if (mode === "net") log(t(L.netResumed)); },
-    // Chat od kamaráta: bublina pri jeho hrdinovi + log (na mobile je log skrytý).
-    onChat: text => {
+    // Chat od kamaráta alebo diváka (hostiteľ ho preposlal): chat okno,
+    // na mobile aj bublina (pri súperovi; divák fialovo).
+    onChat: (text, m) => {
       if (mode !== "net" || !state) return;
-      log(`💬 ${t(L.heroFriend)}: ${text}`);
-      showTauntBubble(text, 7000);
+      if (m && m.from === "spec") say("spec", m.name, text, 7000);
+      else say("opp", names[OPP] || t(L.heroFriend), text, 7000);
+    },
+    // Diváci: počet v hlavičke chatu + oznam, kto prišiel/odišiel.
+    onSpectators: specsInfo,
+    getSpectate: () => {
+      const g = GameLog.current();
+      if (!g || !state || state.phase === "over") return null;
+      return { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, raceCap: g.raceCap || null, exp: g.exp || null,
+        actions: g.actions, chat: chatHistoryFor() };
     },
     // Kamarát prepol aplikáciu: bublina visí, kým sa nevráti alebo nevyprší limit.
     onPeerAway: limit => {
       if (mode !== "net" || !state || state.phase === "over") return;
       const msg = t(L.netAway).replace("{s}", Math.round(limit / 1000));
       log(msg);
-      showTauntBubble(msg, limit);
+      say("sys", "", msg, limit);
     },
     onPeerBack: () => {
       if (mode !== "net" || !state || state.phase === "over") return;
       log(t(L.netBack));
-      showTauntBubble(t(L.netBack), 3000);
+      say("sys", "", t(L.netBack), 3000);
     },
     // ---- návrat do hry ----
     canRejoin: () => !!(state && state.phase !== "over" && !fatalShown),
@@ -586,7 +608,8 @@ function netHandlers() {
       if (mode !== "net") return;
       $("netOverlay").classList.add("hidden");
       log(t(L.rejoinedMsg));
-      showTauntBubble(t(L.rejoinedMsg), 3000);
+      say("sys", "", t(L.rejoinedMsg), 3000);
+      Lobby.update();
       saveRejoin();
       if (msg.v !== APP_V) showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`);
     },
@@ -598,6 +621,7 @@ function netHandlers() {
       fatalShown = false;
       MY = msg.you;
       OPP = msg.you === "p1" ? "p2" : "p1";
+      names = Net.info().names;
       state = s;
       GameLog.start(msg.seed, { mode: "net", you: msg.you, mut: msg.mut !== false, ban: msg.ban === true, trinkets: msg.trinkets === true, raceCap: msg.raceCap || null, exp: msg.exp || null, rejoined: true }, msg.actions);
       playerRoundActions = [];
@@ -605,8 +629,8 @@ function netHandlers() {
       busy = false;
       remoteQueue = Promise.resolve();
       enterGameScreen();
-      $("chatRow").classList.remove("hidden");
-      $("chatInput").placeholder = t(L.chatPhNet);
+      chatClear();
+      setChat(true, t(L.chatPhNet));
       $("netOverlay").classList.add("hidden");
       saveRejoin();
       log(t(L.rejoinedMe));
@@ -646,7 +670,7 @@ function startNet() {
   $("netUrls").textContent = "";
   $("peerCode").textContent = "";
   $("netMsg").textContent = t(L.netConnecting);
-  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), insects: insectsOn(), v: APP_V });
+  Net.connect(netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), insects: insectsOn(), v: APP_V, name: playerName() });
 }
 
 // Lokálny server nebeží – hraj cez kód miestnosti (P2P, funguje aj z webu).
@@ -662,19 +686,19 @@ function showPeerSetup() {
 function peerHost() {
   const code = String(1000 + Math.floor(Math.random() * 9000));
   $("peerCode").textContent = "…";
-  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), insects: insectsOn(), v: APP_V });
+  Net.hostPeer(code, netHandlers(), { mut: mutsOn(), ban: bansOn(), trinkets: trinketsOn(), insects: insectsOn(), v: APP_V, name: playerName() });
 }
 
 function peerJoin() {
   const code = $("peerCodeInput").value.trim();
   if (!code) return;
   $("netMsg").textContent = t(L.netConnecting);
-  Net.joinPeer(code, netHandlers(), { v: APP_V });
+  Net.joinPeer(code, netHandlers(), { v: APP_V, name: playerName() });
 }
 
 let remoteQueue = Promise.resolve();
 async function applyRemote(msg) {
-  if (!state || state.phase === "over" || mode !== "net" || fatalShown) return;
+  if (!state || state.phase === "over" || mode !== "net" || fatalShown || spectating) return;
   console.info("[arena] ←", msg.name, "r" + msg.r, "(moje r" + state.round + ", fáza " + state.phase + ")");
   // Akcia súpera nesie číslo kola odosielateľa – nesúlad = stavy sa rozišli.
   if (msg.r != null && msg.r !== state.round) {
@@ -696,17 +720,141 @@ async function applyRemote(msg) {
 function backToPick() {
   document.body.classList.remove("playing");
   document.querySelector("header").classList.remove("open");
+  const wasSpec = spectating;
   Net.disconnect();
-  clearRejoin();
+  if (!wasSpec) clearRejoin(); // divák nemá čo obnovovať – rejoin info hráča ostáva
   state = null;
-  $("chatRow").classList.add("hidden");
+  spectating = false;
+  names = {};
+  document.body.classList.remove("spectating");
+  $("specSwapBtn").classList.add("hidden");
+  setChat(false);
+  chatClear();
   $("gameScreen").classList.add("hidden");
   $("newGameBtn").classList.add("hidden");
   $("netOverlay").classList.add("hidden");
   $("overOverlay").classList.add("hidden");
   $("banOverlay").classList.add("hidden");
   $("pickScreen").classList.remove("hidden");
+  Lobby.update();
+  watchGames();
 }
+
+// ---------- Divák ----------
+// Z tabuľky hier na úvodnej obrazovke: pripojí sa na kód miestnosti ako divák.
+// Hostiteľ pošle log hry (rebuildFromLog ako pri rejoin) a potom každú akciu
+// v poradí, v akom ju aplikoval. Boj si divák odohrá sám (ako hráči) – živé
+// „doBattle" zo záznamu preskakuje. Pohľad = hráč p1 (🔄 prepne na p2).
+function startSpectate(code) {
+  if (needName()) return;
+  mode = "net";
+  spectating = true;
+  MY = "p1"; OPP = "p2";
+  $("pickScreen").classList.add("hidden");
+  $("netOverlay").classList.remove("hidden");
+  $("peerSetup").classList.add("hidden");
+  $("netUrls").textContent = "";
+  $("peerCode").textContent = code;
+  $("netMsg").textContent = t(L.specConnecting);
+  Lobby.watch(null);
+  Net.spectatePeer(code, specHandlers(), { v: APP_V, name: playerName() });
+}
+window.arenaWatch = code => startSpectate(String(code));
+
+function specHandlers() {
+  const h = netHandlers();
+  return {
+    specWanted: () => spectating,
+    // Prvé pripojenie aj obnova po výpadku: stav sa vždy prehrá z logu nanovo.
+    onSpecInit: msg => {
+      remoteQueue = remoteQueue.then(() => specInit(msg)).catch(err => showFatal(t(L.netDesync), err));
+    },
+    onSpecAction: a => {
+      const [actor, name, ...args] = a;
+      if (name === "doBattle") return; // boj si divák odohrá sám (driveFlow)
+      remoteQueue = remoteQueue.then(() => applySpec(actor, name, args)).catch(err => showFatal(t(L.netDesync), err));
+    },
+    onSpecLost: () => { if (spectating && state && state.phase !== "over") log(t(L.netReconnecting)); },
+    onChat: (text, m) => {
+      if (!spectating || !state) return;
+      if (m.from === "spec") say("spec", m.name, text, 7000);
+      else say("opp", m.name || names[m.from] || m.from, text, 7000, m.from === MY ? "mine" : "");
+    },
+    onSpectators: specsInfo,
+    // Hostiteľ odišiel a nevrátil sa (ani po minúte) – sledovanie končí.
+    onPeerLeft: () => {
+      if (!spectating || (state && state.phase === "over")) return;
+      Net.disconnect();
+      $("netOverlay").classList.add("hidden");
+      $("overOverlay").classList.remove("hidden");
+      $("overTitle").textContent = t(L.specEnded);
+      $("overMsg").textContent = "";
+    },
+    onPeerError: kind => {
+      if (!spectating) return;
+      if (state) { log(`${t(L.peerError)} (${kind || "?"})`); return; }
+      if (kind === "specVersion") $("netMsg").textContent = t(L.gamesOldVer);
+      else if (kind === "specFull") $("netMsg").textContent = t(L.specFull);
+      else if (kind === "noGame" || kind === "peer-unavailable") $("netMsg").textContent = t(L.specNoGame);
+      else h.onPeerError(kind);
+    },
+  };
+}
+
+function specInit(msg) {
+  if (!spectating) return;
+  if (msg.v !== APP_V) { showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`); return; }
+  const s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions, msg.raceCap, msg.exp);
+  const first = !state;
+  fatalShown = false;
+  state = s;
+  names = Net.info().names;
+  busy = false;
+  GameLog.stop();
+  playerRoundActions = [];
+  lastPlayerRound = [];
+  if (first) {
+    enterGameScreen();
+    document.body.classList.add("spectating");
+    $("specSwapBtn").classList.remove("hidden");
+    chatClear();
+    setChat(true, t(L.chatPhSpec));
+    for (const m of Array.isArray(msg.chat) ? msg.chat.slice(-30) : []) {
+      if (!m || typeof m.text !== "string") continue;
+      const text = m.text.slice(0, 200);
+      if (m.from === "spec") chatAdd("spec", specLabel(m.name), text);
+      else if (m.from === "p1" || m.from === "p2") chatAdd("opp", String(m.name || names[m.from] || m.from).slice(0, 24), text);
+    }
+    chatAdd("sys", "", t(L.specWelcome).replace("{a}", names.p1 || "p1").replace("{b}", names.p2 || "p2"));
+  } else {
+    log(t(L.netResumed));
+  }
+  $("netOverlay").classList.add("hidden");
+  return driveFlow();
+}
+
+async function applySpec(actor, name, args) {
+  if (!spectating || !state || state.phase === "over" || fatalShown) return;
+  if ((actor !== "p1" && actor !== "p2") || typeof Engine[name] !== "function" || name === "botTurn") {
+    throw new Error(`divák: neznáma akcia ${actor} ${name}`);
+  }
+  const ev = Engine[name](state, actor, ...args);
+  if (!ev) throw new Error(`divák: nelegálna akcia ${actor} ${name} v kole ${state.round}`);
+  for (const e of ev) {
+    if (e.type === "ban") { log(banResultMsg(e)); if (state.races) log(racesMsg()); continue; }
+    const m = oppEventMsg(e, actor);
+    if (m) log(m);
+  }
+  renderAll();
+  await driveFlow();
+}
+
+// Divák: ťuk na 🔄 prepne, čiu ruku, obchod a dolný banner vidí.
+$("specSwapBtn").addEventListener("click", () => {
+  if (!spectating || !state || busy) return;
+  [MY, OPP] = [OPP, MY];
+  renderAll();
+});
 
 // ---------- Herný tok ----------
 async function driveFlow() {
@@ -726,7 +874,7 @@ async function driveFlow() {
       return; // čaká sa na výber rasy
     }
     if (state.phase === "battle") { await runBattle(); continue; }
-    if (state.active === OPP) {
+    if (state.active === OPP || spectating) {
       if (mode === "bot") { await runBotTurn(); continue; }
       busy = false;
       renderAll();
@@ -750,10 +898,11 @@ let lastTauntAt = 0;
 let botMuted = false;
 try { botMuted = localStorage.getItem("arena.botMuted") === "1"; } catch (e) { /* bez úložiska */ }
 // `mine` = bublina pri mojom hrdinovi (vlastná chatová správa), inak pri súperovi.
-function showTauntBubble(text, ms, mine) {
+// `spec` = správa diváka (fialová).
+function showTauntBubble(text, ms, mine, spec) {
   document.querySelectorAll(mine ? ".taunt-bubble.mine" : ".taunt-bubble:not(.mine)").forEach(b => b.remove());
   const el = document.createElement("div");
-  el.className = mine ? "taunt-bubble mine" : "taunt-bubble";
+  el.className = "taunt-bubble" + (mine ? " mine" : "") + (spec ? " spec" : "");
   el.textContent = text;
   $("stage").appendChild(el);
   setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, ms || 3800);
@@ -772,27 +921,115 @@ function botTaunt(kind, chance) {
 // Výsledok posledného boja z pohľadu bota – kontext pre Claudov trash-talk.
 let lastBattleNote = null;
 
+// ---------- Chat okno ----------
+// Spoločný chat hráčov, divákov (fialovo) a Clauda. PC (široké okno na šírku):
+// panel vpravo vedľa hry pod šachmi, správy bez bublín. Mobil: panel otvára
+// 🗨️ v ☰ menu; kým je zavretý, správa ukáže aj bublinu pri hrdinovi a bodku
+// na ☰ (aby hráč vedel, že niečo prišlo). Obyčajný bot chat nemá – jeho
+// hlášky ostávajú bublinami.
+// Druhy: me / opp (hráči), spec (divák), bot (Claude), sys (oznamy siete).
+const SIDE_MQ = matchMedia("(orientation: landscape) and (pointer: fine) and (min-width: 1000px)");
+const CHAT_KEEP = 80;
+const CLAUDE_LABEL = "🤖 Claude";
+let chatMsgs = []; // { kind, label, text, from, who } – história pre nových divákov
+const chatOn = () => document.body.classList.contains("chat-on");
+const specLabel = n => `👁 ${String(n || "?").slice(0, 24)}`;
+function setChat(on, placeholder) {
+  document.body.classList.toggle("chat-on", !!on);
+  $("chatPanel").classList.toggle("hidden", !on);
+  $("chatBtn").classList.toggle("hidden", !on);
+  if (!on) setChatOpen(false);
+  if (placeholder) $("chatInput").placeholder = placeholder;
+  $("chatTitle").textContent = t(L.chatTitle);
+  if (state) positionDeckDd();
+}
+function chatClear() {
+  chatMsgs = [];
+  $("chatLog").innerHTML = "";
+  $("chatSpecs").textContent = "";
+  setUnread(false);
+}
+// Chat je na očiach: PC panel vedľa hry alebo otvorený panel na mobile.
+const chatVisible = () => chatOn() && (SIDE_MQ.matches || document.body.classList.contains("chat-open"));
+function setChatOpen(open) {
+  document.body.classList.toggle("chat-open", !!open);
+  if (!open) return;
+  setUnread(false);
+  const lg = $("chatLog");
+  lg.scrollTop = lg.scrollHeight;
+}
+function setUnread(on) {
+  $("chatDot").classList.toggle("hidden", !on);
+  $("menuBtn").classList.toggle("unread", !!on);
+}
+function chatAdd(kind, label, text, who) {
+  const from = kind === "me" ? MY : kind === "opp" && !spectating ? OPP : kind;
+  chatMsgs.push({ kind, label, text, from, who });
+  if (chatMsgs.length > CHAT_KEEP) chatMsgs.shift();
+  const lg = $("chatLog");
+  const atBottom = lg.scrollHeight - lg.scrollTop - lg.clientHeight < 40;
+  const d = document.createElement("div");
+  d.className = "chat-msg " + kind;
+  if (label) {
+    const b = document.createElement("b");
+    b.textContent = label + ": ";
+    d.appendChild(b);
+  }
+  d.appendChild(document.createTextNode(text));
+  lg.appendChild(d);
+  while (lg.children.length > CHAT_KEEP) lg.removeChild(lg.firstChild);
+  if (atBottom || kind === "me") lg.scrollTop = lg.scrollHeight;
+}
+// Správa do chatu. Keď chat nie je na očiach (mobil), aj bublina + bodka.
+// side: "mine" = bublina pri mojom (dolnom) hrdinovi, inak hore.
+function say(kind, label, text, ms, side) {
+  if (!chatOn()) { showTauntBubble(text, ms, side === "mine" || kind === "me"); return; }
+  const lb = kind === "spec" ? specLabel(label) : label;
+  chatAdd(kind, lb, text, kind === "spec" ? label : undefined);
+  if (chatVisible()) return;
+  showTauntBubble(kind === "spec" ? `${lb}: ${text}` : text, ms, side === "mine" || kind === "me", kind === "spec");
+  if (kind !== "me" && kind !== "sys") setUnread(true);
+}
+// História chatu pre nového diváka (absolútne strany p1/p2, mená hráčov).
+function chatHistoryFor() {
+  return chatMsgs.filter(m => m.kind !== "sys" && m.kind !== "bot").slice(-30).map(m =>
+    m.kind === "spec" ? { from: "spec", name: m.who || "", text: m.text }
+      : { from: m.from, name: names[m.from] || "", text: m.text });
+}
+// Diváci prišli/odišli: počet v hlavičke chatu + oznam.
+function specsInfo(x) {
+  if (mode !== "net" || !state) return;
+  $("chatSpecs").textContent = x.n ? `👁 ${x.n}` : "";
+  $("chatSpecs").title = t(L.specCount);
+  if (x.name) say("sys", "", `👁 ${x.name} ${t(x.joined ? L.specJoined : L.specLeft)}`, 3000);
+  if (!spectating) Lobby.update();
+}
+$("chatBtn").addEventListener("click", () => setChatOpen(!document.body.classList.contains("chat-open")));
+$("chatClose").addEventListener("click", () => setChatOpen(false));
+
 // ---------- Chat s Claudom (len Claude mód) ----------
-// Hráč odpíše do políčka pod doskou, Claude reaguje bublinou – samostatný
-// lacný request mimo ťahu. História ide aj do ťahových promptov (banter drží niť).
+// Hráč odpíše do chatu, Claude odpovie – samostatný lacný request mimo ťahu.
+// História ide aj do ťahových promptov (banter drží niť).
 let chatHistory = []; // { who: "player" | "claude", text }
 let chatBusy = false;
 async function sendChat() {
   const inp = $("chatInput");
-  const text = inp.value.trim();
+  const text = inp.value.trim().slice(0, 200);
   if (!text || !state) return;
-  // Hra po sieti: správa ide súperovi (bublina u neho), u mňa bublina dole + log.
+  // Hra po sieti: správa ide súperovi (a cez hostiteľa divákom). Divák píše
+  // obom hráčom naraz (fialovo).
   if (mode === "net") {
     inp.value = "";
     Net.sendChat(text);
-    log(`💬 ${t(L.heroYou)}: ${text}`);
-    showTauntBubble(text, 3000, true);
+    if (spectating) say("spec", playerName(), text, 3000);
+    else say("me", t(L.heroYou), text, 3000, "mine");
     return;
   }
   if (chatBusy || difficulty !== "claude" || mode !== "bot") return;
   chatBusy = true;
   inp.value = "";
   $("chatSend").disabled = true;
+  chatAdd("me", t(L.heroYou), text);
   chatHistory.push({ who: "player", text });
   try {
     const reply = await ClaudeBot.chat({
@@ -804,7 +1041,7 @@ async function sendChat() {
       gameSummary: `round ${state.round}; your HP ${state[OPP].hp}, player's HP ${state[MY].hp}; ` +
         `${lastBattleNote || "no battle yet"}; player's last round: ${lastPlayerRound.join(", ") || "-"}`,
     });
-    if (reply) { chatHistory.push({ who: "claude", text: reply }); showTauntBubble(reply, 7000); }
+    if (reply) { chatHistory.push({ who: "claude", text: reply }); say("bot", CLAUDE_LABEL, reply, 7000); }
   } catch (e) {
     console.warn("Chat s Claudom zlyhal:", e);
   }
@@ -854,7 +1091,7 @@ async function runClaudeTurn() {
     await playOppEvents(Bot.botTurn(state, OPP, "hard"));
     return;
   }
-  if (res.taunt && !botMuted) showTauntBubble(res.taunt, 6000);
+  if (res.taunt && !botMuted) say("bot", CLAUDE_LABEL, res.taunt, 6000);
   await playOppEvents(res.events);
 }
 
@@ -862,11 +1099,12 @@ async function runClaudeTurn() {
 // (prídu v eventoch súperovho ťahu alebo nového kola po boji).
 const petGiftMsg = ev => `${t(L.petGiftMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Cards.nameOf(Cards.byId.pet, 1, I18N.lang)}`;
 
-function oppEventMsg(ev) {
+// who = čie eventy sa hlásia (default súper; divák hlási oboch hráčov).
+function oppEventMsg(ev, who = OPP) {
   if (ev.type === "ban") return banResultMsg(ev);
-  if (ev.type === "petGift" && ev.pid === MY) return petGiftMsg(ev);
-  if (ev.type === "banPick" && ev.pid === OPP) return t(L.banOppPicked);
-  if (ev.pid !== OPP) return null;
+  if (ev.type === "petGift" && ev.pid === MY && !spectating) return petGiftMsg(ev);
+  if (ev.type === "banPick" && ev.pid === who) return spectating ? null : t(L.banOppPicked);
+  if (ev.pid !== who) return null;
   const def = ev.defId ? Cards.byId[ev.defId] : null;
   const name = def ? Cards.nameOf(def, ev.rank || 1, I18N.lang) : "";
   const emoji = def && def.emoji ? def.emoji + " " : "";
@@ -881,8 +1119,8 @@ function oppEventMsg(ev) {
     case "trinketPick": { const x = L.trinkets[ev.id]; msg = `${t(L.trinketOppPicked)} ${x.e} ${t(x)} – ${t(x.d)}`; break; }
     default: return null;
   }
-  // v sieťovej hre je súper človek, nie robot
-  return mode === "net" ? msg.replace("🤖", "🧑") : msg;
+  // v sieťovej hre je súper človek, nie robot (s menom, keď ho poznáme)
+  return mode === "net" ? msg.replace("🤖", names[who] ? `🧑 ${names[who]}` : "🧑") : msg;
 }
 
 // Ogrí kľúč: hod mincou za súperove trinkety (z pohľadu hráča).
@@ -890,6 +1128,9 @@ function sabotageMsg(ev) {
   if (ev.pid === MY) return t(ev.heads ? L.sabotageHeads : L.sabotageTails);
   return ev.heads ? null : t(L.sabotagedMsg);
 }
+
+// Meno strany v logu boja: Ty / Súper; divák vidí mená hráčov.
+const sideName = pid => spectating ? (names[pid] || pid) : t(pid === MY ? L.you : L.opp);
 
 // ---------- Boj ----------
 async function runBattle() {
@@ -938,7 +1179,7 @@ async function runBattle() {
   for (const ev of events) {
     if (ev.type === "bossStart") { skip = ev.pid !== MY; continue; }
     if (ev.type === "bossEnd") {
-      if (!skip) { log(`🗿 ${t(L.bossYourDmg)} ${ev.dmg}`); await sleep(500); }
+      if (!skip) { log(spectating ? `🗿 ${sideName(MY)}: ${ev.dmg}` : `🗿 ${t(L.bossYourDmg)} ${ev.dmg}`); await sleep(500); }
       skip = false;
       continue;
     }
@@ -946,18 +1187,23 @@ async function runBattle() {
     switch (ev.type) {
       case "bossResult": {
         const mine = ev.dmg[MY], theirs = ev.dmg[OPP];
-        fb.textContent = `🗿 ${t(L.you)} ${mine} : ${theirs} ${t(L.opp)}`;
+        fb.textContent = `🗿 ${sideName(MY)} ${mine} : ${theirs} ${sideName(OPP)}`;
         fb.classList.remove("small");
-        if (ev.winner === MY) Sfx.evolve();
-        log(`🗿 ${t(L.bossOppDmg)} ${theirs}`);
-        log(`${ev.tie ? t(L.bossTie) + " " : ""}${t(ev.winner === MY ? L.bossWin : L.bossLose)}`);
+        if (ev.winner === MY && !spectating) Sfx.evolve();
+        if (spectating) {
+          log(`🗿 ${sideName(OPP)}: ${theirs}`);
+          if (ev.winner) log(`${ev.tie ? t(L.bossTie) + " " : ""}🎁 ${sideName(ev.winner)}`);
+        } else {
+          log(`🗿 ${t(L.bossOppDmg)} ${theirs}`);
+          log(`${ev.tie ? t(L.bossTie) + " " : ""}${t(ev.winner === MY ? L.bossWin : L.bossLose)}`);
+        }
         lastBattleNote = `DMG Meter round (no hero damage): you dealt ${ev.dmg[OPP]}, the human dealt ${ev.dmg[MY]} – ${ev.winner === OPP ? "you" : "the human"} discovered a higher-tier minion`;
         await sleep(2200);
         fb.classList.add("small");
         break;
       }
       case "battleStart":
-        log(`${t(L.fight)} ${ev.first === MY ? t(L.you) : t(L.opp)} ${t(L.begins)}.`);
+        log(`${t(L.fight)} ${sideName(ev.first)} ${t(L.begins)}.`);
         break;
       case "attack": {
         const a = cardById(ev.aUid), d = cardById(ev.dUid);
@@ -1333,7 +1579,7 @@ async function runBattle() {
         renderHero(chip, { ...state[ev.pid], hp: ev.hp });
         // Strop damage podľa kola: ukáž, koľko by bolo bez stropu.
         const capNote = ev.capped ? ` (${t(L.heroDmgCapMsg)} ${ev.capped}, bez stropu ${ev.raw})` : "";
-        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}${capNote}${ev.shielded ? " – " + t(L.heroShieldBlockMsg) : ""}`);
+        log(`${sideName(ev.pid)} ${t(L.heroDmgMsg)} 💥 ${ev.dmg}${capNote}${ev.shielded ? " – " + t(L.heroShieldBlockMsg) : ""}`);
         botTaunt(ev.pid === MY ? "win" : "lose", 0.8);
         lastBattleNote = ev.pid === MY
           ? `you WON the last battle, the human's hero took ${ev.dmg} damage (their HP: ${ev.hp})`
@@ -1349,24 +1595,24 @@ async function runBattle() {
         // Liečivé víťazstvo (trinket) – jediné liečenie v boji.
         const chip = ev.pid === MY ? $("myHero") : $("oppHero");
         floatText(chip, `+${ev.n} ❤️`, true);
-        log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${t(L.healWinMsg)} +${ev.n} ❤️`);
+        log(`${sideName(ev.pid)} ${t(L.healWinMsg)} +${ev.n} ❤️`);
         await sleep(400);
         break;
       }
       case "trinketProc": {
         const x = L.trinkets[ev.id];
-        if (x) log(`${ev.pid === MY ? t(L.you) : t(L.opp)} ${x.e} ${t(x)}`);
+        if (x) log(`${sideName(ev.pid)} ${x.e} ${t(x)}`);
         if (ev.uid) { const el = cardById(ev.uid); if (el) floatText(el, x ? x.e : "🧿", true); }
         await sleep(300);
         break;
       }
       case "sabotage": {
-        const m = sabotageMsg(ev);
+        const m = spectating ? null : sabotageMsg(ev);
         if (m) log(m);
         break;
       }
       case "petGift":
-        if (ev.pid === MY) log(petGiftMsg(ev));
+        if (ev.pid === MY && !spectating) log(petGiftMsg(ev));
         break;
       case "gameOver":
         endBattleUI();
@@ -1770,11 +2016,16 @@ function positionDeckDd() {
   if (!stage.offsetWidth) return;
   // Voľné miesto vpravo od dosky: dropdown sa zúži až na 150 px; keď ani
   // to nestačí, prekryje pravý okraj dosky.
-  const avail = window.innerWidth - stage.getBoundingClientRect().right - 16;
+  // pravý stĺpec (šach/chat) zaberá miesto vpravo – dropdown sa zmestí len pred neho
+  const side = $("sideCol").getBoundingClientRect();
+  const edge = side.width ? side.left : window.innerWidth;
+  const avail = edge - stage.getBoundingClientRect().right - 16;
   const fits = avail >= 150;
   dd.style.width = (fits ? Math.min(240, avail) : 240) + "px";
   dd.style.left = fits ? (stage.offsetLeft + stage.offsetWidth + 10) + "px" : "auto";
-  dd.style.right = fits ? "auto" : "6px";
+  // s pravým stĺpcom prekryje pravý okraj dosky, nie chat
+  const gs = $("gameScreen").getBoundingClientRect();
+  dd.style.right = fits ? "auto" : (side.width ? gs.right - stage.getBoundingClientRect().right + 6 : 6) + "px";
   dd.style.top = stage.offsetTop + "px";
 }
 
@@ -1796,11 +2047,15 @@ function renderCorner(el, icon, label, count) {
 
 // Tier hrdinu je veľké číslo na štíte s labkou uprostred bannera.
 function renderHero(el, p) {
-  const hero = p.id === MY
-    ? { emoji: "🙂", name: t(L.heroYou) }
-    : mode === "net"
-      ? { emoji: "🧑", name: t(L.heroFriend) }
-      : { emoji: "🤖", name: t(L.heroBot) };
+  // mená prichádzajú zo siete – do innerHTML len escapované
+  const short = n => (n.length > 14 ? n.slice(0, 13) + "…" : n).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  const hero = spectating
+    ? { emoji: "🧑", name: short(names[p.id] || p.id) }
+    : p.id === MY
+      ? { emoji: "🙂", name: t(L.heroYou) }
+      : mode === "net"
+        ? { emoji: "🧑", name: short(names[p.id] || t(L.heroFriend)) }
+        : { emoji: "🤖", name: t(L.heroBot) };
   // Počas animácie boja active už ukazuje na nové kolo – peniaze ešte neukazuj.
   const gold = p.id === MY && state.active === MY && !busy ? ` · 🪙 ${p.money}` : "";
   // Trinkety hráča: ikonky za menom (ťuk = pripomenutie v logu); počas
@@ -1862,7 +2117,7 @@ const trinketArt = id => `assets/trinkets/${TRINKET_ART_ALIAS[id] || id}.webp`;
 function renderTrinketOffer() {
   const ov = $("trinketOverlay");
   const p = state && state[MY];
-  const show = p && state.phase === "shop" && state.active === MY && p.trinketOffer && !busy;
+  const show = p && state.phase === "shop" && state.active === MY && p.trinketOffer && !busy && !spectating;
   if (!show) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("trinketTitle").textContent = t(L.trinketTitle);
@@ -1930,12 +2185,17 @@ function renderHand() {
 
 function renderShop() {
   const p = state[MY];
-  const myTurn = state.active === MY && !busy;
+  const myTurn = state.active === MY && !busy && !spectating;
   $("moneyEl").textContent = `🪙 ${p.money}`;
   $("auraEl").textContent = auraText(p);
   const banner = $("turnBanner");
   const bossTag = Engine.isBossRound(state) ? ` · ${t(L.bossRoundTag)}` : "";
-  if (state.active === MY) {
+  if (spectating) {
+    // divák: kto práve nakupuje (menom)
+    const who = state.active && (names[state.active] || state.active);
+    banner.textContent = `${t(L.round)} ${state.round}${bossTag}${who ? ` · 🛒 ${who}` : ""}`;
+    banner.className = state.active === MY ? "banner" : "banner enemy";
+  } else if (state.active === MY) {
     banner.textContent = `${t(L.round)} ${state.round}${bossTag} · ${t(L.yourTurn)}`;
     banner.className = "banner";
   } else if (state.active === OPP) {
@@ -2239,7 +2499,7 @@ function startDrag(e, card, src) {
   }
   hidePreview();
   e.preventDefault();
-  const canDrag = !busy && state && state.active === MY && !state.pendingDiscover;
+  const canDrag = !busy && !spectating && state && state.active === MY && !state.pendingDiscover;
   press = { card, src, x0: e.clientX, y0: e.clientY, canDrag, fan };
   if (!fan) press.longTimer = setTimeout(() => {
     if (press && !drag && card._previewData) {
@@ -2758,7 +3018,7 @@ function renderDiscover() {
   const pd = state.pendingDiscover;
   // Počas animácie (busy) nie: odmena za DMG Meter vzniká v engine už pri
   // doBattle (nové kolo), overlay sa ukáže až po dohraní boja.
-  if (!pd || pd.pid !== MY || busy) { ov.classList.add("hidden"); return; }
+  if (!pd || pd.pid !== MY || busy || spectating) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("discoverTitle").textContent = pd.boss ? `${t(L.bossRewardTitle)} ${pd.tier}` : t(L.discoverTitle);
   const row = $("discoverRow");
@@ -2772,7 +3032,7 @@ function renderDiscover() {
 }
 
 async function onEndTurn() {
-  if (busy || state.active !== MY || state.pendingDiscover) return;
+  if (busy || spectating || state.active !== MY || state.pendingDiscover) return;
   act(doAction("endShopTurn"));
   await deckGrowQ; // Mravce (Hmyz): rast v balíčku dohrá pred bojom
   await driveFlow();
@@ -2781,8 +3041,13 @@ async function onEndTurn() {
 function showOver() {
   const ov = $("overOverlay");
   ov.classList.remove("hidden");
-  if (mode === "net") clearRejoin();
   const w = state.winner;
+  if (spectating) {
+    $("overTitle").textContent = w === "draw" ? t(L.drawGame) : `🏆 ${names[w] || w} ${t(L.specWon)}`;
+    $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
+    return;
+  }
+  if (mode === "net") clearRejoin();
   if (w === MY) Sfx.win(); else if (w === OPP) Sfx.lose();
   $("overTitle").textContent = w === "draw" ? t(L.drawGame) : w === MY ? t(L.win) : t(L.lose);
   $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
@@ -2905,6 +3170,74 @@ document.addEventListener("contextmenu", e => {
   if (e.target.closest && e.target.closest(".card")) e.preventDefault();
 });
 
+// ---------- Práve prebiehajúce hry (úvodná obrazovka) ----------
+// Adresár hier drží src/lobby.js (jeden z hráčov ako správca). Tabuľka vpravo:
+// ťuk na riadok ukáže, kto hrá (mená, životy, tier), 👁 = sledovať ako divák.
+let gamesList = null; // null = zoznam ešte neprišiel
+let gamesOpen = null; // rozbalený kód
+// Hostiteľ (peer transport) hlási svoju rozohranú hru.
+function lobbyGame() {
+  if (mode !== "net" || spectating || !state || state.phase === "over" || fatalShown) return null;
+  const i = Net.info();
+  if (i.transport !== "peer" || i.role !== "host" || !i.code) return null;
+  return {
+    code: i.code, names: [names.p1 || "?", names.p2 || "?"], round: state.round,
+    hp: [Math.max(0, state.p1.hp), Math.max(0, state.p2.hp)], tier: [state.p1.tier, state.p2.tier],
+    specs: i.specs, v: APP_V,
+  };
+}
+function renderGames() {
+  $("gamesTitle").textContent = t(L.gamesTitle);
+  const box = $("gamesList");
+  const note = txt => { box.innerHTML = ""; const d = document.createElement("div"); d.className = "games-empty"; d.textContent = txt; box.appendChild(d); };
+  if (!Lobby.available()) return note(t(L.gamesOff));
+  if (!gamesList) return note(t(L.gamesLoading));
+  if (!gamesList.length) return note(t(L.gamesEmpty));
+  box.innerHTML = "";
+  for (const g of gamesList) {
+    const open = gamesOpen === g.code;
+    const row = document.createElement("div");
+    row.className = "game-row" + (open ? " open" : "");
+    const head = document.createElement("button");
+    head.className = "game-head";
+    head.innerHTML = `<span class="gc">🎮 ${g.code}</span><span class="gr">${t(L.round)} ${g.round}</span><span class="gs">${g.specs ? "👁 " + g.specs : ""}</span><span class="gx">${open ? "▴" : "▾"}</span>`;
+    head.addEventListener("click", () => { gamesOpen = open ? null : g.code; renderGames(); });
+    row.appendChild(head);
+    if (open) {
+      const det = document.createElement("div");
+      det.className = "game-det";
+      for (const i of [0, 1]) {
+        const p = document.createElement("div");
+        p.className = "gp";
+        p.textContent = `🧑 ${g.names[i] || "?"}  ·  ❤️ ${g.hp[i]}  ·  ⭐ ${g.tier[i]}`;
+        det.appendChild(p);
+      }
+      const same = g.v === APP_V;
+      const btn = document.createElement("button");
+      btn.className = "primary";
+      btn.textContent = t(L.watchBtn);
+      btn.disabled = !same;
+      btn.addEventListener("click", () => startSpectate(g.code));
+      det.appendChild(btn);
+      if (!same) { const w = document.createElement("div"); w.className = "games-empty"; w.textContent = t(L.gamesOldVer); det.appendChild(w); }
+      row.appendChild(det);
+    }
+    box.appendChild(row);
+  }
+}
+function watchGames() {
+  renderGames();
+  Lobby.watch(list => {
+    if ($("pickScreen").classList.contains("hidden")) return;
+    gamesList = list;
+    if (gamesOpen && !list.some(g => g.code === gamesOpen)) gamesOpen = null;
+    renderGames();
+  });
+}
+Lobby.setGame(lobbyGame);
+Lobby.start({ peerOpts: Net.peerOpts });
+
 applyI18n();
 renderRules();
 renderPick();
+watchGames();

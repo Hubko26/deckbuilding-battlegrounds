@@ -1536,10 +1536,34 @@ len staty + keyword badge.
   (bez závislostí). Klienti replikujú akcie: oba behy dostanú rovnaký seed
   a aplikujú rovnaké Engine volania, stav je deterministicky identický
   (žiadne posielanie stavu). Server spáruje prvých dvoch čakajúcich hráčov.
-- Chat v hre po sieti (LAN aj kód miestnosti): políčko pod doskou (to isté,
-  čo chat s Claudom). Správa `{type:"chat"}` ide mimo replikácie akcií – bez
-  poradového čísla, bez bufferu, max 200 znakov (orezáva aj prijímateľ).
-  U súpera bublina pri jeho hrdinovi + log, u odosielateľa bublina dole.
+- **Chat okno** (sieť, divák, Claude mód): spoločný chat hráčov, divákov
+  (fialovo) a Clauda. Na PC (široké okno na šírku, myš) je vpravo vedľa
+  dosky v stĺpci `#sideCol` – šach navrch, chat pod ním, správy bez bublín.
+  Na mobile ho otvára 🗨️ v ☰ menu (panel cez obrazovku); kým je zavretý,
+  správa ukáže aj bublinu pri hrdinovi (divák fialovú) a červenú bodku na ☰.
+  Obyčajný bot chat nemá – jeho hlášky ostávajú bublinami. Správa
+  `{type:"chat"}` ide mimo replikácie akcií – bez poradového čísla, bez
+  bufferu, max 200 znakov (orezáva aj prijímateľ). Hráči si pri štarte
+  vymenia mená (`names` v `start`/`rejoin`), banner a chat ich ukazujú.
+- **Diváci** (len kód miestnosti / PeerJS): divák sa pripojí na kód
+  s `metadata.spectate`; hostiteľ mu pošle `specInit` = log hry (ako rejoin)
+  + mená + posledných 30 správ chatu a potom každú akciu z GameLog-u
+  (`specAct`) v poradí, v akom ju sám aplikoval. Divák hru prehráva
+  deterministicky, boj si odohrá sám (živé `doBattle` preskakuje), nič
+  nehrá (`doAction` vráti null, tlačidlá ťahu skryté) a nič nezapisuje do
+  GameLog-u. Pohľad = p1, 🔄 v hlavičke prepne na p2. Jeho chat ide
+  hostiteľovi, ten ho rozošle súperovi aj ostatným divákom (anti-spam
+  800 ms, max 8 divákov); chat hráčov hostiteľ preposiela divákom. Iná
+  verzia klienta = `noGame{ver}` (prehrávanie by sa rozišlo). Po rehoste
+  (hostiteľ padol) divák hľadá hru na tom istom kóde ešte minútu.
+- **Zoznam prebiehajúcich hier** (úvodná obrazovka vpravo, `src/lobby.js`):
+  PeerJS cloud nemá zoznam peerov, preto adresár drží jeden z hráčov – kto
+  prvý obsadí ID `zvieracia-arena-lobby-v1`, je správca a drží register
+  v pamäti; ostatní sú jeho klienti. Hostiteľ rozohranej hry posiela každých
+  10 s kód, mená, kolo, HP, tier, počet divákov a verziu; záznam bez obnovy
+  vypadne po 35 s. Keď správca odíde, ID prevezme niekto iný a register sa
+  do 10 s obnoví. Ťuk na riadok ukáže, kto hrá, „👁 Sledovať“ = divák.
+  LAN hry (server.mjs) sa v zozname nezobrazujú.
 - Prítomnosť hráča: keď hráč prepne aplikáciu (Messenger, hovor), prehliadač
   stránku uspí – ťah nepríde a súper by čakal donekonečna. Pri skrytí stránky
   (`visibilitychange`) klient pošle `away`, pri návrate `back`; súper vidí

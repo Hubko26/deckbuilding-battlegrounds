@@ -57,7 +57,10 @@ const ArenaChess = (() => {
       </div>
       <div class="chess-board" id="chessBoard"></div>
       <div class="chess-status" id="chessStatus"></div>`;
-    screen.appendChild(panel);
+    // pravý stĺpec: šach navrch, chat pod ním
+    const side = document.getElementById("sideCol");
+    if (side) side.insertBefore(panel, side.firstChild);
+    else screen.appendChild(panel);
     boardEl = panel.querySelector("#chessBoard");
     statusEl = panel.querySelector("#chessStatus");
     panel.querySelector("#chessNew").addEventListener("click", () => {

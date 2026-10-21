@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=d852ee89">
+  <link rel="stylesheet" href="style.css?v=b0e086da">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -25,6 +25,10 @@
       <button id="muteBtn" aria-label="Zvuk">🔊</button>
       <!-- Stlmenie hlášok bota (trash-talk bubliny), hra beží ďalej -->
       <button id="botMuteBtn" aria-label="Hlášky bota">💬</button>
+      <!-- Chat okno (mobil): otvorí chat ako panel; na PC je chat vpravo vedľa hry -->
+      <button id="chatBtn" class="chat-btn hidden" aria-label="Chat">🗨️<span class="dot hidden" id="chatDot"></span></button>
+      <!-- Divák: prepnutie pohľadu (čiu ruku a obchod vidím) -->
+      <button id="specSwapBtn" class="hidden" aria-label="Pohľad">🔄</button>
       <button id="newGameBtn" class="danger hidden">Nová hra</button>
       <!-- Môj balíček: na mobile v ☰ menu (desktop má dropdown vpravo od dosky) -->
       <button id="deckBtn" class="deck-btn"></button>
@@ -64,6 +68,11 @@
       </div>
       <!-- Pravidlá hry – obsah generuje game.js (trojjazyčne). -->
       <div id="rulesBox" class="rules-box"></div>
+      <!-- Práve prebiehajúce hry (src/lobby.js): ťuk = kto hrá, 👁 = sledovať ako divák -->
+      <div id="gamesBox" class="games-box">
+        <h3 id="gamesTitle"></h3>
+        <div id="gamesList" class="games-list"></div>
+      </div>
     </section>
 
     <!-- Čakanie na súpera (hra po sieti / kód miestnosti) -->
@@ -152,11 +161,23 @@
           <button id="devGiveBtn" class="primary"></button>
         </div>
       </div>
-      <!-- Chat s Claudom (len Claude mód) – odpoveď príde bublinou -->
-      <div id="chatRow" class="chat-row hidden">
-        <input id="chatInput" type="text" maxlength="200" autocomplete="off">
-        <button id="chatSend">💬</button>
-      </div>
+      <!-- Pravý stĺpec (PC): šach (src/chess.js ho vloží navrch) a pod ním chat.
+           Na mobile je chat panel cez celú obrazovku, otvára ho 🗨️ v ☰ menu. -->
+      <aside id="sideCol">
+        <!-- Spoločný chat: hráči, diváci (fialoví), Claude; na mobile + bublina -->
+        <div id="chatPanel" class="chat-panel hidden">
+          <div class="chat-head">
+            <span id="chatTitle" class="chat-title"></span>
+            <span id="chatSpecs" class="chat-specs"></span>
+            <button id="chatClose" class="chat-close" aria-label="Zavrieť">✖</button>
+          </div>
+          <div id="chatLog" class="chat-log"></div>
+          <div id="chatRow" class="chat-row">
+            <input id="chatInput" type="text" maxlength="200" autocomplete="off">
+            <button id="chatSend">💬</button>
+          </div>
+        </div>
+      </aside>
     </section>
 
     <!-- Fáza BAN: výber rasy, ktorá v hre nebude -->
@@ -215,19 +236,20 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=1b0022d2"></script>
+  <script src="version.js?v=57c7a631"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=bb554ff5"></script>
-  <script src="src/net.js?v=f8a1c39c"></script>
+  <script src="src/i18n.js?v=f09c54da"></script>
+  <script src="src/net.js?v=5811b3c7"></script>
+  <script src="src/lobby.js?v=da80aa92"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=b09f4aa3"></script>
   <script src="src/cards-insect.js?v=292727b1"></script>
   <script src="src/engine.js?v=a07ca8e9"></script>
   <script src="src/bot.js?v=f3186704"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=7feddc79"></script>
+  <script src="src/game.js?v=dab3cbc2"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
-  <script src="src/chess.js?v=24b5cf89"></script>
+  <script src="src/chess.js?v=fd92db4f"></script>
 </body>
 </html>

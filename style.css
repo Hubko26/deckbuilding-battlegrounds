@@ -554,6 +554,9 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   border: .7cqh solid transparent; border-bottom-color: #fff; border-top: 0;
 }
 .taunt-bubble.out { opacity: 0; transition: opacity .45s; }
+/* správa diváka (mobil, chat zavretý): fialová bublina hore */
+.taunt-bubble.spec { background: #efe3ff; color: #4b1491; }
+.taunt-bubble.spec::before { border-bottom-color: #efe3ff; }
 /* vlastná chatová správa (hra po sieti): bublina nad mojím hrdinom, šípka dole */
 .taunt-bubble.mine { top: auto; bottom: 16%; }
 .taunt-bubble.mine::before {
@@ -906,31 +909,36 @@ body.fs footer { display: none; }
   body.fs #stage, body.fs .log { width: min(98vw, calc((100dvh - 74px) * 1850 / 850)); }
 }
 
-/* ---------- Šach popri hre (len desktop) ----------
-   ♟️ v hlavičke prepne body.chess: doska arény ide doľava (užšia), vpravo
-   šachovnica bez hodín. Na mobile/tablete (portrait alebo dotyk) sa
-   tlačidlo aj panel skryjú – nie je kam. */
+/* ---------- Pravý stĺpec: šach + chat (PC) ----------
+   ♟️ v hlavičke prepne body.chess (šachovnica bez hodín), body.chat-on dáva
+   game.js v hre s chatom (sieť, divák, Claude). Na PC (široké okno na šírku,
+   myš) sa doska arény zúži a vpravo je stĺpec: šach navrch, chat pod ním.
+   Na mobile/tablete šach nie je a chat je panel cez obrazovku (🗨️ v ☰). */
 #chessPanel { display: none; }
+#sideCol { display: none; }
 #chessBtn.active { background: #ffd33d; }
 @media (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
-  body.chess #gameScreen {
-    display: grid; grid-template-columns: minmax(0, 1fr) 380px;
-    grid-template-areas: "log chess" "stage chess" "chat chess";
-    column-gap: 14px; align-items: start; justify-items: center;
+  body.chess #gameScreen, body.chat-on #gameScreen { padding-right: 400px; }
+  body.chess #sideCol, body.chat-on #sideCol {
+    display: flex; flex-direction: column; gap: 10px;
+    position: absolute; top: 1.5em; right: 8px; width: 380px; z-index: 5;
   }
-  body.chess #gameScreen .log { grid-area: log; }
-  body.chess #gameScreen #stage { grid-area: stage; }
-  body.chess #gameScreen .chat-row { grid-area: chat; }
-  body.chess #stage, body.chess .log {
+  body.chess #stage, body.chess .log, body.chat-on #stage, body.chat-on .log {
     width: min(calc(100vw - 420px), calc(72vh * 1.783));
     width: min(calc(100vw - 420px), calc(72dvh * 1.783));
   }
+  body.fs.chess #stage, body.fs.chess .log, body.fs.chat-on #stage, body.fs.chat-on .log {
+    width: min(calc(100vw - 420px), calc((100dvh - 80px) * 1676 / 940));
+  }
   body.chess #chessPanel {
-    grid-area: chess; display: flex; flex-direction: column; gap: 8px;
-    width: 380px; padding: 10px; align-self: start; margin-top: 1.5em;
+    display: flex; flex-direction: column; gap: 8px;
+    width: 380px; padding: 10px;
     background: rgba(255,255,255,.72); border-radius: 14px;
     box-shadow: 0 4px 14px rgba(0,20,40,.25);
   }
+  .chat-log { height: 60dvh; }
+  body.chess .chat-log { height: max(140px, calc(100dvh - 640px)); }
+  .chat-close, #chatBtn { display: none !important; }
 }
 @media (orientation: portrait), (pointer: coarse) { #chessBtn { display: none !important; } }
 .chess-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
@@ -972,6 +980,81 @@ body.fs footer { display: none; }
 .chess-board .sq.pb { color: #111; }
 .chess-board .sq.check { background: #e77 !important; }
 .chess-status { font-weight: 700; color: #345; font-size: .9rem; min-height: 1.3em; text-align: center; }
+
+/* ---------- Chat okno ----------
+   Hráči (modrá = ja, červená = súper), divák fialovo, Claude zeleno, oznamy
+   siete sivou kurzívou. Na mobile panel cez obrazovku (body.chat-open). */
+.chat-panel {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px;
+  background: rgba(255,255,255,.85); border-radius: 14px;
+  box-shadow: 0 4px 14px rgba(0,20,40,.25);
+}
+.chat-head { display: flex; align-items: center; gap: 8px; }
+.chat-title { font-weight: 800; color: #345; flex: 1; }
+.chat-specs { font-weight: 700; color: #7b3fe4; font-size: .9rem; }
+.chat-close { padding: 4px 10px; font-size: .9rem; }
+.chat-log {
+  overflow-y: auto; overscroll-behavior: contain; min-height: 80px;
+  background: rgba(255,255,255,.75); border-radius: 10px; padding: 6px 8px;
+  font-size: .9rem; line-height: 1.35; display: flex; flex-direction: column; gap: 3px;
+  user-select: text; -webkit-user-select: text;
+}
+.chat-msg { color: #123; overflow-wrap: anywhere; }
+.chat-msg.me b { color: #2f7cff; }
+.chat-msg.opp b { color: #c92a2a; }
+.chat-msg.spec { color: #5b1aa8; }
+.chat-msg.spec b { color: #7b3fe4; }
+.chat-msg.bot b { color: #2b8a3e; }
+.chat-msg.sys { color: #678; font-style: italic; font-size: .82rem; }
+.chat-panel .chat-row { width: 100%; margin: 0; }
+/* 🗨️ v ☰ menu + červená bodka = neprečítaná správa (aj na samotnom ☰) */
+.chat-btn { position: relative; }
+.chat-btn .dot, .menu-btn.unread::after {
+  position: absolute; top: 3px; right: 3px; width: 10px; height: 10px;
+  border-radius: 50%; background: #e03131; box-shadow: 0 0 0 2px #fff;
+}
+.menu-btn.unread::after { content: ""; }
+@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
+  body.chat-open #sideCol {
+    display: flex; flex-direction: column; position: fixed; z-index: 41;
+    left: 8px; right: 8px; top: calc(56px + env(safe-area-inset-top, 0px));
+    bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  body.chat-open #chatPanel { flex: 1; min-height: 0; background: #f4f8ff; }
+  body.chat-open .chat-log { flex: 1; font-size: 1rem; }
+}
+/* Divák: nič nehrá – bez tlačidiel ťahu, obchodu a šachu. */
+body.spectating #endTurnBtn, body.spectating #devPanel,
+body.spectating #speedRow, body.spectating #chessPanel, body.spectating #chessBtn { display: none !important; }
+body.spectating .head-btns { visibility: hidden; } /* miesto ostáva – banner nepreskočí */
+
+/* ---------- Práve prebiehajúce hry (úvodná obrazovka) ----------
+   Široké okno: tabuľka vpravo vedľa výberu hry; inak pod pravidlami. */
+#pickScreen { position: relative; }
+.games-box {
+  margin-top: 16px; width: min(94vw, 680px);
+  background: rgba(255,255,255,.75); border-radius: 18px; padding: 12px 14px;
+  box-shadow: 0 4px 14px rgba(0,20,40,.2);
+}
+@media (min-width: 1400px) {
+  .games-box { position: absolute; top: 0; right: 16px; width: 300px; margin-top: 0; }
+}
+.games-box h3 { margin: 0 0 8px; text-align: center; font-size: 1.05rem; color: #345; }
+.games-list { display: grid; gap: 6px; max-height: 60dvh; overflow-y: auto; }
+.game-row { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,20,40,.18); }
+.game-row.open { box-shadow: 0 0 0 2px #2f7cff; }
+.game-head {
+  width: 100%; display: flex; gap: 8px; align-items: center; padding: 8px 10px;
+  border-radius: 0; background: none; box-shadow: none; font-size: .95rem; text-align: left;
+}
+.game-head:active { transform: none; }
+.game-head .gc { font-weight: 800; flex: 1; }
+.game-head .gr { color: #567; font-size: .85rem; }
+.game-head .gs { color: #7b3fe4; font-weight: 700; font-size: .85rem; }
+.game-head .gx { color: #789; }
+.game-det { padding: 2px 10px 10px; display: grid; gap: 6px; }
+.game-det .gp { font-weight: 700; color: #123; font-size: .92rem; }
+.games-empty { font-size: .85rem; color: #567; text-align: center; padding: 6px; }
 
 /* ---------- Môj balíček – zoznam vlastných kariet ----------
    Desktop: dropdown vpravo vedľa dosky (pozíciu ráta game.js positionDeckDd).

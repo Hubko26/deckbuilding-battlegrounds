@@ -66,6 +66,8 @@ const Net = (() => {
   let resumeUnavail = 0; // koľkokrát reconnect dostal peer-unavailable
   let myYou = null;      // "p1" | "p2" – moja strana v hre (z „start"/„rejoin")
   let appV = null;       // verzia klienta (na porovnanie pri rejoin)
+  let myName = "";       // meno hráča (úvodná obrazovka) – ide súperovi aj divákom
+  let names = {};        // { p1, p2 } mená hráčov v hre
 
   function resetSync() { sendSeq = 0; recvSeq = 0; sentBuf = []; resuming = false; }
 
@@ -75,10 +77,10 @@ const Net = (() => {
     }
     if (!msg || typeof msg !== "object") return;
     if (msg.type === "waiting" && handlers.onWaiting) handlers.onWaiting(msg);
-    if (msg.type === "start") { resetSync(); clearAway(); inGame = true; myYou = msg.you; if (handlers.onStart) handlers.onStart(msg); }
+    if (msg.type === "start") { resetSync(); clearAway(); inGame = true; myYou = msg.you; names = cleanNames(msg.names); if (handlers.onStart) handlers.onStart(msg); }
     // Návrat do hry: preživší posiela seed + celý log akcií, klient hru prehrá.
     if (msg.type === "rejoin" && Array.isArray(msg.actions)) {
-      resetSync(); clearAway(); inGame = true; myYou = msg.you; rejoinPending = false;
+      resetSync(); clearAway(); inGame = true; myYou = msg.you; rejoinPending = false; names = cleanNames(msg.names);
       if (handlers.onRejoin) handlers.onRejoin(msg);
     }
     // LAN: server spároval vracajúceho sa hráča s nami – pošli mu log.
@@ -96,10 +98,17 @@ const Net = (() => {
     if (msg.type === "resumeAck") resumeSync(msg, false);
     if (msg.type === "peerLeft") peerGone({});
     // Chat medzi hráčmi – nepatrí do hry (nereplikuje sa, nebufferuje sa).
-    if (msg.type === "chat" && typeof msg.text === "string" && handlers.onChat) {
+    // from: "spec" = správa diváka (hostiteľ ju preposlal), inak súper.
+    if (msg.type === "chat" && typeof msg.text === "string") {
       const text = msg.text.slice(0, CHAT_MAX).trim();
-      if (text) handlers.onChat(text);
+      const spec = msg.from === "spec";
+      const opp = myYou === "p1" ? "p2" : "p1";
+      const name = spec ? cleanName(msg.name) : (names[opp] || "");
+      // hostiteľ: súperova správa ide aj divákom
+      if (text && !spec) toSpecs({ type: "chat", text, from: opp, name });
+      if (text && handlers.onChat) handlers.onChat(text, { from: spec ? "spec" : "opp", name });
     }
+    if (msg.type === "specs" && handlers.onSpectators) handlers.onSpectators({ n: Number(msg.n) || 0, name: cleanName(msg.name), joined: !!msg.joined });
     if (msg.type === "away") peerAway();
     if (msg.type === "back") peerBack();
     // Súper zavrel stránku (pagehide) – bez čakania na výpadok spojenia
@@ -190,7 +199,7 @@ const Net = (() => {
     clearRejoinWait();
     resetSync();
     sendRaw({ type: "rejoin", seed: data.seed, mut: data.mut, ban: data.ban, trinkets: data.trinkets, raceCap: data.raceCap, exp: data.exp, actions: data.actions,
-      you: myYou === "p1" ? "p2" : "p1", v: appV });
+      names, you: myYou === "p1" ? "p2" : "p1", v: appV });
     if (handlers.onRejoined) handlers.onRejoined({ v: meta && meta.v });
     return true;
   }
@@ -275,7 +284,12 @@ const Net = (() => {
   }
   function sendChat(text) {
     text = String(text || "").slice(0, CHAT_MAX).trim();
-    if (text && inGame) sendRaw({ type: "chat", text });
+    if (!text) return;
+    // divák: správa ide hostiteľovi, ten ju rozošle hráčom aj ostatným divákom
+    if (role === "spec") { if (conn && conn.open) { try { conn.send({ type: "chat", text }); } catch {} } return; }
+    if (!inGame) return;
+    sendRaw({ type: "chat", text });
+    toSpecs({ type: "chat", text, from: myYou, name: names[myYou] || "" });
   }
   function sendPresence(kind) {
     if (inGame && transport) sendRaw({ type: kind });
@@ -353,6 +367,163 @@ const Net = (() => {
     }, 5000);
   }
 
+  // ---------- Diváci (len peer transport) ----------
+  // Divák sa pripojí na kód miestnosti s metadata.spectate. Hostiteľ mu pošle
+  // log hry (ako pri rejoin) a potom každú akciu z GameLog-u v poradí, v akom
+  // ju aplikoval sám (specAct) – divák hru prehráva deterministicky. Chat:
+  // hostiteľ preposiela správy hráčov divákom a správy divákov hráčom.
+  // Hostiteľa po rehoste (zomrel) divák hľadá na tom istom kóde ešte minútu.
+  const SPEC_MAX = 8;
+  const SPEC_GAP = 800; // ms medzi správami jedného diváka (anti-spam)
+  let specs = [];       // hostiteľ: [{ conn, name, at }]
+  function cleanName(n) { return String(n == null ? "" : n).slice(0, 24).trim(); }
+  function cleanNames(n) { return n && typeof n === "object" ? { p1: cleanName(n.p1), p2: cleanName(n.p2) } : {}; }
+
+  function specJoin(c, meta) {
+    const name = cleanName(meta && meta.name) || "?";
+    let s = null;
+    c.on("open", () => {
+      const data = handlers.getSpectate && handlers.getSpectate();
+      const full = specs.length >= SPEC_MAX;
+      const ver = !!(meta && meta.v && appV && meta.v !== appV); // iná verzia = istý desync
+      if (!data || full || ver) {
+        try { c.send({ type: "noGame", full: !!data && full, ver: !!data && ver }); } catch {}
+        setTimeout(() => { try { c.close(); } catch {} }, 1000);
+        return;
+      }
+      s = { conn: c, name, at: 0 };
+      specs.push(s);
+      try { c.send({ type: "specInit", ...data, names, v: appV }); } catch {}
+      specNotify(name, true);
+    });
+    c.on("data", m => { if (s) specMsg(s, m); });
+    const gone = () => {
+      const i = s ? specs.indexOf(s) : -1;
+      if (i < 0) return;
+      specs.splice(i, 1);
+      specNotify(s.name, false);
+    };
+    c.on("close", gone);
+    c.on("error", gone);
+  }
+  function specNotify(name, joined) {
+    sendRaw({ type: "specs", n: specs.length, name, joined });
+    if (handlers.onSpectators) handlers.onSpectators({ n: specs.length, name, joined });
+  }
+  function specMsg(s, m) {
+    if (!m || typeof m !== "object" || m.type !== "chat" || typeof m.text !== "string") return;
+    const text = m.text.slice(0, CHAT_MAX).trim();
+    const now = Date.now();
+    if (!text || now - s.at < SPEC_GAP) return;
+    s.at = now;
+    const msg = { type: "chat", text, from: "spec", name: s.name };
+    sendRaw(msg);          // súperovi
+    toSpecs(msg, s.conn);  // ostatným divákom
+    if (handlers.onChat) handlers.onChat(text, { from: "spec", name: s.name });
+  }
+  function toSpecs(msg, except) {
+    for (const s of specs) {
+      if (s.conn === except || !s.conn.open) continue;
+      try { s.conn.send(msg); } catch {}
+    }
+  }
+  // Hostiteľ: akcia práve zapísaná do GameLog-u ([actor, name, ...args]).
+  function feedSpectators(entry) {
+    if (specs.length && Array.isArray(entry)) toSpecs({ type: "specAct", a: entry });
+  }
+  function closeSpecs() {
+    for (const s of specs) { try { s.conn.close(); } catch {} }
+    specs = [];
+  }
+
+  // Divák: správy od hostiteľa.
+  function specDispatch(msg) {
+    if (!msg || typeof msg !== "object") return;
+    if (msg.type === "specInit" && Array.isArray(msg.actions)) {
+      names = cleanNames(msg.names);
+      if (handlers.onSpecInit) handlers.onSpecInit(msg);
+    }
+    if (msg.type === "specAct" && Array.isArray(msg.a) && handlers.onSpecAction) handlers.onSpecAction(msg.a);
+    if (msg.type === "chat" && typeof msg.text === "string") {
+      const text = msg.text.slice(0, CHAT_MAX).trim();
+      const from = msg.from === "p1" || msg.from === "p2" ? msg.from : "spec";
+      if (text && handlers.onChat) handlers.onChat(text, { from, name: cleanName(msg.name) });
+    }
+    if (msg.type === "specs" && handlers.onSpectators) handlers.onSpectators({ n: Number(msg.n) || 0, name: cleanName(msg.name), joined: !!msg.joined });
+    if (msg.type === "noGame") {
+      role = null;
+      if (handlers.onPeerError) handlers.onPeerError(msg.ver ? "specVersion" : msg.full ? "specFull" : "noGame");
+    }
+  }
+
+  // Pripojí sa ako divák na hru s kódom.
+  function spectatePeer(code, h, opts) {
+    handlers = h;
+    transport = "peer";
+    appV = opts && opts.v;
+    myName = cleanName(opts && opts.name);
+    destroyPeer();
+    clearRejoinWait();
+    closeSpecs();
+    inGame = false;
+    role = "spec";
+    roomCode = String(code);
+    peerOpts().then(po => {
+      if (role !== "spec" || peer) return;
+      const pr = new Peer(po);
+      peer = pr;
+      keepAlive(pr);
+      pr.on("open", () => specConnect(Date.now() + 20000, true));
+      pr.on("error", err => {
+        const kind = err && err.type;
+        if (kind === "peer-unavailable") return; // specConnect skúša ďalej
+        if (role === "spec" && (kind === "network" || kind === "server-error" || kind === "socket-error" || kind === "browser-incompatible")) {
+          role = null;
+          if (handlers.onPeerError) handlers.onPeerError(kind);
+        }
+      });
+    });
+  }
+  // first = prvé pripojenie (zlyhanie = hra sa nenašla); inak obnova po výpadku.
+  function specConnect(deadline, first) {
+    if (role !== "spec" || !peer || peer.destroyed) return;
+    if (handlers.specWanted && !handlers.specWanted()) return;
+    if (Date.now() > deadline) {
+      role = null;
+      if (first) { if (handlers.onPeerError) handlers.onPeerError("peer-unavailable"); }
+      else if (handlers.onPeerLeft) handlers.onPeerLeft({ spectator: true });
+      return;
+    }
+    if (peer.disconnected) { try { peer.reconnect(); } catch {} }
+    let c = null;
+    try { c = peer.connect(PEER_PREFIX + roomCode, { reliable: true, metadata: { spectate: true, v: appV, name: myName } }); } catch {}
+    let opened = false, again = false;
+    const retry = () => { if (again) return; again = true; setTimeout(() => specConnect(deadline, first), 2500); };
+    if (!c) { retry(); return; }
+    const lost = () => {
+      if (conn !== c) return;
+      conn = null;
+      stopPing();
+      if (role !== "spec") return;
+      if (handlers.onSpecLost) handlers.onSpecLost();
+      specConnect(Date.now() + 60000, false);
+    };
+    c.on("open", () => {
+      opened = true;
+      if (role !== "spec") { try { c.close(); } catch {} return; }
+      conn = c;
+      startPing(c);
+      const pc = c.peerConnection;
+      if (pc) pc.addEventListener("iceconnectionstatechange", () => {
+        if (pc.iceConnectionState === "failed") lost();
+      });
+    });
+    c.on("data", m => { if (conn === c) specDispatch(m); });
+    c.on("close", () => { if (opened) lost(); else retry(); });
+    c.on("error", () => { if (opened) lost(); else retry(); });
+    setTimeout(() => { if (!opened && role === "spec") { try { c.close(); } catch {} retry(); } }, 6000);
+  }
+
   // ---------- WebSocket (lokálny server) ----------
   function connect(h, opts) {
     handlers = h;
@@ -373,7 +544,7 @@ const Net = (() => {
     sock.addEventListener("open", () => {
       opened = true;
       // Voľba mutácií – server ju vezme od hráča, ktorý čaká prvý (zakladateľ).
-      sock.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), ban: !(opts && opts.ban === false), trinkets: !(opts && opts.trinkets === false), insects: !!(opts && opts.insects), v: opts && opts.v, rejoin: !!(opts && opts.rejoin) }));
+      sock.send(JSON.stringify({ type: "hello", mut: !(opts && opts.mut === false), ban: !(opts && opts.ban === false), trinkets: !(opts && opts.trinkets === false), insects: !!(opts && opts.insects), v: opts && opts.v, name: cleanName(opts && opts.name), rejoin: !!(opts && opts.rejoin) }));
     });
     sock.addEventListener("message", e => { if (ws === sock) dispatch(e.data); });
     sock.addEventListener("close", () => {
@@ -490,6 +661,7 @@ const Net = (() => {
     const insects = !!(opts && opts.insects); // experimentálna rasa Hmyz – default vypnutá
     const myV = opts && opts.v;
     appV = myV;
+    myName = cleanName(opts && opts.name);
     destroyPeer();
     clearRejoinWait();
     role = "host";
@@ -514,6 +686,8 @@ const Net = (() => {
   // null = len držíme kód pre návrat súpera (rehost), nová hra sa nezakladá.
   function hostConnection(c, fresh) {
     const meta = c.metadata || {};
+    // Divák: dostane log hry a potom živý prúd akcií (žiadna nová hra).
+    if (meta.spectate) { specJoin(c, meta); return; }
     // Obnova po výpadku: joiner sa vracia s metadata.resume – žiadna nová
     // hra, len prehoď spojenie a čakaj resumeReq (dosync akcií).
     if (meta.resume) {
@@ -540,9 +714,10 @@ const Net = (() => {
     wireConn(c);
     c.on("open", () => {
       const seed = Math.floor(Math.random() * 2 ** 31);
+      const nm = { p1: myName, p2: cleanName(meta.name) };
       // v = verzia DRUHEJ strany: každý klient si ju porovná so svojou.
-      c.send({ type: "start", seed, you: "p2", mut: fresh.mut, ban: fresh.ban, trinkets: fresh.trinkets, insects: fresh.insects, v: fresh.myV });
-      dispatch({ type: "start", seed, you: "p1", mut: fresh.mut, ban: fresh.ban, trinkets: fresh.trinkets, insects: fresh.insects, v: meta.v });
+      c.send({ type: "start", seed, you: "p2", mut: fresh.mut, ban: fresh.ban, trinkets: fresh.trinkets, insects: fresh.insects, names: nm, v: fresh.myV });
+      dispatch({ type: "start", seed, you: "p1", mut: fresh.mut, ban: fresh.ban, trinkets: fresh.trinkets, insects: fresh.insects, names: nm, v: meta.v });
     });
   }
 
@@ -551,6 +726,7 @@ const Net = (() => {
     handlers = h;
     transport = "peer";
     appV = opts && opts.v;
+    myName = cleanName(opts && opts.name);
     destroyPeer();
     clearRejoinWait();
     role = "join";
@@ -569,7 +745,7 @@ const Net = (() => {
     keepAlive(peer);
     peer.on("open", () => {
       console.info("[arena] signalizácia OK (join, kód " + code + ")");
-      const c = peer.connect(PEER_PREFIX + code, { reliable: true, metadata: { v: opts && opts.v } });
+      const c = peer.connect(PEER_PREFIX + code, { reliable: true, metadata: { v: opts && opts.v, name: myName } });
       wireConn(c);
       c.on("open", done);
     });
@@ -588,6 +764,7 @@ const Net = (() => {
   }
 
   function sendAction(name, args, round) {
+    if (role === "spec") return; // divák nehrá (ani šach)
     const msg = { type: "action", name, args, r: round };
     if (transport === "ws" && ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
     if (transport === "peer") {
@@ -608,6 +785,9 @@ const Net = (() => {
   function disconnect() {
     handlers = {};
     inGame = false;
+    closeSpecs();
+    names = {};
+    if (role === "spec") role = null;
     clearAway();
     clearRejoinWait();
     rejoinPending = false;
@@ -617,13 +797,13 @@ const Net = (() => {
   }
 
   // Info pre UI (uloženie „vrátiť sa do hry" do localStorage).
-  function info() { return { transport, code: roomCode, you: myYou }; }
+  function info() { return { transport, code: roomCode, you: myYou, role, names: { ...names }, specs: specs.length }; }
 
   return {
-    connect, hostPeer, joinPeer, rejoinPeer, sendAction, sendChat, disconnect, peerAvailable, info,
+    connect, hostPeer, joinPeer, rejoinPeer, spectatePeer, sendAction, sendChat, feedSpectators, disconnect, peerAvailable, info, peerOpts,
     // len pre testy (test/net.test.mjs): vstup správ bez transportu
-    _test: { dispatch, setHandlers: h => { handlers = h; }, AWAY_LIMIT, CHAT_MAX, REJOIN_LIMIT,
-      reset: () => { inGame = false; transport = null; clearRejoinWait(); clearAway(); } },
+    _test: { dispatch, specDispatch, specJoin, setHandlers: h => { handlers = h; }, setVersion: v => { appV = v; }, AWAY_LIMIT, CHAT_MAX, SPEC_MAX, REJOIN_LIMIT,
+      reset: () => { inGame = false; transport = null; role = null; names = {}; specs = []; clearRejoinWait(); clearAway(); } },
   };
 })();
 
