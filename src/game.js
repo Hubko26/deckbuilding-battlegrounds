@@ -3248,7 +3248,7 @@ function showOver() {
   if (watchOnly()) {
     $("overTitle").textContent = w === "draw" ? t(L.drawGame) : `🏆 ${names[w] || w} ${t(L.specWon)}`;
     $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
-    if (botLoop) { Lobby.update(); setTimeout(newBotGame, BOT_LOOP_PAUSE); }
+    if (botLoop) { reportBotResult(); Lobby.update(); setTimeout(newBotGame, BOT_LOOP_PAUSE); }
     return;
   }
   if (mode === "net") clearRejoin();
@@ -3468,6 +3468,33 @@ function startBotLoop() {
   }, { v: APP_V });
   host(/^\d{4}$/.test(want || "") ? want : randCode());
   newBotGame();
+}
+// Výsledok hry botov do konzoly – tools/botloop.mjs ho cez DevTools protokol
+// zapíše do data/botloop/results.jsonl (dáta na ladenie bota). Riadok má
+// aj seed + akcie, takže ide prehrať: npm run replay -- <súbor>.jsonl <id>.
+function reportBotResult() {
+  const g = GameLog.current();
+  if (!g || !state) return;
+  const side = pid => {
+    const p = state[pid];
+    const counts = {};
+    for (const x of p.board) { const r = Cards.byId[x.defId] && Cards.byId[x.defId].race; if (r) counts[r] = (counts[r] || 0) + 1; }
+    const race = Bot.dominantRace(state, p);
+    return {
+      name: names[pid], race, raceName: race ? Cards.RACES_NOM[race].sk : null,
+      hp: p.hp, tier: p.tier, boardRaces: counts,
+      board: p.board.map(x => `${x.defId}:${x.rank || 1}(${x.atk}/${x.hp})`),
+      trinkets: (p.trinkets || []).slice(),
+    };
+  };
+  const res = {
+    id: g.id, date: new Date().toISOString(), mode: "botloop", bot: "hygiene", v: APP_V,
+    build: typeof APP_BUILD === "string" ? APP_BUILD : null,
+    winner: state.winner, rounds: state.round, banned: state.banned || null, races: state.races || null,
+    p1: side("p1"), p2: side("p2"),
+    seed: g.seed, mut: false, ban: g.ban, trinkets: g.trinkets, raceCap: g.raceCap, exp: g.exp, actions: g.actions,
+  };
+  console.info("[arena-result]", JSON.stringify(res));
 }
 function newBotGame() {
   if (!botLoop) return;

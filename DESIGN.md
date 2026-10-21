@@ -1589,6 +1589,12 @@ len staty + keyword badge.
   animovať. Nová hra = nový `specInit` všetkým divákom (`Net.showGame`).
   Záznamy hier botov sa neukladajú do localStorage. Na testovanie divákov;
   divák musí mať rovnakú verziu ako stránka s botmi.
+  Výsledky: po každej hre stránka vypíše `console.info("[arena-result]",
+  json)` (rasy podľa `Bot.dominantRace`, víťaz, kolo, HP, tier, plochy,
+  trinkety, verzia + seed a akcie na replay); `tools/botloop.mjs` ju číta
+  cez DevTools protokol headless prehliadača (port len na 127.0.0.1)
+  a pripíše riadok do `data/botloop/results.jsonl` (dedup podľa seedu).
+  Súhrn `tools/botstats.mjs`, replay `tools/replay.mjs` číta aj .jsonl.
 - Prítomnosť hráča: keď hráč prepne aplikáciu (Messenger, hovor), prehliadač
   stránku uspí – ťah nepríde a súper by čakal donekonečna. Pri skrytí stránky
   (`visibilitychange`) klient pošle `away`, pri návrate `back`; súper vidí

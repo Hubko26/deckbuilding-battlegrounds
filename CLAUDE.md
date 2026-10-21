@@ -40,6 +40,12 @@ commity, UI) je slovenčina.
 - `npm run botloop [-- local] [code=1234]` – dvaja hard boti hrajú dookola
   v headless Chrome/Edge (GitHub Pages, s `local` localhost:5180); hra je
   stále v zozname „Práve sa hrá" na sledovanie. To isté v okne: `?botloop`.
+  Výsledok každej hry (rasy, víťaz, kolo, plochy, trinkety + seed a akcie)
+  pripíše do `data/botloop/results.jsonl` (gitignore, riadok = hra).
+  V PowerShelli s blokovanými skriptmi spúšťaj priamo `node tools/botloop.mjs`.
+- `npm run botstats [-- súbor.jsonl since=2026-10-21 v=<verzia>]` – súhrn
+  hier botov: winrate rás, matica rasa vs. rasa, karty na víťaznej ploche.
+  Replay jednej hry: `npm run replay -- data/botloop/results.jsonl <id>`.
 - Žiadny build, lint ani bundler – súbory sa servírujú tak, ako sú.
 - Pre-commit hook (`tools/bump-version.py --stage`) prepočíta `?v=` hashe
   v index.html a zapíše čas buildu do `version.js`; úvodná obrazovka ho

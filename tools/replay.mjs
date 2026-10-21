@@ -38,7 +38,9 @@ if (!file) {
   console.log("Použitie: node tools/replay.mjs arena-games.json [last|<id>] [round=N] [verbose=1]");
   process.exit(0);
 }
-const games = JSON.parse(fs.readFileSync(file, "utf8"));
+// .jsonl = výsledky hier botov (npm run botloop), riadok = jedna hra
+const raw = fs.readFileSync(file, "utf8");
+const games = file.endsWith(".jsonl") ? raw.split(/\r?\n/).filter(Boolean).map(l => JSON.parse(l)) : JSON.parse(raw);
 if (!pick) {
   for (const g of games) {
     console.log(`id=${g.id}  ${g.date}  mode=${g.mode}${g.difficulty ? " (" + g.difficulty + ")" : ""}  seed=${g.seed}  akcií=${g.actions.length}`);

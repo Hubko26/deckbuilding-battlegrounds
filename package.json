@@ -12,7 +12,8 @@
     "ideal": "node tools/ideal-sim.mjs",
     "target": "node tools/ideal-sim.mjs targeted=1 runs=4",
     "pve": "node tools/pve-sim.mjs",
-    "botloop": "node tools/botloop.mjs"
+    "botloop": "node tools/botloop.mjs",
+    "botstats": "node tools/botstats.mjs"
   },
   "engines": {
     "node": ">=20"
