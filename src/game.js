@@ -509,6 +509,25 @@ function renderMutator() {
   log(`${m.e} ${t(L.mutTitle)}: ${t(m)} – ${t(m.d)}`);
 }
 
+// ---------- Ping autorovi: začala sieťová hra ----------
+// Push notifikácia cez ntfy.sh (bez servera a účtu): autor má v appke ntfy
+// odoberanú tému NTFY_TOPIC a pri štarte každej sieťovej hry dostane
+// „meno vs. meno“. Téma je verejná (kto ju pozná, vidí mená hráčov), preto
+// ide len meno + odkaz na hru. Nie z localhostu (testovanie) a nie, keď
+// hrá autor sám (Hubko). Text je pre autora, nie UI hry – preto nie v i18n.
+const NTFY_TOPIC = "zvieracia-arena-es3ivkjhid";
+const GAME_URL = "https://hubko26.github.io/deckbuilding-battlegrounds/";
+function pingGameStart() {
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  const nm = [names.p1 || "?", names.p2 || "?"];
+  if (local || nm.some(n => n.toLowerCase() === "hubko")) return;
+  // text/plain JSON = jednoduchý request bez CORS preflightu
+  fetch("https://ntfy.sh/", {
+    method: "POST",
+    body: JSON.stringify({ topic: NTFY_TOPIC, title: "🎮 Zvieracia aréna", message: `${nm[0]} vs. ${nm[1]}`, tags: ["video_game"], click: GAME_URL }),
+  }).catch(() => { /* bez notifikácie hra beží ďalej */ });
+}
+
 // ---------- Hra po sieti ----------
 // Najprv skúsi lokálny WS server (LAN, automatické párovanie). Keď nebeží
 // (napr. GitHub Pages), prepne na PeerJS s kódom miestnosti.
@@ -537,6 +556,7 @@ function netHandlers() {
       $("chatInput").value = "";
       saveRejoin();
       Lobby.update();
+      if (msg.you === "p1") pingGameStart(); // ping posiela len zakladateľ (raz za hru)
       if (state.phase !== "ban") act(Engine.startRound(state));
       driveFlow();
       // msg.v = verzia druhej strany (od hostiteľa/servera); rozdiel = istý desync

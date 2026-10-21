@@ -1574,6 +1574,11 @@ len staty + keyword badge.
   horného hrdinu (nie počas boja). Koniec animácie ide podľa časovača, nie
   `animation.finished` – v skrytej záložke animácie stoja a fronta by
   zamrzla. Divák, ktorý zaostáva (> 6 akcií vo fronte), animuje zrýchlene.
+- **Ping autorovi pri štarte sieťovej hry**: zakladateľ (p1) pošle cez
+  ntfy.sh push „meno vs. meno“ na tému `NTFY_TOPIC` (game.js); autor ju
+  odoberá v appke ntfy. Bez servera a účtu, jednoduchý POST bez CORS
+  preflightu. Téma je v kóde verejná (kto ju pozná, vidí mená) – posiela
+  sa len meno a odkaz. Nie z localhostu, nie keď hrá Hubko, nie hry botov.
 - **Hra botov dookola** (`index.html?botloop`, `npm run botloop` = headless
   Chrome/Edge; `local` = localhost:5180, `code=1234` = pevný kód): dvaja
   hard boti bez handicapov (`Bot.HYGIENE`) hrajú hru za hrou, 15 s pauza
