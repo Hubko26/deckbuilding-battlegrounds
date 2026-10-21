@@ -436,6 +436,36 @@ const Net = (() => {
     specs = [];
   }
 
+  // ---------- Výstava: hra botov na sledovanie (?botloop) ----------
+  // Stránka drží kód miestnosti len pre divákov – hráč sa pripojiť nemôže
+  // (hostConnection bez `fresh` hráča odmietne). Nová hra = nový specInit
+  // všetkým pripojeným divákom (showGame), kód ostáva.
+  function hostShow(code, h, opts) {
+    handlers = h;
+    transport = "peer";
+    appV = opts && opts.v;
+    destroyPeer();
+    clearRejoinWait();
+    closeSpecs();
+    inGame = false;
+    role = "host";
+    roomCode = String(code);
+    peerOpts().then(po => {
+      if (transport !== "peer" || role !== "host" || peer) return;
+      const pr = new Peer(PEER_PREFIX + roomCode, po);
+      peer = pr;
+      keepAlive(pr);
+      pr.on("open", () => console.info("[arena] botloop: kód " + roomCode));
+      pr.on("connection", c => hostConnection(c, null));
+      pr.on("error", err => { if (peer === pr && handlers.onPeerError) handlers.onPeerError(err && err.type); });
+    });
+  }
+  function showGame(nm, data) {
+    names = cleanNames(nm);
+    if (!data) return;
+    toSpecs({ type: "specInit", ...data, names, v: appV });
+  }
+
   // Divák: správy od hostiteľa.
   function specDispatch(msg) {
     if (!msg || typeof msg !== "object") return;
@@ -800,7 +830,7 @@ const Net = (() => {
   function info() { return { transport, code: roomCode, you: myYou, role, names: { ...names }, specs: specs.length }; }
 
   return {
-    connect, hostPeer, joinPeer, rejoinPeer, spectatePeer, sendAction, sendChat, feedSpectators, disconnect, peerAvailable, info, peerOpts,
+    connect, hostPeer, joinPeer, rejoinPeer, spectatePeer, hostShow, showGame, sendAction, sendChat, feedSpectators, disconnect, peerAvailable, info, peerOpts,
     // len pre testy (test/net.test.mjs): vstup správ bez transportu
     _test: { dispatch, specDispatch, specJoin, setHandlers: h => { handlers = h; }, setVersion: v => { appV = v; }, AWAY_LIMIT, CHAT_MAX, SPEC_MAX, REJOIN_LIMIT,
       reset: () => { inGame = false; transport = null; role = null; names = {}; specs = []; clearRejoinWait(); clearAway(); } },

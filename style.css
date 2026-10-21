@@ -1182,3 +1182,15 @@ body.targeting, body.targeting * { cursor: none !important; }
 @media (orientation: portrait) {
   #stage .hand .card.hov:not(.drag-src) { transform: translateY(-55%) scale(2); }
 }
+/* Hra botov (?botloop): stránka len hrá a ukazuje – chat bez políčka. */
+body.botloop .chat-row { display: none; }
+/* Sledovanie (divák, ?botloop): karta, ktorú hráč práve berie, sa zdvihne
+   a jej klon letí na cieľ (obchod → balíček, ruka → plocha, predaj). */
+#stage .card.watch-pick {
+  transform: translateY(-12%) scale(1.12) !important; z-index: 35;
+  box-shadow: 0 0 0 .5cqh #ffd147, 0 1.5cqh 2.5cqh rgba(0,0,0,.45);
+  transition: transform .2s ease-out;
+}
+#stage .card.fly-card { z-index: 70; pointer-events: none; box-shadow: 0 1.5cqh 3cqh rgba(0,0,0,.5); }
+.pov-btn { font-size: .8rem; padding: 4px 9px; background: #efe3ff; color: #4b1491; box-shadow: 0 2px 0 #b79ce6; }
+body.spectating #oppHero { cursor: pointer; }

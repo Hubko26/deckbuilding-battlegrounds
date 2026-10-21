@@ -1563,7 +1563,27 @@ len staty + keyword badge.
   10 s kód, mená, kolo, HP, tier, počet divákov a verziu; záznam bez obnovy
   vypadne po 35 s. Keď správca odíde, ID prevezme niekto iný a register sa
   do 10 s obnoví. Ťuk na riadok ukáže, kto hrá, „👁 Sledovať“ = divák.
-  LAN hry (server.mjs) sa v zozname nezobrazujú.
+  LAN hry (server.mjs) sa v zozname nezobrazujú. Riadok ukazuje
+  „meno vs. meno", kolo a počet divákov.
+- **Animované sledovanie**: divák (a stránka s botmi) vidí akcie hráča,
+  ktorého POV sleduje, ako ťah kartou – karta sa zdvihne a jej klon letí
+  z obchodu do balíčka, z ruky na plochu, z ruky/plochy do obchodu (predaj),
+  kúzlo letí ako pri vlastnom zoslaní (`playWatched`). Nákup druhého hráča
+  zo spoločnej ponuky letí k jeho balíčku, jeho ostatné akcie sú ikonka nad
+  hrdinom. POV sa prepína 🔄 v hlavičke, tlačidlom v chate alebo ťukom na
+  horného hrdinu (nie počas boja). Koniec animácie ide podľa časovača, nie
+  `animation.finished` – v skrytej záložke animácie stoja a fronta by
+  zamrzla. Divák, ktorý zaostáva (> 6 akcií vo fronte), animuje zrýchlene.
+- **Hra botov dookola** (`index.html?botloop`, `npm run botloop` = headless
+  Chrome/Edge; `local` = localhost:5180, `code=1234` = pevný kód): dvaja
+  hard boti bez handicapov (`Bot.HYGIENE`) hrajú hru za hrou, 15 s pauza
+  medzi hrami. Stránka drží kód len pre divákov (`Net.hostShow`, hráč sa
+  pripojiť nemôže) a je v zozname hier ako „Robo X vs. Robo Y". Ťah bota
+  sa naplánuje na kópii stavu prehranej z logu (engine je deterministický)
+  a hrá sa akcia po akcii – každá ide do GameLog-u aj divákom, takže sa dá
+  animovať. Nová hra = nový `specInit` všetkým divákom (`Net.showGame`).
+  Záznamy hier botov sa neukladajú do localStorage. Na testovanie divákov;
+  divák musí mať rovnakú verziu ako stránka s botmi.
 - Prítomnosť hráča: keď hráč prepne aplikáciu (Messenger, hovor), prehliadač
   stránku uspí – ťah nepríde a súper by čakal donekonečna. Pri skrytí stránky
   (`visibilitychange`) klient pošle `away`, pri návrate `back`; súper vidí

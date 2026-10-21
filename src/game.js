@@ -19,6 +19,8 @@ let difficulty = localStorage.getItem("arena.diff") || "normal";
 let busy = false;         // beží animácia / ťah bota
 let drag = null;          // aktívne ťahanie karty
 let spectating = false;   // divák sieťovej hry (mode "net", nič nehrá – len pozerá a píše)
+let botLoop = false;      // ?botloop: hard boti hrajú dookola, hra sa dá sledovať (testovanie)
+const watchOnly = () => spectating || botLoop; // nikto lokálne nehrá – len pozerá
 let names = {};           // { p1, p2 } mená hráčov v sieťovej hre
 
 // ---------- Záznam hry (replay log) ----------
@@ -30,8 +32,10 @@ const GameLog = (() => {
   let cur = null;
   // actions (voliteľné): log prevzatý pri návrate do hry (rejoin) – záznam
   // pokračuje od miesta, kde preživší hráč skončil.
-  function start(seed, meta, actions) {
+  // memOnly: záznam len v pamäti (hry botov v ?botloop nezahltia posledných 10 hier)
+  function start(seed, meta, actions, memOnly) {
     cur = { id: Date.now(), date: new Date().toISOString(), seed, ...meta, actions: (actions || []).slice() };
+    if (memOnly) Object.defineProperty(cur, "memOnly", { value: true }); // nejde do JSON
     persist();
   }
   function current() { return cur; }
@@ -43,10 +47,10 @@ const GameLog = (() => {
     cur.actions.push(entry);
     persist();
     // hostiteľ sieťovej hry: rovnaké poradie akcií dostanú aj diváci
-    if (mode === "net" && !spectating) Net.feedSpectators(entry);
+    if (!spectating) Net.feedSpectators(entry); // bez divákov nič nerobí
   }
   function persist() {
-    if (!cur) return;
+    if (!cur || cur.memOnly) return;
     try {
       const all = JSON.parse(localStorage.getItem(KEY) || "[]").filter(g => g.id !== cur.id);
       all.push(cur);
@@ -223,7 +227,7 @@ let playerRoundActions = [];
 let lastPlayerRound = [];
 
 function doAction(name, ...args) {
-  if (spectating) return null; // divák nehrá
+  if (watchOnly()) return null; // divák nehrá
   const desc = actionDesc(name, args);
   const round = state.round; // kolo PRED akciou – súper ju aplikuje v rovnakom
   const ev = Engine[name](state, MY, ...args);
@@ -464,14 +468,14 @@ function renderBanBox() {
 }
 
 function banResultMsg(ev) {
-  const by = !ev.by ? "" : spectating ? ` (${names[ev.by] || ev.by})` : ` (${t(ev.by === MY ? L.banByMe : L.banByOpp)})`;
+  const by = !ev.by ? "" : watchOnly() ? ` (${names[ev.by] || ev.by})` : ` (${t(ev.by === MY ? L.banByMe : L.banByOpp)})`;
   return `🚫 ${t(L.banResult)} ${Cards.RACE_ICON[ev.race]} ${Cards.RACES_NOM[ev.race][I18N.lang]}${by}`;
 }
 
 // Fáza BAN: overlay s trojicou rás pre mňa; po výbere čakáme na súpera.
 function renderBan() {
   const ov = $("banOverlay");
-  if (!state || state.phase !== "ban" || spectating) { ov.classList.add("hidden"); return; }
+  if (!state || state.phase !== "ban" || watchOnly()) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   const b = state.ban, mine = b.picks[MY];
   $("banTitle").textContent = t(L.banTitle);
@@ -579,12 +583,7 @@ function netHandlers() {
     },
     // Diváci: počet v hlavičke chatu + oznam, kto prišiel/odišiel.
     onSpectators: specsInfo,
-    getSpectate: () => {
-      const g = GameLog.current();
-      if (!g || !state || state.phase === "over") return null;
-      return { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, raceCap: g.raceCap || null, exp: g.exp || null,
-        actions: g.actions, chat: chatHistoryFor() };
-    },
+    getSpectate: () => (state && state.phase !== "over" ? spectateData() : null),
     // Kamarát prepol aplikáciu: bublina visí, kým sa nevráti alebo nevyprší limit.
     onPeerAway: limit => {
       if (mode !== "net" || !state || state.phase === "over") return;
@@ -725,6 +724,10 @@ function backToPick() {
   if (!wasSpec) clearRejoin(); // divák nemá čo obnovovať – rejoin info hráča ostáva
   state = null;
   spectating = false;
+  specPending = 0;
+  setAnimSpeed(animSpeed); // zrušiť zrýchlenie dobiehania diváka
+  botLoop = false;
+  document.body.classList.remove("botloop");
   names = {};
   document.body.classList.remove("spectating");
   $("specSwapBtn").classList.add("hidden");
@@ -772,7 +775,10 @@ function specHandlers() {
     onSpecAction: a => {
       const [actor, name, ...args] = a;
       if (name === "doBattle") return; // boj si divák odohrá sám (driveFlow)
-      remoteQueue = remoteQueue.then(() => applySpec(actor, name, args)).catch(err => showFatal(t(L.netDesync), err));
+      specPending++;
+      specCatchUp();
+      remoteQueue = remoteQueue.then(() => applySpec(actor, name, args)).catch(err => showFatal(t(L.netDesync), err))
+        .finally(() => { specPending--; specCatchUp(); });
     },
     onSpecLost: () => { if (spectating && state && state.phase !== "over") log(t(L.netReconnecting)); },
     onChat: (text, m) => {
@@ -801,11 +807,23 @@ function specHandlers() {
   };
 }
 
+let specSeed = null; // seed sledovanej hry (iný seed = nová hra)
+// Divák zaostáva (pomalé zariadenie, uspatá záložka): keď čaká veľa akcií,
+// animácie (aj boj) idú zrýchlene, kým nedobehne hru.
+const SPEC_LAG = 6;
+let specPending = 0;
+function specCatchUp() {
+  setAnimSpeed(animSpeed);
+  if (spectating && specPending > SPEC_LAG) ANIM *= 0.12;
+}
 function specInit(msg) {
   if (!spectating) return;
   if (msg.v !== APP_V) { showFatal(t(L.verWarn), `${msg.v} vs ${APP_V}`); return; }
   const s = rebuildFromLog(msg.seed, msg.mut, msg.ban, msg.trinkets, msg.actions, msg.raceCap, msg.exp);
   const first = !state;
+  // hra botov (?botloop) po konci začne novú – rovnaké spojenie, nový log
+  const newGame = !first && (state.phase === "over" || msg.seed !== specSeed);
+  specSeed = msg.seed;
   fatalShown = false;
   state = s;
   names = Net.info().names;
@@ -826,6 +844,9 @@ function specInit(msg) {
       else if (m.from === "p1" || m.from === "p2") chatAdd("opp", String(m.name || names[m.from] || m.from).slice(0, 24), text);
     }
     chatAdd("sys", "", t(L.specWelcome).replace("{a}", names.p1 || "p1").replace("{b}", names.p2 || "p2"));
+  } else if (newGame) {
+    enterGameScreen();
+    chatAdd("sys", "", t(L.specWelcome).replace("{a}", names.p1 || "p1").replace("{b}", names.p2 || "p2"));
   } else {
     log(t(L.netResumed));
   }
@@ -835,10 +856,19 @@ function specInit(msg) {
 
 async function applySpec(actor, name, args) {
   if (!spectating || !state || state.phase === "over" || fatalShown) return;
-  if ((actor !== "p1" && actor !== "p2") || typeof Engine[name] !== "function" || name === "botTurn") {
+  if ((actor !== "p1" && actor !== "p2") || (name !== "botTurn" && typeof Engine[name] !== "function")) {
     throw new Error(`divák: neznáma akcia ${actor} ${name}`);
   }
-  const ev = Engine[name](state, actor, ...args);
+  // ťah bota (hra botov ?botloop): bot je deterministický, divák ho odohrá sám
+  if (name === "botTurn") {
+    busy = true;
+    await playOppEvents(Bot.botTurn(state, actor, args[0] || "hard"), actor);
+    renderAll();
+    await driveFlow();
+    return;
+  }
+  busy = true;
+  const ev = await playWatched(actor, name, args, () => { const e = Engine[name](state, actor, ...args); renderAll(); return e; });
   if (!ev) throw new Error(`divák: nelegálna akcia ${actor} ${name} v kole ${state.round}`);
   for (const e of ev) {
     if (e.type === "ban") { log(banResultMsg(e)); if (state.races) log(racesMsg()); continue; }
@@ -849,12 +879,110 @@ async function applySpec(actor, name, args) {
   await driveFlow();
 }
 
-// Divák: ťuk na 🔄 prepne, čiu ruku, obchod a dolný banner vidí.
-$("specSwapBtn").addEventListener("click", () => {
-  if (!spectating || !state || busy) return;
+// Divák / ?botloop: prepnutie POV – čiu ruku, obchod a dolný banner vidím.
+// Ťuk na 🔄 (hlavička / chat) alebo na horného hrdinu. Počas boja nie
+// (animácia beží nad snímkou plôch podľa strán).
+function swapPov() {
+  if (!watchOnly() || !state || $("stage").classList.contains("battle")) return;
   [MY, OPP] = [OPP, MY];
   renderAll();
-});
+  renderPovBtn();
+}
+function renderPovBtn() {
+  const b = $("povBtn");
+  b.classList.toggle("hidden", !watchOnly());
+  if (watchOnly()) b.textContent = `👁 ${names[MY] || MY} 🔄`;
+  b.title = t(L.specSwap);
+}
+$("specSwapBtn").addEventListener("click", swapPov);
+$("povBtn").addEventListener("click", swapPov);
+$("oppHero").addEventListener("click", () => { if (watchOnly()) swapPov(); });
+
+// ---------- Animované akcie pri sledovaní (divák, ?botloop) ----------
+// Akcia hráča, ktorého POV sledujem, vyzerá ako ťah kartou: karta sa zdvihne
+// a letí z obchodu do balíčka (nákup), z ruky na plochu (vyloženie), z ruky/
+// plochy do obchodu (predaj). Kúzlo letí ako pri vlastnom zoslaní. Druhý
+// hráč: jeho nákup zo spoločnej ponuky letí k jeho balíčku, ostatné akcie
+// sú ikonka nad jeho hrdinom. `run` = vykonanie akcie (engine + render).
+const handCardEl = i => $("handEl").querySelector(`.card[data-hidx="${i}"]`);
+const OPP_ACT_ICON = { buyPrivate: "🛒", buySpell: "🛒", playMinion: "🃏", castSpell: "✨", sellCard: "🪙",
+  upgradeTier: "⬆️", refreshShop: "🔄", toggleFreeze: "❄️", toggleFreezeAll: "❄️", discardCard: "🗑️", pickTrinket: "🧿" };
+// Klon karty letí v rámci dosky (karty majú veľkosti v cqh – mimo #stage by sa rozpadli).
+function flyCard(el, from, to, { fade = false, ms = 520 } = {}) {
+  const st = $("stage").getBoundingClientRect();
+  const g = el.cloneNode(true);
+  g.classList.remove("hov", "buyable", "disabled", "watch-pick", "frozen");
+  g.classList.add("fly-card");
+  Object.assign(g.style, {
+    position: "absolute", left: (from.left - st.left) + "px", top: (from.top - st.top) + "px",
+    width: from.width + "px", height: from.height + "px", margin: "0", transform: "none", order: "",
+  });
+  $("stage").appendChild(g);
+  const dx = to.left + to.width / 2 - (from.left + from.width / 2);
+  const dy = to.top + to.height / 2 - (from.top + from.height / 2);
+  const sc = fade ? 0.35 : Math.min(to.width / from.width, to.height / from.height) || 1;
+  if (!g.animate) { g.remove(); return Promise.resolve(); }
+  // koniec podľa časovača, nie a.finished – v skrytej záložke animácia stojí
+  // a promise by sa nikdy nevyriešil (fronta diváka by zamrzla)
+  g.animate([
+    { transform: "translate(0,0) scale(1.08)", opacity: 1 },
+    { transform: `translate(${dx * 0.5}px, ${dy * 0.5 - 30}px) scale(${(1 + sc) / 2 + 0.1})`, opacity: 1, offset: 0.5 },
+    { transform: `translate(${dx}px, ${dy}px) scale(${sc})`, opacity: fade ? 0 : 1 },
+  ], { duration: ms * ANIM, easing: "cubic-bezier(.35,.1,.35,1)", fill: "forwards" });
+  return sleep(ms).then(() => g.remove());
+}
+async function playWatched(actor, name, args, run) {
+  const mine = actor === MY;
+  const p = state[actor];
+  let src = null, uid = null;
+  if (name === "buyCommon") src = $("commonsRow").children[args[0]];
+  else if (mine) {
+    if (name === "buyPrivate") src = $("privRow").children[args[0]];
+    else if (name === "buySpell") src = $("privRow").querySelector(".spell-slot");
+    else if (name === "playMinion" || name === "castSpell" || name === "discardCard") {
+      src = handCardEl(args[0]);
+      uid = p.hand[args[0]] && p.hand[args[0]].uid;
+    } else if (name === "sellCard") src = args[0] === "hand" ? handCardEl(args[1]) : $("myBoard").children[args[1]];
+  }
+  const from = src && src.getBoundingClientRect();
+  if (src && from.width) {
+    src.classList.add("watch-pick"); // „prst“ kartu zdvihne
+    await sleep(380);
+  }
+  const rows = $("shopPanel").querySelector(".shop-rows");
+  if (mine && name === "refreshShop" && rows.animate) {
+    rows.animate([{ opacity: 1 }, { opacity: 0.15 }], { duration: 220 * ANIM, fill: "forwards" });
+    await sleep(220);
+  }
+  const ev = run();
+  if (!ev) return ev;
+  const fly = (to, opts) => (src && from.width && to && to.width ? flyCard(src, from, to, opts) : Promise.resolve());
+  if (name.startsWith("buy")) {
+    if (mine) Sfx.coin();
+    await fly($(mine ? "myDeckBox" : "oppDeckBox").getBoundingClientRect(), { fade: true });
+  } else if (mine && name === "playMinion") {
+    const dest = uid != null && cardById(uid);
+    if (dest) dest.style.visibility = "hidden";
+    await fly((dest || $("myBoard")).getBoundingClientRect());
+    if (dest) dest.style.visibility = "";
+  } else if (mine && name === "sellCard") {
+    Sfx.coin();
+    await fly($("shopPanel").getBoundingClientRect(), { fade: true });
+  } else if (mine && name === "discardCard") {
+    await fly($("myDiscardBox").getBoundingClientRect(), { fade: true });
+  } else if (mine && name === "castSpell") {
+    const sp = ev.find(e => e.type === "spell" && e.pid === actor);
+    if (sp) await playSpellCast(sp, from);
+  } else if (mine && name === "refreshShop") {
+    if (rows.animate) rows.animate([{ opacity: 0.15 }, { opacity: 1 }], { duration: 260 * ANIM, fill: "forwards" });
+  } else if (mine && name === "upgradeTier") {
+    floatText($("myHero"), "⬆️ ⭐", true);
+    Sfx.evolve();
+  } else if (!mine && OPP_ACT_ICON[name]) {
+    floatText($("oppHero"), OPP_ACT_ICON[name], true);
+  }
+  return ev;
+}
 
 // ---------- Herný tok ----------
 async function driveFlow() {
@@ -863,19 +991,22 @@ async function driveFlow() {
     if (state.phase === "ban") {
       // Bot si vyberie hneď (výber sa ukáže až po vylosovaní); hráč klikne
       // v overlayi – jeho pickBan hru rozbehne (startRound je v engine).
-      if (mode === "bot" && !state.ban.picks[OPP]) {
-        const race = Bot.pickBan(state, OPP);
-        GameLog.push(OPP, "pickBan", [race]);
-        const ev = Engine.pickBan(state, OPP, race);
+      const botPid = mode !== "bot" ? null : !state.ban.picks[OPP] ? OPP : botLoop && !state.ban.picks[MY] ? MY : null;
+      if (botPid) {
+        if (botLoop) await sleep(1500);
+        const race = Bot.pickBan(state, botPid);
+        GameLog.push(botPid, "pickBan", [race]);
+        const ev = Engine.pickBan(state, botPid, race);
         if (ev && ev.some(e => e.type === "ban")) { act(ev); continue; }
+        if (botLoop) continue; // druhý bot ešte vyberá
       }
       busy = false;
       renderAll();
       return; // čaká sa na výber rasy
     }
     if (state.phase === "battle") { await runBattle(); continue; }
-    if (state.active === OPP || spectating) {
-      if (mode === "bot") { await runBotTurn(); continue; }
+    if (state.active === OPP || watchOnly()) {
+      if (mode === "bot") { await runBotTurn(state.active); continue; }
       busy = false;
       renderAll();
       return; // sieťová hra: čakáme na akcie súpera
@@ -908,7 +1039,7 @@ function showTauntBubble(text, ms, mine, spec) {
   setTimeout(() => { el.classList.add("out"); setTimeout(() => el.remove(), 450); }, ms || 3800);
 }
 function botTaunt(kind, chance) {
-  if (mode !== "bot" || !state || state.phase === "over" || botMuted) return;
+  if (mode !== "bot" || botLoop || !state || state.phase === "over" || botMuted) return;
   if (difficulty === "claude") return; // Claude trash-talkuje vlastnými hláškami
   const now = Date.now();
   if (now - lastTauntAt < 6000) return; // nespamuj
@@ -996,9 +1127,16 @@ function chatHistoryFor() {
     m.kind === "spec" ? { from: "spec", name: m.who || "", text: m.text }
       : { from: m.from, name: names[m.from] || "", text: m.text });
 }
+// Pre nového diváka: log hry (ako rejoin) + história chatu.
+function spectateData() {
+  const g = GameLog.current();
+  if (!g || !state) return null;
+  return { seed: g.seed, mut: g.mut !== false, ban: g.ban === true, trinkets: g.trinkets === true, raceCap: g.raceCap || null, exp: g.exp || null,
+    actions: g.actions, chat: chatHistoryFor() };
+}
 // Diváci prišli/odišli: počet v hlavičke chatu + oznam.
 function specsInfo(x) {
-  if (mode !== "net" || !state) return;
+  if ((mode !== "net" && !botLoop) || !state) return;
   $("chatSpecs").textContent = x.n ? `👁 ${x.n}` : "";
   $("chatSpecs").title = t(L.specCount);
   if (x.name) say("sys", "", `👁 ${x.name} ${t(x.joined ? L.specJoined : L.specLeft)}`, 3000);
@@ -1049,20 +1187,63 @@ async function sendChat() {
   $("chatSend").disabled = false;
 }
 
-async function runBotTurn() {
+// pid: v ?botloop hrá bot aj za p1
+async function runBotTurn(pid = OPP) {
+  if (botLoop) return runLoopBotTurn(pid);
   busy = true;
   renderAll();
-  if (difficulty === "claude") { await runClaudeTurn(); return; }
+  if (difficulty === "claude" && !botLoop) { await runClaudeTurn(); return; }
   botTaunt("turn", 0.3);
   await sleep(600);
-  GameLog.push(OPP, "botTurn", [difficulty]);
-  const events = Bot.botTurn(state, OPP, difficulty);
-  await playOppEvents(events);
+  GameLog.push(pid, "botTurn", [difficulty]);
+  const events = Bot.botTurn(state, pid, difficulty);
+  await playOppEvents(events, pid);
 }
 
-async function playOppEvents(events) {
+// ?botloop: ťah bota po jednotlivých akciách (každá ide do GameLog-u aj
+// divákom a dá sa animovať). Plán sa spočíta na kópii stavu prehranej
+// z logu (engine je deterministický) a potom sa akcia po akcii zahrá
+// naostro. Bot bez handicapov (Bot.HYGIENE = hard bez bonusov) – férový zápas.
+function planBotTurn(pid) {
+  const g = GameLog.current();
+  const copy = rebuildFromLog(g.seed, g.mut, g.ban, g.trinkets, g.actions, g.raceCap, g.exp);
+  const plan = [];
+  Bot.withExecutor((name, st, who, ...args) => {
+    const ev = Engine[name](st, who, ...args);
+    if (ev) plan.push([name, args]);
+    return ev;
+  }, () => Bot.completeTurn(copy, pid, Bot.HYGIENE, () => {}));
+  plan.push(["endShopTurn", []]);
+  return plan;
+}
+async function runLoopBotTurn(pid) {
+  busy = true;
+  renderAll();
+  await sleep(700);
+  let plan = [];
+  try { plan = planBotTurn(pid); } catch (e) { console.warn("[arena] botloop: plán zlyhal", e); }
+  for (const [name, args] of plan) {
+    if (!botLoop || state.phase !== "shop" || state.active !== pid) break;
+    const ev = await playWatched(pid, name, args, () => {
+      const e = Engine[name](state, pid, ...args);
+      if (e) GameLog.push(pid, name, args);
+      renderAll();
+      return e;
+    });
+    if (!ev) { console.warn("[arena] botloop: akcia z plánu neprešla", name, args); break; }
+    for (const e of ev) { const m = oppEventMsg(e, pid); if (m) log(m); }
+    if (name !== "endShopTurn") await sleep(550);
+  }
+  // poistka: ťah musí skončiť, inak by hra stála
+  if (botLoop && state.phase === "shop" && state.active === pid) {
+    if (state.pendingDiscover) { Engine.pickDiscover(state, pid, 0); GameLog.push(pid, "pickDiscover", [0]); }
+    if (Engine.endShopTurn(state, pid)) GameLog.push(pid, "endShopTurn", []);
+  }
+}
+
+async function playOppEvents(events, who = OPP) {
   for (const ev of events) {
-    const msg = oppEventMsg(ev);
+    const msg = oppEventMsg(ev, who);
     if (msg) { log(msg); renderAll(); await sleep(650); }
   }
 }
@@ -1102,8 +1283,8 @@ const petGiftMsg = ev => `${t(L.petGiftMsg)} ${ev.n > 1 ? ev.n + "× " : ""}${Ca
 // who = čie eventy sa hlásia (default súper; divák hlási oboch hráčov).
 function oppEventMsg(ev, who = OPP) {
   if (ev.type === "ban") return banResultMsg(ev);
-  if (ev.type === "petGift" && ev.pid === MY && !spectating) return petGiftMsg(ev);
-  if (ev.type === "banPick" && ev.pid === who) return spectating ? null : t(L.banOppPicked);
+  if (ev.type === "petGift" && ev.pid === MY && !watchOnly()) return petGiftMsg(ev);
+  if (ev.type === "banPick" && ev.pid === who) return watchOnly() ? null : t(L.banOppPicked);
   if (ev.pid !== who) return null;
   const def = ev.defId ? Cards.byId[ev.defId] : null;
   const name = def ? Cards.nameOf(def, ev.rank || 1, I18N.lang) : "";
@@ -1120,6 +1301,7 @@ function oppEventMsg(ev, who = OPP) {
     default: return null;
   }
   // v sieťovej hre je súper človek, nie robot (s menom, keď ho poznáme)
+  if (botLoop) return msg.replace("🤖", `🤖 ${names[who] || who}`);
   return mode === "net" ? msg.replace("🤖", names[who] ? `🧑 ${names[who]}` : "🧑") : msg;
 }
 
@@ -1130,7 +1312,7 @@ function sabotageMsg(ev) {
 }
 
 // Meno strany v logu boja: Ty / Súper; divák vidí mená hráčov.
-const sideName = pid => spectating ? (names[pid] || pid) : t(pid === MY ? L.you : L.opp);
+const sideName = pid => watchOnly() ? (names[pid] || pid) : t(pid === MY ? L.you : L.opp);
 
 // ---------- Boj ----------
 async function runBattle() {
@@ -1179,7 +1361,7 @@ async function runBattle() {
   for (const ev of events) {
     if (ev.type === "bossStart") { skip = ev.pid !== MY; continue; }
     if (ev.type === "bossEnd") {
-      if (!skip) { log(spectating ? `🗿 ${sideName(MY)}: ${ev.dmg}` : `🗿 ${t(L.bossYourDmg)} ${ev.dmg}`); await sleep(500); }
+      if (!skip) { log(watchOnly() ? `🗿 ${sideName(MY)}: ${ev.dmg}` : `🗿 ${t(L.bossYourDmg)} ${ev.dmg}`); await sleep(500); }
       skip = false;
       continue;
     }
@@ -1189,8 +1371,8 @@ async function runBattle() {
         const mine = ev.dmg[MY], theirs = ev.dmg[OPP];
         fb.textContent = `🗿 ${sideName(MY)} ${mine} : ${theirs} ${sideName(OPP)}`;
         fb.classList.remove("small");
-        if (ev.winner === MY && !spectating) Sfx.evolve();
-        if (spectating) {
+        if (ev.winner === MY && !watchOnly()) Sfx.evolve();
+        if (watchOnly()) {
           log(`🗿 ${sideName(OPP)}: ${theirs}`);
           if (ev.winner) log(`${ev.tie ? t(L.bossTie) + " " : ""}🎁 ${sideName(ev.winner)}`);
         } else {
@@ -1607,12 +1789,12 @@ async function runBattle() {
         break;
       }
       case "sabotage": {
-        const m = spectating ? null : sabotageMsg(ev);
+        const m = watchOnly() ? null : sabotageMsg(ev);
         if (m) log(m);
         break;
       }
       case "petGift":
-        if (ev.pid === MY && !spectating) log(petGiftMsg(ev));
+        if (ev.pid === MY && !watchOnly()) log(petGiftMsg(ev));
         break;
       case "gameOver":
         endBattleUI();
@@ -1943,6 +2125,7 @@ function renderAll() {
   renderDiscover();
   renderDeckList();
   markTargeting();
+  renderPovBtn();
 }
 
 // ---------- Môj balíček – zoznam vlastných kariet ----------
@@ -2049,7 +2232,7 @@ function renderCorner(el, icon, label, count) {
 function renderHero(el, p) {
   // mená prichádzajú zo siete – do innerHTML len escapované
   const short = n => (n.length > 14 ? n.slice(0, 13) + "…" : n).replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
-  const hero = spectating
+  const hero = watchOnly()
     ? { emoji: "🧑", name: short(names[p.id] || p.id) }
     : p.id === MY
       ? { emoji: "🙂", name: t(L.heroYou) }
@@ -2117,7 +2300,7 @@ const trinketArt = id => `assets/trinkets/${TRINKET_ART_ALIAS[id] || id}.webp`;
 function renderTrinketOffer() {
   const ov = $("trinketOverlay");
   const p = state && state[MY];
-  const show = p && state.phase === "shop" && state.active === MY && p.trinketOffer && !busy && !spectating;
+  const show = p && state.phase === "shop" && state.active === MY && p.trinketOffer && !busy && !watchOnly();
   if (!show) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("trinketTitle").textContent = t(L.trinketTitle);
@@ -2185,12 +2368,12 @@ function renderHand() {
 
 function renderShop() {
   const p = state[MY];
-  const myTurn = state.active === MY && !busy && !spectating;
+  const myTurn = state.active === MY && !busy && !watchOnly();
   $("moneyEl").textContent = `🪙 ${p.money}`;
   $("auraEl").textContent = auraText(p);
   const banner = $("turnBanner");
   const bossTag = Engine.isBossRound(state) ? ` · ${t(L.bossRoundTag)}` : "";
-  if (spectating) {
+  if (watchOnly()) {
     // divák: kto práve nakupuje (menom)
     const who = state.active && (names[state.active] || state.active);
     banner.textContent = `${t(L.round)} ${state.round}${bossTag}${who ? ` · 🛒 ${who}` : ""}`;
@@ -2499,7 +2682,7 @@ function startDrag(e, card, src) {
   }
   hidePreview();
   e.preventDefault();
-  const canDrag = !busy && !spectating && state && state.active === MY && !state.pendingDiscover;
+  const canDrag = !busy && !watchOnly() && state && state.active === MY && !state.pendingDiscover;
   press = { card, src, x0: e.clientX, y0: e.clientY, canDrag, fan };
   if (!fan) press.longTimer = setTimeout(() => {
     if (press && !drag && card._previewData) {
@@ -3018,7 +3201,7 @@ function renderDiscover() {
   const pd = state.pendingDiscover;
   // Počas animácie (busy) nie: odmena za DMG Meter vzniká v engine už pri
   // doBattle (nové kolo), overlay sa ukáže až po dohraní boja.
-  if (!pd || pd.pid !== MY || busy || spectating) { ov.classList.add("hidden"); return; }
+  if (!pd || pd.pid !== MY || busy || watchOnly()) { ov.classList.add("hidden"); return; }
   ov.classList.remove("hidden");
   $("discoverTitle").textContent = pd.boss ? `${t(L.bossRewardTitle)} ${pd.tier}` : t(L.discoverTitle);
   const row = $("discoverRow");
@@ -3032,7 +3215,7 @@ function renderDiscover() {
 }
 
 async function onEndTurn() {
-  if (busy || spectating || state.active !== MY || state.pendingDiscover) return;
+  if (busy || watchOnly() || state.active !== MY || state.pendingDiscover) return;
   act(doAction("endShopTurn"));
   await deckGrowQ; // Mravce (Hmyz): rast v balíčku dohrá pred bojom
   await driveFlow();
@@ -3042,9 +3225,10 @@ function showOver() {
   const ov = $("overOverlay");
   ov.classList.remove("hidden");
   const w = state.winner;
-  if (spectating) {
+  if (watchOnly()) {
     $("overTitle").textContent = w === "draw" ? t(L.drawGame) : `🏆 ${names[w] || w} ${t(L.specWon)}`;
     $("overMsg").textContent = `${t(L.round)}: ${state.round}`;
+    if (botLoop) { Lobby.update(); setTimeout(newBotGame, BOT_LOOP_PAUSE); }
     return;
   }
   if (mode === "net") clearRejoin();
@@ -3112,7 +3296,7 @@ $("tierBtn").addEventListener("click", () => act(doAction("upgradeTier")));
 $("buyBackBtn").addEventListener("click", () => act(doAction("buyBack")));
 $("overAgain").addEventListener("click", () => {
   $("overOverlay").classList.add("hidden");
-  if (mode === "net") backToPick();
+  if (mode === "net" || botLoop) backToPick();
   else startGame();
 });
 $("muteBtn").textContent = Sfx.muted ? "🔇" : "🔊";
@@ -3177,7 +3361,8 @@ let gamesList = null; // null = zoznam ešte neprišiel
 let gamesOpen = null; // rozbalený kód
 // Hostiteľ (peer transport) hlási svoju rozohranú hru.
 function lobbyGame() {
-  if (mode !== "net" || spectating || !state || state.phase === "over" || fatalShown) return null;
+  if (spectating || !state || fatalShown) return null;
+  if (!botLoop && (mode !== "net" || state.phase === "over")) return null;
   const i = Net.info();
   if (i.transport !== "peer" || i.role !== "host" || !i.code) return null;
   return {
@@ -3200,7 +3385,10 @@ function renderGames() {
     row.className = "game-row" + (open ? " open" : "");
     const head = document.createElement("button");
     head.className = "game-head";
-    head.innerHTML = `<span class="gc">🎮 ${g.code}</span><span class="gr">${t(L.round)} ${g.round}</span><span class="gs">${g.specs ? "👁 " + g.specs : ""}</span><span class="gx">${open ? "▴" : "▾"}</span>`;
+    // „meno vs. meno" – mená idú zo siete, preto textContent
+    head.innerHTML = `<span class="gc"></span><span class="gr">${t(L.round)} ${g.round}</span><span class="gs">${g.specs ? "👁 " + g.specs : ""}</span><span class="gx">${open ? "▴" : "▾"}</span>`;
+    head.querySelector(".gc").textContent = `${g.names[0] || "?"} vs. ${g.names[1] || "?"}`;
+    head.title = `🎮 ${g.code}`;
     head.addEventListener("click", () => { gamesOpen = open ? null : g.code; renderGames(); });
     row.appendChild(head);
     if (open) {
@@ -3237,7 +3425,51 @@ function watchGames() {
 Lobby.setGame(lobbyGame);
 Lobby.start({ peerOpts: Net.peerOpts });
 
+// ---------- Boti hrajú dookola (index.html?botloop) ----------
+// Na testovanie divákov: dvaja hard boti hrajú hru za hrou, stránka drží kód
+// miestnosti len pre divákov a hra je stále v zozname „Práve sa hrá“.
+// ?code=1234 = pevný kód. Bez okna: npm run botloop (headless Chrome/Edge).
+const BOT_NAMES = ["Robo Bruno", "Robo Ferko", "Robo Zuzka", "Robo Maťo", "Robo Lili", "Robo Dodo", "Robo Kiko", "Robo Mia"];
+const BOT_LOOP_PAUSE = 15000; // pauza medzi hrami (diváci vidia výsledok)
+const randCode = () => String(1000 + Math.floor(Math.random() * 9000));
+function startBotLoop() {
+  botLoop = true;
+  mode = "bot";
+  difficulty = "hard"; // bez localStorage – hráčova voľba ostáva
+  MY = "p1"; OPP = "p2";
+  document.body.classList.add("spectating", "botloop");
+  const want = new URLSearchParams(location.search).get("code");
+  const host = code => Net.hostShow(code, {
+    getSpectate: spectateData,
+    onChat: (text, m) => say("spec", m.name, text, 7000),
+    onSpectators: specsInfo,
+    // kód už niekto má → iný kód
+    onPeerError: kind => { if (kind === "unavailable-id" && botLoop) host(randCode()); },
+  }, { v: APP_V });
+  host(/^\d{4}$/.test(want || "") ? want : randCode());
+  newBotGame();
+}
+function newBotGame() {
+  if (!botLoop) return;
+  const pool = BOT_NAMES.slice();
+  const a = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+  names = { p1: a, p2: pool[Math.floor(Math.random() * pool.length)] };
+  const seed = Math.floor(Math.random() * 2 ** 31);
+  const meta = { ban: true, trinkets: true, raceCap: Engine.RACE_CAP, exp: null };
+  state = Engine.newGame(Engine.seededRng(seed), null, meta);
+  GameLog.start(seed, { mode: "botloop", mut: false, ...meta }, null, true);
+  busy = false;
+  enterGameScreen();
+  setChat(true);
+  chatAdd("sys", "", `🤖 ${names.p1} vs. ${names.p2}`);
+  Net.showGame(names, spectateData());
+  Lobby.update();
+  if (state.phase !== "ban") act(Engine.startRound(state));
+  driveFlow();
+}
+
 applyI18n();
 renderRules();
 renderPick();
 watchGames();
+if (new URLSearchParams(location.search).has("botloop")) startBotLoop();

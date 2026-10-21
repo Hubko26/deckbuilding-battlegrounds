@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=b0e086da">
+  <link rel="stylesheet" href="style.css?v=5783bda8">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -169,6 +169,8 @@
           <div class="chat-head">
             <span id="chatTitle" class="chat-title"></span>
             <span id="chatSpecs" class="chat-specs"></span>
+            <!-- divák / ?botloop: čí pohľad sledujem (ťuk = druhý hráč) -->
+            <button id="povBtn" class="pov-btn hidden"></button>
             <button id="chatClose" class="chat-close" aria-label="Zavrieť">✖</button>
           </div>
           <div id="chatLog" class="chat-log"></div>
@@ -236,10 +238,10 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=57c7a631"></script>
+  <script src="version.js?v=2b6f195b"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
   <script src="src/i18n.js?v=f09c54da"></script>
-  <script src="src/net.js?v=5811b3c7"></script>
+  <script src="src/net.js?v=1bcf318d"></script>
   <script src="src/lobby.js?v=da80aa92"></script>
   <script src="src/sfx.js?v=00b87990"></script>
   <script src="src/cards.js?v=b09f4aa3"></script>
@@ -247,7 +249,7 @@
   <script src="src/engine.js?v=a07ca8e9"></script>
   <script src="src/bot.js?v=f3186704"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=dab3cbc2"></script>
+  <script src="src/game.js?v=a5efcd98"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=fd92db4f"></script>

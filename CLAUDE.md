@@ -37,6 +37,9 @@ commity, UI) je slovenčina.
   (posledných 10 hier); hráč ich stiahne v konzole prehliadača cez
   `arenaLogSave()`. Pri hlásení chyby si vyžiadaj tento súbor.
 - `node server.mjs` – lokálny server na `http://localhost:5180` (aj LAN multiplayer).
+- `npm run botloop [-- local] [code=1234]` – dvaja hard boti hrajú dookola
+  v headless Chrome/Edge (GitHub Pages, s `local` localhost:5180); hra je
+  stále v zozname „Práve sa hrá" na sledovanie. To isté v okne: `?botloop`.
 - Žiadny build, lint ani bundler – súbory sa servírujú tak, ako sú.
 - Pre-commit hook (`tools/bump-version.py --stage`) prepočíta `?v=` hashe
   v index.html a zapíše čas buildu do `version.js`; úvodná obrazovka ho
