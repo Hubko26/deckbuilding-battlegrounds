@@ -43,6 +43,8 @@ commity, UI) je slovenčina.
   Výsledok každej hry (rasy, víťaz, kolo, plochy, trinkety + seed a akcie)
   pripíše do `data/botloop/results.jsonl` (gitignore, riadok = hra).
   V PowerShelli s blokovanými skriptmi spúšťaj priamo `node tools/botloop.mjs`.
+  Nonstop mimo Claude appky: `botloop.bat` (vlastné okno, po páde reštart).
+  Proces beží na tomto PC – GitHub Pages len servíruje súbory.
 - `npm run botstats [-- súbor.jsonl since=2026-10-21 v=<verzia>]` – súhrn
   hier botov: winrate rás, matica rasa vs. rasa, karty na víťaznej ploche.
   Replay jednej hry: `npm run replay -- data/botloop/results.jsonl <id>`.
