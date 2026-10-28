@@ -1539,9 +1539,21 @@ len staty + keyword badge.
   (bez závislostí). Klienti replikujú akcie: oba behy dostanú rovnaký seed
   a aplikujú rovnaké Engine volania, stav je deterministicky identický
   (žiadne posielanie stavu). Server spáruje prvých dvoch čakajúcich hráčov.
+- **Herná plocha (2026-10-28)** je celá HTML/CSS – žiadny obrázok dosky:
+  drevený rám (`#stage`), pergamen a pásy slotov (`.arena-deco`), stuhy
+  hrdinov so zlatým štítom tieru, rámiky balíčkov/kôpok. Doska vypĺňa celú
+  voľnú plochu okna (pomer strán nie je pevný); veľkosti vnútri sú
+  v jednotke `--u` = 1 % výšky dosky, najviac však šírka / návrhový pomer
+  (PC 1.783, mobil na šírku 2.176, na výšku 0.563), takže karty nikdy
+  nepretečú. Úzka doska na PC (pomer < 1.55, container query) má obchod
+  v 2 riadkoch ako mobil na šírku. Rozloženie PC: mriežka [ladenie Hubko |
+  log + doska | môj balíček na celú výšku + chat], stránka bez scrollu;
+  okno < 1000 px alebo nízke: balíček z hlavičky ako dialóg. Mobil (☰):
+  doska presne na celý displej. Šach je plávajúci dialóg (♟️, presun
+  ťahom za hlavičku, ✖ skryje), nie stĺpec vedľa dosky.
 - **Chat okno** (sieť, divák, Claude mód): spoločný chat hráčov, divákov
   (fialovo) a Clauda. Na PC (široké okno na šírku, myš) je vpravo vedľa
-  dosky v stĺpci `#sideCol` – šach navrch, chat pod ním, správy bez bublín.
+  dosky v stĺpci `#sideCol` pod balíčkom, správy bez bublín.
   Na mobile ho otvára 🗨️ v ☰ menu (panel cez obrazovku); kým je zavretý,
   správa ukáže aj bublinu pri hrdinovi (divák fialovú) a červenú bodku na ☰.
   Obyčajný bot chat nemá – jeho hlášky ostávajú bublinami. Správa

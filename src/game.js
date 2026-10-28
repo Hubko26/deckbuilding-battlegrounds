@@ -469,7 +469,6 @@ function enterGameScreen() {
   $("newGameBtn").classList.remove("hidden");
   $("overOverlay").classList.add("hidden");
   $("deckOverlay").classList.add("hidden");
-  $("deckDdList").classList.add("hidden");
   Lobby.watch(null); // zoznam hier treba len na úvodnej obrazovke
   logClear();
   renderMutator();
@@ -1109,7 +1108,7 @@ let lastBattleNote = null;
 // na ☰ (aby hráč vedel, že niečo prišlo). Obyčajný bot chat nemá – jeho
 // hlášky ostávajú bublinami.
 // Druhy: me / opp (hráči), spec (divák), bot (Claude), sys (oznamy siete).
-const SIDE_MQ = matchMedia("(orientation: landscape) and (pointer: fine) and (min-width: 1000px)");
+const SIDE_MQ = matchMedia("(orientation: landscape) and (pointer: fine) and (min-width: 1000px) and (min-height: 601px)");
 const CHAT_KEEP = 80;
 const CLAUDE_LABEL = "🤖 Claude";
 let chatMsgs = []; // { kind, label, text, from, who } – história pre nových divákov
@@ -1122,7 +1121,6 @@ function setChat(on, placeholder) {
   if (!on) setChatOpen(false);
   if (placeholder) $("chatInput").placeholder = placeholder;
   $("chatTitle").textContent = t(L.chatTitle);
-  if (state) positionDeckDd();
 }
 function chatClear() {
   chatMsgs = [];
@@ -2179,7 +2177,7 @@ function renderAll() {
 }
 
 // ---------- Môj balíček – zoznam vlastných kariet ----------
-// Desktop: dropdown vpravo vedľa dosky (#deckDd), mobil: dialóg z ☰ menu
+// PC: stĺpec vpravo od dosky na celú výšku (#deckDd), mobil: dialóg z ☰ menu
 // (#deckOverlay). Riadok = miniatúra + meno (×počet); hover / podržanie
 // ukáže veľkú kartu s popisom. Balíček je zoradený (tier, meno) – poradie
 // ťahania sa neprezradí. Kôpka je druhá sekcia.
@@ -2236,32 +2234,13 @@ function fillDeckList(el) {
 }
 
 function renderDeckList() {
-  positionDeckDd();
   const dd = $("deckDdList"), ov = $("deckOvList");
-  if (!dd.classList.contains("hidden")) fillDeckList(dd);
+  // stĺpec vpravo je len na PC (na mobile display:none → offsetParent null)
+  if (!dd.classList.contains("hidden") && dd.offsetParent) fillDeckList(dd);
   if (!$("deckOverlay").classList.contains("hidden")) fillDeckList(ov);
 }
 
-// Dropdown sedí vpravo tesne vedľa dosky; keď sa tam nezmestí (úzke okno),
-// prilepí sa k pravému okraju nad dosku.
-function positionDeckDd() {
-  const dd = $("deckDd"), stage = $("stage");
-  if (!stage.offsetWidth) return;
-  // Voľné miesto vpravo od dosky: dropdown sa zúži až na 150 px; keď ani
-  // to nestačí, prekryje pravý okraj dosky.
-  // pravý stĺpec (šach/chat) zaberá miesto vpravo – dropdown sa zmestí len pred neho
-  const side = $("sideCol").getBoundingClientRect();
-  const edge = side.width ? side.left : window.innerWidth;
-  const avail = edge - stage.getBoundingClientRect().right - 16;
-  const fits = avail >= 150;
-  dd.style.width = (fits ? Math.min(240, avail) : 240) + "px";
-  dd.style.left = fits ? (stage.offsetLeft + stage.offsetWidth + 10) + "px" : "auto";
-  // s pravým stĺpcom prekryje pravý okraj dosky, nie chat
-  const gs = $("gameScreen").getBoundingClientRect();
-  dd.style.right = fits ? "auto" : (side.width ? gs.right - stage.getBoundingClientRect().right + 6 : 6) + "px";
-  dd.style.top = stage.offsetTop + "px";
-}
-
+// Hlavička stĺpca balíčka zbalí / rozbalí zoznam.
 function toggleDeckDd() {
   const list = $("deckDdList");
   list.classList.toggle("hidden");
@@ -3335,7 +3314,8 @@ $("deckDdBtn").addEventListener("click", toggleDeckDd);
 $("deckBtn").addEventListener("click", openDeckOverlay);
 $("deckClose").addEventListener("click", () => { hidePreview(); $("deckOverlay").classList.add("hidden"); });
 $("deckOverlay").addEventListener("click", e => { if (e.target === e.currentTarget) { hidePreview(); e.currentTarget.classList.add("hidden"); } });
-window.addEventListener("resize", () => { if (state) positionDeckDd(); });
+// okno sa zväčšilo na PC rozloženie → stĺpec balíčka sa ukáže a treba ho naplniť
+window.addEventListener("resize", () => { if (state) renderDeckList(); });
 $("endTurnBtn").addEventListener("click", onEndTurn);
 $("evolveOk").addEventListener("click", () => $("evolveOverlay").classList.add("hidden"));
 $("refreshBtn").addEventListener("click", () => act(doAction("refreshShop")));

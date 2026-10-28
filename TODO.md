@@ -32,11 +32,9 @@ Zostáva:
    claude-bot prompt (src/claude-bot.js) nespomína nové mechaniky (Vichor,
    lovec tokenov, chaos spúšťač) – doplniť do textu pravidiel pri ďalšej úprave.
 
-8. Mobil na ležato (landscape na telefóne): rovnaká úprava ako portrét
-   (2026-09-07) – hlavička zbalená do ☰ už platí aj tu, ale rozloženie dosky
-   (PlayGround-mobile-wide.webp) treba prejsť: ruka medzi rámiky, môj board
-   v strede, obchod v 2 riadkoch, karty široké podľa slotu (nie podľa výšky),
-   nech 5 kariet nepretečie. Overiť na reálnom telefóne aj v PWA režime.
+8. Mobil na ležato (landscape na telefóne): doska je od 2026-10-28 HTML/CSS
+   na celý displej (obchod v 2 riadkoch, karty v jednotke --u, nepretečú).
+   Zostáva overiť na reálnom telefóne aj v PWA režime.
 
 9. HOTOVO (2026-09-09): chat v hre po sieti (LAN aj PeerJS) – políčko pod
    doskou, bubliny. Zostáva: na mobile na výšku je políčko pod doskou (treba

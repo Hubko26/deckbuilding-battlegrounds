@@ -1,7 +1,7 @@
 /* Zvieracia aréna – vzhľad.
-   Herná doska = "stage" s pozadím PlayGround.png (desktop, 16:9) alebo
-   PlayGround-mobile.png (portrait). Zóny sú v percentách dosky, veľkosti
-   vnútri dosky v container query jednotkách (cqw/cqh).
+   Herná doska = "stage" kreslená v HTML/CSS (drevený rám, pergamen, stuhy),
+   na celú voľnú plochu. Zóny sú v percentách dosky, veľkosti vnútri dosky
+   v jednotke --u (container query, viď „Doska“).
    Karta = rám assets/card-frame.webp (5:7), art v oblúku, meno na páske,
    rasa · stupeň, text v boxe, útok v kruhu vľavo dole, život v srdci vpravo. */
 * { box-sizing: border-box; }
@@ -46,7 +46,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* Chat s Claudom pod doskou (len Claude mód). */
 .chat-row { display: flex; gap: 6px; width: min(98vw, 480px); margin-top: 4px; }
 /* Ladenie rýchlosti animácií (len „Hubko") – pod hracou plochou. */
-.speed-row { display: flex; gap: 8px; align-items: center; justify-content: center; width: min(98vw, 480px); margin-top: 4px; font-weight: 700; }
+.speed-row { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; justify-content: center; width: 100%; max-width: 480px; font-weight: 700; }
 .speed-row input { flex: 1; }
 .chat-row input {
   flex: 1; font-size: .9rem; padding: 6px 10px; border: 2px solid #9bc;
@@ -64,96 +64,134 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 }
 #peerSetup { margin-top: 8px; }
 
-/* ---------- Doska ---------- */
+/* ---------- Doska ----------
+   Celá aréna je HTML/CSS (žiadny obrázok): drevený rám = #stage, pergamen
+   a pásy slotov = .arena-deco, stuhy hrdinov a rámiky balíčkov kreslia ich
+   vlastné prvky. Doska vypĺňa celú voľnú plochu (rozloženie nižšie), pomer
+   strán teda nie je pevný. Veľkosti vnútri sú v násobkoch --u: 1 % výšky
+   dosky, no najviac toľko, koľko by mala doska v návrhovom pomere strán
+   (PC 1.783 : 1) pri tejto šírke – na užšej doske sa karty zmenšia a
+   nepretečú, na širšej ostanú podľa výšky. Zóny sú v percentách dosky. */
+:root { --u: 1cqh; } /* mimo dosky (fx na body) = pôvodné cqh */
 #gameScreen { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 #stage {
-  position: relative;
-  width: min(98vw, calc(72vh * 1.783));
-  width: min(98vw, calc(72dvh * 1.783));
-  aspect-ratio: 1676 / 940;
-  /* webp ~90 KB namiesto 2 MB PNG – načíta sa aj na pomalej/firemnej sieti;
-     hnedá pod ním je fallback, nech doska nie je „neviditeľná", kým obrázok
-     príde (alebo keď ho sieť zablokuje). */
-  background: #b5854f url("PlayGround.webp") center / 100% 100% no-repeat;
+  --u: min(1cqh, calc(100cqw / 178.3));
+  position: relative; width: 100%; flex: 1 1 auto; min-height: 0;
   container-type: size;
-  border-radius: 12px;
+  border-radius: 18px;
+  background:
+    repeating-linear-gradient(4deg, transparent 0 18px, #3e1d1024 19px 21px, transparent 22px 40px),
+    linear-gradient(90deg, #4a2412, #8c4d26 14%, #6e391d 38%, #945329 62%, #6a3519 86%, #4a2412);
+  box-shadow: 0 0 0 3px #2a130a, inset 0 0 0 3px #e4b45b, inset 0 0 0 6px #5a2b16, 0 10px 26px #0009;
+}
+.arena-deco { position: absolute; inset: 0; pointer-events: none; }
+.arena-deco .felt {
+  position: absolute; inset: 1.8% 1.2%; border-radius: 14px;
+  background:
+    radial-gradient(circle at 50% 52%, transparent 0 calc(13 * var(--u)), #b67a3218 calc(13 * var(--u)) calc(13.5 * var(--u)), transparent calc(13.5 * var(--u))),
+    radial-gradient(ellipse at 50% 50%, #fdebc2 0, #f2d39b 55%, #dcb071 100%);
+  box-shadow: inset 0 0 0 3px #b67a32, inset 0 0 0 6px #ffe9b0, inset 0 0 0 7px #c99245, inset 0 0 calc(5 * var(--u)) #8a5a2a55;
+}
+/* Pásy slotov: hore obchod (v boji súperov board), dole ruka. */
+.arena-deco .rail {
+  position: absolute; border-radius: calc(1.6 * var(--u));
+  background: linear-gradient(#a8703814, #a870382a);
+  box-shadow: inset 0 0 0 2px #c4904c88, inset 0 calc(.4 * var(--u)) calc(1.2 * var(--u)) #6b3a1830;
+}
+.arena-deco .rail.top { left: 11.5%; width: 77%; top: 12.8%; height: 25%; }
+.arena-deco .rail.hand { left: 22.6%; width: 54.8%; top: 65.6%; height: 17.2%; }
+.arena-deco .emblem {
+  position: absolute; left: 50%; top: 51.5%; transform: translate(-50%, -50%);
+  font-size: calc(17 * var(--u)); line-height: 1; opacity: .08; filter: grayscale(1);
 }
 
-/* Log: pruh NAD doskou (mimo obrázka). */
+/* Log: pruh NAD doskou. */
 .log {
-  width: min(98vw, calc(72vh * 1.783));
-  width: min(98vw, calc(72dvh * 1.783));
-  min-height: 1.3em;
+  width: 100%; min-height: 1.3em;
   font-size: .85rem; color: #345; text-align: center; overflow: hidden;
   font-weight: 600; white-space: nowrap;
 }
 .log div { line-height: 1.2; display: inline-block; margin: 0 .8cqw; }
 
-/* Bannery hrdinov (červený hore = súper, modrý dole = hráč). */
+/* Stuhy hrdinov (červená hore = súper, modrá dole = hráč): zlatý okraj
+   (::before) a farebná stuha (::after) so zastrihnutými koncami; štít tieru
+   v strede presahuje stuhu, preto clip-path len na pseudo-prvkoch. */
 .hero-plate {
-  position: absolute; left: 27%; width: 46%;
-  display: grid; grid-template-columns: 1fr 9cqw 1fr; align-items: center;
-  color: #fff; font-weight: 700; font-size: 2.6cqh;
-  text-shadow: 0 1px 3px rgba(0,0,0,.55);
-  pointer-events: none;
+  position: absolute; left: 30%; width: 40%;
+  display: grid; grid-template-columns: 1fr calc(10 * var(--u)) 1fr; align-items: center;
+  color: #ffeec4; font-weight: 800; font-size: calc(2.5 * var(--u));
+  font-family: Georgia, "Trebuchet MS", serif;
+  text-shadow: 0 calc(.2 * var(--u)) 0 #2a130a, 0 0 calc(.6 * var(--u)) #0008;
+  pointer-events: none; isolation: isolate; z-index: 2;
 }
-.hero-plate.top { top: 3.2%; height: 8.5%; }
-.hero-plate.bottom { top: 84.5%; height: 8.5%; }
+.hero-plate::before, .hero-plate::after {
+  content: ""; position: absolute; z-index: -1;
+  clip-path: polygon(0 0, 100% 0, 96% 50%, 100% 100%, 0 100%, 4% 50%);
+}
+.hero-plate::before { inset: 0; background: linear-gradient(#ffe2a0, #c98b3a 50%, #8a5420); }
+.hero-plate::after { inset: calc(.5 * var(--u)) calc(.8 * var(--u)); background: linear-gradient(#c0423c, #8a2530 55%, #5e1c28); }
+.hero-plate.bottom::after { background: linear-gradient(#2b8fd6, #0b5a96 55%, #073e6b); }
+.hero-plate.top { top: 1.4%; height: 8.6%; }
+.hero-plate.bottom { top: 89.8%; height: 8.6%; }
 .hero-plate .who { text-align: center; }
 .hero-plate .nums { text-align: center; }
-/* Tavern tier = veľké číslo na štíte s labkou uprostred bannera. */
+/* Tavern tier = veľké číslo na zlatom štíte uprostred stuhy. */
 .hero-plate .tier-shield {
-  text-align: center; font-size: 4.4cqh; font-weight: 900; color: #7a4c07;
-  font-variant-numeric: tabular-nums;
-  text-shadow: 0 .2cqh .3cqh #ffe9b0, 0 0 .6cqh #fff;
+  justify-self: center; display: grid; place-items: center; padding-bottom: 6%;
+  width: calc(8.6 * var(--u)); height: calc(10.4 * var(--u));
+  background: linear-gradient(#fff0b8, #e7ad45 45%, #a8661f);
+  clip-path: polygon(50% 0, 100% 13%, 95% 62%, 50% 100%, 5% 62%, 0 13%);
+  font-size: calc(4.6 * var(--u)); font-weight: 900; color: #5a2f0b; line-height: 1;
+  font-variant-numeric: tabular-nums; text-shadow: 0 calc(.15 * var(--u)) 0 #fff3c4;
 }
-/* Optický stred štítu v obrázku dosky (desktop): hore ~9 %, dole ~89.2 %
-   výšky dosky – doladené podľa screenshotu, centroid zlata ťahá číslo hore. */
-.hero-plate.top .tier-shield { transform: translateY(1.6cqh); }
-.hero-plate.bottom .tier-shield { transform: translateY(.4cqh); }
-/* Pravidlo rasy, ktorú hráč hrá (game.js renderRaceNote) – pod doskou hráča. */
+/* Pravidlo rasy, ktorú hráč hrá (game.js renderRaceNote) – nad mojou stuhou. */
 .race-note {
-  position: absolute; left: 22%; width: 56%; top: 93.4%;
-  text-align: center; color: #fff; font-weight: 700; font-size: 1.75cqh; line-height: 1.25;
-  text-shadow: 0 1px 3px rgba(0,0,0,.75); pointer-events: none;
+  position: absolute; left: 22%; width: 56%; top: 83.4%;
+  text-align: center; color: #6b3a18; font-weight: 700; font-size: calc(1.6 * var(--u)); line-height: 1.25;
+  text-shadow: 0 1px 0 #fff3c4; pointer-events: none;
 }
 
-/* Rohové rámiky: balíček a kôpka. */
+/* Rohové rámiky: balíček a kôpka (súper vľavo bordový, ja vpravo tyrkysový). */
 .corner {
-  position: absolute; width: 8.8%;
+  position: absolute; width: 8.6%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   color: #ffeccc; font-weight: 700; text-shadow: 0 1px 3px rgba(0,0,0,.6);
   pointer-events: none; text-align: center;
+  border-radius: calc(1.4 * var(--u));
+  background: linear-gradient(160deg, #7e2c38, #4a1420);
+  box-shadow: 0 0 0 calc(.45 * var(--u)) #d9a64c, 0 0 0 calc(.8 * var(--u)) #5a2b16,
+    0 calc(.8 * var(--u)) calc(1.4 * var(--u)) #0006, inset 0 0 calc(2.4 * var(--u)) #0008;
 }
-.corner .ic { font-size: 3.4cqh; }
-.corner .lb { font-size: 1.5cqh; opacity: .9; }
-.corner .ct { font-size: 3.2cqh; }
-.corner.tl { left: 6%; top: 17%; height: 21%; }
-.corner.bl { left: 6%; top: 57.5%; height: 21%; }
-.corner.tr { left: 85.2%; top: 17%; height: 21%; }
-/* Pečate súpera (game.js renderOppAura) – vpravo hore nad kôpkou. */
+.corner.tr, .corner.br { background: linear-gradient(160deg, #22707a, #0d3842); }
+.corner .ic { font-size: calc(3.4 * var(--u)); }
+.corner .lb { font-size: calc(1.5 * var(--u)); opacity: .9; }
+.corner .ct { font-size: calc(3.2 * var(--u)); }
+.corner.tl { left: 2.8%; top: 13%; height: 21%; }
+.corner.bl { left: 2.8%; top: 60%; height: 21%; }
+.corner.tr { left: 88.6%; top: 13%; height: 21%; }
+.corner.br { left: 88.6%; top: 60%; height: 21%; }
+/* Pečate súpera (game.js renderOppAura) – vpravo hore vedľa stuhy. */
 .opp-aura {
-  position: absolute; left: 76%; width: 21%; top: 6.5%;
-  display: flex; flex-direction: column; align-items: center; gap: .3cqh;
-  color: #fff; font-weight: 800; text-align: center; line-height: 1.2;
-  text-shadow: 0 1px 3px rgba(0,0,0,.75); pointer-events: none;
+  position: absolute; left: 74%; width: 22%; top: 2.4%;
+  display: flex; flex-direction: column; align-items: center; gap: calc(.3 * var(--u));
+  color: #5b2d0c; font-weight: 800; text-align: center; line-height: 1.2;
+  pointer-events: none;
 }
-.opp-aura .lb { font-size: 1.4cqh; opacity: .9; }
-.opp-aura .tx { font-size: 1.9cqh; background: rgba(60,30,90,.55); border-radius: 1cqh; padding: .2cqh .8cqh; }
-.corner.br { left: 85.2%; top: 57.5%; height: 21%; }
+.opp-aura .lb { font-size: calc(1.4 * var(--u)); opacity: .9; }
+.opp-aura .tx { font-size: calc(1.9 * var(--u)); color: #fff; text-shadow: 0 1px 2px #000; background: rgba(60,30,90,.7); border-radius: calc(1 * var(--u)); padding: calc(.2 * var(--u)) calc(.8 * var(--u)); }
 
 /* Pravidlo dnešnej arény (mutácia): ikonka vľavo medzi súperovým balíčkom
    a kôpkou; ťuk pripomenie pravidlo v logu. */
 .mutator {
-  position: absolute; left: 4.5%; top: 39.5%; width: 11.8%; height: 17%;
+  position: absolute; left: 2.4%; top: 38.5%; width: 9.4%; height: 17%;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
-  gap: .4cqh; cursor: pointer; text-align: center;
-  background: rgba(30, 20, 5, .55); border-radius: 1.4cqh;
-  box-shadow: inset 0 0 0 .3cqh rgba(255, 215, 106, .5);
+  gap: calc(.4 * var(--u)); cursor: pointer; text-align: center;
+  background: rgba(60, 30, 10, .7); border-radius: calc(1.4 * var(--u));
+  box-shadow: inset 0 0 0 calc(.3 * var(--u)) rgba(255, 215, 106, .6);
 }
-.mutator .ic { font-size: 4.2cqh; line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
+.mutator .ic { font-size: calc(4.2 * var(--u)); line-height: 1; filter: drop-shadow(0 2px 3px rgba(0,0,0,.6)); }
 .mutator .lb {
-  font-size: 1.4cqh; font-weight: 800; color: #ffd76a; line-height: 1.1;
+  font-size: calc(1.4 * var(--u)); font-weight: 800; color: #ffd76a; line-height: 1.1;
   text-shadow: 0 1px 2px #000; padding: 0 .3cqw;
 }
 
@@ -164,32 +202,33 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* Obchod v hornom rade slotov (medzi vrchnými rámikmi). Panel je širší než
    rad slotov, aby sa v tieri 5–6 zmestilo aj 10 kariet (3+6+kúzlo) bez
    pretečenia mimo dosku – karty sú centrované, tak sa rámikov nedotknú. */
-.shop-panel { position: absolute; left: 12%; top: 14.8%; width: 76%; height: 22%; }
+.shop-panel { position: absolute; left: 12%; top: 13.6%; width: 76%; height: 23.5%; }
 .shop-rows { display: flex; gap: 1cqw; justify-content: center; align-items: stretch; }
 .shop-row {
   display: flex; gap: .5cqw; justify-content: center; align-items: center;
-  min-height: 15cqh; padding: 0 .5cqw;
+  min-height: calc(15 * var(--u)); padding: 0 .5cqw;
 }
-.shop-row.private { background: rgba(120,190,255,.22); border-radius: 1.2cqh; }
+.shop-row.private { background: rgba(70,150,220,.16); box-shadow: inset 0 0 0 1px rgba(40,110,180,.25); border-radius: calc(1.2 * var(--u)); }
 .shop-head {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 1cqw; height: 4cqh; gap: 1cqw; margin-top: .5cqh;
+  padding: 0 1cqw; height: calc(4 * var(--u)); gap: 1cqw; margin-top: calc(.5 * var(--u));
 }
-.banner { font-weight: 800; font-size: 2.1cqh; color: #6b4a1b; }
+.banner { font-weight: 800; font-size: calc(2.1 * var(--u)); color: #6b4a1b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .banner.enemy { color: #a33; }
-.money { font-weight: 800; font-size: 2.4cqh; color: #a06a00; }
-.aura { font-weight: 800; font-size: 1.8cqh; color: #7a4c8f; }
+.money { font-weight: 800; font-size: calc(2.4 * var(--u)); color: #a06a00; }
+.aura { font-weight: 800; font-size: calc(1.8 * var(--u)); color: #7a4c8f; }
 .head-btns { display: flex; gap: .8cqw; }
 .head-btns button {
-  font-size: 1.6cqh; padding: .5cqh 1cqw; border-radius: 1.1cqh;
-  background: #fff7e6; box-shadow: 0 .3cqh 0 #b99b6b;
+  white-space: nowrap; font-size: calc(1.6 * var(--u)); font-weight: 700; padding: calc(.5 * var(--u)) 1cqw; border-radius: calc(1.1 * var(--u));
+  background: linear-gradient(#fff4d6, #ecc685); color: #5b2d0c;
+  border: calc(.2 * var(--u)) solid #c58e48; box-shadow: 0 calc(.35 * var(--u)) 0 #8d5528;
 }
-.head-btns button.frozen-on { background: #cdeeff; box-shadow: 0 .3cqh 0 #5aa7cc; }
+.head-btns button.frozen-on { background: #cdeeff; box-shadow: 0 calc(.3 * var(--u)) 0 #5aa7cc; }
 /* Zabanovaná rasa – preškrtnutá ikonka rasy vedľa ↩️ (nie je to akcia, len info) */
-.head-btns button.ban-ic { position: relative; background: #ffecec; box-shadow: 0 .3cqh 0 #c66; cursor: help; }
+.head-btns button.ban-ic { position: relative; background: #ffecec; box-shadow: 0 calc(.3 * var(--u)) 0 #c66; cursor: help; }
 .head-btns button.ban-ic::after {
-  content: ""; position: absolute; left: 15%; right: 15%; top: 50%; height: .35cqh;
-  background: #e33; transform: rotate(-40deg); border-radius: 1cqh; pointer-events: none;
+  content: ""; position: absolute; left: 15%; right: 15%; top: 50%; height: calc(.35 * var(--u));
+  background: #e33; transform: rotate(-40deg); border-radius: calc(1 * var(--u)); pointer-events: none;
 }
 
 /* Súperov board: rovnaké miesto ako obchod – vidno ho LEN počas boja.
@@ -206,7 +245,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* Moje bojujúce karty: veľký rad v strede parchmentu. */
 .board.mine {
   top: 38.5%; height: 26%;
-  background: rgba(255,255,255,.14); border-radius: 1.4cqh;
+  background: rgba(255,248,228,.32); border-radius: calc(1.4 * var(--u));
+  box-shadow: inset 0 0 0 calc(.25 * var(--u)) rgba(182,122,50,.35);
 }
 
 /* Ruka: spodný rad slotov šablóny (medzi discard a draw pile rámikmi). */
@@ -218,9 +258,17 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 
 /* Koniec ťahu – veľké tlačidlo vpravo v strede (medzi rámikmi). */
 .end-turn {
-  position: absolute; left: 83.8%; top: 44.5%; width: 11%; height: 8%;
-  font-size: 2cqh; border-radius: 1.6cqh; font-weight: 700;
+  position: absolute; left: 87.4%; top: 40.5%; width: 11%; height: 15%;
+  font-size: calc(2.2 * var(--u)); border-radius: calc(1.6 * var(--u)); font-weight: 900;
+  font-family: Georgia, "Trebuchet MS", serif; line-height: 1.15; padding: calc(.5 * var(--u));
 }
+#stage .end-turn {
+  border: calc(.5 * var(--u)) ridge #e1b34e; color: #ffdfa0; text-shadow: 0 calc(.2 * var(--u)) #3d291b;
+  background: linear-gradient(#258bd4, #07518d 75%, #063d6c);
+  box-shadow: 0 calc(.6 * var(--u)) 0 #4d2a15, inset 0 2px #8bc9ee;
+}
+#stage .end-turn:hover { filter: brightness(1.12); }
+#stage .end-turn:active { transform: translateY(calc(.4 * var(--u))); box-shadow: 0 calc(.2 * var(--u)) 0 #4d2a15; }
 
 /* ---------- Karta (rám card-frame.webp, pomer 5:7) ---------- */
 .card {
@@ -324,12 +372,12 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 }
 /* Špeciálny slot na kúzlo v obchode – oddelený a fialovo orámovaný. */
 .card.spell-slot {
-  margin-left: 1.2cqh;
-  outline: .3cqh dashed #c084fc;
-  outline-offset: .2cqh;
-  border-radius: 1cqh;
+  margin-left: calc(1.2 * var(--u));
+  outline: calc(.3 * var(--u)) dashed #c084fc;
+  outline-offset: calc(.2 * var(--u));
+  border-radius: calc(1 * var(--u));
 }
-.card.frozen { filter: drop-shadow(0 0 .5cqh #4fc3f7); }
+.card.frozen { filter: drop-shadow(0 0 calc(.5 * var(--u)) #4fc3f7); }
 /* Umlčaná príšerka (kúzlo Umlčanie) – schopnosť preškrtnutá a stlmená,
    trvalý 🤫 badge cez art, nech je to vidno aj na malých kartách. */
 .card.silenced .tx { text-decoration: line-through; opacity: .45; }
@@ -368,11 +416,11 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .card[data-rank="3"] .nm { color: #7a5200; }
 
 /* Veľkosti kariet podľa zóny (výška + font, šírka z pomeru strán). */
-#stage .card { height: 14.4cqh; font-size: 1.35cqh; }
+#stage .card { height: calc(14.4 * var(--u)); font-size: calc(1.35 * var(--u)); }
 #stage .card .tx { display: none; }
-#stage .board.mine .card { height: 24.5cqh; font-size: 2.1cqh; }
+#stage .board.mine .card { height: calc(24.5 * var(--u)); font-size: calc(2.1 * var(--u)); }
 #stage .board.mine .card .tx { display: block; }
-.shop-row .card { height: 15cqh; font-size: 1.4cqh; }
+.shop-row .card { height: calc(15 * var(--u)); font-size: calc(1.4 * var(--u)); }
 
 /* ---------- Drag & drop ---------- */
 #gameScreen .card { touch-action: none; }
@@ -384,7 +432,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   transform: scale(1.06) rotate(2deg); filter: drop-shadow(0 10px 18px rgba(0,0,0,.4));
 }
 .card.drag-src { opacity: .35; }
-.drop-ok { outline: 3px dashed #2f9e44; outline-offset: -2px; background: rgba(120,220,140,.18); border-radius: 1cqh; }
+.drop-ok { outline: 3px dashed #2f9e44; outline-offset: -2px; background: rgba(120,220,140,.18); border-radius: calc(1 * var(--u)); }
 .drop-sell { outline: 3px dashed #d99a00; outline-offset: -2px; background: rgba(255,200,60,.15); }
 .card.target-ok { outline: 3px solid #2f9e44; }
 
@@ -484,19 +532,19 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   pointer-events: auto; cursor: help; line-height: 0; padding: 0; margin: 0;
   background: none; border: none; box-shadow: none;
 }
-.hero-plate .tk img { height: 4.6cqh; width: 4.6cqh; filter: drop-shadow(0 .2cqh .3cqh rgba(0,0,0,.6)); }
+.hero-plate .tk img { height: calc(4.6 * var(--u)); width: calc(4.6 * var(--u)); filter: drop-shadow(0 calc(.2 * var(--u)) calc(.3 * var(--u)) rgba(0,0,0,.6)); }
 .hero-plate .tk.off { opacity: .35; filter: grayscale(1); }
 /* Štít hrdinu (trinket) vedľa ↩️ */
-.head-btns button.shield-btn { background: #e6f0ff; box-shadow: 0 .3cqh 0 #4a6fb5; display: inline-flex; align-items: center; gap: .4cqw; }
-.head-btns button.shield-btn img { height: 2.6cqh; width: 2.6cqh; }
-.head-btns button.shield-btn.armed { background: #ffd76a; box-shadow: 0 .3cqh 0 #b98a00; }
+.head-btns button.shield-btn { background: #e6f0ff; box-shadow: 0 calc(.3 * var(--u)) 0 #4a6fb5; display: inline-flex; align-items: center; gap: .4cqw; }
+.head-btns button.shield-btn img { height: calc(2.6 * var(--u)); width: calc(2.6 * var(--u)); }
+.head-btns button.shield-btn.armed { background: #ffd76a; box-shadow: 0 calc(.3 * var(--u)) 0 #b98a00; }
 
 /* ---------- Trash-talk bublina bota (nad jeho bannerom) ---------- */
 .taunt-bubble {
   position: absolute; left: 50%; top: 11.5%; transform: translateX(-50%);
-  background: #fff; color: #123; font-weight: 700; font-size: 2.2cqh;
-  padding: .9cqh 1.8cqh; border-radius: 2cqh; max-width: 62%;
-  box-shadow: 0 .4cqh 1.2cqh rgba(0,0,0,.35); z-index: 40;
+  background: #fff; color: #123; font-weight: 700; font-size: calc(2.2 * var(--u));
+  padding: calc(.9 * var(--u)) calc(1.8 * var(--u)); border-radius: calc(2 * var(--u)); max-width: 62%;
+  box-shadow: 0 calc(.4 * var(--u)) calc(1.2 * var(--u)) rgba(0,0,0,.35); z-index: 40;
   animation: tauntPop .25s ease-out; pointer-events: none; text-align: center;
   line-height: 1.25;
 }
@@ -506,9 +554,9 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   to { transform: translateX(-50%) scale(1); opacity: 1; }
 }
 .taunt-bubble::before {
-  content: ""; position: absolute; top: -1.1cqh; left: 50%;
+  content: ""; position: absolute; top: calc(-1.1 * var(--u)); left: 50%;
   transform: translateX(-50%);
-  border: .7cqh solid transparent; border-bottom-color: #fff; border-top: 0;
+  border: calc(.7 * var(--u)) solid transparent; border-bottom-color: #fff; border-top: 0;
 }
 .taunt-bubble.out { opacity: 0; transition: opacity .45s; }
 /* správa diváka (mobil, chat zavretý): fialová bublina hore */
@@ -517,20 +565,20 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 /* vlastná chatová správa (hra po sieti): bublina nad mojím hrdinom, šípka dole */
 .taunt-bubble.mine { top: auto; bottom: 16%; }
 .taunt-bubble.mine::before {
-  top: auto; bottom: -1.1cqh;
-  border-bottom: 0; border-top: .7cqh solid #fff; border-bottom-color: transparent;
+  top: auto; bottom: calc(-1.1 * var(--u));
+  border-bottom: 0; border-top: calc(.7 * var(--u)) solid #fff; border-bottom-color: transparent;
 }
 
 /* ---------- Boj – animácie ---------- */
 .fight-banner {
   position: absolute; left: 50%; top: 46%; transform: translate(-50%, -50%);
-  font-size: 9cqh; font-weight: 900; color: #a33;
-  text-shadow: 0 .4cqh .8cqh rgba(0,0,0,.35), 0 0 2cqh #ffd;
+  font-size: calc(9 * var(--u)); font-weight: 900; color: #a33;
+  text-shadow: 0 calc(.4 * var(--u)) calc(.8 * var(--u)) rgba(0,0,0,.35), 0 0 calc(2 * var(--u)) #ffd;
   z-index: 10; pointer-events: none;
   animation: fightPop .5s ease-out;
   transition: all .4s;
 }
-.fight-banner.small { font-size: 3.6cqh; top: 34%; opacity: .85; }
+.fight-banner.small { font-size: calc(3.6 * var(--u)); top: 34%; opacity: .85; }
 @keyframes fightPop {
   0% { transform: translate(-50%, -50%) scale(.2); opacity: 0; }
   60% { transform: translate(-50%, -50%) scale(1.25); opacity: 1; }
@@ -542,7 +590,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .card.proc { animation: procPulse .75s ease-out; z-index: 25; }
 @keyframes procPulse {
   0% { filter: brightness(1); }
-  30% { filter: brightness(1.7) drop-shadow(0 0 1.5cqh #ffd147); }
+  30% { filter: brightness(1.7) drop-shadow(0 0 calc(1.5 * var(--u)) #ffd147); }
   100% { filter: brightness(1); }
 }
 .proc-badge {
@@ -602,7 +650,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .fx-wave {
   --fx: #22b8cf;
   position: fixed; z-index: 60; pointer-events: none; overflow: hidden;
-  border-radius: 1.4cqh; mix-blend-mode: screen;
+  border-radius: calc(1.4 * var(--u)); mix-blend-mode: screen;
 }
 .fx-wave::before {
   content: ""; position: absolute; inset: 0; width: 40%;
@@ -625,7 +673,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .dmg-float {
   --tilt: 0deg;
   position: absolute; top: 30%; left: 50%; transform: translateX(-50%);
-  font-weight: 900; font-size: 2.6cqh; color: #c22; pointer-events: none;
+  font-weight: 900; font-size: calc(2.6 * var(--u)); color: #c22; pointer-events: none;
   opacity: 0; animation: rise .75s cubic-bezier(.2,.8,.3,1) both; z-index: 5;
   text-shadow: 0 1px 2px #fff, 0 0 8px rgba(255,255,255,.7);
   white-space: nowrap;
@@ -652,34 +700,51 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   100% { transform: scale(1); filter: brightness(1); }
 }
 
-/* ---------- Mobil (na šírku): PlayGround-mobile-wide.png (1850×850).
-   Rovnaká logika ako desktop (6+6 slotov, veľký stred), ale iné pomery:
-   sloty hore y 101–228, dole y 611–738, x ~395–1410; rámiky balíčkov na
-   bokoch (y 144–266 a 560–678), bannery hore/dole v strede. */
+/* ---------- Úzka doska na PC (pomer < 1.55 : 1, napr. s ladením a balíčkom
+   v menšom okne): obchod v 2 riadkoch ako na mobile na šírku, môj board počas
+   nákupu menší pod obchodom, v boji veľký v strede, zóny širšie. Návrhový
+   pomer 1.3 : 1 → karty sú väčšie než pri prepočte na 1.783. */
+@media (orientation: landscape) and (min-height: 601px) and (pointer: fine),
+       (orientation: landscape) and (min-height: 921px) {
+  @container (max-aspect-ratio: 155 / 100) {
+    #stage > * { --u: min(1cqh, calc(100cqw / 130)); }
+    .arena-deco .rail.top { left: 11.5%; width: 77%; top: 10.6%; height: 45%; }
+    .arena-deco .rail.hand { left: 16.5%; width: 67%; top: 70.6%; height: 17.6%; }
+    .shop-panel { top: 11.4%; height: 44%; }
+    .shop-rows { flex-direction: column; align-items: center; gap: calc(.6 * var(--u)); }
+    .shop-row { min-height: calc(17 * var(--u)); }
+    .shop-row .card { height: calc(17 * var(--u)); font-size: calc(1.55 * var(--u)); }
+    .board { left: 12%; width: 76%; }
+    .board.mine { top: 56.4%; height: 13.6%; }
+    #stage .board.mine .card { height: calc(12.4 * var(--u)); font-size: calc(1.15 * var(--u)); }
+    #stage .board.mine .card .tx { display: none; }
+    #stage.battle .board.mine { top: 36%; height: 30%; }
+    #stage.battle .board.mine .card { height: calc(24.5 * var(--u)); font-size: calc(2.1 * var(--u)); }
+    #stage.battle .board.mine .card .tx { display: block; }
+    #stage .hand { left: 17.5%; width: 65%; top: 71.4%; height: 16%; }
+    .race-note { display: none; }
+  }
+}
+
+/* ---------- Mobil (na šírku): návrhový pomer 2.176 : 1 (nízky displej).
+   Rovnaká logika ako desktop (obchod hore, veľký stred, ruka dole), ale
+   obchod v 2 riadkoch, rámiky balíčkov úzke na bokoch, stuhy užšie. */
 @media (orientation: landscape) and (max-height: 600px),
        (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
   #stage {
-    width: min(98vw, calc(73vh * 1850 / 850));
-    width: min(98vw, calc(73dvh * 1850 / 850));
-    aspect-ratio: 1850 / 850;
-    background-image: url("PlayGround-mobile-wide.webp");
+    --u: min(1cqh, calc(100cqw / 217.6));
     /* dva prsty patria pinch zoomu hry, nie scrollu prehliadača */
     touch-action: none;
   }
-  .log {
-    width: min(98vw, calc(73vh * 1850 / 850));
-    width: min(98vw, calc(73dvh * 1850 / 850));
-    font-size: .8rem;
-  }
+  .log { font-size: .8rem; }
+  .arena-deco .rail.top { left: 7.5%; width: 85%; top: 10.4%; height: 45.6%; }
+  .arena-deco .rail.hand { left: 20.7%; width: 55.7%; top: 71%; height: 16.8%; }
 
-  .hero-plate { left: 35.1%; width: 29.7%; grid-template-columns: 1fr 5cqw 1fr; font-size: 2.4cqh; }
+  .hero-plate { left: 35.1%; width: 29.7%; grid-template-columns: 1fr 5cqw 1fr; font-size: calc(2.4 * var(--u)); }
   .race-note { display: none; } /* nízka obrazovka na šírku: pod doskou nie je miesto */
   .hero-plate.top { top: 1.2%; height: 9.4%; }
   .hero-plate.bottom { top: 89.6%; height: 9.4%; }
-  .hero-plate .tier-shield { font-size: 4cqh; }
-  /* stred štítu v širokom mobilnom obrázku: hore 7.3 %, dole 92.4 % výšky dosky */
-  .hero-plate.top .tier-shield { transform: translateY(1.4cqh); }
-  .hero-plate.bottom .tier-shield { transform: translateY(-1.9cqh); }
+  .hero-plate .tier-shield { font-size: calc(4 * var(--u)); width: calc(7.6 * var(--u)); height: calc(9.6 * var(--u)); }
 
   .corner { width: 7%; }
   .corner.tl { left: 2.1%; top: 16.9%; height: 14.4%; }
@@ -688,8 +753,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .opp-aura { left: 78%; width: 20%; top: 3%; }
   .corner.br { left: 90.9%; top: 65.9%; height: 13.9%; }
   .mutator { left: 1.2%; top: 35%; width: 8.8%; height: 26%; }
-  .mutator .ic { font-size: 5.5cqh; }
-  .mutator .lb { font-size: 1.8cqh; }
+  .mutator .ic { font-size: calc(5.5 * var(--u)); }
+  .mutator .lb { font-size: calc(1.8 * var(--u)); }
 
   .board { left: 21.35%; width: 54.9%; }
   .board.opp { top: 11.9%; height: 14.9%; }
@@ -697,60 +762,45 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   /* Obchod na 2 riadky nad sebou (spoločné hore, súkromné + kúzlo dole) –
      karty sú výrazne väčšie a ani 10 kariet nepretečie mimo dosku. */
   .shop-panel { left: 8%; top: 10.8%; width: 84%; height: 45%; }
-  .shop-rows { flex-direction: column; align-items: center; gap: .6cqh; }
-  .shop-row { min-height: 19cqh; }
-  .shop-row .card { height: 19cqh; font-size: 1.75cqh; }
+  .shop-rows { flex-direction: column; align-items: center; gap: calc(.6 * var(--u)); }
+  .shop-row { min-height: calc(19 * var(--u)); }
+  .shop-row .card { height: calc(19 * var(--u)); font-size: calc(1.75 * var(--u)); }
 
   /* Počas nákupu je môj board nižšie a menší (obchod berie vrch dosky);
      v boji sa obchod skryje a board sa vráti veľký do stredu. */
   .board.mine { top: 55%; height: 16%; }
-  #stage .board.mine .card { height: 14.5cqh; font-size: 1.3cqh; }
+  #stage .board.mine .card { height: calc(14.5 * var(--u)); font-size: calc(1.3 * var(--u)); }
   #stage .board.mine .card .tx { display: none; }
   #stage.battle .board.mine { top: 34%; height: 30%; }
-  #stage.battle .board.mine .card { height: 24.5cqh; font-size: 2.1cqh; }
+  #stage.battle .board.mine .card { height: calc(24.5 * var(--u)); font-size: calc(2.1 * var(--u)); }
   #stage.battle .board.mine .card .tx { display: block; }
 
   #stage .hand { left: 21.7%; width: 53.7%; top: 71.9%; height: 14.9%; }
 
-  .end-turn { left: 89.5%; top: 41%; width: 9%; height: 7.5%; font-size: 2cqh; }
+  .end-turn { left: 90%; top: 36%; width: 8.8%; height: 24%; font-size: calc(2 * var(--u)); }
 }
 
-/* ---------- Mobil (na výšku): PlayGround-mobile.png. Pásy zhora nadol ako na
-   desktope: banner súpera → obchod v 2 riadkoch (spoločné / súkromné+kúzlo;
-   v boji tam hrá súperov board) → MOJE bojujúce karty v strede (vlastný
-   priesvitný panel) → RUKA v spodnom rade slotov šablóny (medzi kôpkou súpera
-   a mojím balíčkom; sloty x 169–768 px, medzera 17, pri 941×1672) → môj
-   banner. Hlavička je počas hry zbalená do ☰ (body.playing), doska tak
-   berie takmer celú výšku a nič nie je pod ňou. */
+/* ---------- Mobil (na výšku): návrhový pomer 0.563 : 1. Pásy zhora nadol
+   ako na desktope: stuha súpera → obchod v 2 riadkoch (spoločné /
+   súkromné+kúzlo; v boji tam hrá súperov board) → MOJE bojujúce karty
+   v strede → RUKA v spodnom páse (medzi kôpkou súpera a mojím balíčkom) →
+   moja stuha. Hlavička je počas hry zbalená do ☰ (body.playing), doska
+   berie celý displej. */
 @media (orientation: portrait) {
-  #stage {
-    width: min(100vw, calc(100vh * 941 / 1672));
-    width: min(100vw, calc(100dvh * 941 / 1672));
-    aspect-ratio: 941 / 1672;
-    background-image: url("PlayGround-mobile.webp");
-    border-radius: 0;
-  }
+  #stage { --u: min(1cqh, calc(100cqw / 56.28)); border-radius: 0; }
+  .arena-deco .felt { inset: 1% 1.6%; }
+  .arena-deco .rail.top { left: 3%; width: 94%; top: 10.4%; height: 31.2%; }
+  .arena-deco .rail.hand { left: 15%; width: 70%; top: 73.2%; height: 12.6%; }
+  .arena-deco .emblem { top: 54%; font-size: calc(12 * var(--u)); }
   main { padding: 0; gap: 0; }
   #gameScreen { gap: 0; }
   /* Log nad doskou na mobile netreba – herné hlášky idú aj floatmi a bublinami. */
   body.playing .log { display: none; }
-  /* Doska na celý telefón: žiadne modré okolie – pod doskou (a tam, kde jej
-     pomer strán nevyplní obrazovku) je rozmazaná tá istá doska. */
-  body.playing { background: #4a2f16; }
-  body.playing::before {
-    content: ""; position: fixed; inset: -20px; z-index: -1;
-    background: url("PlayGround-mobile.webp") center / cover no-repeat;
-    filter: blur(14px) brightness(.55);
-  }
-  .log { width: 98vw; font-size: .8rem; min-height: 1.2em; }
-  .hero-plate { left: 21%; width: 58%; grid-template-columns: 1fr 12cqw 1fr; font-size: 1.9cqh; }
+  .hero-plate { left: 21%; width: 58%; grid-template-columns: 1fr 12cqw 1fr; font-size: calc(1.9 * var(--u)); }
   .hero-plate.top { top: 2.4%; height: 5.6%; }
-  .race-note { top: 94.7%; left: 6%; width: 88%; font-size: 1.4cqh; } /* pod doskou hráča (2 riadky) */
+  .race-note { top: 94.7%; left: 6%; width: 88%; font-size: calc(1.4 * var(--u)); } /* pod doskou hráča (2 riadky) */
   .hero-plate.bottom { top: 89%; height: 5.6%; }
-  .hero-plate .tier-shield { font-size: 3cqh; }
-  /* optický stred štítu v mobilnom obrázku: hore ~6.75 %, dole ~92 % výšky dosky */
-  .hero-plate.top .tier-shield { transform: translateY(1.55cqh); }
-  .hero-plate.bottom .tier-shield { transform: translateY(.2cqh); }
+  .hero-plate .tier-shield { font-size: calc(3 * var(--u)); width: calc(5.6 * var(--u)); height: calc(6.8 * var(--u)); }
 
   .corner { width: 12.5%; }
   .corner.tl { left: 2.6%; top: 12.3%; height: 11%; }
@@ -758,24 +808,24 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   .corner.tr { left: 85%; top: 12.3%; height: 11%; }
   .opp-aura { left: 52%; width: 47%; top: 8.4%; align-items: flex-end; }
   .opp-aura .lb { display: none; } /* úzky mobil: len ikonky s číslami */
-  .opp-aura .tx { font-size: 1.5cqh; white-space: nowrap; }
+  .opp-aura .tx { font-size: calc(1.5 * var(--u)); white-space: nowrap; }
   .corner.br { left: 85%; top: 74%; height: 11%; }
-  .corner .ic { font-size: 2.2cqh; }
-  .corner .lb { font-size: 1cqh; }
-  .corner .ct { font-size: 2.1cqh; }
+  .corner .ic { font-size: calc(2.2 * var(--u)); }
+  .corner .lb { font-size: calc(1 * var(--u)); }
+  .corner .ct { font-size: calc(2.1 * var(--u)); }
   .mutator { left: 1.6%; top: 42%; width: 14%; height: 9%; }
-  .mutator .ic { font-size: 2.6cqh; }
-  .mutator .lb { font-size: 1cqh; }
+  .mutator .ic { font-size: calc(2.6 * var(--u)); }
+  .mutator .lb { font-size: calc(1 * var(--u)); }
 
   /* Obchod: 2 riadky nad sebou (spoločné hore, súkromné + kúzlo dole) – od
      6. karty ide druhý riadok, karty ostávajú čitateľné. */
   .shop-panel { left: 4%; top: 11%; width: 92%; height: 30%; }
-  .shop-rows { flex-direction: column; align-items: center; gap: .5cqh; }
-  .shop-row { min-height: 10.5cqh; gap: .4cqw; padding: 0 .4cqw; flex-wrap: nowrap; }
-  .shop-head { height: auto; flex-wrap: wrap; gap: .3cqh .8cqw; justify-content: center; margin-top: .3cqh; }
-  .banner { font-size: 1.5cqh; width: 100%; text-align: center; }
-  .money { font-size: 2cqh; }
-  .head-btns button { font-size: 1.35cqh; padding: .4cqh .8cqw; }
+  .shop-rows { flex-direction: column; align-items: center; gap: calc(.5 * var(--u)); }
+  .shop-row { min-height: calc(10.5 * var(--u)); gap: .4cqw; padding: 0 .4cqw; flex-wrap: nowrap; }
+  .shop-head { height: auto; flex-wrap: wrap; gap: calc(.3 * var(--u)) .8cqw; justify-content: center; margin-top: calc(.3 * var(--u)); }
+  .banner { font-size: calc(1.5 * var(--u)); width: 100%; text-align: center; }
+  .money { font-size: calc(2 * var(--u)); }
+  .head-btns button { font-size: calc(1.35 * var(--u)); padding: calc(.4 * var(--u)) .8cqw; }
 
   /* Súperov board (len v boji) medzi hornými rámikmi. Karty na ploche,
      v ruke aj u súpera sú na mobile široké podľa SLOTU (šírka, výška
@@ -791,23 +841,20 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   }
 
   /* Moje bojujúce karty: stred dosky, vlastný panel (šablóna tu sloty nemá). */
-  .board.mine {
-    top: 43.5%; height: 22%; left: 5%; width: 90%;
-    background: rgba(255,255,255,.16); border-radius: 1.4cqh;
-  }
+  .board.mine { top: 43.5%; height: 22%; left: 5%; width: 90%; }
   #stage.battle .board.mine { top: 36%; height: 26%; }
 
-  #stage .card { height: 10.4cqh; font-size: 1cqh; }
-  #stage .board.mine .card { font-size: 1.4cqh; }
+  #stage .card { height: calc(10.4 * var(--u)); font-size: calc(1 * var(--u)); }
+  #stage .board.mine .card { font-size: calc(1.4 * var(--u)); }
   #stage .board.mine .card .tx { display: none; }
-  #stage.battle .board.mine .card { font-size: 1.5cqh; }
+  #stage.battle .board.mine .card { font-size: calc(1.5 * var(--u)); }
   #stage.battle .board.mine .card .tx { display: none; }
-  .shop-row .card { height: 10.2cqh; font-size: .95cqh; }
-  .card.spell-slot { margin-left: .8cqh; }
+  .shop-row .card { height: calc(10.2 * var(--u)); font-size: calc(.95 * var(--u)); }
+  .card.spell-slot { margin-left: calc(.8 * var(--u)); }
 
-  .end-turn { left: 63%; top: 67%; width: 32%; height: 4.4%; font-size: 1.7cqh; }
-  .fight-banner { font-size: 5cqh; }
-  .fight-banner.small { font-size: 2.4cqh; top: 45%; }
+  .end-turn { left: 63%; top: 67%; width: 32%; height: 4.4%; font-size: calc(1.7 * var(--u)); }
+  .fight-banner { font-size: calc(5 * var(--u)); }
+  .fight-banner.small { font-size: calc(2.4 * var(--u)); top: 45%; }
 
   /* Ruka: spodný rad 5 slotov šablóny – tie isté súradnice, kde bol predtým
      môj board (a kde sú v obrázku nakreslené sloty). Do 8 kariet sa zmestí
@@ -817,7 +864,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
     display: flex; flex-wrap: nowrap; gap: 1.2cqw; justify-content: center; align-items: center;
     background: none; border-radius: 0; padding: 0; min-height: 0;
   }
-  #stage .hand .card { font-size: 1cqh; }
+  #stage .hand .card { font-size: calc(1 * var(--u)); }
   .preview-card { width: min(260px, 68vw); font-size: clamp(11px, 3.6vw, 15px); }
 }
 
@@ -828,6 +875,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
    portrét aj mobilný landscape; desktop má hlavičku ako doteraz. */
 .menu-btn { display: none; }
 @media (orientation: portrait),
+       (orientation: landscape) and (max-height: 600px),
        (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
   body.playing .menu-btn {
     display: flex; align-items: center; justify-content: center;
@@ -854,52 +902,78 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   body.playing footer { display: none; }
 }
 
-/* ---------- Celá obrazovka (⛶ tlačidlo alebo PWA z plochy) ----------
-   body.fs nastavuje game.js (Fullscreen API alebo display-mode standalone).
-   Bez lišty prehliadača si doska vezme takmer celú výšku obrazovky –
-   ~80px ostáva na hlavičku a log. Portrait škáluje cez dvh automaticky. */
 body.fs footer { display: none; }
-@media (orientation: landscape) {
-  body.fs #stage, body.fs .log { width: min(98vw, calc((100dvh - 80px) * 1676 / 940)); }
+
+/* ---------- Rozloženie hry: doska na celú obrazovku ----------
+   PC: stránka má presne výšku okna (bez scrollu). Pod hlavičkou je mriežka
+   [ladenie | log + doska | balíček + chat]: doska vyplní celý stredný
+   stĺpec, balíček je stĺpec vpravo na celú výšku, chat (sieť, divák,
+   Claude) pod ním. Ľavý stĺpec (rýchlosť animácií, karta do ruky) má len
+   hráč „Hubko". Úzke okno (< 1000 px): bez pravého stĺpca – balíček
+   z hlavičky ako dialóg, chat ako panel cez obrazovku.
+   Mobil (☰ menu): doska presne na celý displej, ostatné ako dialógy. */
+body.playing { height: 100vh; height: 100dvh; overflow: hidden; }
+body.playing main { flex: 1 1 auto; min-height: 0; padding: 4px 0 0; }
+body.playing #gameScreen {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto;
+  height: 100%; gap: 0; align-items: stretch;
+}
+#leftCol { display: flex; flex-direction: column; gap: 10px; min-height: 0; overflow-y: auto; }
+#leftCol:has(> :not(.hidden)) { width: 240px; margin-right: 14px; }
+#centerCol { display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 0; }
+#sideCol { display: none; }
+@media (orientation: landscape) and (pointer: fine) and (min-width: 1000px) and (min-height: 601px) {
+  body.playing #sideCol {
+    display: flex; flex-direction: column; gap: 10px;
+    width: clamp(230px, 19vw, 300px); margin-left: 14px; min-height: 0;
+  }
+  #sideCol .deck-dd { flex: 1 1 0; min-height: 120px; display: flex; flex-direction: column; }
+  #sideCol .deck-dd:has(.deck-list.hidden) { flex: none; min-height: 0; }
+  #sideCol .deck-list { flex: 1 1 auto; min-height: 0; max-height: none; }
+  body.chat-on #chatPanel { flex: 0 0 42%; min-height: 0; }
+  body.chat-on #sideCol .chat-log { flex: 1 1 auto; height: auto; min-height: 0; }
+  .chat-close, #chatBtn { display: none !important; }
+}
+@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) and (min-height: 601px) {
+  body.playing .deck-btn { display: inline-block; }
+  #sideCol .deck-dd { display: none; }
+}
+
+/* Mobil: doska presne na celý displej (hlavička je ☰ overlay, log len na
+   šírku), ladenie a rýchlosť (Hubko) pod doskou – stránka sa tam scrolluje. */
+@media (orientation: portrait),
+       (orientation: landscape) and (max-height: 600px),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
+  body.playing { height: auto; overflow: visible; }
+  body.playing main { padding: 0; }
+  body.playing #gameScreen { display: flex; flex-direction: column; height: auto; }
+  #centerCol { width: 100%; gap: 0; }
+  #stage { flex: none; width: 100%; height: 100vh; height: 100dvh; }
+  #leftCol { order: 2; align-items: center; }
+  #leftCol:has(> :not(.hidden)) { width: 100%; margin: 0; padding: 10px; }
 }
 @media (orientation: landscape) and (max-height: 600px),
        (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
-  body.fs #stage, body.fs .log { width: min(98vw, calc((100dvh - 74px) * 1850 / 850)); }
+  #stage { height: calc(100vh - 1.2rem); height: calc(100dvh - 1.2rem); }
 }
 
-/* ---------- Pravý stĺpec: šach + chat (PC) ----------
-   ♟️ v hlavičke prepne body.chess (šachovnica bez hodín), body.chat-on dáva
-   game.js v hre s chatom (sieť, divák, Claude). Na PC (široké okno na šírku,
-   myš) sa doska arény zúži a vpravo je stĺpec: šach navrch, chat pod ním.
-   Na mobile/tablete šach nie je a chat je panel cez obrazovku (🗨️ v ☰). */
+/* ---------- Šach: plávajúci dialóg ----------
+   ♟️ v hlavičke (mobil: v ☰) prepne body.chess; dialóg sa dá chytiť za
+   hlavičku a presunúť (src/chess.js), ✖ ho skryje. Doska pod ním ostáva. */
 #chessPanel { display: none; }
-#sideCol { display: none; }
-#chessBtn.active { background: #ffd33d; }
-@media (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
-  body.chess #gameScreen, body.chat-on #gameScreen { padding-right: 400px; }
-  body.chess #sideCol, body.chat-on #sideCol {
-    display: flex; flex-direction: column; gap: 10px;
-    position: absolute; top: 1.5em; right: 8px; width: 380px; z-index: 5;
-  }
-  body.chess #stage, body.chess .log, body.chat-on #stage, body.chat-on .log {
-    width: min(calc(100vw - 420px), calc(72vh * 1.783));
-    width: min(calc(100vw - 420px), calc(72dvh * 1.783));
-  }
-  body.fs.chess #stage, body.fs.chess .log, body.fs.chat-on #stage, body.fs.chat-on .log {
-    width: min(calc(100vw - 420px), calc((100dvh - 80px) * 1676 / 940));
-  }
-  body.chess #chessPanel {
-    display: flex; flex-direction: column; gap: 8px;
-    width: 380px; padding: 10px;
-    background: rgba(255,255,255,.72); border-radius: 14px;
-    box-shadow: 0 4px 14px rgba(0,20,40,.25);
-  }
-  .chat-log { height: 60dvh; }
-  body.chess .chat-log { height: max(140px, calc(100dvh - 640px)); }
-  .chat-close, #chatBtn { display: none !important; }
+#chessBtn.active { background: linear-gradient(#ffd66a, #ed9d1c); }
+body.chess #chessPanel {
+  display: flex; flex-direction: column; gap: 8px;
+  position: fixed; z-index: 19; right: 330px; top: 90px; width: min(380px, 94vw); padding: 10px;
 }
-@media (orientation: portrait), (pointer: coarse) { #chessBtn { display: none !important; } }
-.chess-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+@media (orientation: portrait),
+       (orientation: landscape) and (max-height: 600px),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
+  body.chess #chessPanel { right: auto; left: 50%; top: 60px; transform: translateX(-50%); width: min(360px, 94vw); }
+}
+.chess-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: move; touch-action: none; }
+.chess-head .chess-title { flex: 1; }
+.chess-x { padding: 4px 9px; }
 .chess-title { font-weight: 800; color: #345; }
 .chess-head button { font-size: .85rem; padding: 5px 10px; }
 .chess-board {
@@ -972,7 +1046,7 @@ body.fs footer { display: none; }
   border-radius: 50%; background: #e03131; box-shadow: 0 0 0 2px #fff;
 }
 .menu-btn.unread::after { content: ""; }
-@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
+@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) and (min-height: 601px) {
   body.chat-open #sideCol {
     display: flex; flex-direction: column; position: fixed; z-index: 41;
     left: 8px; right: 8px; top: calc(56px + env(safe-area-inset-top, 0px));
@@ -992,12 +1066,12 @@ body.spectating .head-btns { visibility: hidden; } /* miesto ostáva – banner 
    Mobil (☰ menu): tlačidlo v hlavičke otvorí dialóg so scrollom. Riadok =
    miniatúra karty (len art) + meno ×počet + staty; hover/podržanie = veľká karta. */
 #gameScreen { position: relative; }
-.deck-dd { position: absolute; top: 0; left: 0; width: 240px; z-index: 6; }
+.deck-dd { width: 100%; }
 .deck-dd button { width: 100%; font-weight: 700; font-size: .95rem; padding: 7px 10px; }
 .deck-list {
   max-height: 72dvh; overflow-y: auto; overscroll-behavior: contain;
   background: rgba(255,255,255,.94); border-radius: 12px; padding: 6px; margin-top: 5px;
-  display: grid; gap: 3px; box-shadow: 0 6px 18px rgba(0,20,40,.3); text-align: left;
+  display: grid; align-content: start; gap: 3px; box-shadow: 0 6px 18px rgba(0,20,40,.3); text-align: left;
 }
 .deck-list .hdr { font-size: .75rem; font-weight: 800; color: #567; padding: 6px 4px 2px; text-transform: uppercase; letter-spacing: .04em; }
 .deck-row { display: flex; align-items: center; gap: 8px; padding: 3px 5px; border-radius: 9px; cursor: pointer; }
@@ -1012,19 +1086,14 @@ body.spectating .head-btns { visibility: hidden; } /* miesto ostáva – banner 
 .deck-btn { display: none; }
 #deckOverlay .win-box { width: min(94vw, 420px); padding: 14px 12px; }
 #deckOverlay .deck-list { max-height: calc(100dvh - 190px); box-shadow: none; background: #f3f6ff; margin-top: 8px; }
-@media (orientation: portrait),
-       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
-  .deck-dd { display: none !important; }
-  body.playing .deck-btn { display: inline-block; }
-}
 
 /* Rast v balíčku (Mravec/Včielka): karta vyjde z balíčka do stredu dosky,
    zelene sa buffne a vráti sa (riadi JS – deckGrowFx). */
 #stage .card.deck-grow-fx {
   position: absolute; left: 50%; top: 50%; z-index: 60;
-  height: 34cqh; font-size: 2.9cqh;
+  height: calc(34 * var(--u)); font-size: calc(2.9 * var(--u));
   pointer-events: none; opacity: 0;
-  filter: drop-shadow(0 0 1.5cqh #40c057) drop-shadow(0 0 3cqh rgba(64,192,87,.6));
+  filter: drop-shadow(0 0 calc(1.5 * var(--u)) #40c057) drop-shadow(0 0 calc(3 * var(--u)) rgba(64,192,87,.6));
 }
 
 /* Cielenie terčom: položená karta vedľa plochy + kurzor terč ~2×2 cm. */
@@ -1053,7 +1122,7 @@ body.targeting, body.targeting * { cursor: none !important; }
 
 /* Ladenie (len „Hubko"): panel vľavo vedľa dosky – ľubovoľná karta do ruky. */
 .dev-panel {
-  position: fixed; left: 8px; top: 70px; z-index: 6; width: 230px;
+  width: 100%; max-width: 480px;
   display: flex; flex-direction: column; gap: 5px;
   background: rgba(255,255,255,.94); border-radius: 12px; padding: 8px;
   box-shadow: 0 6px 18px rgba(0,20,40,.3); font-size: .85rem;
@@ -1062,9 +1131,6 @@ body.targeting, body.targeting * { cursor: none !important; }
 .dev-panel #devCard { min-height: 14em; }
 .dev-give { display: flex; gap: 5px; }
 .dev-give button { flex: 1; padding: 5px 8px; }
-@media (max-width: 1350px) {
-  .dev-panel { position: static; width: min(98vw, 480px); margin-top: 4px; }
-}
 
 /* ---------- Ruka ako vejár (desktop / na šírku, Hearthstone štýl) ----------
    Karty sa prekrývajú (z každej vidno aspoň ~70 %, pri plnej ruke menej),
@@ -1074,7 +1140,7 @@ body.targeting, body.targeting * { cursor: none !important; }
    --n = počet kariet v ruke, --i = poradie karty (nastavuje renderHand). */
 @media (orientation: landscape) {
   #stage .hand {
-    --cw: calc(14.4cqh * 560 / 780);
+    --cw: calc(calc(14.4 * var(--u)) * 560 / 780);
     display: flex; justify-content: center; align-items: center; column-gap: 0;
   }
   #stage .hand .card.gap { display: none; }
@@ -1119,10 +1185,10 @@ body.botloop .chat-row { display: none; }
    a jej klon letí na cieľ (obchod → balíček, ruka → plocha, predaj). */
 #stage .card.watch-pick {
   transform: translateY(-12%) scale(1.12) !important; z-index: 35;
-  box-shadow: 0 0 0 .5cqh #ffd147, 0 1.5cqh 2.5cqh rgba(0,0,0,.45);
+  box-shadow: 0 0 0 calc(.5 * var(--u)) #ffd147, 0 calc(1.5 * var(--u)) calc(2.5 * var(--u)) rgba(0,0,0,.45);
   transition: transform .2s ease-out;
 }
-#stage .card.fly-card { z-index: 70; pointer-events: none; box-shadow: 0 1.5cqh 3cqh rgba(0,0,0,.5); }
+#stage .card.fly-card { z-index: 70; pointer-events: none; box-shadow: 0 calc(1.5 * var(--u)) calc(3 * var(--u)) rgba(0,0,0,.5); }
 .pov-btn { font-size: .8rem; padding: 4px 9px; background: #efe3ff; color: #4b1491; box-shadow: 0 2px 0 #b79ce6; }
 body.spectating #oppHero { cursor: pointer; }
 
@@ -1431,7 +1497,7 @@ footer {
 
 /* ---------- Hra v drevenej aréne ----------
    Kompaktná hlavička (doska potrebuje výšku), panely okolo dosky ako
-   pergamen so zlatým rámom. Samotná doska (#stage) má vlastný obrázok. */
+   pergamen so zlatým rámom. Samotná doska (#stage) je kreslená vyššie. */
 body.playing { padding: 14px 26px 20px; }
 body.playing header { padding: 16px 10px 2px; gap: 10px; }
 body.playing header h1 {
@@ -1439,14 +1505,14 @@ body.playing header h1 {
   border-width: 5px; filter: drop-shadow(0 4px 0 #30160d);
 }
 body.playing header h1::before { inset: 4px 14px; }
-header .controls button { width: auto; min-width: 48px; padding: 0 10px; }
+header .controls button { width: auto; min-width: 48px; padding: 0 10px; white-space: nowrap; }
 header .controls button.danger {
   background: linear-gradient(#c8473f, #8e2530); color: #ffe4a0; font-size: 15px; font-weight: 900; padding: 0 14px;
 }
 body.playing header .controls button { height: 42px; min-width: 42px; font-size: 18px; }
 body.playing header .controls button.danger { font-size: 14px; }
 body.playing header .langsw button { height: 36px; }
-body.playing footer { margin-top: 10px; }
+body.playing footer { margin-top: 2px; padding: 2px; }
 body.fs.playing { padding-top: 4px; padding-bottom: 4px; }
 
 /* Log nad doskou a riadok rýchlosti: zlaté písmo na dreve */
@@ -1459,7 +1525,6 @@ body.fs.playing { padding-top: 4px; padding-bottom: 4px; }
   border: 5px ridge #b67a32; border-radius: 10px; color: #4f2c12;
   box-shadow: 0 6px 0 #32170d, 0 10px 18px #1c0b08a8;
 }
-.dev-panel { left: 32px; top: 96px; }
 .dev-panel select, .dev-panel input, .chat-row input {
   border: 3px ridge #c28a43; border-radius: 6px; background: #fff0cb; color: #5d3419;
 }
@@ -1482,7 +1547,7 @@ body.fs.playing { padding-top: 4px; padding-bottom: 4px; }
 .chat-msg.me b { color: #07518d; }
 .chat-msg.opp b { color: #b3261e; }
 .chat-msg.sys { color: #8d6b4a; }
-@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
+@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) and (min-height: 601px) {
   body.chat-open #chatPanel { background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294); }
 }
 
@@ -1498,6 +1563,7 @@ body.fs.playing { padding-top: 4px; padding-bottom: 4px; }
 /* Mobil v hre: doska berie celú plochu – bez rámu a okrajov, hlavička je
    ☰ overlay (flex stĺpec, pergamenové boxy), plaketa menšia. */
 @media (orientation: portrait),
+       (orientation: landscape) and (max-height: 600px),
        (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
   body.playing { padding: 0; }
   body.playing::before, body.playing::after { display: none; }

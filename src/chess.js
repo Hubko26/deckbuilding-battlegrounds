@@ -1,5 +1,6 @@
-// Šachovnica popri aréne (len desktop): prepínač ♟️ v hlavičke presunie
-// hraciu dosku doľava a vpravo otvorí jednoduché šachy bez hodín.
+// Šachovnica popri aréne: prepínač ♟️ v hlavičke (na mobile v ☰ menu)
+// ukáže / skryje plávajúci dialóg s jednoduchými šachmi bez hodín. Dialóg
+// sa dá chytiť za hlavičku a presunúť; doska arény pod ním ostáva celá.
 //   - proti človeku v sieti: ťahy idú cez Net.sendAction("chess", [san]) –
 //     rovnaký kanál ako herné akcie (resend po výpadku funguje aj pre šach),
 //     prijímajú sa obalením globálneho applyRemote (game.js sa nemení);
@@ -54,13 +55,14 @@ const ArenaChess = (() => {
       <div class="chess-head">
         <span class="chess-title">${tt(T.title)}</span>
         <button type="button" id="chessNew">${tt(T.newGame)}</button>
+        <button type="button" id="chessClose" class="chess-x" aria-label="✖">✖</button>
       </div>
       <div class="chess-board" id="chessBoard"></div>
       <div class="chess-status" id="chessStatus"></div>`;
-    // pravý stĺpec: šach navrch, chat pod ním
-    const side = document.getElementById("sideCol");
-    if (side) side.insertBefore(panel, side.firstChild);
-    else screen.appendChild(panel);
+    // plávajúci dialóg nad hrou (nie súčasť rozloženia dosky)
+    document.body.appendChild(panel);
+    panel.querySelector("#chessClose").addEventListener("click", () => setOpen(false));
+    dragDialog(panel, panel.querySelector(".chess-head"));
     boardEl = panel.querySelector("#chessBoard");
     statusEl = panel.querySelector("#chessStatus");
     panel.querySelector("#chessNew").addEventListener("click", () => {
@@ -85,6 +87,29 @@ const ArenaChess = (() => {
     try { open = localStorage.getItem(KEY) === "1"; } catch {}
     reset();
     setOpen(open);
+  }
+
+  // Presun dialógu ťahom za hlavičku (nie za tlačidlá); poloha drží v okne.
+  function dragDialog(box, handle) {
+    handle.addEventListener("pointerdown", e => {
+      if (e.target.closest("button")) return;
+      const r = box.getBoundingClientRect();
+      const dx = e.clientX - r.left, dy = e.clientY - r.top;
+      handle.setPointerCapture(e.pointerId);
+      const move = ev => {
+        const x = Math.min(Math.max(0, ev.clientX - dx), window.innerWidth - r.width);
+        const y = Math.min(Math.max(0, ev.clientY - dy), window.innerHeight - 40);
+        Object.assign(box.style, { left: x + "px", top: y + "px", right: "auto", transform: "none" });
+      };
+      const up = () => {
+        handle.removeEventListener("pointermove", move);
+        handle.removeEventListener("pointerup", up);
+        handle.removeEventListener("pointercancel", up);
+      };
+      handle.addEventListener("pointermove", move);
+      handle.addEventListener("pointerup", up);
+      handle.addEventListener("pointercancel", up);
+    });
   }
 
   function setOpen(open) {
