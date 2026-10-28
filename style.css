@@ -847,7 +847,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   body.playing header .controls,
   body.playing header .langsw {
     display: flex; gap: 10px; margin: 0;
-    background: rgba(255,255,255,.94); border-radius: 14px; padding: 10px;
+    background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294);
+    border: 4px ridge #b67a32; border-radius: 12px; padding: 10px;
   }
   body.playing header .controls button, body.playing header .langsw button { font-size: 1.05rem; }
   body.playing footer { display: none; }
@@ -1125,13 +1126,13 @@ body.botloop .chat-row { display: none; }
 .pov-btn { font-size: .8rem; padding: 4px 9px; background: #efe3ff; color: #4b1491; box-shadow: 0 2px 0 #b79ce6; }
 body.spectating #oppHero { cursor: pointer; }
 
-/* ---------- Úvodná obrazovka: drevená aréna ----------
-   Platí, kým nie je body.playing (výber hry, čakanie na súpera). Drevené
-   pozadie s vyrezávaným rámom, červená plaketa s názvom, pergamenový panel
-   s nastavením, po stranách ukážky kariet a živé hry, pod tým pravidlá. */
-body:not(.playing) {
+/* ---------- Drevená aréna (úvod aj hra) ----------
+   Drevené pozadie s vyrezávaným rámom, červená plaketa s názvom, pergamenové
+   panely. Úvodná obrazovka: panel s nastavením, po stranách ukážky kariet
+   a živé hry, pod tým pravidlá. V hre (body.playing) kompaktná hlavička
+   a rovnako ladené panely okolo dosky (log, balíček, chat, šach, ladenie). */
+body {
   --ink: #603516; --ink2: #8d5b30;
-  color: var(--ink);
   padding: 22px 28px 30px;
   background:
     repeating-linear-gradient(4deg, transparent 0 21px, #3e1d1020 22px 24px, transparent 25px 44px),
@@ -1140,24 +1141,24 @@ body:not(.playing) {
   background-color: #32180e;
   background-attachment: fixed;
 }
-body:not(.playing)::before, body:not(.playing)::after {
+body:not(.playing) { color: var(--ink); }
+body::before, body::after {
   content: ""; position: fixed; pointer-events: none; z-index: 10;
 }
-body:not(.playing)::before {
+body::before {
   inset: 8px; border: 9px ridge #b77b36; border-radius: 20px;
   box-shadow: inset 0 0 0 4px #5a2b16, inset 0 0 0 7px #e4b45b, 0 0 0 3px #2a130a;
 }
-body:not(.playing)::after { inset: 22px; border: 2px solid #e4b95e; border-radius: 12px; opacity: .7; }
-body:not(.playing) #pickScreen, body:not(.playing) header h1, body:not(.playing) footer,
-body:not(.playing) .win-box { font-family: Georgia, "Trebuchet MS", serif; }
+body::after { inset: 22px; border: 2px solid #e4b95e; border-radius: 12px; opacity: .7; }
+#pickScreen, header h1, footer, .win-box .big { font-family: Georgia, "Trebuchet MS", serif; }
 
 /* Hlavička: jazyk vľavo, plaketa v strede, ovládanie vpravo. */
-body:not(.playing) header {
+header {
   display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: "lang title ctrl";
   align-items: center; gap: 14px; padding: 34px 10px 6px; position: relative; z-index: 2;
   width: min(1320px, 100%); margin: 0 auto;
 }
-body:not(.playing) header h1 {
+header h1 {
   grid-area: title; position: relative;
   min-width: min(560px, 58vw); padding: 20px 60px 22px; text-align: center; white-space: nowrap;
   color: #ffe4a0; font-size: clamp(26px, 3.6vw, 48px); letter-spacing: 3px; line-height: 1.15;
@@ -1167,24 +1168,24 @@ body:not(.playing) header h1 {
   clip-path: polygon(4% 0, 96% 0, 100% 50%, 96% 100%, 4% 100%, 0 50%);
   filter: drop-shadow(0 8px 0 #30160d);
 }
-body:not(.playing) header h1::before {
+header h1::before {
   content: ""; position: absolute; inset: 7px 18px; border: 2px solid #f0c768; opacity: .7; pointer-events: none;
 }
-body:not(.playing) header .controls { grid-area: ctrl; justify-self: end; display: flex; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; }
-body:not(.playing) header .controls button {
+header .controls { grid-area: ctrl; justify-self: end; display: flex; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; }
+header .controls button {
   width: 48px; height: 48px; padding: 0; font-size: 21px;
   border: 4px ridge #d8a84f; border-radius: 10px;
   background: linear-gradient(#31485c, #172a3a); color: #ffe0a0; box-shadow: 0 4px 0 #371a0d;
 }
-body:not(.playing) header .controls button:hover { filter: brightness(1.2); }
-body:not(.playing) header .controls button.active { background: linear-gradient(#ffd66a, #ed9d1c); }
-body:not(.playing) header .langsw { grid-area: lang; justify-self: start; margin: 0; gap: 6px; }
-body:not(.playing) header .langsw button {
+header .controls button:hover { filter: brightness(1.2); }
+header .controls button.active { background: linear-gradient(#ffd66a, #ed9d1c); }
+header .langsw { grid-area: lang; justify-self: start; margin: 0; gap: 6px; }
+header .langsw button {
   min-width: 46px; height: 40px; padding: 0 8px; font-size: .9rem; font-weight: 900;
   border: 3px ridge #c58e48; border-radius: 8px;
   background: linear-gradient(#fff0ca, #e7bd7c); color: #70411e; box-shadow: 0 4px 0 #6b3a18;
 }
-body:not(.playing) header .langsw button.active {
+header .langsw button.active {
   background: linear-gradient(#ffd66a, #ed9d1c); border-color: #ffe6a0; color: #5b2d0c;
 }
 
@@ -1211,9 +1212,11 @@ body:not(.playing) header .langsw button.active {
   content: ""; position: absolute; inset: 6px; border: 1px solid #e9c26e; border-radius: 8px;
   opacity: .7; pointer-events: none; z-index: 2;
 }
+/* Art v karte je v oblúku y ≈ 8–50 % obrázka, hlavy bývajú v jeho spodnej
+   polovici a mimo stredu – mierny zoom, celá šírka oblúka, stuha na páske. */
 .art-pic {
-  position: absolute; inset: 0 0 30px;
-  background-size: 170% auto; background-position: 50% 15%; background-repeat: no-repeat;
+  position: absolute; inset: 0;
+  background-size: 130% auto; background-position: 50% 18%; background-repeat: no-repeat;
 }
 .art-name {
   position: absolute; bottom: 4px; left: 5%; width: 90%; height: 40px; z-index: 3;
@@ -1369,47 +1372,47 @@ body:not(.playing) header .langsw button.active {
   text-align: center; color: #f5d37f; font-size: 11px; letter-spacing: 2px; font-weight: bold;
   text-transform: uppercase; text-shadow: 0 2px #342012;
 }
-body:not(.playing) footer {
+footer {
   position: relative; z-index: 1; margin: 6px auto 4px; max-width: 900px;
   color: #f4d18b; text-shadow: 0 2px #34170c; font-size: 11px; letter-spacing: .5px;
 }
-/* Čakanie na súpera (sieť) nad úvodnou obrazovkou: pergamen namiesto bielej */
-body:not(.playing) .overlay { background: #1c0b08a8; }
-body:not(.playing) .win-box {
+/* Okná (čakanie na súpera, ban, trinkety, discover, koniec hry): pergamen */
+.overlay { background: #1c0b08a8; }
+.win-box {
   color: var(--ink); background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294);
   border: 8px ridge #b67a32; border-radius: 14px; box-shadow: 0 10px 0 #32170d, 0 20px 30px #1c0b08a8;
 }
-body:not(.playing) .win-box button {
+.win-box button {
   border: 4px ridge #d0a05a; border-radius: 8px; background: linear-gradient(#fff0ca, #e5b76f);
   color: #6b3b1a; font-weight: 900; box-shadow: 0 4px 0 #895326;
 }
-body:not(.playing) .win-box button.primary {
+.win-box button.primary {
   border-color: #e1b34e; background: linear-gradient(#258bd4, #07518d); color: #ffdfa0; box-shadow: 0 4px 0 #4d2a15;
 }
-body:not(.playing) .win-box input { border: 3px ridge #c28a43; background: #fff0cb; color: #5d3419; }
-body:not(.playing) .peer-code, body:not(.playing) .net-urls { color: #07518d; }
+.win-box input { border: 3px ridge #c28a43; background: #fff0cb; color: #5d3419; }
+.peer-code, .net-urls { color: #07518d; }
 
 /* Stredné okno: karty vľavo zmiznú, živé hry ostanú vpravo */
 @media (max-width: 1100px) {
   .home-grid { grid-template-columns: minmax(0, 600px) minmax(220px, 280px); justify-content: center; }
   .home-side.left { display: none; }
   .home-side.right { padding-top: 0; }
-  body:not(.playing) header {
+  header {
     grid-template-columns: 1fr 1fr; grid-template-areas: "title title" "lang ctrl"; padding-top: 26px;
   }
-  body:not(.playing) header h1 { justify-self: center; }
-  body:not(.playing) header .controls button { width: 42px; height: 42px; font-size: 18px; }
-  body:not(.playing) header .langsw button { min-width: 40px; }
+  header h1 { justify-self: center; }
+  header .controls button { width: 42px; height: 42px; font-size: 18px; }
+  header .langsw button { min-width: 40px; }
 }
 /* Úzke okno / mobil: všetko pod sebou */
 @media (max-width: 760px) {
-  body:not(.playing) { padding: 12px 14px 22px; }
-  body:not(.playing)::before { inset: 3px; border-width: 5px; border-radius: 14px; }
-  body:not(.playing)::after { inset: 13px; }
-  body:not(.playing) header { padding: 18px 6px 2px; gap: 12px; }
-  body:not(.playing) header h1 { width: 100%; min-width: 0; white-space: normal; justify-self: center; padding: 14px 24px 16px; letter-spacing: 1px; font-size: clamp(19px, 5.6vw, 34px); }
-  body:not(.playing) header .controls button { width: 40px; height: 40px; font-size: 17px; }
-  body:not(.playing) header .langsw button { min-width: 40px; height: 36px; }
+  body { padding: 12px 14px 22px; }
+  body::before { inset: 3px; border-width: 5px; border-radius: 14px; }
+  body::after { inset: 13px; }
+  header { padding: 18px 6px 2px; gap: 12px; }
+  header h1 { width: 100%; min-width: 0; white-space: normal; justify-self: center; padding: 14px 24px 16px; letter-spacing: 1px; font-size: clamp(19px, 5.6vw, 34px); }
+  header .controls button { width: 40px; height: 40px; font-size: 17px; }
+  header .langsw button { min-width: 40px; height: 36px; }
   .home-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 10px; }
   .home-side.right { padding-top: 0; }
   .games-box { width: 100%; }
@@ -1424,4 +1427,88 @@ body:not(.playing) .peer-code, body:not(.playing) .net-urls { color: #07518d; }
 }
 @media (prefers-reduced-motion: reduce) {
   .play-btn, .diff-pick button { transition: none; }
+}
+
+/* ---------- Hra v drevenej aréne ----------
+   Kompaktná hlavička (doska potrebuje výšku), panely okolo dosky ako
+   pergamen so zlatým rámom. Samotná doska (#stage) má vlastný obrázok. */
+body.playing { padding: 14px 26px 20px; }
+body.playing header { padding: 16px 10px 2px; gap: 10px; }
+body.playing header h1 {
+  min-width: 0; font-size: 21px; letter-spacing: 2px; padding: 8px 40px 10px;
+  border-width: 5px; filter: drop-shadow(0 4px 0 #30160d);
+}
+body.playing header h1::before { inset: 4px 14px; }
+header .controls button { width: auto; min-width: 48px; padding: 0 10px; }
+header .controls button.danger {
+  background: linear-gradient(#c8473f, #8e2530); color: #ffe4a0; font-size: 15px; font-weight: 900; padding: 0 14px;
+}
+body.playing header .controls button { height: 42px; min-width: 42px; font-size: 18px; }
+body.playing header .controls button.danger { font-size: 14px; }
+body.playing header .langsw button { height: 36px; }
+body.playing footer { margin-top: 10px; }
+body.fs.playing { padding-top: 4px; padding-bottom: 4px; }
+
+/* Log nad doskou a riadok rýchlosti: zlaté písmo na dreve */
+.log { color: #ffe4a0; text-shadow: 0 2px #2a130a; }
+.speed-row { color: #ffe4a0; text-shadow: 0 2px #2a130a; }
+
+/* Pergamenové panely okolo dosky */
+.deck-list, .dev-panel, .chat-panel, body.chess #chessPanel {
+  background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294);
+  border: 5px ridge #b67a32; border-radius: 10px; color: #4f2c12;
+  box-shadow: 0 6px 0 #32170d, 0 10px 18px #1c0b08a8;
+}
+.dev-panel { left: 32px; top: 96px; }
+.dev-panel select, .dev-panel input, .chat-row input {
+  border: 3px ridge #c28a43; border-radius: 6px; background: #fff0cb; color: #5d3419;
+}
+.deck-dd > button, .chat-panel button, .chess-head button, .dev-panel button {
+  border: 3px ridge #d0a05a; border-radius: 8px; background: linear-gradient(#fff0ca, #e5b76f);
+  color: #6b3b1a; font-weight: 900; box-shadow: 0 4px 0 #895326;
+}
+.deck-dd > button { border: 5px ridge #d9a64c; background: linear-gradient(#5e2f17, #3d1d0f); color: #ffe0a0; box-shadow: 0 5px 0 #2a130a; }
+.dev-panel button.primary, .chat-panel #chatSend {
+  border-color: #e1b34e; background: linear-gradient(#258bd4, #07518d); color: #ffdfa0; box-shadow: 0 4px 0 #4d2a15;
+}
+.dev-panel b, .chat-title, .chess-title, .chess-status { color: #603316; }
+.deck-list .hdr, .deck-row .ds, .deck-empty { color: #8d5b30; }
+.deck-row:hover { background: #f6d99d; }
+.deck-row .dn { color: #4a2711; }
+.deck-row .dn b { color: #07518d; }
+#deckOverlay .deck-list { background: #fff0cb; border-width: 3px; }
+.chat-log { background: #fff3d6; border: 2px solid #d0a05d; }
+.chat-msg { color: #3a220f; }
+.chat-msg.me b { color: #07518d; }
+.chat-msg.opp b { color: #b3261e; }
+.chat-msg.sys { color: #8d6b4a; }
+@media not all and (orientation: landscape) and (pointer: fine) and (min-width: 1000px) {
+  body.chat-open #chatPanel { background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294); }
+}
+
+/* Okná v hre: ban rasy, trinkety */
+.ban-msg { color: #6b4423; }
+.win-box .ban-btn, .win-box .trinket-btn {
+  border: 3px ridge #c58e48; border-radius: 10px; background: linear-gradient(#fff0ca, #e7bd7c);
+  color: #5b2d0c; box-shadow: 0 4px 0 #8d5528;
+}
+.win-box .ban-btn:not(:disabled):hover, .win-box .trinket-btn:hover { filter: brightness(1.06); transform: translateY(-2px); }
+.win-box .ban-btn.active { background: linear-gradient(#b43d3a, #7a2230); border-color: #d9a34a; color: #ffe4a0; }
+
+/* Mobil v hre: doska berie celú plochu – bez rámu a okrajov, hlavička je
+   ☰ overlay (flex stĺpec, pergamenové boxy), plaketa menšia. */
+@media (orientation: portrait),
+       (orientation: landscape) and (pointer: coarse) and (max-height: 920px) {
+  body.playing { padding: 0; }
+  body.playing::before, body.playing::after { display: none; }
+  body.playing header {
+    display: flex; width: auto; gap: 12px;
+    padding: calc(58px + env(safe-area-inset-top, 0px)) 14px 14px;
+  }
+  body.playing header h1 { white-space: normal; font-size: 1.2rem; color: #ffe4a0; text-shadow: 0 2px #55200f; }
+  body.playing header .controls { flex-wrap: wrap; justify-content: flex-start; }
+  body.playing .menu-btn {
+    background: linear-gradient(#31485c, #172a3a); color: #ffe0a0;
+    border: 3px ridge #d8a84f; box-shadow: 0 3px 0 #371a0d;
+  }
 }
