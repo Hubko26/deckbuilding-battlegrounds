@@ -12,7 +12,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=5783bda8">
+  <link rel="stylesheet" href="style.css?v=aeb55334">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
@@ -37,42 +37,67 @@
 
   <main>
     <!-- Výber obtiažnosti (superschopnosti hrdinu prídu neskôr) -->
+    <!-- Úvodná obrazovka: drevená aréna – vľavo karty príšer, v strede
+         pergamenový panel s nastavením hry, vpravo živé hry; pod tým pravidlá. -->
     <section id="pickScreen">
-      <div class="pick-box">
-        <h2 id="diffTitle">Ako silný má byť súper?</h2>
-        <div id="diffPick" class="diff-pick"></div>
-        <!-- Claude súper: API kľúč hráča (len localStorage) + profil hráča -->
-        <div id="claudeSetup" class="claude-setup hidden">
-          <label id="claudeKeyLabel" for="claudeKey"></label>
-          <input id="claudeKey" type="password" autocomplete="off" placeholder="sk-ant-…">
-          <div id="claudeKeyNote" class="claude-note"></div>
+      <div class="home-grid">
+        <!-- Ukážky kariet (art náhodných príšer, kreslí game.js renderHomeArt) -->
+        <aside class="home-side left" id="homeArtL" aria-hidden="true"></aside>
+
+        <div class="pick-box">
+          <div class="panel-head">
+            <div class="kicker" id="homeKicker"></div>
+            <h2 id="homeHead"></h2>
+            <p id="homeSub"></p>
+          </div>
+          <!-- Meno hráča (vždy pred hrou; pamätá sa). „Hubko" vidí ladenie rýchlosti. -->
+          <div class="field">
+            <label class="field-label" for="playerName"><span id="playerNameLabel"></span><span class="hint" id="nameHint"></span></label>
+            <input id="playerName" class="name-input" type="text" autocomplete="off" maxlength="24">
+          </div>
+          <div class="field">
+            <div class="field-label"><span id="diffTitle"></span><span class="hint" id="diffHint"></span></div>
+            <div id="diffPick" class="diff-pick" role="group"></div>
+            <!-- Claude súper: API kľúč hráča (len localStorage) + profil hráča -->
+            <div id="claudeSetup" class="claude-setup hidden">
+              <label id="claudeKeyLabel" for="claudeKey"></label>
+              <input id="claudeKey" class="name-input" type="password" autocomplete="off" placeholder="sk-ant-…">
+              <div id="claudeKeyNote" class="claude-note"></div>
+            </div>
+          </div>
+          <!-- Mutácie sú vždy vypnuté a ban rasy vždy zapnutý (bez checkboxu). -->
+          <div class="field">
+            <div class="field-label"><span id="modsTitle"></span><span class="hint" id="modsHint"></span></div>
+            <div class="mods">
+              <!-- Hmyz: experimentálna rasa, default vypnutá; v hre po sieti rozhoduje zakladateľ. -->
+              <label class="mod"><input type="checkbox" id="insectToggle"><span class="mod-ic">🐛</span><span id="insectToggleLbl" class="mod-tx"></span></label>
+              <!-- Trinkety: ponuka trvalého bonusu v kole 4 a 8; v hre po sieti rozhoduje zakladateľ. -->
+              <label class="mod"><input type="checkbox" id="trinketToggle"><span class="mod-ic">🧿</span><span id="trinketToggleLbl" class="mod-tx"></span></label>
+            </div>
+          </div>
+          <div class="home-actions">
+            <button id="startBtn" class="play-btn">Hraj!</button>
+            <button id="netBtn" class="friend-btn">📶 Hraj s kamarátom (sieť)</button>
+            <!-- Návrat do rozohranej sieťovej hry (kód je v localStorage) -->
+            <button id="rejoinBtn" class="friend-btn rejoin hidden"></button>
+          </div>
+          <div class="home-fine" id="homeFine"></div>
+          <!-- Verzia: čas buildu (version.js) + posledný commit z GitHubu. -->
+          <div id="versionBox" class="version-box"></div>
         </div>
-        <!-- Meno hráča (vždy pred hrou; pamätá sa). „Hubko" vidí ladenie rýchlosti. -->
-        <div class="name-row">
-          <label id="playerNameLabel" for="playerName"></label>
-          <input id="playerName" type="text" autocomplete="off" maxlength="24">
-        </div>
-        <button id="startBtn" class="primary big-btn">Hraj!</button>
-        <div class="net-row">
-          <button id="netBtn">📶 Hraj s kamarátom (sieť)</button>
-          <!-- Návrat do rozohranej sieťovej hry (kód je v localStorage) -->
-          <button id="rejoinBtn" class="hidden"></button>
-        </div>
-        <!-- Mutácie sú vždy vypnuté a ban rasy vždy zapnutý (bez checkboxu). -->
-        <!-- Hmyz: experimentálna rasa, default vypnutá; v hre po sieti rozhoduje zakladateľ. -->
-        <label class="mut-toggle"><input type="checkbox" id="insectToggle"> <span id="insectToggleLbl"></span></label>
-        <!-- Trinkety: ponuka trvalého bonusu v kole 4 a 8; v hre po sieti rozhoduje zakladateľ. -->
-        <label class="mut-toggle"><input type="checkbox" id="trinketToggle"> <span id="trinketToggleLbl"></span></label>
-        <!-- Verzia: čas buildu (version.js) + posledný commit z GitHubu. -->
-        <div id="versionBox" class="version-box"></div>
+
+        <aside class="home-side right">
+          <!-- Práve prebiehajúce hry (src/lobby.js): ťuk = kto hrá, 👁 = sledovať ako divák -->
+          <div id="gamesBox" class="games-box">
+            <h3 id="gamesTitle"></h3>
+            <div id="gamesList" class="games-list"></div>
+          </div>
+          <div id="homeArtR" class="home-art-r" aria-hidden="true"></div>
+        </aside>
       </div>
       <!-- Pravidlá hry – obsah generuje game.js (trojjazyčne). -->
       <div id="rulesBox" class="rules-box"></div>
-      <!-- Práve prebiehajúce hry (src/lobby.js): ťuk = kto hrá, 👁 = sledovať ako divák -->
-      <div id="gamesBox" class="games-box">
-        <h3 id="gamesTitle"></h3>
-        <div id="gamesList" class="games-list"></div>
-      </div>
+      <div class="home-ribbon" id="homeRibbon"></div>
     </section>
 
     <!-- Čakanie na súpera (hra po sieti / kód miestnosti) -->
@@ -238,9 +263,9 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=a7686dfd"></script>
+  <script src="version.js?v=44757fac"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
-  <script src="src/i18n.js?v=f09c54da"></script>
+  <script src="src/i18n.js?v=698d729c"></script>
   <script src="src/net.js?v=1bcf318d"></script>
   <script src="src/lobby.js?v=da80aa92"></script>
   <script src="src/sfx.js?v=00b87990"></script>
@@ -249,7 +274,7 @@
   <script src="src/engine.js?v=a07ca8e9"></script>
   <script src="src/bot.js?v=26ca977a"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=b34ac942"></script>
+  <script src="src/game.js?v=3bf01c93"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=fd92db4f"></script>

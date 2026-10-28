@@ -43,42 +43,8 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .langsw button { font-size: .85rem; font-weight: 700; padding: 5px 9px; border-radius: 8px; background: rgba(255,255,255,.75); color: #456; min-width: 38px; }
 .langsw button.active { background: #2f7cff; color: #fff; }
 
-/* ---------- Výber obtiažnosti ---------- */
-#pickScreen { display: flex; flex-direction: column; align-items: center; width: 100%; }
-.pick-box { background: rgba(255,255,255,.7); border-radius: 18px; padding: 18px 22px; text-align: center; max-width: 560px; }
-
-/* Pravidlá: tmavý panel pod výberom hry, biely text, farebné zvýraznenia. */
-.rules-box {
-  margin-top: 16px; width: min(94vw, 680px);
-  background: rgba(8, 13, 20, .92); color: #f2f6fa;
-  border-radius: 18px; padding: 14px 20px 16px; text-align: left;
-  font-size: .95rem; line-height: 1.5;
-  box-shadow: 0 6px 18px rgba(0, 20, 40, .35);
-}
-.rules-box h3 { margin: 2px 0 10px; text-align: center; font-size: 1.1rem; letter-spacing: .03em; }
-.rules-box ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
-.rules-box i { font-style: normal; font-weight: 700; }
-.rules-box .hl-g { color: #ffd33d; }  /* peniaze */
-.rules-box .hl-r { color: #ff8f8f; }  /* životy, boj */
-.rules-box .hl-b { color: #7cc4ff; }  /* tier, obchod, freeze */
-.rules-box .hl-e { color: #7ee787; }  /* evolve, zadarmo */
-@media (orientation: portrait) {
-  .rules-box { font-size: .85rem; padding: 12px 14px 14px; }
-}
-.pick-box h2 { font-size: 1.1rem; margin: 10px 0; }
-/* Claude súper: kľúč + profil hráča (BYO key – žije len v localStorage). */
-.claude-setup { margin-top: 12px; display: grid; gap: 6px; text-align: left; }
-.claude-setup label { font-size: .85rem; font-weight: 700; color: #345; }
-.claude-setup input {
-  font-size: .95rem; padding: 7px 10px; border: 2px solid #9bc;
-  border-radius: 10px; font-family: inherit; width: 100%;
-}
-.claude-note { font-size: .75rem; color: #567; line-height: 1.35; }
 /* Chat s Claudom pod doskou (len Claude mód). */
 .chat-row { display: flex; gap: 6px; width: min(98vw, 480px); margin-top: 4px; }
-/* Meno hráča na úvodnej obrazovke. */
-.name-row { display: flex; gap: 8px; align-items: center; justify-content: center; margin: 6px 0 10px; font-weight: 700; }
-.name-row input { font-size: 1rem; padding: 6px 10px; border: 2px solid #9bc; border-radius: 10px; font-family: inherit; width: 12em; }
 /* Ladenie rýchlosti animácií (len „Hubko") – pod hracou plochou. */
 .speed-row { display: flex; gap: 8px; align-items: center; justify-content: center; width: min(98vw, 480px); margin-top: 4px; font-weight: 700; }
 .speed-row input { flex: 1; }
@@ -89,15 +55,6 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .chat-row button { padding: 6px 12px; }
 /* Claudov záverečný výsmech v okne konca hry. */
 .over-roast { margin-top: 10px; font-style: italic; color: #a33; max-width: 420px; }
-.diff-pick { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-.mut-toggle { display: block; margin-top: 12px; font-size: .9rem; color: #345; cursor: pointer; }
-.version-box { margin-top: 14px; font-size: .78rem; color: #567; line-height: 1.4; }
-.version-box .ok { color: #2b8a3e; font-weight: 600; }
-.version-box .old { color: #c92a2a; font-weight: 600; }
-.mut-toggle input { transform: scale(1.2); margin-right: 6px; vertical-align: -2px; }
-.diff-pick button.active { background: #ffd33d; font-weight: 700; }
-.big-btn { font-size: 1.3rem; margin-top: 14px; padding: 10px 34px; }
-.net-row { margin-top: 12px; }
 .net-urls { font-weight: 700; color: #2f7cff; margin: 10px 0; font-size: 1rem; user-select: text; }
 .peer-code { font-size: 2.4rem; font-weight: 900; letter-spacing: .2em; color: #2f7cff; margin: 8px 0; user-select: text; }
 .peer-join { display: flex; gap: 8px; justify-content: center; margin-top: 12px; }
@@ -1028,33 +985,6 @@ body.spectating #endTurnBtn, body.spectating #devPanel,
 body.spectating #speedRow, body.spectating #chessPanel, body.spectating #chessBtn { display: none !important; }
 body.spectating .head-btns { visibility: hidden; } /* miesto ostáva – banner nepreskočí */
 
-/* ---------- Práve prebiehajúce hry (úvodná obrazovka) ----------
-   Široké okno: tabuľka vpravo vedľa výberu hry; inak pod pravidlami. */
-#pickScreen { position: relative; }
-.games-box {
-  margin-top: 16px; width: min(94vw, 680px);
-  background: rgba(255,255,255,.75); border-radius: 18px; padding: 12px 14px;
-  box-shadow: 0 4px 14px rgba(0,20,40,.2);
-}
-@media (min-width: 1400px) {
-  .games-box { position: absolute; top: 0; right: 16px; width: 300px; margin-top: 0; }
-}
-.games-box h3 { margin: 0 0 8px; text-align: center; font-size: 1.05rem; color: #345; }
-.games-list { display: grid; gap: 6px; max-height: 60dvh; overflow-y: auto; }
-.game-row { background: #fff; border-radius: 10px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,20,40,.18); }
-.game-row.open { box-shadow: 0 0 0 2px #2f7cff; }
-.game-head {
-  width: 100%; display: flex; gap: 8px; align-items: center; padding: 8px 10px;
-  border-radius: 0; background: none; box-shadow: none; font-size: .95rem; text-align: left;
-}
-.game-head:active { transform: none; }
-.game-head .gc { font-weight: 800; flex: 1; }
-.game-head .gr { color: #567; font-size: .85rem; }
-.game-head .gs { color: #7b3fe4; font-weight: 700; font-size: .85rem; }
-.game-head .gx { color: #789; }
-.game-det { padding: 2px 10px 10px; display: grid; gap: 6px; }
-.game-det .gp { font-weight: 700; color: #123; font-size: .92rem; }
-.games-empty { font-size: .85rem; color: #567; text-align: center; padding: 6px; }
 
 /* ---------- Môj balíček – zoznam vlastných kariet ----------
    Desktop: dropdown vpravo vedľa dosky (pozíciu ráta game.js positionDeckDd).
@@ -1194,3 +1124,304 @@ body.botloop .chat-row { display: none; }
 #stage .card.fly-card { z-index: 70; pointer-events: none; box-shadow: 0 1.5cqh 3cqh rgba(0,0,0,.5); }
 .pov-btn { font-size: .8rem; padding: 4px 9px; background: #efe3ff; color: #4b1491; box-shadow: 0 2px 0 #b79ce6; }
 body.spectating #oppHero { cursor: pointer; }
+
+/* ---------- Úvodná obrazovka: drevená aréna ----------
+   Platí, kým nie je body.playing (výber hry, čakanie na súpera). Drevené
+   pozadie s vyrezávaným rámom, červená plaketa s názvom, pergamenový panel
+   s nastavením, po stranách ukážky kariet a živé hry, pod tým pravidlá. */
+body:not(.playing) {
+  --ink: #603516; --ink2: #8d5b30;
+  color: var(--ink);
+  padding: 22px 28px 30px;
+  background:
+    repeating-linear-gradient(4deg, transparent 0 21px, #3e1d1020 22px 24px, transparent 25px 44px),
+    repeating-linear-gradient(93deg, transparent 0 130px, #f6c46d08 132px 134px, transparent 137px 250px),
+    linear-gradient(90deg, #3f1e11, #8c4d26 12%, #663419 30%, #945329 52%, #5b2c16 75%, #35180d);
+  background-color: #32180e;
+  background-attachment: fixed;
+}
+body:not(.playing)::before, body:not(.playing)::after {
+  content: ""; position: fixed; pointer-events: none; z-index: 10;
+}
+body:not(.playing)::before {
+  inset: 8px; border: 9px ridge #b77b36; border-radius: 20px;
+  box-shadow: inset 0 0 0 4px #5a2b16, inset 0 0 0 7px #e4b45b, 0 0 0 3px #2a130a;
+}
+body:not(.playing)::after { inset: 22px; border: 2px solid #e4b95e; border-radius: 12px; opacity: .7; }
+body:not(.playing) #pickScreen, body:not(.playing) header h1, body:not(.playing) footer,
+body:not(.playing) .win-box { font-family: Georgia, "Trebuchet MS", serif; }
+
+/* Hlavička: jazyk vľavo, plaketa v strede, ovládanie vpravo. */
+body:not(.playing) header {
+  display: grid; grid-template-columns: 1fr auto 1fr; grid-template-areas: "lang title ctrl";
+  align-items: center; gap: 14px; padding: 34px 10px 6px; position: relative; z-index: 2;
+  width: min(1320px, 100%); margin: 0 auto;
+}
+body:not(.playing) header h1 {
+  grid-area: title; position: relative;
+  min-width: min(560px, 58vw); padding: 20px 60px 22px; text-align: center; white-space: nowrap;
+  color: #ffe4a0; font-size: clamp(26px, 3.6vw, 48px); letter-spacing: 3px; line-height: 1.15;
+  text-transform: uppercase; text-shadow: 0 3px #55200f, 0 5px #34150b;
+  background: linear-gradient(180deg, #b43d3a 0%, #84252e 53%, #5e202b 100%);
+  border: 7px ridge #d9a34a;
+  clip-path: polygon(4% 0, 96% 0, 100% 50%, 96% 100%, 4% 100%, 0 50%);
+  filter: drop-shadow(0 8px 0 #30160d);
+}
+body:not(.playing) header h1::before {
+  content: ""; position: absolute; inset: 7px 18px; border: 2px solid #f0c768; opacity: .7; pointer-events: none;
+}
+body:not(.playing) header .controls { grid-area: ctrl; justify-self: end; display: flex; gap: 8px; flex-wrap: nowrap; justify-content: flex-end; }
+body:not(.playing) header .controls button {
+  width: 48px; height: 48px; padding: 0; font-size: 21px;
+  border: 4px ridge #d8a84f; border-radius: 10px;
+  background: linear-gradient(#31485c, #172a3a); color: #ffe0a0; box-shadow: 0 4px 0 #371a0d;
+}
+body:not(.playing) header .controls button:hover { filter: brightness(1.2); }
+body:not(.playing) header .controls button.active { background: linear-gradient(#ffd66a, #ed9d1c); }
+body:not(.playing) header .langsw { grid-area: lang; justify-self: start; margin: 0; gap: 6px; }
+body:not(.playing) header .langsw button {
+  min-width: 46px; height: 40px; padding: 0 8px; font-size: .9rem; font-weight: 900;
+  border: 3px ridge #c58e48; border-radius: 8px;
+  background: linear-gradient(#fff0ca, #e7bd7c); color: #70411e; box-shadow: 0 4px 0 #6b3a18;
+}
+body:not(.playing) header .langsw button.active {
+  background: linear-gradient(#ffd66a, #ed9d1c); border-color: #ffe6a0; color: #5b2d0c;
+}
+
+/* Rozloženie: karty | panel | živé hry */
+#pickScreen { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 1; }
+.home-grid {
+  width: min(1320px, 100%); margin-top: 18px;
+  display: grid; grid-template-columns: minmax(170px, 1fr) minmax(0, 620px) minmax(170px, 1fr);
+  gap: 22px; align-items: start;
+}
+.home-side { display: flex; flex-direction: column; align-items: center; gap: 22px; padding-top: 26px; min-width: 0; }
+.home-art-r { display: contents; }
+
+/* Ukážka karty: výrez artu z rámu karty, menovka ako stuha */
+.art-card {
+  position: relative; width: min(100%, 250px); aspect-ratio: 25 / 22; overflow: hidden;
+  border: 6px ridge #d9a64c; border-radius: 14px; transform: rotate(-4deg);
+  background: linear-gradient(155deg, #1a4852, #244e50 54%, #102f39);
+  box-shadow: 0 9px 0 #371a0d, 0 13px 20px #160a06a8, inset 0 0 0 3px #6b411d;
+}
+.home-side .art-card:nth-child(2) { transform: rotate(4deg); }
+.home-side.right .art-card { transform: rotate(3deg); }
+.art-card::before {
+  content: ""; position: absolute; inset: 6px; border: 1px solid #e9c26e; border-radius: 8px;
+  opacity: .7; pointer-events: none; z-index: 2;
+}
+.art-pic {
+  position: absolute; inset: 0 0 30px;
+  background-size: 170% auto; background-position: 50% 15%; background-repeat: no-repeat;
+}
+.art-name {
+  position: absolute; bottom: 4px; left: 5%; width: 90%; height: 40px; z-index: 3;
+  display: grid; place-items: center; padding: 0 14px;
+  background: linear-gradient(#ffe4a0, #d5a052); border: 4px ridge #9a602b;
+  clip-path: polygon(7% 0, 93% 0, 100% 50%, 93% 100%, 7% 100%, 0 50%);
+  color: #482611; font-weight: 900; font-size: 15px; letter-spacing: 1px; text-transform: uppercase;
+  text-shadow: 0 1px #fff0c1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.art-race {
+  position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 3;
+  padding: 2px 10px; border-radius: 10px; white-space: nowrap;
+  background: #2a130acc; color: #ffe0a0; font-size: 11px; font-weight: 700; letter-spacing: .5px;
+}
+
+/* Pergamenový panel s nastavením hry */
+.pick-box {
+  position: relative; text-align: left;
+  background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294);
+  border: 9px ridge #b67a32; border-radius: 14px; padding: 28px 34px 24px;
+  box-shadow: 0 12px 0 #32170d, 0 22px 32px #1c0b08a8, inset 0 0 0 3px #ffebad;
+}
+.pick-box::before {
+  content: ""; position: absolute; inset: 9px; border: 2px solid #d6a054; border-radius: 6px; pointer-events: none;
+}
+.pick-box::after {
+  content: "✦"; position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+  padding: 0 12px; color: #ffe9a0; font-size: 25px; text-shadow: 0 2px #8a4b21; background: #e6b66e;
+}
+.panel-head { text-align: center; margin-bottom: 8px; position: relative; }
+.panel-head .kicker { font-size: 11px; letter-spacing: 2px; font-weight: bold; color: #9b632c; text-transform: uppercase; }
+.panel-head h2 { margin: 6px 0 4px; font-size: clamp(23px, 2.4vw, 31px); color: #603316; text-shadow: 0 1px #fff0be; }
+.panel-head p { margin: 0; color: var(--ink2); font-size: 13px; font-weight: bold; }
+.field { margin-top: 18px; position: relative; }
+.field-label {
+  display: flex; justify-content: space-between; gap: 10px; align-items: center;
+  margin: 0 0 8px; font-size: 14px; font-weight: bold; color: #633718;
+}
+.field-label .hint { font-size: 9px; letter-spacing: 1px; color: #a07142; white-space: nowrap; }
+.name-input {
+  width: 100%; height: 45px; padding: 0 13px; font-size: 1rem; font-family: inherit;
+  border: 3px ridge #c28a43; border-radius: 6px; background: #fff0cb; color: #5d3419;
+  box-shadow: inset 0 2px 5px #63351520; outline: none; user-select: text;
+}
+.name-input:focus { border-color: #187cb6; box-shadow: 0 0 0 3px #1684ce30; }
+.name-input::placeholder { color: #b38c5f; }
+
+.diff-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+.diff-pick button {
+  min-height: 58px; padding: 6px 4px; font-size: 13px; font-weight: 900; line-height: 1.15;
+  border: 3px ridge #c58e48; border-radius: 6px;
+  background: linear-gradient(#fff0ca, #e7bd7c); color: #70411e; box-shadow: 0 4px 0 #8d5528;
+  transition: transform .15s, filter .15s;
+}
+.diff-pick button:hover { transform: translateY(-2px); filter: brightness(1.05); }
+.diff-pick button .d-ic { display: block; font-size: 20px; margin-bottom: 3px; }
+.diff-pick button.active {
+  background: linear-gradient(#ffd66a, #ed9d1c); border-color: #ffe6a0; color: #5b2d0c;
+  box-shadow: 0 4px 0 #874718, inset 0 0 0 1px #fff0b2;
+}
+/* Claude súper: kľúč + profil hráča (BYO key – žije len v localStorage). */
+.claude-setup { margin-top: 12px; display: grid; gap: 6px; text-align: left; }
+.claude-setup label { font-size: .85rem; font-weight: 700; color: #633718; }
+.claude-note { font-size: .75rem; color: #98683c; line-height: 1.35; }
+
+.mods { display: grid; gap: 8px; }
+.mod {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px; cursor: pointer;
+  border: 2px solid #d0a05d; border-radius: 6px; background: #ffe6b3; box-shadow: inset 0 1px #fff6d7;
+}
+.mod input {
+  appearance: none; -webkit-appearance: none; width: 20px; height: 20px; flex: 0 0 20px; margin: 0;
+  border: 2px solid #a66c35; border-radius: 3px; background: #fff2d0; display: grid; place-content: center; cursor: pointer;
+}
+.mod input:checked { background: #1479bb; border-color: #09578a; }
+.mod input:checked::after { content: "✓"; font: 900 14px Arial, sans-serif; color: #fff; }
+.mod-ic { font-size: 22px; }
+.mod-tx strong { display: block; font-size: 13px; color: #62391b; }
+.mod-tx small { display: block; font-size: 11px; margin-top: 2px; color: #98683c; }
+
+.home-actions { display: grid; gap: 11px; margin-top: 22px; }
+.play-btn {
+  height: 66px; border: 7px ridge #e1b34e; border-radius: 12px;
+  background: linear-gradient(#258bd4, #07518d 75%, #063d6c); color: #ffdfa0;
+  font-size: 27px; font-weight: 900; letter-spacing: 2px; text-transform: uppercase; text-shadow: 0 3px #3d291b;
+  box-shadow: 0 6px 0 #4d2a15, inset 0 2px #8bc9ee; transition: transform .12s, filter .12s;
+}
+.play-btn:hover { filter: brightness(1.12); transform: translateY(-2px); }
+.play-btn:active { transform: translateY(3px); box-shadow: 0 2px 0 #4d2a15; }
+.friend-btn {
+  min-height: 48px; border: 4px ridge #d0a05a; border-radius: 6px;
+  background: linear-gradient(#fff0ca, #e5b76f); color: #6b3b1a; font-size: 14px; font-weight: 900;
+  box-shadow: 0 4px 0 #895326;
+}
+.friend-btn:hover { filter: brightness(1.05); }
+.friend-btn.rejoin { background: linear-gradient(#e6f0c7, #b9d184); border-color: #9cbf5c; color: #2f4d1c; box-shadow: 0 4px 0 #5b7a2c; }
+.home-fine { text-align: center; margin-top: 16px; font-size: 10px; letter-spacing: 1px; font-weight: bold; color: #9a693b; text-transform: uppercase; }
+.version-box { margin-top: 10px; text-align: center; font-size: 11px; color: #98683c; line-height: 1.45; user-select: text; }
+.version-box .ok { color: #2b7a3e; font-weight: 700; }
+.version-box .old { color: #b3261e; font-weight: 700; }
+
+/* Práve prebiehajúce hry: tmavá drevená tabuľa so zlatým rámom */
+.games-box {
+  width: min(100%, 280px); padding: 12px 12px 14px;
+  background: linear-gradient(#5e2f17, #3d1d0f); border: 6px ridge #d9a64c; border-radius: 12px;
+  box-shadow: 0 8px 0 #2a130a, 0 12px 20px #160a06a8, inset 0 0 0 2px #8c5a2a;
+}
+.games-box h3 { margin: 0 0 10px; text-align: center; font-size: 1.05rem; color: #ffe0a0; text-shadow: 0 2px #2a130a; letter-spacing: .5px; }
+.games-list { display: grid; gap: 6px; max-height: 50dvh; overflow-y: auto; }
+.game-row { background: linear-gradient(#fff0ca, #ecc58a); border: 2px solid #c58e48; border-radius: 6px; overflow: hidden; }
+.game-row.open { border-color: #ffd66a; box-shadow: 0 0 0 2px #ed9d1c; }
+.game-head {
+  width: 100%; display: flex; gap: 8px; align-items: center; padding: 8px 10px; color: #4a2711;
+  border-radius: 0; background: none; box-shadow: none; font-size: .92rem; text-align: left;
+}
+.game-head:active { transform: none; }
+.game-head .gc { font-weight: 800; flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.game-head .gr { color: #8d5b30; font-size: .82rem; white-space: nowrap; }
+.game-head .gs { color: #7b3fe4; font-weight: 700; font-size: .82rem; }
+.game-head .gx { color: #8d5b30; }
+.game-det { padding: 2px 10px 10px; display: grid; gap: 6px; }
+.game-det .gp { font-weight: 700; color: #4a2711; font-size: .88rem; }
+.game-det button.primary { background: linear-gradient(#258bd4, #07518d); color: #ffdfa0; border: 3px ridge #e1b34e; box-shadow: 0 3px 0 #4d2a15; }
+.games-empty { font-size: .85rem; color: #f3d18e; text-align: center; padding: 6px; font-style: italic; }
+.game-row .games-empty { color: #8d5b30; }
+
+/* Pravidlá: pergamenový zvitok pod panelom */
+.rules-box {
+  position: relative; margin-top: 34px; width: min(980px, 100%);
+  background: linear-gradient(145deg, #ffe7b4, #efc888 55%, #f8dca6);
+  border: 7px ridge #b67a32; border-radius: 12px; padding: 18px 30px 20px; text-align: left;
+  color: #4f2c12; font-size: .95rem; line-height: 1.5;
+  box-shadow: 0 10px 0 #32170d, 0 18px 28px #1c0b08a8, inset 0 0 0 3px #fff0c0;
+}
+.rules-box h3 {
+  margin: -36px auto 14px; width: max-content; max-width: 100%; padding: 8px 34px;
+  text-align: center; font-size: 1.15rem; letter-spacing: 1px; color: #ffe4a0; text-shadow: 0 2px #55200f;
+  background: linear-gradient(#b43d3a, #7a2230); border: 4px ridge #d9a34a;
+  clip-path: polygon(6% 0, 94% 0, 100% 50%, 94% 100%, 6% 100%, 0 50%);
+}
+.rules-box ul { margin: 0; padding: 0; list-style: none; display: grid; grid-template-columns: 1fr 1fr; gap: 8px 26px; }
+.rules-box li { padding-bottom: 7px; border-bottom: 1px dashed #c99a5a; }
+.rules-box i { font-style: normal; font-weight: 700; }
+.rules-box .hl-g { color: #a35f00; }  /* peniaze */
+.rules-box .hl-r { color: #b3261e; }  /* životy, boj */
+.rules-box .hl-b { color: #145f9e; }  /* tier, obchod, freeze */
+.rules-box .hl-e { color: #2b7a3e; }  /* evolve, zadarmo */
+
+.home-ribbon {
+  width: min(760px, 86%); margin: 26px auto 0; padding: 10px 50px;
+  background: linear-gradient(#17628b, #0b3f61); border: 6px ridge #d9a548;
+  clip-path: polygon(0 0, 100% 0, 95% 50%, 100% 100%, 0 100%, 5% 50%);
+  text-align: center; color: #f5d37f; font-size: 11px; letter-spacing: 2px; font-weight: bold;
+  text-transform: uppercase; text-shadow: 0 2px #342012;
+}
+body:not(.playing) footer {
+  position: relative; z-index: 1; margin: 6px auto 4px; max-width: 900px;
+  color: #f4d18b; text-shadow: 0 2px #34170c; font-size: 11px; letter-spacing: .5px;
+}
+/* Čakanie na súpera (sieť) nad úvodnou obrazovkou: pergamen namiesto bielej */
+body:not(.playing) .overlay { background: #1c0b08a8; }
+body:not(.playing) .win-box {
+  color: var(--ink); background: linear-gradient(145deg, #ffe1a0, #e9b76c 50%, #f7d294);
+  border: 8px ridge #b67a32; border-radius: 14px; box-shadow: 0 10px 0 #32170d, 0 20px 30px #1c0b08a8;
+}
+body:not(.playing) .win-box button {
+  border: 4px ridge #d0a05a; border-radius: 8px; background: linear-gradient(#fff0ca, #e5b76f);
+  color: #6b3b1a; font-weight: 900; box-shadow: 0 4px 0 #895326;
+}
+body:not(.playing) .win-box button.primary {
+  border-color: #e1b34e; background: linear-gradient(#258bd4, #07518d); color: #ffdfa0; box-shadow: 0 4px 0 #4d2a15;
+}
+body:not(.playing) .win-box input { border: 3px ridge #c28a43; background: #fff0cb; color: #5d3419; }
+body:not(.playing) .peer-code, body:not(.playing) .net-urls { color: #07518d; }
+
+/* Stredné okno: karty vľavo zmiznú, živé hry ostanú vpravo */
+@media (max-width: 1100px) {
+  .home-grid { grid-template-columns: minmax(0, 600px) minmax(220px, 280px); justify-content: center; }
+  .home-side.left { display: none; }
+  .home-side.right { padding-top: 0; }
+  body:not(.playing) header {
+    grid-template-columns: 1fr 1fr; grid-template-areas: "title title" "lang ctrl"; padding-top: 26px;
+  }
+  body:not(.playing) header h1 { justify-self: center; }
+  body:not(.playing) header .controls button { width: 42px; height: 42px; font-size: 18px; }
+  body:not(.playing) header .langsw button { min-width: 40px; }
+}
+/* Úzke okno / mobil: všetko pod sebou */
+@media (max-width: 760px) {
+  body:not(.playing) { padding: 12px 14px 22px; }
+  body:not(.playing)::before { inset: 3px; border-width: 5px; border-radius: 14px; }
+  body:not(.playing)::after { inset: 13px; }
+  body:not(.playing) header { padding: 18px 6px 2px; gap: 12px; }
+  body:not(.playing) header h1 { width: 100%; min-width: 0; white-space: normal; justify-self: center; padding: 14px 24px 16px; letter-spacing: 1px; font-size: clamp(19px, 5.6vw, 34px); }
+  body:not(.playing) header .controls button { width: 40px; height: 40px; font-size: 17px; }
+  body:not(.playing) header .langsw button { min-width: 40px; height: 36px; }
+  .home-grid { grid-template-columns: minmax(0, 1fr); gap: 18px; margin-top: 10px; }
+  .home-side.right { padding-top: 0; }
+  .games-box { width: 100%; }
+  .home-art-r { display: none; }
+  .pick-box { padding: 24px 16px 20px; border-width: 6px; }
+  .pick-box::before { inset: 5px; }
+  .diff-pick { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .play-btn { font-size: 22px; height: 60px; }
+  .rules-box { padding: 16px 16px 16px; font-size: .88rem; margin-top: 32px; }
+  .rules-box ul { grid-template-columns: 1fr; }
+  .home-ribbon { width: 94%; padding: 8px 30px; font-size: 9px; letter-spacing: 1px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .play-btn, .diff-pick button { transition: none; }
+}

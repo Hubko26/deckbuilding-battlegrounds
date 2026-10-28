@@ -1,2 +1,2 @@
 // Generuje tools/bump-version.py (pre-commit) – čas buildu v UTC.
-const APP_BUILD = "2026-10-22T06:20:12Z";
+const APP_BUILD = "2026-10-28T09:00:58Z";

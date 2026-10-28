@@ -263,18 +263,22 @@ const fastAnim = el => !!(el && Cards.byId[el.dataset.defid] && Cards.byId[el.da
 function applyI18n() {
   document.title = t(L.pageTitle);
   $("title").textContent = t(L.title);
-  $("diffTitle").textContent = t(L.diffTitle);
-  $("startBtn").textContent = t(L.play);
+  $("diffTitle").textContent = "🛡️ " + t(L.diffTitle);
+  $("startBtn").textContent = `⚔ ${t(L.play)} ⚔`;
   $("netBtn").textContent = t(L.netBtn);
   $("netCancel").textContent = t(L.cancel);
   renderRejoinBtn();
   $("peerHostBtn").textContent = t(L.peerHost);
-  $("playerNameLabel").textContent = t(L.claudeNameLabel);
+  $("playerNameLabel").textContent = "✍️ " + t(L.claudeNameLabel).replace(/:\s*$/, "");
   $("playerName").placeholder = t(L.claudeNamePh);
   $("speedLbl").textContent = t(L.speedLbl);
   renderSpeedRow();
-  $("insectToggleLbl").textContent = t(L.insectToggle);
-  $("trinketToggleLbl").textContent = t(L.trinketToggle);
+  for (const k of ["insectToggle", "trinketToggle"]) {
+    $(k + "Lbl").innerHTML = `<strong>${t(L[k].name)}</strong><small>${t(L[k].desc)}</small>`;
+  }
+  for (const k of ["homeKicker", "homeHead", "homeSub", "nameHint", "diffHint", "modsTitle", "modsHint", "homeFine", "homeRibbon"]) {
+    $(k).textContent = t(L[k]);
+  }
   renderVersion();
   $("peerJoinBtn").textContent = t(L.peerJoin);
   $("newGameBtn").textContent = t(L.newGame);
@@ -304,8 +308,11 @@ function renderPick() {
   dbox.innerHTML = "";
   for (const d of ["easy", "normal", "hard", "claude"]) {
     const b = document.createElement("button");
-    b.textContent = t(L.diffs[d]);
+    // „🙂 Ľahký“ → veľká ikonka nad menom
+    const [ic, ...rest] = t(L.diffs[d]).split(" ");
+    b.innerHTML = `<span class="d-ic">${ic}</span><span>${rest.join(" ")}</span>`;
     b.className = difficulty === d ? "active" : "";
+    b.setAttribute("aria-pressed", String(difficulty === d));
     b.addEventListener("click", () => { difficulty = d; localStorage.setItem("arena.diff", d); renderPick(); });
     dbox.appendChild(b);
   }
@@ -321,6 +328,29 @@ function renderPick() {
     $("claudeKeyLabel").textContent = t(L.claudeKeyLabel);
     $("claudeKeyNote").textContent = t(L.claudeKeyNote);
   }
+}
+
+// ---------- Ukážky kariet na úvodnej obrazovke ----------
+// Náhodné zlaté príšery z rôznych rás (len dekorácia, náhoda mimo engine).
+function renderHomeArt() {
+  // len bežné príšery so zlatým artom (bez tokenov a experimentálneho Hmyzu)
+  const exp = Cards.EXP_RACES || new Set();
+  const defs = Cards.DEFS.filter(d => d.race && Cards.RACES[d.race] && !exp.has(d.race) && !d.spell && !d.token && !d.noEvolve && Cards.artOf(d, 3));
+  const byRace = {};
+  for (const d of defs) (byRace[d.race] ||= []).push(d);
+  const races = Object.keys(byRace).sort(() => Math.random() - 0.5).slice(0, 3);
+  const pick = races.map(r => byRace[r][Math.floor(Math.random() * byRace[r].length)]);
+  const card = d => {
+    const el = document.createElement("div");
+    el.className = "art-card";
+    el.innerHTML = `<div class="art-pic"></div><div class="art-name"></div><div class="art-race"></div>`;
+    el.querySelector(".art-pic").style.backgroundImage = `url("${Cards.artOf(d, 3)}")`;
+    el.querySelector(".art-name").textContent = Cards.nameOf(d, 3, I18N.lang);
+    el.querySelector(".art-race").textContent = `${Cards.RACE_ICON[d.race] || ""} ${Cards.RACES_NOM[d.race][I18N.lang] ?? Cards.RACES_NOM[d.race].sk}`;
+    return el;
+  };
+  $("homeArtL").replaceChildren(...pick.slice(0, 2).map(card));
+  $("homeArtR").replaceChildren(...pick.slice(2).map(card));
 }
 
 // Meno hráča je povinné pred každou hrou (bot aj sieť) – pamätá sa.
@@ -3518,5 +3548,6 @@ function newBotGame() {
 applyI18n();
 renderRules();
 renderPick();
+renderHomeArt();
 watchGames();
 if (new URLSearchParams(location.search).has("botloop")) startBotLoop();

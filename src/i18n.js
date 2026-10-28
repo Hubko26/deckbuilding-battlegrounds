@@ -106,6 +106,16 @@ const L = {
   chatTitle: { sk: "💬 Chat", cs: "💬 Chat", en: "💬 Chat" },
   chatPhSpec: { sk: "Napíš obom hráčom…", cs: "Napiš oběma hráčům…", en: "Message both players…" },
   gamesTitle: { sk: "🎮 Práve sa hrá", cs: "🎮 Právě se hraje", en: "🎮 Live games" },
+  // Úvodná obrazovka (pergamenový panel, stužka dole)
+  homeKicker: { sk: "✦ Tvoje dobrodružstvo začína ✦", cs: "✦ Tvoje dobrodružství začíná ✦", en: "✦ Your adventure begins ✦" },
+  homeHead: { sk: "Priprav sa na boj", cs: "Připrav se na boj", en: "Prepare for battle" },
+  homeSub: { sk: "Vyber si súpera a pravidlá arény.", cs: "Vyber si soupeře a pravidla arény.", en: "Choose your opponent and the arena rules." },
+  nameHint: { sk: "MENO ŠAMPIÓNA", cs: "JMÉNO ŠAMPIONA", en: "CHAMPION NAME" },
+  diffHint: { sk: "OBTIAŽNOSŤ", cs: "OBTÍŽNOST", en: "DIFFICULTY" },
+  modsTitle: { sk: "✨ Pravidlá arény", cs: "✨ Pravidla arény", en: "✨ Arena modifiers" },
+  modsHint: { sk: "VOLITEĽNÉ", cs: "VOLITELNÉ", en: "OPTIONAL" },
+  homeFine: { sk: "✦ Postav si balíček • Vyvíjaj príšerky • Vyhraj slávu ✦", cs: "✦ Postav si balíček • Vyvíjej příšerky • Vyhraj slávu ✦", en: "✦ Build your deck • Evolve your team • Claim glory ✦" },
+  homeRibbon: { sk: "✦ Stratégia • Zvieratá • Evolúcia • Sláva ✦", cs: "✦ Strategie • Zvířata • Evoluce • Sláva ✦", en: "✦ Strategy • Beasts • Evolution • Glory ✦" },
   gamesLoading: { sk: "Hľadám hry…", cs: "Hledám hry…", en: "Looking for games…" },
   gamesEmpty: { sk: "Práve nikto nehrá.", cs: "Právě nikdo nehraje.", en: "Nobody is playing right now." },
   gamesOff: { sk: "Zoznam hier nie je dostupný.", cs: "Seznam her není dostupný.", en: "Game list unavailable." },
@@ -270,10 +280,10 @@ const L = {
     },
   },
   // Experimentálna rasa Hmyz (src/cards-insect.js, engine opts.exp).
+  // Úvodná obrazovka: modifikátor = meno + krátky popis (ikonka je v index.html).
   insectToggle: {
-    sk: "🐛 Hmyz (nová rasa na skúšku: roj bez evolve, Kukla)",
-    cs: "🐛 Hmyz (nová rasa na zkoušku: roj bez evolve, Kukla)",
-    en: "🐛 Insects (new test race: swarm without evolve, Cocoon)",
+    name: { sk: "Hmyz", cs: "Hmyz", en: "Insects" },
+    desc: { sk: "Nová rasa na skúšku · roj bez evolve, Kukla", cs: "Nová rasa na zkoušku · roj bez evolve, Kukla", en: "New test race · swarm without evolve, Cocoon" },
   },
   banTitle: { sk: "🚫 Ktorá rasa dnes NEBUDE v aréne?", cs: "🚫 Která rasa dnes NEBUDE v aréně?", en: "🚫 Which race is OUT of the arena today?" },
   banIntro: {
@@ -345,9 +355,8 @@ const L = {
   },
   // Trinkety (engine TRINKETS) – ikonka e, meno, popis d. Ponuka 1 z 3 v kole 4 a 8.
   trinketToggle: {
-    sk: "🧿 Trinkety (kolo 4 a 8: každý si vyberie trvalý bonus)",
-    cs: "🧿 Trinkety (kolo 4 a 8: každý si vybere trvalý bonus)",
-    en: "🧿 Trinkets (round 4 and 8: each player picks a permanent bonus)",
+    name: { sk: "Trinkety", cs: "Trinkety", en: "Trinkets" },
+    desc: { sk: "Kolo 4 a 8 · každý si vyberie trvalý bonus", cs: "Kolo 4 a 8 · každý si vybere trvalý bonus", en: "Rounds 4 and 8 · each player picks a permanent bonus" },
   },
   versionBuild: { sk: "🏷️ Tvoja verzia:", cs: "🏷️ Tvoje verze:", en: "🏷️ Your version:" },
   versionLatest: { sk: "📝 Posledný commit:", cs: "📝 Poslední commit:", en: "📝 Latest commit:" },
