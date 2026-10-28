@@ -12,12 +12,16 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Aréna">
-  <link rel="stylesheet" href="style.css?v=13443571">
+  <link rel="stylesheet" href="style.css?v=7b7d1deb">
 </head>
 <body>
   <!-- ☰ = mobilné menu počas hry (hlavička sa na mobile v hre zbalí do
        overlayu; nová hra, zvuk, celá obrazovka a jazyk sú za týmto tlačidlom). -->
   <button id="menuBtn" class="menu-btn" aria-label="Menu">☰</button>
+  <!-- Oblúk pre meno karty na páske (game.js nameArc, textPath #nmArc). -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <defs><path id="nmArc" d="M5,13 Q62,5 119,13"/></defs>
+  </svg>
   <header>
     <h1 id="title">⚔️ Zvieracia aréna</h1>
     <div class="controls">
@@ -276,7 +280,7 @@
 
   <footer><span id="footNote"></span></footer>
 
-  <script src="version.js?v=9ccb4a0d"></script>
+  <script src="version.js?v=838f01e4"></script>
   <script src="vendor/peerjs.min.js?v=7e60515a"></script>
   <script src="src/i18n.js?v=a8134b6b"></script>
   <script src="src/net.js?v=1bcf318d"></script>
@@ -287,7 +291,7 @@
   <script src="src/engine.js?v=a07ca8e9"></script>
   <script src="src/bot.js?v=26ca977a"></script>
   <script src="src/claude-bot.js?v=38413432"></script>
-  <script src="src/game.js?v=ef2fd0bc"></script>
+  <script src="src/game.js?v=cff5c6e2"></script>
   <!-- Šach popri hre (desktop): pravidlá chess.js (MIT), UI src/chess.js -->
   <script src="vendor/chess.min.js?v=0.10.3"></script>
   <script src="src/chess.js?v=627f86d3"></script>

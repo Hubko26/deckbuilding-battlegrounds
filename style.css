@@ -289,14 +289,18 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   position: absolute; left: 0; right: 0; top: 15%;
   font-size: 3em; line-height: 1; pointer-events: none;
 }
+/* Meno na páske: SVG text po oblúku (game.js nameArc), písmo podľa dĺžky
+   mena; farba z `color` (stupeň 2/3 nižšie). .sr = text pre čítačky. */
 .card .nm {
   position: absolute; left: 9%; right: 9%; top: 49.5%; height: 9.5%;
-  display: flex; align-items: center; justify-content: center;
-  font-family: Georgia, "Times New Roman", serif;
-  font-weight: 800; font-size: .82em; line-height: .95;
-  text-transform: uppercase; color: #3a2a10; letter-spacing: .02em;
-  pointer-events: none;
+  color: #3a2a10; pointer-events: none;
 }
+.card .nm svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.card .nm text {
+  fill: currentColor; font-family: Georgia, "Times New Roman", serif;
+  font-weight: 800; letter-spacing: .02em;
+}
+.card .nm .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 /* Rasa: pilulka dole medzi útokom (kruh) a životom (srdce) – tmavý podklad
    + biely text + ikona, nech je rasa čitateľná na každom arte aj v preview. */
 .card .race {

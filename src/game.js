@@ -2287,6 +2287,30 @@ function renderHero(el, p) {
   else renderOppAura();
 }
 
+// Meno karty na páske: SVG text po miernom oblúku (#nmArc v index.html),
+// vždy v jednom riadku. Písmo sa zmenšuje podľa skutočnej šírky mena
+// (meraná canvasom, cache) – dlhé mená (Ancient Grove Guardian,
+// Super-pohladkanie…) sa zmestia na rovnú časť pásky; zakrútené konce
+// pásky sú tmavé a text by na nich zanikol. viewBox 124 × 20 = pomer boxu
+// .nm, NAME_ROOM = šírka rovnej časti pásky v jednotkách viewBoxu.
+const NAME_ROOM = 88;
+const nameEm = new Map(); // meno → šírka v em (Georgia 800 + letter-spacing)
+const nameCtx = document.createElement("canvas").getContext("2d");
+function nameWidthEm(up) {
+  if (!nameEm.has(up)) {
+    nameCtx.font = '800 100px Georgia, "Times New Roman", serif';
+    nameEm.set(up, nameCtx.measureText(up).width / 100 + up.length * 0.02);
+  }
+  return nameEm.get(up);
+}
+function nameArc(name) {
+  const raw = String(name).toLocaleUpperCase(I18N.lang);
+  const up = raw.replace(/[&<>"']/g, c => `&#${c.charCodeAt(0)};`);
+  const fs = Math.min(11, NAME_ROOM / Math.max(1, nameWidthEm(raw))).toFixed(1);
+  return `<svg viewBox="0 0 124 20" aria-hidden="true"><text font-size="${fs}" text-anchor="middle" dominant-baseline="central">` +
+    `<textPath href="#nmArc" startOffset="50%">${up}</textPath></text></svg><span class="sr">${up}</span>`;
+}
+
 // Pravidlo rasy pod doskou hráča: rasa, ktorej má najviac kariet (aspoň
 // RACE_NOTE_MIN, všetky zóny) a ktorá má pravidlo pre celú rasu (L.raceNote).
 const RACE_NOTE_MIN = 3;
@@ -2531,11 +2555,7 @@ function cardEl(instOrId, opts) {
   // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
   if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
-  // Pohladkanie má dlhé mená stupňov (Super-pohladkanie, Mega-pohladkanie…)
-  // – do bannera sa zmestia len v jednom riadku menším písmom, inak sa
-  // zalomia cez rám a orežú. Písmo sa zmenšuje s dĺžkou mena.
-  const nmStyle = def.pet ? ` style="font-size:${Math.min(0.82, 7.4 / name.length).toFixed(2)}em;white-space:nowrap;letter-spacing:0"` : "";
-  inner += `<div class="nm"${nmStyle}>${name}</div>`;
+  inner += `<div class="nm">${nameArc(name)}</div>`;
   if (!(art && def.spell)) inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
   if (!def.spell) {
