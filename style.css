@@ -1172,12 +1172,13 @@ body.targeting, body.targeting * { cursor: none !important; }
 }
 #stage .hand .card.hov:not(.drag-src) {
   z-index: 30;
-  transform: translateY(-38%) scale(1.75);
+  transform: translateY(-38%) scale(2.1);
   transform-origin: 50% 100%;
 }
-#stage .hand .card.hov .tx { display: block; }
+/* Popis zväčšenej karty v ruke: menšie písmo, nech sa celý zmestí do boxu. */
+#stage .hand .card.hov .tx { display: block; font-size: .46em; line-height: 1.2; }
 @media (orientation: portrait) {
-  #stage .hand .card.hov:not(.drag-src) { transform: translateY(-55%) scale(2); }
+  #stage .hand .card.hov:not(.drag-src) { transform: translateY(-55%) scale(2.3); }
 }
 /* Hra botov (?botloop): stránka len hrá a ukazuje – chat bez políčka. */
 body.botloop .chat-row { display: none; }
