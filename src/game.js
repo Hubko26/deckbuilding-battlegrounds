@@ -2612,7 +2612,14 @@ function handHover(e, force = false) {
       && x < (i + 1 < cards.length ? cards[i + 1].offsetLeft : c.offsetLeft + c.offsetWidth)) || null;
   }
   for (const c of cards) c.classList.toggle("hov", c === hit);
+  // Zväčšená karta má rovnakú veľkosť ako náhľad (.preview-card, ~348 px
+  // vysoká), nech vyzerá rovnako; aspoň 2.1×, najviac 60 % výšky okna.
+  if (hit && hit.offsetHeight) {
+    const h = hit.offsetHeight;
+    hand.style.setProperty("--hov-s", Math.min(Math.max(2.1, PREVIEW_H / h), innerHeight * 0.6 / h).toFixed(2));
+  }
 }
+const PREVIEW_H = 250 * 780 / 560; // výška .preview-card (šírka 250 px, pomer karty)
 $("handEl").addEventListener("pointermove", e => handHover(e, !!(press && press.fan)));
 $("handEl").addEventListener("pointerleave", () => $("handEl").querySelectorAll(".hov").forEach(c => c.classList.remove("hov")));
 function attachPreview(card, instOrId, opts) {

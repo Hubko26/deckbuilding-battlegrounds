@@ -424,6 +424,12 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 #stage .card .tx { display: none; }
 #stage .board.mine .card { height: calc(24.5 * var(--u)); font-size: calc(2.1 * var(--u)); }
 #stage .board.mine .card .tx { display: block; }
+/* Popis karty má všade rovnaký pomer k výške karty ako zväčšený náhľad
+   (.preview-card: 0.64em × 15 px na kartu 348 px vysokú ≈ 2.76 % výšky) –
+   dlhé popisy sa celé zmestia do boxu. em tu = písmo danej karty:
+   board 2.1u / výška 24.5u → .32em, ruka 1.35u / 14.4u → .294em,
+   okno (discover) 13 px / 240 px → .51em. */
+#stage .board .card .tx { font-size: .32em; }
 .shop-row .card { height: calc(15 * var(--u)); font-size: calc(1.4 * var(--u)); }
 
 /* ---------- Drag & drop ---------- */
@@ -448,7 +454,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
   animation: pop .12s ease-out;
   font-size: 15px;
 }
-.preview-card .tx { display: block; }
+.preview-card .tx { display: block; font-size: .64em; }
 /* Súhrn statov pod preview kartou (Základ / Pečať / Navždy / Dočasne / Pohladkaní). */
 .preview-card .info {
   position: absolute; left: 4%; right: 4%; top: 101%;
@@ -474,7 +480,7 @@ footer { text-align: center; padding: 4px; font-size: .8rem; color: #456; }
 .win-box .big { font-size: 1.7rem; margin-bottom: 8px; }
 .win-box .shop-row { justify-content: center; display: flex; gap: 10px; min-height: 0; }
 .win-box .shop-row .card { height: 240px; font-size: 13px; }
-.win-box .shop-row .card .tx { display: block; }
+.win-box .shop-row .card .tx { display: block; font-size: .51em; }
 .win-box button { margin-top: 12px; }
 @keyframes pop { from { transform: scale(.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
@@ -1176,13 +1182,13 @@ body.targeting, body.targeting * { cursor: none !important; }
 }
 #stage .hand .card.hov:not(.drag-src) {
   z-index: 30;
-  transform: translateY(-38%) scale(2.1);
+  transform: translateY(-38%) scale(var(--hov-s, 2.1));
   transform-origin: 50% 100%;
 }
-/* Popis zväčšenej karty v ruke: menšie písmo, nech sa celý zmestí do boxu. */
-#stage .hand .card.hov .tx { display: block; font-size: .46em; line-height: 1.2; }
+/* Popis zväčšenej karty v ruke: rovnaký pomer k výške karty ako náhľad. */
+#stage .hand .card.hov .tx { display: block; font-size: .294em; }
 @media (orientation: portrait) {
-  #stage .hand .card.hov:not(.drag-src) { transform: translateY(-55%) scale(2.3); }
+  #stage .hand .card.hov:not(.drag-src) { transform: translateY(-55%) scale(var(--hov-s, 2.3)); }
 }
 /* Hra botov (?botloop): stránka len hrá a ukazuje – chat bez políčka. */
 body.botloop .chat-row { display: none; }
