@@ -487,6 +487,7 @@ const Cards = (() => {
       parts.push(`${b(T.wild[lang])}: ${T.wildText(wildRange(atk, rank))[lang]}.`);
     }
     for (const pw of powersOf(def)) {
+      if (pw.raceRule) continue; // pravidlo celej rasy – vysvetlivka pod doskou (L.raceNote)
       if (pw.kw === "raceDeath") {
         // Scavenger: label nesie rasu („Keď zomrie tvoje Zviera: …“).
         parts.push(`${b(T.raceDeathLabel(pw.fx.race)[lang])}: ${fxText(pw.fx, m)}.`);

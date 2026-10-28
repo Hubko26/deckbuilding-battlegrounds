@@ -269,9 +269,9 @@ const L = {
   // ktoré majú pravidlo platné pre celú rasu, nie na jednej karte.
   raceNote: {
     insect: {
-      sk: "🐛 Roj: každý Hmyz +1/+1 za každú inú svoju kópiu v balíčku. Hmyz sa nevyvíja (evolve).",
-      cs: "🐛 Roj: každý Hmyz +1/+1 za každou další svou kopii v balíčku. Hmyz se nevyvíjí (evolve).",
-      en: "🐛 Swarm: every Insect gets +1/+1 for each other copy of itself you own. Insects don't evolve.",
+      sk: "🐛 Roj: každý Hmyz +1/+1 za každú inú svoju kópiu v balíčku. Hmyz sa nevyvíja (evolve). Pri smrti: 25 % šanca vyvolať tvoju Kuklu (raz za boj).",
+      cs: "🐛 Roj: každý Hmyz +1/+1 za každou další svou kopii v balíčku. Hmyz se nevyvíjí (evolve). Při smrti: 25 % šance vyvolat tvou Kuklu (jednou za boj).",
+      en: "🐛 Swarm: every Insect gets +1/+1 for each other copy of itself you own. Insects don't evolve. Deathrattle: 25% chance to summon your Cocoon (once per fight).",
     },
     ogre: {
       sk: "👹 Backstab: keď Ogrovi nevyjde hod, všetci Ogri dostanú Pečať +1/+1 navždy.",

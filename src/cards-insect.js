@@ -113,9 +113,11 @@
   if (V.includes("still")) delete KUKLA.growPlayed;
   // Pravidlo rasy: každý Hmyz (okrem Kukly) má Pri smrti 1/4 šancu vyvolať
   // bojovú kópiu tvojej Kukly – druhá schopnosť (power2) vedľa vlastnej.
+  // raceRule: na kartu sa nepíše (je na každom hmyze), vysvetľuje ho
+  // riadok Roja pod doskou hráča (L.raceNote.insect).
   if (!V.includes("noCocoon")) {
     for (const d of DEFS) {
-      const pw = { kw: "deathrattle", fx: { type: "summonKukla", chance: 0.25 } };
+      const pw = { kw: "deathrattle", fx: { type: "summonKukla", chance: 0.25 }, raceRule: true };
       if (d.power) d.power2 = pw; else d.power = pw;
     }
   }

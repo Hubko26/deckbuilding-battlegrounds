@@ -1120,7 +1120,8 @@ zakladateľ (flag `insects` v `hello`/`start`), GameLog nesie `exp`
 „teraz +X/+Y" a v snímke boja). Každý Hmyz má navyše **Pri smrti 25 %
 šancu vyvolať bojovú kópiu tvojej Kukly** – max. raz za boj, s trinketom
 **Dvojitý zámotok** (`insectCocoon`, úroveň 2) max. 2× (`p.kuklaSummons`,
-nuluje sa po boji).
+nuluje sa po boji). Je to pravidlo rasy (`power.raceRule`): text karty ho
+nepíše, vysvetľuje ho riadok Roja pod doskou hráča (`L.raceNote.insect`).
 
 - **Kukla** (gen, nie v obchode, jediná na hráča, 1/3 Obranca): vytvorí ju
   Húsenica; na začiatku ťahu ide VŽDY do ruky navyše (6. karta). Nezahraná
