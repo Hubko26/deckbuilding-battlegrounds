@@ -2555,7 +2555,9 @@ function cardEl(instOrId, opts) {
   // Obranca ako badge 🛡️ – aj keď ho dal Štít/Koreň (na karte to inak nie je
   // napísané) a aj na Mláďati; modrý rám sám o sebe deťom nestačil.
   if (isInst ? instOrId.taunt : def.taunt) inner += `<span class="taunt-badge">🛡️</span>`;
-  inner += `<div class="nm">${nameArc(name)}</div>`;
+  // Páska s menom je na niektorých artoch nižšie (src/name-band.js).
+  const band = art && typeof NAME_BAND !== "undefined" ? NAME_BAND[art.replace(/^.*\/|\.webp$/g, "")] : 0;
+  inner += `<div class="nm"${band ? ` style="top:${(49.5 + band).toFixed(1)}%"` : ""}>${nameArc(name)}</div>`;
   if (!(art && def.spell)) inner += `<div class="race">${raceLine(def, rank)}</div>`;
   if (text) inner += `<div class="tx">${text}</div>`;
   if (!def.spell) {

@@ -48,6 +48,9 @@ commity, UI) je slovenčina.
 - `npm run botstats [-- súbor.jsonl since=2026-10-21 v=<verzia>]` – súhrn
   hier botov: winrate rás, matica rasa vs. rasa, karty na víťaznej ploche.
   Replay jednej hry: `npm run replay -- data/botloop/results.jsonl <id>`.
+- `python tools/name-band.py` – zmeria výšku pásky s menom na arte kariet
+  (`assets/cards`) a zapíše posuny do `src/name-band.js`. Spusti po pridaní
+  alebo zmene artu (Ogri, niektoré zlaté karty majú pásku nižšie).
 - Žiadny build, lint ani bundler – súbory sa servírujú tak, ako sú.
 - Pre-commit hook (`tools/bump-version.py --stage`) prepočíta `?v=` hashe
   v index.html a zapíše čas buildu do `version.js`; úvodná obrazovka ho
